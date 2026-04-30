@@ -1,0 +1,16 @@
+{
+    "Consume": [
+        {
+            "ItemTid": 30001,
+            "CoolTime": 2,
+            "Var1": 50,
+            "Var2": 10
+        },
+        {
+            "ItemTid": 30002,
+            "CoolTime": 2,
+            "Var1": 50,
+            "Var2": 10
+        }
+    ]
+}
