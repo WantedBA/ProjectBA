@@ -3,6 +3,7 @@
 #include "BASheetSpecs.h"
 
 #include "Tables/ItemRows.h"
+#include "Tables/SkillRows.h"
 
 namespace
 {
@@ -10,6 +11,8 @@ namespace
 	{
 		static const TMap<FString, FBASheetSpec> Map = {
 			{ TEXT("Consume"), { FConsumeItemRow::StaticStruct(), TEXT("ItemTid") } },
+			{ TEXT("Skill"), { FSkillRow::StaticStruct(), TEXT("SkillId") } },
+			
 		};
 		return Map;
 	}

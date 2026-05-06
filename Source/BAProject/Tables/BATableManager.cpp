@@ -10,6 +10,7 @@ void UBATableManager::Initialize(FSubsystemCollectionBase& Collection)
 	Super::Initialize(Collection);
 
 	LoadTable(ConsumeTable, TEXT("/Game/Table/DT_Item_Consume.DT_Item_Consume"));
+	LoadTable(ConsumeTable, TEXT("/Game/Table/DT_SkillTree_Skill.DT_SkillTree_Skill"));
 
 	for (IBAPostRead* Table : PostReadList)
 	{
