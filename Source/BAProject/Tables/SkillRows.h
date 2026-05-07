@@ -16,7 +16,7 @@ struct BAPROJECT_API FSkillRow : public FBARowBase
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-	int32 SkillId = 0;
+	int32 SkillTid = 0;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
 	FString SkillName;
@@ -45,7 +45,7 @@ struct BAPROJECT_API FSkillRow : public FBARowBase
 
 	virtual void PostRead() override
 	{
-		Tid = SkillId;
+		Tid = SkillTid;
 		PrerequisiteIds = ParseIntArray(Prerequisites);
 	}
 
