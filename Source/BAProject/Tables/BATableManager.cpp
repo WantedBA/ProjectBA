@@ -2,6 +2,7 @@
 
 #include "Tables/BATableManager.h"
 
+#include "Constants/BAProjectConstant.h"
 #include "Engine/GameInstance.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -9,7 +10,8 @@ void UBATableManager::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	LoadTable(ConsumeTable, TEXT("/Game/Table/DT_Item_Consume.DT_Item_Consume"));
+	FString TablePath = FString(TablePath::LoadTablePath);
+	LoadTable(ConsumeTable,  *(TablePath + TEXT("DT_Item_Consume.DT_Item_Consume")));
 
 	for (IBAPostRead* Table : PostReadList)
 	{
@@ -50,12 +52,12 @@ bool UBATableManager::BP_FindConsume(int32 InTid, FConsumeItemRow& OutRow) const
 }
 
 template<typename RowType, typename KeyType>
-void UBATableManager::LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const TCHAR* AssetPath)
+void UBATableManager::LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const FString AssetPath)
 {
-	UDataTable* DataTable = LoadObject<UDataTable>(nullptr, AssetPath);
+	UDataTable* DataTable = LoadObject<UDataTable>(nullptr, *AssetPath);
 	if (!DataTable)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[BATableManager] DataTable not found: %s"), AssetPath);
+		UE_LOG(LogTemp, Warning, TEXT("[BATableManager] DataTable not found: %s"), *AssetPath);
 		return;
 	}
 
