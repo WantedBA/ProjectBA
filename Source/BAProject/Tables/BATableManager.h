@@ -35,7 +35,7 @@ public:
 
 private:
 	template<typename RowType, typename KeyType>
-	void LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const TCHAR* AssetPath);
+	void LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const FString AssetPath);
 
 	TBAPropTable<FConsumeItemRow, int32> ConsumeTable;
 
