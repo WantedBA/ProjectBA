@@ -32,9 +32,9 @@ struct BAPROJECT_API FBARowBase : public FTableRowBase
 	GENERATED_BODY()
 
 	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, Category = "BA")
-	int32 Tid = 0;
+	int32 bTid = 0;
 
-	int32 GetKey() const { return Tid; }
+	int32 GetKey() const { return bTid; }
 
 	virtual void PostRead() {}
 };

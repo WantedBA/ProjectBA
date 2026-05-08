@@ -1,0 +1,33 @@
+{
+    "BaseStat": [
+        {
+            "Tid": 1,
+            "BaseHp": 200,
+            "BaseStamina": 200,
+            "BaseMoveSpeed": 100,
+            "BaseAttack": 50,
+            "BaseDefence": 10,
+            "BaseAttackSpeed": 1
+        }
+    ],
+    "ActionData": [
+        {
+            "Tid": 10001,
+            "ActionType": 0,
+            "CoolTime": 0,
+            "ConsumeStamina": 5
+        },
+        {
+            "Tid": 10011,
+            "ActionType": 1,
+            "CoolTime": 0,
+            "ConsumeStamina": 5
+        },
+        {
+            "Tid": 10021,
+            "ActionType": 2,
+            "CoolTime": 0,
+            "ConsumeStamina": 10
+        }
+    ]
+}
