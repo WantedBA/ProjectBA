@@ -23,10 +23,10 @@ public:
 	virtual void Attack();
 	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
-	bool IsAlive() const;
-	bool IsInvincible() const;
-	bool CanReceiveDamage() const;
-	EBACharacterState GetCharacterState() const;
+	FORCEINLINE bool IsAlive() const { 	return CharacterState != EBACharacterState::Dead; }
+	FORCEINLINE bool IsInvincible() const { return CharacterState == EBACharacterState::Invincible; }
+	FORCEINLINE bool CanReceiveDamage() const { return IsAlive() && IsInvincible() == false; }
+	FORCEINLINE EBACharacterState GetCharacterState() const { return CharacterState; }
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")

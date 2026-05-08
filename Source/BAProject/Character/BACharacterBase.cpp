@@ -27,26 +27,6 @@ float ABACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& Damag
 	return FinalDamage;
 }
 
-bool ABACharacterBase::IsAlive() const
-{
-	return CharacterState != EBACharacterState::Dead;
-}
-
-bool ABACharacterBase::IsInvincible() const
-{
-	return CharacterState == EBACharacterState::Invincible;
-}
-
-bool ABACharacterBase::CanReceiveDamage() const
-{
-	return IsAlive() && !IsInvincible();
-}
-
-EBACharacterState ABACharacterBase::GetCharacterState() const
-{
-	return CharacterState;
-}
-
 void ABACharacterBase::OnDamaged(float FinalDamage, AActor* DamageCauser)
 {
 	// TODO: 실제 HP/스태미너 반영 및 사망 판정은 StatComponent에서 처리
