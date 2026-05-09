@@ -28,6 +28,8 @@ void UBASubSystemUI::PushUI(UBALayerBase* InWidget)
 	// 각 위젯이 OnPushed에서 로직 실행
 	InWidget->OnPushed();
 
+	RefreshInputMode();
+
 	UE_LOG(LogTemp, Log, TEXT("UI Pushed! 현재 스택 개수: %d"), UIStack.Num());
 }
 
@@ -55,6 +57,44 @@ void UBASubSystemUI::PopUI()
 		Widget->RemoveFromParent(); // 메모리 관리
 	}
 
+	RefreshInputMode();
+
 	UE_LOG(LogTemp, Log, TEXT("UI Popped! 현재 스택 개수: %d"), UIStack.Num());
 
+}
+
+void UBASubSystemUI::RefreshInputMode()
+{
+	// 현재 스택에 팝업이 하나라도 있는지 체크
+	bool bHasPopup = false;
+
+	if (!UIStack.IsEmpty())
+	{
+		IBAStackElem* TopElem = UIStack.Peek(); // 가장 위 요소 확인
+		
+		if (TopElem && TopElem->GetStackType() == EStackElemType::Popup)
+		{
+			bHasPopup = true;
+		}
+	}
+
+	// 플레이어 컨트롤러에서 마우스 커서 제어
+	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	if (PC)
+	{
+		if (bHasPopup)
+		{
+			// 팝업이 있다면 마우스 커서 활성화
+			FInputModeUIOnly InputMode;
+			PC->SetInputMode(InputMode);
+			PC->bShowMouseCursor = true;
+		}
+		else
+		{
+			// 팝업이 없다면 마우스 커서 비활성화, 게임 조작 재활성화
+			FInputModeGameOnly InputMode;
+			PC->SetInputMode(InputMode);
+			PC->bShowMouseCursor = false;
+		}
+	}
 }

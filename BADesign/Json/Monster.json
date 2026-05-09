@@ -1,0 +1,59 @@
+{
+    "Monster": [
+        {
+            "MonsterTid": 10001,
+            "StageType": 1,
+            "NameTextTid": 10010,
+            "GradeType": 0,
+            "Attack": 50,
+            "MaxHp": 50,
+            "Defence": 5,
+            "DetectRange": 500,
+            "MoveSpeed": 300
+        },
+        {
+            "MonsterTid": 10002,
+            "StageType": 1,
+            "NameTextTid": 10011,
+            "GradeType": 1,
+            "Attack": 50,
+            "MaxHp": 100,
+            "Defence": 7,
+            "DetectRange": 500,
+            "MoveSpeed": 300
+        },
+        {
+            "MonsterTid": 10000,
+            "StageType": 1,
+            "NameTextTid": 10011,
+            "GradeType": 2,
+            "Attack": 50,
+            "MaxHp": 1000,
+            "Defence": 7,
+            "DetectRange": 0,
+            "MoveSpeed": 300
+        },
+        {
+            "MonsterTid": 20000,
+            "StageType": 1,
+            "NameTextTid": 10011,
+            "GradeType": 2,
+            "Attack": 50,
+            "MaxHp": 1000,
+            "Defence": 7,
+            "DetectRange": 0,
+            "MoveSpeed": 300
+        },
+        {
+            "MonsterTid": 30000,
+            "StageType": 1,
+            "NameTextTid": 10011,
+            "GradeType": 2,
+            "Attack": 50,
+            "MaxHp": 1000,
+            "Defence": 7,
+            "DetectRange": 0,
+            "MoveSpeed": 300
+        }
+    ]
+}

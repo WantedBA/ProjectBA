@@ -29,4 +29,8 @@ public:
 protected:
 	// 인터페이스(IBAStackElem) 타입으로 쌓을 스택 바구니
 	TBAStack<IBAStackElem*> UIStack;
+
+private:
+	// 스택 상황에 따라 마우스 커서와 입력 모드 결정
+	void RefreshInputMode();
 };
