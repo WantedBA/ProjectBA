@@ -43,6 +43,7 @@ void AEnemyAIController::InitializeAI(int32 InTid)
 		if (UseBlackboard(BBAsset, BBComp))
 		{
 			// 초기 데이터 설정
+			Blackboard->SetValueAsInt(TEXT("MonsterTid"), InTid); // TID 저장 추가
 			Blackboard->SetValueAsVector(BBKey::HomePos, GetPawn()->GetActorLocation());
 			Blackboard->SetValueAsFloat(BBKey::DetectRange, static_cast<float>(MonsterRow->DetectRange));
 			Blackboard->SetValueAsFloat(BBKey::AttackRange, static_cast<float>(MonsterRow->AttackRange));
