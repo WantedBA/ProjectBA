@@ -6,6 +6,8 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Tables/BAPropTable.h"
 #include "Tables/ItemRows.h"
+#include "Tables/MonsterRows.h"
+#include "Tables/BossMonster.h"
 #include "BATableManager.generated.h"
 
 /**
@@ -33,11 +35,26 @@ public:
 
 	const TMap<int32, FConsumeItemRow*>& GetConsumeMap() const { return ConsumeTable.GetMap(); }
 
+	const FMonsterRows* FindMonster(int32 InTid) const { return MonsterTable.Find(InTid); }
+	
+	const F1StageBossAttackRows* FindBossAttack1(int32 InTid) const { return BossAttackTable1.Find(InTid); }
+	const F2StageBossAttackRows* FindBossAttack2(int32 InTid) const { return BossAttackTable2.Find(InTid); }
+	const F3StageBossAttackRows* FindBossAttack3(int32 InTid) const { return BossAttackTable3.Find(InTid); }
+
+	const TMap<int32, F1StageBossAttackRows*>& GetBossAttackMap1() const { return BossAttackTable1.GetMap(); }
+	const TMap<int32, F2StageBossAttackRows*>& GetBossAttackMap2() const { return BossAttackTable2.GetMap(); }
+	const TMap<int32, F3StageBossAttackRows*>& GetBossAttackMap3() const { return BossAttackTable3.GetMap(); }
+
 private:
 	template<typename RowType, typename KeyType>
 	void LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const FString AssetPath);
 
 	TBAPropTable<FConsumeItemRow, int32> ConsumeTable;
+	TBAPropTable<FMonsterRows, int32> MonsterTable;
+	
+	TBAPropTable<F1StageBossAttackRows, int32> BossAttackTable1;
+	TBAPropTable<F2StageBossAttackRows, int32> BossAttackTable2;
+	TBAPropTable<F3StageBossAttackRows, int32> BossAttackTable3;
 
 	TArray<IBAPostRead*> PostReadList;
 
