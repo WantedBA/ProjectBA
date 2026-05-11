@@ -8,6 +8,7 @@
 #include "Tables/ItemRows.h"
 #include "Tables/MonsterRows.h"
 #include "Tables/BossMonster.h"
+#include "Tables/PatrolPathRow.h"
 #include "BATableManager.generated.h"
 
 /**
@@ -37,6 +38,8 @@ public:
 
 	const FMonsterRows* FindMonster(int32 InTid) const { return MonsterTable.Find(InTid); }
 	
+	const FPatrolPathRow* FindPatrolPath(int32 InPathId) const { return PatrolPathTable.Find(InPathId); }
+
 	const F1StageBossAttackRows* FindBossAttack1(int32 InTid) const { return BossAttackTable1.Find(InTid); }
 	const F2StageBossAttackRows* FindBossAttack2(int32 InTid) const { return BossAttackTable2.Find(InTid); }
 	const F3StageBossAttackRows* FindBossAttack3(int32 InTid) const { return BossAttackTable3.Find(InTid); }
@@ -51,6 +54,7 @@ private:
 
 	TBAPropTable<FConsumeItemRow, int32> ConsumeTable;
 	TBAPropTable<FMonsterRows, int32> MonsterTable;
+	TBAPropTable<FPatrolPathRow, int32> PatrolPathTable;
 	
 	TBAPropTable<F1StageBossAttackRows, int32> BossAttackTable1;
 	TBAPropTable<F2StageBossAttackRows, int32> BossAttackTable2;

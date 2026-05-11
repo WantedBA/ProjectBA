@@ -14,6 +14,7 @@ void UBATableManager::Initialize(FSubsystemCollectionBase& Collection)
 	LoadTable(ConsumeTable,  *(TablePath + TEXT("DT_Item_Consume.DT_Item_Consume")));
 
 	LoadTable(MonsterTable,  *(TablePath + TEXT("DT_Monster_Monster.DT_Monster_Monster")));
+	LoadTable(PatrolPathTable, *(TablePath + TEXT("DT_PatrolPath.DT_PatrolPath")));
 
 	LoadTable(BossAttackTable1, *(TablePath + TEXT("DT_BossMonster_1StageBossAttack.DT_BossMonster_1StageBossAttack")));
 	LoadTable(BossAttackTable2, *(TablePath + TEXT("DT_BossMonster_2StageBossAttack.DT_BossMonster_2StageBossAttack")));
