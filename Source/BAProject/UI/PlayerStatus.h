@@ -13,5 +13,15 @@ UCLASS()
 class BAPROJECT_API UPlayerStatus : public UUserWidget
 {
 	GENERATED_BODY()
-	
+
+protected:
+	UPROPERTY(meta = (BindWidget))
+	class UStatusBar* HPBar; // HP바 연결
+
+	UPROPERTY(meta = (BindWidget))
+	class UStatusBar* StaminaBar; // 스테미너바 연결
+
+public:
+	void UpdateHP(float Current, float Max);
+	void UpdateStamina(float Current, float Max);
 };

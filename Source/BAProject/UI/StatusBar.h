@@ -16,7 +16,7 @@ class BAPROJECT_API UStatusBar : public UUserWidget
 	
 protected:
 	UPROPERTY(meta = (BindWidget))
-	class UProgressBar* Bar;
+	class UProgressBar* Bar; // StatusBar 연결용
 
 public:
 	// Bar 퍼센트 조절
