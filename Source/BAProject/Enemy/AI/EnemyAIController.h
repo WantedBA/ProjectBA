@@ -18,10 +18,10 @@ public:
 
 private:
 	UPROPERTY()
-	TObjectPtr<class UBlackboardData> BBAsset;
+	TObjectPtr<UBlackboardData> BBAsset;
 
 	UPROPERTY()
-	TObjectPtr<class UBehaviorTree> BTAsset;
+	TObjectPtr<UBehaviorTree> BTAsset;
 
 	UPROPERTY()
 	int32 Tid;
