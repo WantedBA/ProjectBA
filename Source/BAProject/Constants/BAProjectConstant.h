@@ -7,3 +7,12 @@ namespace TablePath
 {
 	constexpr const TCHAR* LoadTablePath = TEXT("/Game/Table/");
 }
+
+namespace BBKey
+{
+	const FName TargetActor = TEXT("TargetActor");
+	const FName HomePos = TEXT("HomePos");
+	const FName DetectRange = TEXT("DetectRange");
+	const FName AttackRange = TEXT("AttackRange");
+	const FName State = TEXT("State");
+}
