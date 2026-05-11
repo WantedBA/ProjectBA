@@ -8,6 +8,7 @@
 #include "PlayerCharacter.generated.h"
 
 class UInputAction;
+class UInputMappingContext;
 
 UCLASS()
 class BAPROJECT_API APlayerCharacter : public ACharacterBase
@@ -33,6 +34,9 @@ protected:
 	TObjectPtr<class UCameraComponent> Camera;
 
 protected:
+	UPROPERTY(EditDefaultsOnly, Category = Input, BlueprintReadOnly)
+	TObjectPtr<UInputMappingContext> InputMappingContext;
+
 	UPROPERTY(VisibleAnywhere, Category = Input, BlueprintReadOnly)
 	TObjectPtr<UInputAction> MoveAction;
 

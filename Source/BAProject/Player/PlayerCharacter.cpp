@@ -4,6 +4,7 @@
 #include "Player/PlayerCharacter.h"
 
 #include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -51,6 +52,14 @@ APlayerCharacter::APlayerCharacter()
 	{
 		AttackAction = AttackActionRef.Object;
 	}
+	
+	static ConstructorHelpers::FObjectFinder<UInputMappingContext> InputMappingContextRef(
+		TEXT("")
+	);
+	if (InputMappingContextRef.Succeeded())
+	{
+		InputMappingContext = InputMappingContextRef.Object;
+	}
 }
 
 void APlayerCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
@@ -81,6 +90,22 @@ void APlayerCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerIn
 			this,
 			&APlayerCharacter::Attack
 		);
+	}
+	
+	if (InputMappingContext == nullptr)
+	{
+		return;
+	}
+
+	if (const APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	{
+		if (ULocalPlayer* LocalPlayer = PlayerController->GetLocalPlayer())
+		{
+			if (UEnhancedInputLocalPlayerSubsystem* InputSystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer))
+			{
+				InputSystem->AddMappingContext(InputMappingContext, 0);
+			}
+		}
 	}
 }
 
