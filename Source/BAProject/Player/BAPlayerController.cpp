@@ -36,6 +36,14 @@ void ABAPlayerController::BeginPlay()
 		}
 	}
 	
+	if (PlayerCameraManager)
+	{
+		PlayerCameraManager->ViewPitchMin = -75.0f; // 80
+		PlayerCameraManager->ViewPitchMax = 60.0f; // 45
+		PlayerCameraManager->ViewRollMin = 0.0f;
+		PlayerCameraManager->ViewRollMax = 0.0f;
+	}
+	
 	// HUDWidget = CreateWidget<UHUDWidget>(this, HUDWidgetClass);
 	// if (HUDWidget)
 	// {
