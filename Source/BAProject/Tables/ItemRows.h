@@ -38,6 +38,6 @@ struct BAPROJECT_API FConsumeItemRow : public FBARowBase
 
 	virtual void PostRead() override
 	{
-		Tid = ItemTid;
+		bTid = ItemTid;
 	}
 };

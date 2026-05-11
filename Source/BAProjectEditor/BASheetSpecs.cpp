@@ -2,7 +2,11 @@
 
 #include "BASheetSpecs.h"
 
+#include "Tables/BossMonster.h"
 #include "Tables/ItemRows.h"
+#include "Tables/MonsterRows.h"
+#include "Tables/PlayerRows.h"
+#include "Tables/Text.h"
 
 namespace
 {
@@ -10,6 +14,13 @@ namespace
 	{
 		static const TMap<FString, FBASheetSpec> Map = {
 			{ TEXT("Consume"), { FConsumeItemRow::StaticStruct(), TEXT("ItemTid") } },
+			 { TEXT("Monster"), { FMonsterRows::StaticStruct(), TEXT("MonsterTid") } },
+			{ TEXT("1StageBossAttack"), { F1StageBossAttackRows::StaticStruct(), TEXT("Tid") } },
+			{ TEXT("2StageBossAttack"), { F2StageBossAttackRows::StaticStruct(), TEXT("Tid") } },
+			{ TEXT("3StageBossAttack"), { F3StageBossAttackRows::StaticStruct(), TEXT("Tid") } },
+			{ TEXT("BaseStat"), { FBaseStatRows::StaticStruct(), TEXT("Tid") } },
+			{ TEXT("ActionData"), { FActionData::StaticStruct(), TEXT("Tid") } },
+			{ TEXT("Text"), { FTextRows::StaticStruct(), TEXT("TextTid") } },
 		};
 		return Map;
 	}
