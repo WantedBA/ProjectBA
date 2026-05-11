@@ -1,4 +1,5 @@
 #include "Enemy/EnemyBase.h"
+#include "Enemy/AI/EnemyAIController.h"
 #include "Component/StateComponent.h"
 #include "Component/StatComponent.h"
 #include "Component/CombatComponent.h"
@@ -25,6 +26,19 @@ void AEnemyBase::PostInitializeComponents()
 	}
 }
 
+void AEnemyBase::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	if (AEnemyAIController* AIController = Cast<AEnemyAIController>(NewController))
+	{
+		if (MonsterTid != 0)
+		{
+			AIController->InitializeAI(MonsterTid);
+		}
+	}
+}
+
 void AEnemyBase::InitializeFromTable(int32 InTid)
 {
 	MonsterTid = InTid;
@@ -46,6 +60,19 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 		if (GetCharacterMovement())
 		{
 			GetCharacterMovement()->MaxWalkSpeed = static_cast<float>(MonsterRow->MoveSpeed);
+		}
+
+		if (!MonsterRow->MeshPath.IsEmpty())
+		{
+			if (USkeletalMesh* LoadedMesh = Cast<USkeletalMesh>(StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, *MonsterRow->MeshPath)))
+			{
+				GetMesh()->SetSkeletalMesh(LoadedMesh);
+			}
+		}
+
+		if (AEnemyAIController* AIController = Cast<AEnemyAIController>(GetController()))
+		{
+			AIController->InitializeAI(MonsterTid);
 		}
 	}
 }

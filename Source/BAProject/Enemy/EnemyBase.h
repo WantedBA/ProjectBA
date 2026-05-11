@@ -21,6 +21,7 @@ public:
 
 protected:
 	virtual void PostInitializeComponents() override;
+	virtual void PossessedBy(AController* NewController) override;
 
 	virtual void OnDamaged(float FinalDamage, AActor* DamageCauser) override;
 	virtual void OnDeath() override;
