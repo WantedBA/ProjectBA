@@ -33,7 +33,7 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	SpringArm->bUsePawnControlRotation = true;
 	SpringArm->bInheritPitch = true;
 	SpringArm->bInheritYaw = true;
-	SpringArm->bInheritRoll = true;
+	SpringArm->bInheritRoll = false;
 	SpringArm->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
 	
 	// camera spring arm 충돌 활성화
