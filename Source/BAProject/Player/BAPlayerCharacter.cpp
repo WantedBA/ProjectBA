@@ -1,15 +1,15 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
-#include "Player/PlayerCharacter.h"
+#include "Player/BAPlayerCharacter.h"
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "InputAction.h"
+#include "InputActionValue.h"
+#include "InputMappingContext.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 
-APlayerCharacter::APlayerCharacter()
+ABAPlayerCharacter::ABAPlayerCharacter()
 {
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
@@ -62,7 +62,7 @@ APlayerCharacter::APlayerCharacter()
 	}
 }
 
-void APlayerCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
+void ABAPlayerCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	
@@ -81,7 +81,7 @@ void APlayerCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerIn
 				MoveAction,
 				ETriggerEvent::Triggered,
 				this,
-				&APlayerCharacter::Move
+				&ABAPlayerCharacter::Move
 			);
 		}
 
@@ -94,7 +94,7 @@ void APlayerCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerIn
 				LookAction,
 				ETriggerEvent::Triggered,
 				this,
-				&APlayerCharacter::Look
+				&ABAPlayerCharacter::Look
 			);
 		}
 
@@ -107,7 +107,7 @@ void APlayerCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerIn
 				AttackAction,
 				ETriggerEvent::Triggered,
 				this,
-				&APlayerCharacter::Attack
+				&ABAPlayerCharacter::Attack
 			);
 		}
 	}
@@ -130,7 +130,7 @@ void APlayerCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerIn
 }
 
 
-void APlayerCharacter::Move(const FInputActionValue& Value)
+void ABAPlayerCharacter::Move(const FInputActionValue& Value)
 {
 	FVector2D Movement = Value.Get<FVector2D>();
 
@@ -144,7 +144,7 @@ void APlayerCharacter::Move(const FInputActionValue& Value)
 	AddMovementInput(RightVector, Movement.X);
 }
 
-void APlayerCharacter::Look(const FInputActionValue& Value)
+void ABAPlayerCharacter::Look(const FInputActionValue& Value)
 {
 	FVector2D RotationValue = Value.Get<FVector2D>();
 
@@ -152,7 +152,7 @@ void APlayerCharacter::Look(const FInputActionValue& Value)
 	AddControllerPitchInput(RotationValue.Y);
 }
 
-void APlayerCharacter::Attack()
+void ABAPlayerCharacter::Attack()
 {
 	// ProcessComboCommand();
 }

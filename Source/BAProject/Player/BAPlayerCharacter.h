@@ -1,22 +1,20 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "InputActionValue.h"
 #include "Character/CharacterBase.h"
-#include "PlayerCharacter.generated.h"
+#include "BAPlayerCharacter.generated.h"
 
 class UInputAction;
 class UInputMappingContext;
 
 UCLASS()
-class BAPROJECT_API APlayerCharacter : public ACharacterBase
+class BAPROJECT_API ABAPlayerCharacter : public ACharacterBase
 {
 	GENERATED_BODY()
 	
 public:
-	APlayerCharacter();
+	ABAPlayerCharacter();
 	
 protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
