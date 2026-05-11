@@ -5,6 +5,18 @@
 
 ABAPlayerCharacter::ABAPlayerCharacter()
 {
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> CharacterMesh(TEXT("/Game/Character/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"));
+	if (CharacterMesh.Succeeded())
+	{
+		GetMesh()->SetSkeletalMesh(CharacterMesh.Object);
+	}
+	// static ConstructorHelpers::FClassFinder<UAnimInstance> CharacterAnim(TEXT("/Game/Character/Animation/ABP_ABCharacter.ABP_ABCharacter_C"));
+	// if (CharacterAnim.Succeeded())
+	// {
+	// 	GetMesh()->SetAnimInstanceClass(CharacterAnim.Class);
+	// }
+	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
+
 	GetMesh()->SetRelativeLocationAndRotation(
 		FVector(0.0f, 0.0f, -90.0f),
 		FRotator(0.0f, -90.0f, 0.0f)
