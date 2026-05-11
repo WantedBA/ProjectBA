@@ -37,13 +37,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = Input, BlueprintReadOnly)
 	TObjectPtr<UInputMappingContext> InputMappingContext;
 
-	UPROPERTY(VisibleAnywhere, Category = Input, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, Category = Input, BlueprintReadOnly)
 	TObjectPtr<UInputAction> MoveAction;
 
-	UPROPERTY(VisibleAnywhere, Category = Input, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, Category = Input, BlueprintReadOnly)
 	TObjectPtr<UInputAction> LookAction;
 	
-	UPROPERTY(VisibleAnywhere, Category = Input, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, Category = Input, BlueprintReadOnly)
 	TObjectPtr<UInputAction> AttackAction;
 
 protected: // TODO: 은성님과 HUD 협업, HUDInterface 구현 필요
