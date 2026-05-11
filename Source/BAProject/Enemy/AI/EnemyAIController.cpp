@@ -3,6 +3,8 @@
 #include "Tables/MonsterRows.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardData.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "Constants/BAProjectConstant.h"
 
 AEnemyAIController::AEnemyAIController()
 {
@@ -40,6 +42,11 @@ void AEnemyAIController::InitializeAI(int32 InTid)
 		UBlackboardComponent* BBComp = Blackboard;
 		if (UseBlackboard(BBAsset, BBComp))
 		{
+			// 초기 데이터 설정
+			Blackboard->SetValueAsVector(BBKey::HomePos, GetPawn()->GetActorLocation());
+			Blackboard->SetValueAsFloat(BBKey::DetectRange, static_cast<float>(MonsterRow->DetectRange));
+			Blackboard->SetValueAsFloat(BBKey::AttackRange, static_cast<float>(MonsterRow->AttackRange));
+
 			RunBehaviorTree(BTAsset);
 		}
 	}
