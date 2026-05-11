@@ -18,23 +18,24 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
 
 	GetMesh()->SetRelativeLocationAndRotation(
-		FVector(0.0f, 0.0f, -90.0f),
-		FRotator(0.0f, -90.0f, 0.0f)
+		FVector(0.f, 0.f, -90.f),
+		FRotator(0.f, -90.f, 0.f)
 	);
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, 720.0f, 0.0f);
-	// GetCharacterMovement()->JumpZVelocity = 800.0f;
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 720.f, 0.f);
+	// GetCharacterMovement()->JumpZVelocity = 800.f;
 
 	// back view, 3인칭 설정
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
-	SpringArm->TargetArmLength = 400.0f;
+	SpringArm->TargetArmLength = 330.f;
+	SpringArm->SocketOffset = FVector(0.f, 0.f, 160.f);
 	SpringArm->bUsePawnControlRotation = true;
 	SpringArm->bInheritPitch = true;
 	SpringArm->bInheritYaw = true;
-	SpringArm->bInheritRoll = true;
-	SpringArm->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
+	SpringArm->bInheritRoll = false;
+	SpringArm->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
 	
 	// camera spring arm 충돌 활성화
 	SpringArm->bDoCollisionTest = true; 
@@ -42,8 +43,7 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	// camera 설정
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
-	Camera->SetRelativeLocation(FVector(33.f, 0.f, 180.f));
-	Camera->SetRelativeRotation(FRotator(-17.5f, 0.f, 0.f));
+	Camera->SetRelativeRotation(FRotator(-17.f, 0.f, 0.f));
 	Camera->bUsePawnControlRotation = false;
 	
 	// 마우스 카메라 제어 Yaw축만 허용
