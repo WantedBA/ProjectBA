@@ -1,0 +1,79 @@
+{
+    "Text": [
+        {
+            "TextTid": 10001,
+            "KoreanText": "게임 시작",
+            "EnglishText": "Start Game"
+        },
+        {
+            "TextTid": 10002,
+            "KoreanText": "게임 종료",
+            "EnglishText": "Exit"
+        },
+        {
+            "TextTid": 10003,
+            "KoreanText": "Empty",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 10004,
+            "KoreanText": "Empty",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 10005,
+            "KoreanText": "Empty",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 10006,
+            "KoreanText": "Empty",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 10007,
+            "KoreanText": "Empty",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 10008,
+            "KoreanText": "Empty",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 10007,
+            "KoreanText": "Empty",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 10008,
+            "KoreanText": "Empty",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 10009,
+            "KoreanText": "Empty",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 10010,
+            "KoreanText": "스켈레톤",
+            "EnglishText": "Skelton"
+        },
+        {
+            "TextTid": 10011,
+            "KoreanText": "오크",
+            "EnglishText": "Orc"
+        },
+        {
+            "TextTid": 10012,
+            "KoreanText": "Empty",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 10013,
+            "KoreanText": "Empty",
+            "EnglishText": "Empty"
+        }
+    ]
+}

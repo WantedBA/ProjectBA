@@ -1,0 +1,101 @@
+{
+    "1StageBossAttack": [
+        {
+            "Tid": 100,
+            "CoolTime": 2,
+            "ConditionType": 1,
+            "Var1": 10000,
+            "Attack": 30
+        },
+        {
+            "Tid": 101,
+            "CoolTime": 3,
+            "ConditionType": 2,
+            "Var1": 3000,
+            "Var2": 80,
+            "Attack": 100
+        },
+        {
+            "Tid": 102,
+            "CoolTime": 7,
+            "ConditionType": 3,
+            "Var1": 2000,
+            "Var2": 20,
+            "Attack": 150
+        },
+        {
+            "Tid": 103,
+            "CoolTime": 4,
+            "ConditionType": 4,
+            "Var1": 2000,
+            "Var2": 1,
+            "Var3": 5
+        }
+    ],
+    "2StageBossAttack": [
+        {
+            "Tid": 200,
+            "CoolTime": 2,
+            "ConditionType": 1,
+            "Var1": 10000,
+            "Attack": 30
+        },
+        {
+            "Tid": 201,
+            "CoolTime": 3,
+            "ConditionType": 2,
+            "Var1": 3000,
+            "Var2": 80,
+            "Attack": 100
+        },
+        {
+            "Tid": 202,
+            "CoolTime": 7,
+            "ConditionType": 3,
+            "Var1": 2000,
+            "Var2": 20,
+            "Attack": 150
+        },
+        {
+            "Tid": 203,
+            "CoolTime": 4,
+            "ConditionType": 4,
+            "Var1": 2000,
+            "Var2": 1,
+            "Var3": 5
+        }
+    ],
+    "3StageBossAttack": [
+        {
+            "Tid": 300,
+            "CoolTime": 2,
+            "ConditionType": 1,
+            "Var1": 10000,
+            "Attack": 30
+        },
+        {
+            "Tid": 301,
+            "CoolTime": 3,
+            "ConditionType": 2,
+            "Var1": 3000,
+            "Var2": 80,
+            "Attack": 100
+        },
+        {
+            "Tid": 302,
+            "CoolTime": 7,
+            "ConditionType": 3,
+            "Var1": 2000,
+            "Var2": 20,
+            "Attack": 150
+        },
+        {
+            "Tid": 303,
+            "CoolTime": 4,
+            "ConditionType": 4,
+            "Var1": 2000,
+            "Var2": 1,
+            "Var3": 5
+        }
+    ]
+}
