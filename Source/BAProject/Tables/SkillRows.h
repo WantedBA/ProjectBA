@@ -45,7 +45,7 @@ struct BAPROJECT_API FSkillRow : public FBARowBase
 
 	virtual void PostRead() override
 	{
-		Tid = SkillTid;
+		bTid = SkillTid;
 		PrerequisiteIds = ParseIntArray(Prerequisites);
 	}
 

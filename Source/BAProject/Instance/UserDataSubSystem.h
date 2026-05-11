@@ -54,6 +54,7 @@ public:
 	//BaseStat 기본값
 	void SetBaseStat();
 	
+// 스킬트리 관련
 	//SkillPoint
 	UFUNCTION(BlueprintCallable)
 	void AddSkillPoints(int32 Amount);
