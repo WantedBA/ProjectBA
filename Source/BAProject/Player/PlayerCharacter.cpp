@@ -68,28 +68,48 @@ void APlayerCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerIn
 	
 	UEnhancedInputComponent* EnhancedInputComponent
 		= Cast<UEnhancedInputComponent>(PlayerInputComponent);
-	if (EnhancedInputComponent)
+	if (ensureMsgf(
+		EnhancedInputComponent != nullptr,
+		TEXT("APlayerCharacter requires an EnhancedInputComponent to bind input actions.")))
 	{
-		EnhancedInputComponent->BindAction(
-			MoveAction,
-			ETriggerEvent::Triggered,
-			this,
-			&APlayerCharacter::Move
-		);
+		if (ensureMsgf(
+			MoveAction != nullptr,
+			TEXT("MoveAction is not configured on %s."),
+			*GetName()))
+		{
+			EnhancedInputComponent->BindAction(
+				MoveAction,
+				ETriggerEvent::Triggered,
+				this,
+				&APlayerCharacter::Move
+			);
+		}
 
-		EnhancedInputComponent->BindAction(
-			LookAction,
-			ETriggerEvent::Triggered,
-			this,
-			&APlayerCharacter::Look
-		);
+		if (ensureMsgf(
+			LookAction != nullptr,
+			TEXT("LookAction is not configured on %s."),
+			*GetName()))
+		{
+			EnhancedInputComponent->BindAction(
+				LookAction,
+				ETriggerEvent::Triggered,
+				this,
+				&APlayerCharacter::Look
+			);
+		}
 
-		EnhancedInputComponent->BindAction(
-			AttackAction,
-			ETriggerEvent::Triggered,
-			this,
-			&APlayerCharacter::Attack
-		);
+		if (ensureMsgf(
+			AttackAction != nullptr,
+			TEXT("AttackAction is not configured on %s."),
+			*GetName()))
+		{
+			EnhancedInputComponent->BindAction(
+				AttackAction,
+				ETriggerEvent::Triggered,
+				this,
+				&APlayerCharacter::Attack
+			);
+		}
 	}
 	
 	if (InputMappingContext == nullptr)
