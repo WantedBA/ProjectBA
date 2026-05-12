@@ -40,25 +40,24 @@ void UUserDataSubsystem::SetBaseStat()
 	const UBATableManager* TableManager = GetGameInstance()->GetSubsystem<UBATableManager>();
 	if (!TableManager)
 	{
+		UE_LOG(LogTemp, Error, TEXT("[UserDataSubsystem] TableManager subsystem is null."));
+		return;
+	}
+
+	const FPlayerBaseStatRow* BaseStatRow = TableManager->FindPlayerBaseStat();
+	if (!BaseStatRow)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[UserDataSubsystem] Player BaseStat row(Tid=1) not found."));
 		return;
 	}
 
 	// BaseStat 멤버변수에 주입
-	BaseStat.MaxHp = TableManager->FindPlayerBaseStat()->BaseHp;
-	BaseStat.MaxStamina = TableManager->FindPlayerBaseStat()->BaseStamina;
-	BaseStat.WalkSpeed = TableManager->FindPlayerBaseStat()->WalkSpeed;
-	BaseStat.RunSpeed = TableManager->FindPlayerBaseStat()->RunSpeed;
-	BaseStat.SprintSpeed = TableManager->FindPlayerBaseStat()->SprintSpeed;
-	BaseStat.BaseAttack = TableManager->FindPlayerBaseStat()->BaseAttack;
-	BaseStat.BaseAttackSpeed = TableManager->FindPlayerBaseStat()->BaseAttackSpeed;
-	BaseStat.BaseDefence = TableManager->FindPlayerBaseStat()->BaseDefence;
-	
-	// 게임 런타임용 변수 초기화
-	// TODO: 런타임용 변수 변경용 함수 분리
-	CurMaxHp = BaseStat.MaxHp;
-	CurMaxStamina  = BaseStat.MaxStamina;
-	CurMoveSpeed  = BaseStat.RunSpeed;
-	CurAttack  = BaseStat.BaseAttack;
-	CurAttackSpeed  = BaseStat.BaseAttackSpeed;
-	CurDefence  = BaseStat.BaseDefence;
+	BaseStat.MaxHp = BaseStatRow->BaseHp;
+	BaseStat.MaxStamina = BaseStatRow->BaseStamina;
+	BaseStat.WalkSpeed = BaseStatRow->WalkSpeed;
+	BaseStat.RunSpeed = BaseStatRow->RunSpeed;
+	BaseStat.SprintSpeed = BaseStatRow->SprintSpeed;
+	BaseStat.BaseAttack = BaseStatRow->BaseAttack;
+	BaseStat.BaseAttackSpeed = BaseStatRow->BaseAttackSpeed;
+	BaseStat.BaseDefence = BaseStatRow->BaseDefence;
 }

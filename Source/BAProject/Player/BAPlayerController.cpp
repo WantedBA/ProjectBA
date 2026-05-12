@@ -3,6 +3,7 @@
 #include "BAPlayerCharacter.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
 
 ABAPlayerController::ABAPlayerController()
 {
@@ -61,9 +62,9 @@ void ABAPlayerController::SetupInputComponent()
 		return;
 	}
 
-	if (ensureMsgf(MoveAction, TEXT("MoveAction is not configured on %s"), *GetName()))
+	if (ensureMsgf(RunAction, TEXT("RunAction is not configured on %s"), *GetName()))
 	{
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABAPlayerController::Move);
+		EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Triggered, this, &ABAPlayerController::Move);
 	}
 
 	if (ensureMsgf(LookAction, TEXT("LookAction is not configured on %s"), *GetName()))
@@ -75,14 +76,34 @@ void ABAPlayerController::SetupInputComponent()
 	{
 		EnhancedInputComponent->BindAction(LightAttackAction, ETriggerEvent::Triggered, this, &ABAPlayerController::LightAttack);
 	}
+
+	if (ensureMsgf(WalkAction, TEXT("WalkAction is not configured on %s"), *GetName()))
+	{
+		EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Started, this, &ABAPlayerController::OnWalkStarted);
+		EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Completed, this, &ABAPlayerController::OnWalkCompleted);
+		EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Canceled, this, &ABAPlayerController::OnWalkCompleted);
+	}
+
+	if (ensureMsgf(SprintAction, TEXT("SprintAction is not configured on %s"), *GetName()))
+	{
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ABAPlayerController::OnSprintStarted);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABAPlayerController::OnSprintCompleted);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Canceled, this, &ABAPlayerController::OnSprintCompleted);
+	}
 }
 
 void ABAPlayerController::Move(const FInputActionValue& Value)
 {
 	const FVector2D Movement = Value.Get<FVector2D>();
 
-	ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
-	if (!PC) return;
+	ACharacter* ControlledCharacter = Cast<ACharacter>(GetPawn());
+	if (!ControlledCharacter)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[Input][Move] ControlledCharacter is null."));
+		return;
+	}
+
+	ApplyMovementStateByModifier(!Movement.IsNearlyZero());
 	
 	const FRotator ControlRot = GetControlRotation();
 	const FRotator YawRot(0.f, ControlRot.Yaw, 0.f);
@@ -90,8 +111,8 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 	const FVector Forward = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
 	const FVector Right = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
 
-	PC->AddMovementInput(Forward, Movement.Y);
-	PC->AddMovementInput(Right, Movement.X);
+	ControlledCharacter->AddMovementInput(Forward, Movement.Y);
+	ControlledCharacter->AddMovementInput(Right, Movement.X);
 }
 
 void ABAPlayerController::Look(const FInputActionValue& Value)
@@ -106,5 +127,55 @@ void ABAPlayerController::LightAttack()
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
 	{
 		PC->Attack();
+	}
+}
+
+void ABAPlayerController::OnWalkStarted()
+{
+	bWalkModifierHeld = true;
+}
+
+void ABAPlayerController::OnWalkCompleted()
+{
+	bWalkModifierHeld = false;
+	ApplyMovementStateByModifier(false);
+}
+
+void ABAPlayerController::OnSprintStarted()
+{
+	bSprintModifierHeld = true;
+}
+
+void ABAPlayerController::OnSprintCompleted()
+{
+	bSprintModifierHeld = false;
+	ApplyMovementStateByModifier(false);
+}
+
+void ABAPlayerController::ApplyMovementStateByModifier(const bool bHasMoveInput) const
+{
+	ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
+	if (!PC)
+	{
+		return;
+	}
+
+	if (!bHasMoveInput)
+	{
+		PC->SetMovementState(EMovementState::Run);
+		return;
+	}
+
+	if (bSprintModifierHeld)
+	{
+		PC->SetMovementState(EMovementState::Sprint);
+	}
+	else if (bWalkModifierHeld)
+	{
+		PC->SetMovementState(EMovementState::Walk);
+	}
+	else
+	{
+		PC->SetMovementState(EMovementState::Run);
 	}
 }

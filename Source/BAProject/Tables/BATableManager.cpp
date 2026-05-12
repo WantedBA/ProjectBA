@@ -10,13 +10,23 @@ void UBATableManager::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	FString TablePath = FString(TablePath::LoadTablePath);
-	LoadTable(ConsumeTable,  *(TablePath + TEXT("DT_Item_Consume.DT_Item_Consume")));
+	const FString TablePath = FString(TablePath::LoadTablePath);
+	
+	// Player
+	LoadTable(PlayerBaseStatTable, *(TablePath + TEXT("DT_Player_BaseStat.DT_Player_BaseStat")));
+	LoadTable(PlayerActionDataTable, *(TablePath + TEXT("DT_Player_ActionData.DT_Player_ActionData")));
+	
+	// Skills
 	LoadTable(SkillTable, *(TablePath + TEXT("DT_SkillTree_Skill.DT_SkillTree_Skill")));
+	
+	// Items
+	LoadTable(ConsumeTable,  *(TablePath + TEXT("DT_Item_Consume.DT_Item_Consume")));
 
+	// Monster
 	LoadTable(MonsterTable,  *(TablePath + TEXT("DT_Monster_Monster.DT_Monster_Monster")));
 	LoadTable(PatrolPathTable, *(TablePath + TEXT("DT_PatrolPath_PatrolPath.DT_PatrolPath_PatrolPath")));
 
+	// Boss
 	LoadTable(BossAttackTable1, *(TablePath + TEXT("DT_BossMonster_1StageBossAttack.DT_BossMonster_1StageBossAttack")));
 	LoadTable(BossAttackTable2, *(TablePath + TEXT("DT_BossMonster_2StageBossAttack.DT_BossMonster_2StageBossAttack")));
 	LoadTable(BossAttackTable3, *(TablePath + TEXT("DT_BossMonster_3StageBossAttack.DT_BossMonster_3StageBossAttack")));

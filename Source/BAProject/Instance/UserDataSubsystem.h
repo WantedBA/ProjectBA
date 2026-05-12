@@ -48,24 +48,11 @@ public:
 	static UUserDataSubsystem* Get(const UObject* WorldContext);
 	
 	void SetBaseStat();
+	FORCEINLINE FPlayerBaseStat GetBaseStat() const { return BaseStat; }
 
 protected:
 	// 초기스탯
 	UPROPERTY(BlueprintReadOnly)
 	FPlayerBaseStat BaseStat;
-	
-	// 게임 런타임용 변수
-	UPROPERTY(BlueprintReadWrite)
-	int32 CurMaxHp = 0;
-	UPROPERTY(BlueprintReadWrite)
-	int32 CurMaxStamina = 0;
-	UPROPERTY(BlueprintReadWrite)
-	int32 CurMoveSpeed = 0;
-	UPROPERTY(BlueprintReadWrite)
-	int32 CurAttack = 0;
-	UPROPERTY(BlueprintReadWrite)
-	int32 CurAttackSpeed = 0;
-	UPROPERTY(BlueprintReadWrite)
-	int32 CurDefence = 0;
 	
 };
