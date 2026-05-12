@@ -15,8 +15,7 @@ struct FSkillTreeProgress
 	
 	UPROPERTY(BlueprintReadOnly)
 	int32 SkillTid;
-	UPROPERTY(BlueprintReadOnly)
-	int32 SkillCost = 1; // 스킬 획득 비용(스킬포인트)
+	
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSkillPointsChanged, int32, NewSkillPoints);
@@ -36,11 +35,26 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	
 	// 전역 접근
-	static USkillTreeSubsystem* Get(const UObject* WorldContext);
+	static USkillTreeSubsystem* Get(const UObject* WorldContext)
+	{
+		if (!WorldContext) return nullptr;
+
+		const UWorld* World = WorldContext->GetWorld();
+		if (!World) return nullptr;
+
+		const UGameInstance* GI = World->GetGameInstance();
+		if (!GI) return nullptr;
+
+		return GI->GetSubsystem<USkillTreeSubsystem>();
+	}
 	
 	// Getter
 	UFUNCTION(BlueprintPure)
-	int32 GetSkillPoints() const { return SkillPoints; }
+	FORCEINLINE int32 GetSkillPoints() const { return SkillPoints; }
+
+// 스킬트리 계산 로직
+	bool CanLearnSkill(const int32 SkillId) const;
+
 	
 private:
 	// Subsystem 참조
@@ -50,9 +64,17 @@ private:
 	TObjectPtr<UBATableManager> TableManager;
 	
 	// TableManager에서 스킬 정보 가져오는 함수
-	const struct FSkillRow* GetSkillRow(const int32 InTid) const { return TableManager->FindSkill(InTid); }
-	
+	FORCEINLINE const struct FSkillRow* GetSkillRow(const int32 InTid) const { return TableManager->FindSkill(InTid); }
 
+protected:
+	// 배운 스킬 + 남은 스킬 포인트
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SkillTree)
+	int32 SkillPoints = 0;
+
+	// 배운 스킬 목록
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SkillTree)
+	TSet<int32> LearnedSkillIds;
+	
 // -----------------------------------------------------------------------------------------------------
 	
 	
@@ -79,11 +101,4 @@ private:
 	
 	const FSkillTreeProgress* FindSkillData(int32 skillTid) const;
 	
-	
-protected:
-	UPROPERTY(BlueprintReadWrite)
-	int32 SkillPoints = 0;
-
-	UPROPERTY(BlueprintReadOnly)
-	TArray<FSkillTreeProgress> OwnedSkillDatas;
 };

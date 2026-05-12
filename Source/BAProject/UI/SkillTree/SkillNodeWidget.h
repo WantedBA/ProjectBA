@@ -4,18 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "Instance/UserDataSubsystem.h"
+#include "Instance/SkillTreeTypes.h"
 #include "SkillNodeWidget.generated.h"
 
 struct FSkillTreeProgress;
-// 게임 중 스킬 상태
-UENUM(BlueprintType)
-enum class ESkillNodeState : uint8
-{
-	Locked		UMETA(DisplayName = "Locked"),
-	Available	UMETA(DisplayName = "Available"),
-	Learned		UMETA(DisplayName = "Learned"),
-};
+
 
 /**
  * 

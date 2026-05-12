@@ -15,4 +15,13 @@ void USkillTreeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	
 	UserData = GetGameInstance()->GetSubsystem<UUserDataSubsystem>();
 	TableManager = GetGameInstance()->GetSubsystem<UBATableManager>();
+	
+	if (!UserData)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UserDataSubsystem is not found in SkillTreeSubsystem Initialize"));
+	}
+	if (!TableManager)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BATableManager is not found in SkillTreeSubsystem Initialize"));
+	}
 }
