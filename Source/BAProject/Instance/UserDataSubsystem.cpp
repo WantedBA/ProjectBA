@@ -26,10 +26,10 @@ UUserDataSubsystem* UUserDataSubsystem::Get(const UObject* WorldContext)
 {
 	if (!WorldContext) return nullptr;
 
-	UWorld* World = WorldContext->GetWorld();
+	const UWorld* World = WorldContext->GetWorld();
 	if (!World) return nullptr;
 
-	UGameInstance* GI = World->GetGameInstance();
+	const UGameInstance* GI = World->GetGameInstance();
 	if (!GI) return nullptr;
 
 	return GI->GetSubsystem<UUserDataSubsystem>();
@@ -37,14 +37,28 @@ UUserDataSubsystem* UUserDataSubsystem::Get(const UObject* WorldContext)
 
 void UUserDataSubsystem::SetBaseStat()
 {
-	//BaseStat.MaxHp = // 테이블에서 온 데이터 추가
+	const UBATableManager* TableManager = GetGameInstance()->GetSubsystem<UBATableManager>();
+	if (!TableManager)
+	{
+		return;
+	}
+
+	// BaseStat 멤버변수에 주입
+	BaseStat.MaxHp = TableManager->FindPlayerBaseStat()->BaseHp;
+	BaseStat.MaxStamina = TableManager->FindPlayerBaseStat()->BaseStamina;
+	BaseStat.WalkSpeed = TableManager->FindPlayerBaseStat()->WalkSpeed;
+	BaseStat.RunSpeed = TableManager->FindPlayerBaseStat()->RunSpeed;
+	BaseStat.SprintSpeed = TableManager->FindPlayerBaseStat()->SprintSpeed;
+	BaseStat.BaseAttack = TableManager->FindPlayerBaseStat()->BaseAttack;
+	BaseStat.BaseAttackSpeed = TableManager->FindPlayerBaseStat()->BaseAttackSpeed;
+	BaseStat.BaseDefence = TableManager->FindPlayerBaseStat()->BaseDefence;
 	
-	// 아래는 TableManager 호출 예시
-	UBATableManager* TableManager = GetGameInstance()->GetSubsystem<UBATableManager>();
-	if (!TableManager) return;
-	
-	//BaseStat은 TableManager에서 가져온 값으로 설정
-	
+	// 게임 런타임용 변수 초기화
+	// TODO: 런타임용 변수 변경용 함수 분리
 	CurMaxHp = BaseStat.MaxHp;
 	CurMaxStamina  = BaseStat.MaxStamina;
+	CurMoveSpeed  = BaseStat.RunSpeed;
+	CurAttack  = BaseStat.BaseAttack;
+	CurAttackSpeed  = BaseStat.BaseAttackSpeed;
+	CurDefence  = BaseStat.BaseDefence;
 }

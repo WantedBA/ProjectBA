@@ -1,12 +1,129 @@
 {
     "Skill": [
         {
-            "SkillId": 1,
+            "SkillTid": 1,
             "SkillName": "일반 공격",
             "Description": "N회 콤보 공격",
-            "Prerequisites": "1,2,3",
             "bIsDefaultSkill": 1,
             "NeededSkillPoint": 0
+        },
+        {
+            "SkillTid": 2,
+            "SkillName": "강공격",
+            "bIsDefaultSkill": 1,
+            "NeededSkillPoint": 0
+        },
+        {
+            "SkillTid": 3,
+            "SkillName": "회피",
+            "Description": "구르기",
+            "bIsDefaultSkill": 1,
+            "NeededSkillPoint": 0
+        },
+        {
+            "SkillTid": 4,
+            "SkillName": "가드",
+            "bIsDefaultSkill": 1,
+            "NeededSkillPoint": 0
+        },
+        {
+            "SkillTid": 5,
+            "SkillName": "회복 물약",
+            "bIsDefaultSkill": 1,
+            "NeededSkillPoint": 0
+        },
+        {
+            "SkillTid": 6,
+            "SkillName": "불 속성 강화",
+            "Description": "최대 n회 스택, 스택에 따라 특수효과",
+            "Prerequisites": 1,
+            "ExclusiveGroupId": 1,
+            "NeededSkillPoint": 1
+        },
+        {
+            "SkillTid": 7,
+            "SkillName": "얼음 속성 강화",
+            "Description": "최대 n회 스택, 스택에 따라 특수효과",
+            "Prerequisites": 1,
+            "ExclusiveGroupId": 1,
+            "NeededSkillPoint": 1
+        },
+        {
+            "SkillTid": 8,
+            "SkillName": "무속성 강화",
+            "Description": "대미지 증가",
+            "Prerequisites": 1,
+            "ExclusiveGroupId": 1,
+            "NeededSkillPoint": 1
+        },
+        {
+            "SkillTid": 9,
+            "SkillName": "화염 특수공격",
+            "Description": "특수 공격 추가, 스택이 쌓인 적 폭발",
+            "Prerequisites": 6,
+            "NeededSkillPoint": 1
+        },
+        {
+            "SkillTid": 10,
+            "SkillName": "얼음 속성 강공격",
+            "Description": "강공격 적중 시 스택 폭발",
+            "Prerequisites": "2, 7",
+            "NeededSkillPoint": 1
+        },
+        {
+            "SkillTid": 11,
+            "SkillName": "공격 속도 증가",
+            "Prerequisites": 1,
+            "NeededSkillPoint": 2
+        },
+        {
+            "SkillTid": 12,
+            "SkillName": "마지막 타격 대미지 증가",
+            "Prerequisites": 11,
+            "NeededSkillPoint": 1
+        },
+        {
+            "SkillTid": 13,
+            "SkillName": "대시",
+            "Description": "회피 스킬을 대시로 변경",
+            "Prerequisites": 3,
+            "NeededSkillPoint": 2
+        },
+        {
+            "SkillTid": 14,
+            "SkillName": "대시 연계공격",
+            "Prerequisites": 13,
+            "NeededSkillPoint": 1
+        },
+        {
+            "SkillTid": 15,
+            "SkillName": "스태미나 최대치 증가",
+            "Prerequisites": "3, 4",
+            "NeededSkillPoint": 2
+        },
+        {
+            "SkillTid": 16,
+            "SkillName": "스태미나 회복 속도 증가",
+            "Prerequisites": 15,
+            "NeededSkillPoint": 2
+        },
+        {
+            "SkillTid": 17,
+            "SkillName": "가드 피해 감소율 증가",
+            "Prerequisites": 4,
+            "NeededSkillPoint": 2
+        },
+        {
+            "SkillTid": 18,
+            "SkillName": "회복량 증가",
+            "Prerequisites": 5,
+            "NeededSkillPoint": 1
+        },
+        {
+            "SkillTid": 19,
+            "SkillName": "회복 물약 개수 증가",
+            "Prerequisites": 5,
+            "NeededSkillPoint": 1
         }
     ]
 }
