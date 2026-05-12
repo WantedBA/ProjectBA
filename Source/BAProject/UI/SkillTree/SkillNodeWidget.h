@@ -4,9 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "Instance/UserDataSubSystem.h"
+#include "Instance/UserDataSubsystem.h"
 #include "SkillNodeWidget.generated.h"
 
+struct FSkillTreeProgress;
 // 게임 중 스킬 상태
 UENUM(BlueprintType)
 enum class ESkillNodeState : uint8
@@ -30,7 +31,7 @@ protected:
 
 public:
 	// 최초 생성 이후 1회 초기화
-	void InitSkillNodeData(const FSkillData& InitData);
+	void InitSkillNodeData(const FSkillTreeProgress& InitData);
 
 // 고정 데이터
 protected:
@@ -43,8 +44,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = SkillTree)
 	TArray<int32> ChildSkillIds;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = SkillTree)
-	FSkillData SkillData;
+	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = SkillTree)
+	// class FSkillData SkillData;
 
 public:
 	// Setter

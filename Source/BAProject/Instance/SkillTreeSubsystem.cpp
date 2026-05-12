@@ -3,16 +3,16 @@
 
 #include "Instance/SkillTreeSubsystem.h"
 
-#include "UserDataSubSystem.h"
+#include "UserDataSubsystem.h"
 #include "Tables/BATableManager.h"
 
 void USkillTreeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	// 초기화 순서 보장
-	Collection.InitializeDependency<UUserDataSubSystem>();
+	Collection.InitializeDependency<UUserDataSubsystem>();
 	
 	Super::Initialize(Collection);
 	
-	UserData = GetGameInstance()->GetSubsystem<UUserDataSubSystem>();
+	UserData = GetGameInstance()->GetSubsystem<UUserDataSubsystem>();
 	TableManager = GetGameInstance()->GetSubsystem<UBATableManager>();
 }

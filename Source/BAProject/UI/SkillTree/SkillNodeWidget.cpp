@@ -3,6 +3,8 @@
 
 #include "UI/SkillTree/SkillNodeWidget.h"
 
+#include "Instance/SkillTreeSubsystem.h"
+
 void USkillNodeWidget::NativePreConstruct()
 {
 	Super::NativePreConstruct();
@@ -11,7 +13,9 @@ void USkillNodeWidget::NativePreConstruct()
 	SetAlignmentInViewport(FVector2D(0.5f, 0.5f));
 }
 
-void USkillNodeWidget::InitSkillNodeData(const FSkillData& InitData)
+void USkillNodeWidget::InitSkillNodeData(const FSkillTreeProgress& InitData)
 {
 	// TODO: 연결된 스킬 정보 초기화, ConnectionLine 자식으로 추가
+	
+	
 }

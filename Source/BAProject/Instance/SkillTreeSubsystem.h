@@ -34,7 +34,6 @@ class BAPROJECT_API USkillTreeSubsystem : public UGameInstanceSubsystem
 public:
 	// 재정의 함수
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-	virtual void Deinitialize() override;
 	
 	// 전역 접근
 	static USkillTreeSubsystem* Get(const UObject* WorldContext);
@@ -46,12 +45,12 @@ public:
 private:
 	// Subsystem 참조
 	UPROPERTY()
-	TObjectPtr<class UUserDataSubSystem> UserData;
+	TObjectPtr<class UUserDataSubsystem> UserData;
 	UPROPERTY()
 	TObjectPtr<UBATableManager> TableManager;
 	
 	// TableManager에서 스킬 정보 가져오는 함수
-	const class FSkillRow* GetSkillRow(const int32 InTid) const { return TableManager->FindSkill(InTid); }
+	const struct FSkillRow* GetSkillRow(const int32 InTid) const { return TableManager->FindSkill(InTid); }
 	
 
 // -----------------------------------------------------------------------------------------------------
@@ -59,8 +58,8 @@ private:
 	
 // 스킬트리 관련
 	//SkillPoint
-	UFUNCTION(BlueprintCallable)
-	void AddSkillPoints(int32 Amount);
+	// UFUNCTION(BlueprintCallable)
+	// void AddSkillPoints(int32 Amount);
 
 	//AddSkill
 	void AddSkillData(FSkillTreeProgress data);

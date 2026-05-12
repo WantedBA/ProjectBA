@@ -23,7 +23,7 @@ public:
 
 protected:
 	// 스킬 노드 생성 함수
-	USkillNodeWidget* CreateSkillNodeWidget(const FSkillData& SkillData);
+	USkillNodeWidget* CreateSkillNodeWidget(const FSkillTreeProgress& SkillData);
 	
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<USkillNodeWidget> SkillNodeWidgetClass;
