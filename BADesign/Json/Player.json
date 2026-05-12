@@ -4,7 +4,9 @@
             "Tid": 1,
             "BaseHp": 200,
             "BaseStamina": 200,
-            "BaseMoveSpeed": 100,
+            "WalkSpeed": 100,
+            "RunSpeed": 400,
+            "SprintSpeed": 700,
             "BaseAttack": 50,
             "BaseDefence": 10,
             "BaseAttackSpeed": 1
