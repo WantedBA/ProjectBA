@@ -44,7 +44,7 @@ struct BAPROJECT_API FPlayerBaseStatRow : public FBARowBase
 
 	virtual void PostRead() override
 	{
-		Tid = this->Tid;
+		bTid = Tid;
 	}
 };
 
@@ -64,6 +64,6 @@ struct BAPROJECT_API FPlayerActionDataRow : public FBARowBase
 
 	virtual void PostRead() override
 	{
-		Tid = this->Tid;
+		bTid = Tid;
 	}
 };
