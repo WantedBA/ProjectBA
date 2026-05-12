@@ -38,6 +38,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSkillPointsChanged, int32, NewSki
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAddSkillData, FSkillData, SkillData);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRemoveSkillData, int32, SkillTid);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHpChanged, float, CurrentHP, float, MaxHp);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStaminaChanged, float, CurrentStamina, float, MaxStamina);
+
 UCLASS()
 class BAPROJECT_API UUserDataSubSystem : public UGameInstanceSubsystem
 {
@@ -80,6 +83,12 @@ public:
 	FOnRemoveSkillData OnRemoveSkillData;
 	
 	const FSkillData* FindSkillData(int32 skillTid) const;
+
+	// UI
+	UPROPERTY(BlueprintAssignable, BlueprintCallable, Category = "User|Event")
+	FOnHpChanged OnHpChanged;
+	UPROPERTY(BlueprintAssignable, BlueprintCallable, Category = "User|Event")
+	FOnStaminaChanged OnStaminaChanged;
 	
 protected:
 	UPROPERTY(BlueprintReadOnly)
