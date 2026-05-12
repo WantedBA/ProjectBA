@@ -35,15 +35,20 @@ struct BAPROJECT_API FPatrolPathRow : public FBARowBase
 		{
 			// "(x,y,z), (x,y,z)" 형태를 파싱
 			TArray<FString> VectorStrings;
-			Point.ParseIntoArray(VectorStrings, TEXT("),"), true);
+			Point.ParseIntoArray(VectorStrings, TEXT(")"), true);
 
 			for (FString& VStr : VectorStrings)
 			{
-				VStr = VStr.Replace(TEXT("("), TEXT("")).Replace(TEXT(")"), TEXT("")).TrimStartAndEnd();
-				FVector Vec;
-				if (Vec.InitFromString(VStr))
+				FString CleanStr = VStr.Replace(TEXT("("), TEXT("")).Replace(TEXT(","), TEXT(" ")).TrimStartAndEnd();
+				TArray<FString> Coords;
+				CleanStr.ParseIntoArrayWS(Coords);
+
+				if (Coords.Num() >= 3)
 				{
-					Points.Add(Vec);
+					float X = FCString::Atof(*Coords[0]);
+					float Y = FCString::Atof(*Coords[1]);
+					float Z = FCString::Atof(*Coords[2]);
+					Points.Add(FVector(X, Y, Z));
 				}
 			}
 		}

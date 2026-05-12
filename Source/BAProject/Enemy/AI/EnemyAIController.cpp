@@ -42,6 +42,7 @@ void AEnemyAIController::InitializeAI(int32 InTid, APawn* InPawn)
 		UBlackboardComponent* BBComp = Blackboard;
 		if (UseBlackboard(BBAsset, BBComp))
 		{
+			UE_LOG(LogTemp, Log, TEXT("[AEnemyAIController] Blackboard initialized for Tid: %d"), InTid);
 			if (Blackboard)
 			{
 				Blackboard->SetValueAsInt(TEXT("MonsterTid"), InTid);
@@ -60,8 +61,21 @@ void AEnemyAIController::InitializeAI(int32 InTid, APawn* InPawn)
 				Blackboard->SetValueAsFloat(BBKey::AttackRange, static_cast<float>(MonsterRow->AttackRange));
 			}
 
-			RunBehaviorTree(BTAsset);
+			bool bStarted = RunBehaviorTree(BTAsset);
+			UE_LOG(LogTemp, Log, TEXT("[AEnemyAIController] RunBehaviorTree result: %s"), bStarted ? TEXT("True") : TEXT("False"));
+
+			if (bStarted && Blackboard)
+			{
+				int32 CheckTid = Blackboard->GetValueAsInt(TEXT("MonsterTid"));
+				UE_LOG(LogTemp, Log, TEXT("[AEnemyAIController] Blackboard Verified MonsterTid: %d"), CheckTid);
+			}
 		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[AEnemyAIController] Failed to load assets. BBAsset: %s, BTAsset: %s"), 
+			BBAsset ? *BBAsset->GetName() : TEXT("Null"), 
+			BTAsset ? *BTAsset->GetName() : TEXT("Null"));
 	}
 }
 
