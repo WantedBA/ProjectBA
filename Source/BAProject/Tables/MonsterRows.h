@@ -41,9 +41,21 @@ struct BAPROJECT_API FMonsterRows : public FBARowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster")
 	int32 DetectRange = 0;
-	
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster")
+	int32 AttackRange = 0;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster")
 	int32 MoveSpeed = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster")
+	FString MeshPath;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster")
+	FString BTPath;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster")
+	FString BBPath;
 
 	virtual void PostRead() override
 	{
