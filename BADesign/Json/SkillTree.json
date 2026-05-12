@@ -1,0 +1,12 @@
+{
+    "Skill": [
+        {
+            "SkillId": 1,
+            "SkillName": "일반 공격",
+            "Description": "N회 콤보 공격",
+            "Prerequisites": "1,2,3",
+            "bIsDefaultSkill": 1,
+            "NeededSkillPoint": 0
+        }
+    ]
+}
