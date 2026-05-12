@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "PlayerRows.h"
 #include "SkillRows.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Tables/BAPropTable.h"
@@ -27,19 +28,26 @@ public:
 
 	static UBATableManager* Get(const UObject* WorldContext);
 
+	// Player
+	FORCEINLINE const FPlayerBaseStatRow* FindPlayerBaseStat() const { return PlayerBaseStatTable.Find(1); } // 플레이어는 1명이므로 매직넘버 고정
+	FORCEINLINE const FPlayerActionDataRow* FindPlayerActionData(const int32 InTid) const { return PlayerActionDataTable.Find(InTid); }
+	
+	// Consume
 	UFUNCTION(BlueprintCallable, Category = "BA|Table")
-	bool HasConsume(int32 InTid) const { return ConsumeTable.Has(InTid); }
+	bool HasConsume(const int32 InTid) const { return ConsumeTable.Has(InTid); }
 
-	const FConsumeItemRow* FindConsume(int32 InTid) const { return ConsumeTable.Find(InTid); }
+	const FConsumeItemRow* FindConsume(const int32 InTid) const { return ConsumeTable.Find(InTid); }
 
 	UFUNCTION(BlueprintCallable, Category = "BA|Table", meta = (DisplayName = "Find Consume"))
 	bool BP_FindConsume(int32 InTid, FConsumeItemRow& OutRow) const;
 
 	const TMap<int32, FConsumeItemRow*>& GetConsumeMap() const { return ConsumeTable.GetMap(); }
 	
-	const FSkillRow* FindSkill(int32 InTid) const { return SkillTable.Find(InTid); }
+	// Skill
+	const FSkillRow* FindSkill(const int32 InTid) const { return SkillTable.Find(InTid); }
 
-	const FMonsterRows* FindMonster(int32 InTid) const { return MonsterTable.Find(InTid); }
+	// Monster
+	const FMonsterRows* FindMonster(const int32 InTid) const { return MonsterTable.Find(InTid); }
 	
 	const FPatrolPathRow* FindPatrolPath(int32 InPathId) const { return PatrolPathTable.Find(InPathId); }
 
@@ -55,6 +63,9 @@ private:
 	template<typename RowType, typename KeyType>
 	void LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const FString AssetPath);
 
+	TBAPropTable<FPlayerBaseStatRow, int32> PlayerBaseStatTable;
+	TBAPropTable<FPlayerActionDataRow, int32> PlayerActionDataTable;
+	
 	TBAPropTable<FConsumeItemRow, int32> ConsumeTable;
 	
 	TBAPropTable<FSkillRow, int32> SkillTable;

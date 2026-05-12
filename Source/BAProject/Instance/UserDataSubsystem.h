@@ -17,9 +17,21 @@ struct FPlayerBaseStat
 	GENERATED_BODY()
 	
 	UPROPERTY(BlueprintReadWrite)
-	int32 MaxHp = 0; // 테이블에서 정의한 HP 최대치
+	int32 MaxHp = 0; // BaseHp
 	UPROPERTY(BlueprintReadWrite)
-	int32 MaxStamina = 0; // 테이블에서 정의한 Stamina 최대치
+	int32 MaxStamina = 0; // BaseStamina
+	UPROPERTY(BlueprintReadWrite)
+	int32 WalkSpeed = 0; // WalkSpeed
+	UPROPERTY(BlueprintReadWrite)
+	int32 RunSpeed = 0; // RunSpeed
+	UPROPERTY(BlueprintReadWrite)
+	int32 SprintSpeed = 0; // SprintSpeed
+	UPROPERTY(BlueprintReadWrite)
+	int32 BaseAttack = 0; // BaseAttack
+	UPROPERTY(BlueprintReadWrite)
+	int32 BaseAttackSpeed = 0; // BaseAttackSpeed
+	UPROPERTY(BlueprintReadWrite)
+	int32 BaseDefence = 0; // BaseDefence
 };
 
 UCLASS()
@@ -35,18 +47,25 @@ public:
 	
 	static UUserDataSubsystem* Get(const UObject* WorldContext);
 	
-	//BaseStat 기본값
 	void SetBaseStat();
-	
-	//Getter
-	UFUNCTION(BlueprintPure)
-	int32 GetCurMaxStamina() const { return CurMaxStamina; }
 
 protected:
+	// 초기스탯
 	UPROPERTY(BlueprintReadOnly)
 	FPlayerBaseStat BaseStat;
+	
+	// 게임 런타임용 변수
 	UPROPERTY(BlueprintReadWrite)
-	int32 CurMaxHp = 0; // 스킬에 따라 더 늘어날 수 있음
+	int32 CurMaxHp = 0;
 	UPROPERTY(BlueprintReadWrite)
-	int32 CurMaxStamina = 0; // 스킬에 따라 더 늘어날 수 있음
+	int32 CurMaxStamina = 0;
+	UPROPERTY(BlueprintReadWrite)
+	int32 CurMoveSpeed = 0;
+	UPROPERTY(BlueprintReadWrite)
+	int32 CurAttack = 0;
+	UPROPERTY(BlueprintReadWrite)
+	int32 CurAttackSpeed = 0;
+	UPROPERTY(BlueprintReadWrite)
+	int32 CurDefence = 0;
+	
 };
