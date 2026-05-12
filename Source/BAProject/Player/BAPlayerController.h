@@ -21,11 +21,12 @@ protected:
 	virtual void SetupInputComponent() override;
 	
 private:
+	// TODO: KM/Gamepad IMC 나누기
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputMappingContext> InputMappingContext;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	TObjectPtr<UInputAction> MoveAction;
+	TObjectPtr<UInputAction> RunAction;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> LookAction;
@@ -33,10 +34,24 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> LightAttackAction;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> WalkAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> SprintAction;
+
 	// Input handlers
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void LightAttack();
+	void OnWalkStarted();
+	void OnWalkCompleted();
+	void OnSprintStarted();
+	void OnSprintCompleted();
+	void ApplyMovementStateByModifier(bool bHasMoveInput) const;
+
+	bool bWalkModifierHeld = false;
+	bool bSprintModifierHeld = false;
 	
 // protected: TODO: 은성님 HUD 작업
 // 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
