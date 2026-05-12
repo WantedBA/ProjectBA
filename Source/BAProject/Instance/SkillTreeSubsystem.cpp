@@ -25,3 +25,9 @@ void USkillTreeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		UE_LOG(LogTemp, Error, TEXT("BATableManager is not found in SkillTreeSubsystem Initialize"));
 	}
 }
+
+int32 USkillTreeSubsystem::GetAvailableSkillPoints() const
+{
+	// TODO
+	return 10;
+}

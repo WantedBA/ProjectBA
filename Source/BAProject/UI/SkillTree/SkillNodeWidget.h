@@ -19,6 +19,7 @@ class BAPROJECT_API USkillNodeWidget : public UUserWidget
 
 public:
 	// Setter
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE void SetSkillNodeState(const ESkillNodeState InSkillNodeState)
 	{
 		this->SkillNodeState = InSkillNodeState;
@@ -38,11 +39,11 @@ protected:
 	
 // 데이터
 protected:
-	UPROPERTY(BlueprintReadOnly, Category = SkillTree)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ExposeOnSpawn = "true"), Category = SkillTree)
 	int32 SkillId = -1;
 	
 	// 게임 중 스킬 상태
-	UPROPERTY(BlueprintReadOnly, Category = SkillTree)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = SkillTree)
 	ESkillNodeState SkillNodeState = ESkillNodeState::Locked;
 	
 private:

@@ -36,7 +36,11 @@ public:
 
 	const TMap<int32, FConsumeItemRow*>& GetConsumeMap() const { return ConsumeTable.GetMap(); }
 	
+	// 스킬 테이블
 	const FSkillRow* FindSkill(int32 InTid) const { return SkillTable.Find(InTid); }
+	
+	UFUNCTION(BlueprintCallable, Category = "BA|Table", meta = (DisplayName = "Find Skill"))
+	bool BP_FindSkill(int32 InTid, FSkillRow& OutRow) const;
 
 	const FMonsterRows* FindMonster(int32 InTid) const { return MonsterTable.Find(InTid); }
 	

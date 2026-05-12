@@ -3,7 +3,3 @@
 
 #include "SkillTreeWidget.h"
 
-void USkillTreeWidget::InitSkillTree()
-{
-	// TODO
-}

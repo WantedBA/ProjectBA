@@ -58,6 +58,16 @@ bool UBATableManager::BP_FindConsume(int32 InTid, FConsumeItemRow& OutRow) const
 	return false;
 }
 
+bool UBATableManager::BP_FindSkill(int32 InTid, FSkillRow& OutRow) const
+{
+	if (const FSkillRow* Row = SkillTable.Find(InTid))
+	{
+		OutRow = *Row;
+		return true;
+	}
+	return false;
+}
+
 template<typename RowType, typename KeyType>
 void UBATableManager::LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const FString AssetPath)
 {

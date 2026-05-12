@@ -1,12 +1,14 @@
 {
     "Skill": [
         {
-            "SkillId": 1,
+            "SkillTid": 3333,
             "SkillName": "일반 공격",
             "Description": "N회 콤보 공격",
-            "Prerequisites": "1,2,3",
             "bIsDefaultSkill": 1,
-            "NeededSkillPoint": 0
+            "NeededSkillPoint": 0,
+            "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Charged-Attack.Img_Charged-Attack",
+            "PositionX": 100,
+            "PositionY": 100
         }
     ]
 }

@@ -41,10 +41,16 @@ public:
 	UFUNCTION(BlueprintPure)
 	FORCEINLINE int32 GetSkillPoints() const { return SkillPoints; }
 
-// 스킬트리 계산 로직
+// 스킬트리 상태 반환
 	bool CanLearnSkill(const int32 SkillId) const;
 
 	ESkillNodeState GetSkillNodeState(const int32 SkillId) const;
+
+	UFUNCTION(BlueprintCallable)
+	int32 GetAvailableSkillPoints() const;
+	
+// 스킬트리 상태 변경
+	void TryDeactivateSkill(const int32 SkillId);
 	
 private:
 	// Subsystem 참조
