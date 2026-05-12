@@ -1,12 +1,12 @@
 // Copyright TeamBA. All Rights Reserved.
 
-#include "UserDataSubSystem.h"
+#include "UserDataSubsystem.h"
 
-UUserDataSubSystem::UUserDataSubSystem()
+UUserDataSubsystem::UUserDataSubsystem()
 {
 }
 
-void UUserDataSubSystem::Initialize(FSubsystemCollectionBase& Collection)
+void UUserDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	//SubSystem간 순서보장을 위한 의존성 설정 
 	Collection.InitializeDependency<UBATableManager>(); 
@@ -17,12 +17,12 @@ void UUserDataSubSystem::Initialize(FSubsystemCollectionBase& Collection)
 	SetBaseStat();
 }
 
-void UUserDataSubSystem::Deinitialize()
+void UUserDataSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
 }
 
-UUserDataSubSystem* UUserDataSubSystem::Get(const UObject* WorldContext)
+UUserDataSubsystem* UUserDataSubsystem::Get(const UObject* WorldContext)
 {
 	if (!WorldContext) return nullptr;
 
@@ -32,10 +32,10 @@ UUserDataSubSystem* UUserDataSubSystem::Get(const UObject* WorldContext)
 	UGameInstance* GI = World->GetGameInstance();
 	if (!GI) return nullptr;
 
-	return GI->GetSubsystem<UUserDataSubSystem>();
+	return GI->GetSubsystem<UUserDataSubsystem>();
 }
 
-void UUserDataSubSystem::SetBaseStat()
+void UUserDataSubsystem::SetBaseStat()
 {
 	//BaseStat.MaxHp = // 테이블에서 온 데이터 추가
 	

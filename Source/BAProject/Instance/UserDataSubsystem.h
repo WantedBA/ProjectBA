@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "SubSystems/GameInstanceSubsystem.h"
 #include "Tables/BATableManager.h"
-#include "UserDataSubSystem.generated.h"
+#include "UserDataSubsystem.generated.h"
 
 /**
  * 
@@ -23,17 +23,17 @@ struct FPlayerBaseStat
 };
 
 UCLASS()
-class BAPROJECT_API UUserDataSubSystem : public UGameInstanceSubsystem
+class BAPROJECT_API UUserDataSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 	
 public:
-	UUserDataSubSystem();
+	UUserDataSubsystem();
 	
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 	
-	static UUserDataSubSystem* Get(const UObject* WorldContext);
+	static UUserDataSubsystem* Get(const UObject* WorldContext);
 	
 	//BaseStat 기본값
 	void SetBaseStat();
