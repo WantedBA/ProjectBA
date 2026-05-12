@@ -46,7 +46,7 @@ EBTNodeResult::Type UBTTask_FindSplinePatrolPos::ExecuteTask(UBehaviorTreeCompon
 		return EBTNodeResult::Failed;
 	}
 
-	if (PathRow->Points.Num() > 0) // 데이터 우선으로 좌표
+	if (PathRow->Points.Num() > 0)
 	{
 		int32 CurrentIndex = BBComponent->GetValueAsInt(BBKey::SplineIndex);
 		int32 NextIndex = (CurrentIndex + 1) % PathRow->Points.Num();
@@ -56,7 +56,7 @@ EBTNodeResult::Type UBTTask_FindSplinePatrolPos::ExecuteTask(UBehaviorTreeCompon
 		return EBTNodeResult::Succeeded;
 	}
 
-	if (!PathRow->PathTag.IsNone()) //좌표 없다면 PathTag를 사용해서 월드 액터 찾기
+	if (!PathRow->PathTag.IsNone())
 	{
 		TArray<AActor*> FoundActors;
 		UGameplayStatics::GetAllActorsWithTag(GetWorld(), PathRow->PathTag, FoundActors);
