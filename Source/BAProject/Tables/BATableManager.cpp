@@ -12,7 +12,7 @@ void UBATableManager::Initialize(FSubsystemCollectionBase& Collection)
 
 	FString TablePath = FString(TablePath::LoadTablePath);
 	LoadTable(ConsumeTable,  *(TablePath + TEXT("DT_Item_Consume.DT_Item_Consume")));
-	LoadTable(ConsumeTable, *(TablePath + TEXT("DT_SkillTree_Skill.DT_SkillTree_Skill")));
+	LoadTable(SkillTable, *(TablePath + TEXT("DT_SkillTree_Skill.DT_SkillTree_Skill")));
 
 	LoadTable(MonsterTable,  *(TablePath + TEXT("DT_Monster_Monster.DT_Monster_Monster")));
 

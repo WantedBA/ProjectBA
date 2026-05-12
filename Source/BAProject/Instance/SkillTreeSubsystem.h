@@ -4,11 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Tables/BATableManager.h"
 #include "SkillTreeSubsystem.generated.h"
 
 // Todo: 임의 작업 후에 SkillData 관련 구조체 제대로 설정되면 변경 요망.
 USTRUCT(BlueprintType)
-struct FSkillData
+struct FSkillTreeProgress
 {
 	GENERATED_BODY()
 	
@@ -19,7 +20,7 @@ struct FSkillData
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSkillPointsChanged, int32, NewSkillPoints);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAddSkillData, FSkillData, SkillData);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAddSkillData, FSkillTreeProgress, SkillData);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRemoveSkillData, int32, SkillTid);
 
 /**
@@ -31,8 +32,6 @@ class BAPROJECT_API USkillTreeSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 	
 public:
-	USkillTreeSubsystem();
-	
 	// 재정의 함수
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
@@ -45,17 +44,26 @@ public:
 	int32 GetSkillPoints() const { return SkillPoints; }
 	
 private:
-	// UserData 참조
+	// Subsystem 참조
 	UPROPERTY()
-	class UUserDataSubSystem* UserData;
+	TObjectPtr<class UUserDataSubSystem> UserData;
+	UPROPERTY()
+	TObjectPtr<UBATableManager> TableManager;
 	
-	// 스킬트리 관련
+	// TableManager에서 스킬 정보 가져오는 함수
+	const class FSkillRow* GetSkillRow(const int32 InTid) const { return TableManager->FindSkill(InTid); }
+	
+
+// -----------------------------------------------------------------------------------------------------
+	
+	
+// 스킬트리 관련
 	//SkillPoint
 	UFUNCTION(BlueprintCallable)
 	void AddSkillPoints(int32 Amount);
 
 	//AddSkill
-	void AddSkillData(FSkillData data);
+	void AddSkillData(FSkillTreeProgress data);
 	void AddSkillData(int32 skillTid);
 	
 	//RemoveSkill
@@ -70,7 +78,7 @@ private:
 	UPROPERTY(BlueprintAssignable)
 	FOnRemoveSkillData OnRemoveSkillData;
 	
-	const FSkillData* FindSkillData(int32 skillTid) const;
+	const FSkillTreeProgress* FindSkillData(int32 skillTid) const;
 	
 	
 protected:
@@ -78,5 +86,5 @@ protected:
 	int32 SkillPoints = 0;
 
 	UPROPERTY(BlueprintReadOnly)
-	TArray<FSkillData> OwnedSkillDatas;
+	TArray<FSkillTreeProgress> OwnedSkillDatas;
 };
