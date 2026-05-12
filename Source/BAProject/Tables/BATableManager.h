@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SkillRows.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Tables/BAPropTable.h"
 #include "Tables/ItemRows.h"
@@ -34,6 +35,8 @@ public:
 	bool BP_FindConsume(int32 InTid, FConsumeItemRow& OutRow) const;
 
 	const TMap<int32, FConsumeItemRow*>& GetConsumeMap() const { return ConsumeTable.GetMap(); }
+	
+	const FSkillRow* FindSkill(int32 InTid) const { return SkillTable.Find(InTid); }
 
 	const FMonsterRows* FindMonster(int32 InTid) const { return MonsterTable.Find(InTid); }
 	
@@ -50,6 +53,9 @@ private:
 	void LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const FString AssetPath);
 
 	TBAPropTable<FConsumeItemRow, int32> ConsumeTable;
+	
+	TBAPropTable<FSkillRow, int32> SkillTable;
+
 	TBAPropTable<FMonsterRows, int32> MonsterTable;
 	
 	TBAPropTable<F1StageBossAttackRows, int32> BossAttackTable1;
