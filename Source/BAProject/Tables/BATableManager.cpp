@@ -15,6 +15,7 @@ void UBATableManager::Initialize(FSubsystemCollectionBase& Collection)
 	LoadTable(SkillTable, *(TablePath + TEXT("DT_SkillTree_Skill.DT_SkillTree_Skill")));
 
 	LoadTable(MonsterTable,  *(TablePath + TEXT("DT_Monster_Monster.DT_Monster_Monster")));
+	LoadTable(PatrolPathTable, *(TablePath + TEXT("DT_PatrolPath_PatrolPath.DT_PatrolPath_PatrolPath")));
 
 	LoadTable(BossAttackTable1, *(TablePath + TEXT("DT_BossMonster_1StageBossAttack.DT_BossMonster_1StageBossAttack")));
 	LoadTable(BossAttackTable2, *(TablePath + TEXT("DT_BossMonster_2StageBossAttack.DT_BossMonster_2StageBossAttack")));

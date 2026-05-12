@@ -10,6 +10,7 @@
 #include "Tables/ItemRows.h"
 #include "Tables/MonsterRows.h"
 #include "Tables/BossMonster.h"
+#include "Tables/PatrolPathRow.h"
 #include "BATableManager.generated.h"
 
 /**
@@ -48,9 +49,11 @@ public:
 	// Monster
 	const FMonsterRows* FindMonster(const int32 InTid) const { return MonsterTable.Find(InTid); }
 	
-	const F1StageBossAttackRows* FindBossAttack1(const int32 InTid) const { return BossAttackTable1.Find(InTid); }
-	const F2StageBossAttackRows* FindBossAttack2(const int32 InTid) const { return BossAttackTable2.Find(InTid); }
-	const F3StageBossAttackRows* FindBossAttack3(const int32 InTid) const { return BossAttackTable3.Find(InTid); }
+	const FPatrolPathRow* FindPatrolPath(int32 InPathId) const { return PatrolPathTable.Find(InPathId); }
+
+	const F1StageBossAttackRows* FindBossAttack1(int32 InTid) const { return BossAttackTable1.Find(InTid); }
+	const F2StageBossAttackRows* FindBossAttack2(int32 InTid) const { return BossAttackTable2.Find(InTid); }
+	const F3StageBossAttackRows* FindBossAttack3(int32 InTid) const { return BossAttackTable3.Find(InTid); }
 
 	const TMap<int32, F1StageBossAttackRows*>& GetBossAttackMap1() const { return BossAttackTable1.GetMap(); }
 	const TMap<int32, F2StageBossAttackRows*>& GetBossAttackMap2() const { return BossAttackTable2.GetMap(); }
@@ -68,6 +71,7 @@ private:
 	TBAPropTable<FSkillRow, int32> SkillTable;
 
 	TBAPropTable<FMonsterRows, int32> MonsterTable;
+	TBAPropTable<FPatrolPathRow, int32> PatrolPathTable;
 	
 	TBAPropTable<F1StageBossAttackRows, int32> BossAttackTable1;
 	TBAPropTable<F2StageBossAttackRows, int32> BossAttackTable2;
