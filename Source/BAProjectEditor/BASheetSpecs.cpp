@@ -20,8 +20,8 @@ namespace
 			{ TEXT("1StageBossAttack"), { F1StageBossAttackRows::StaticStruct(), TEXT("Tid") } },
 			{ TEXT("2StageBossAttack"), { F2StageBossAttackRows::StaticStruct(), TEXT("Tid") } },
 			{ TEXT("3StageBossAttack"), { F3StageBossAttackRows::StaticStruct(), TEXT("Tid") } },
-			{ TEXT("BaseStat"), { FBaseStatRows::StaticStruct(), TEXT("Tid") } },
-			{ TEXT("ActionData"), { FActionData::StaticStruct(), TEXT("Tid") } },
+			{ TEXT("PlayerBaseStat"), { FPlayerBaseStatRow::StaticStruct(), TEXT("Tid") } },
+			{ TEXT("PlayerActionData"), { FPlayerActionDataRow::StaticStruct(), TEXT("Tid") } },
 			{ TEXT("Text"), { FTextRows::StaticStruct(), TEXT("TextTid") } },
 		};
 		return Map;
