@@ -3,24 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SkillTreeTypes.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Tables/BATableManager.h"
 #include "SkillTreeSubsystem.generated.h"
 
-// Todo: 임의 작업 후에 SkillData 관련 구조체 제대로 설정되면 변경 요망.
-USTRUCT(BlueprintType)
-struct FSkillTreeProgress
-{
-	GENERATED_BODY()
-	
-	UPROPERTY(BlueprintReadOnly)
-	int32 SkillTid;
-	
-};
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSkillPointsChanged, int32, NewSkillPoints);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAddSkillData, FSkillTreeProgress, SkillData);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRemoveSkillData, int32, SkillTid);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDeactivateSkill, int32, NewSkillPoints);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnActivateSkill, int32, SkillTid);
 
 /**
  * 
@@ -55,6 +44,7 @@ public:
 // 스킬트리 계산 로직
 	bool CanLearnSkill(const int32 SkillId) const;
 
+	ESkillNodeState GetSkillNodeState(const int32 SkillId) const;
 	
 private:
 	// Subsystem 참조
@@ -66,6 +56,7 @@ private:
 	// TableManager에서 스킬 정보 가져오는 함수
 	FORCEINLINE const struct FSkillRow* GetSkillRow(const int32 InTid) const { return TableManager->FindSkill(InTid); }
 
+// 저장된 데이터
 protected:
 	// 배운 스킬 + 남은 스킬 포인트
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SkillTree)
@@ -75,30 +66,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SkillTree)
 	TSet<int32> LearnedSkillIds;
 	
-// -----------------------------------------------------------------------------------------------------
-	
-	
-// 스킬트리 관련
-	//SkillPoint
-	// UFUNCTION(BlueprintCallable)
-	// void AddSkillPoints(int32 Amount);
-
-	//AddSkill
-	void AddSkillData(FSkillTreeProgress data);
-	void AddSkillData(int32 skillTid);
-	
-	//RemoveSkill
-	void RemoveSkillData(int32 skillTid);
-	
-		
-	//Delegate
+	// Delegate
 	UPROPERTY(BlueprintAssignable)
-	FOnSkillPointsChanged OnSkillPointsChanged;
+	FOnDeactivateSkill OnDeactivateSkill;
 	UPROPERTY(BlueprintAssignable)
-	FOnAddSkillData OnAddSkillData;
-	UPROPERTY(BlueprintAssignable)
-	FOnRemoveSkillData OnRemoveSkillData;
-	
-	const FSkillTreeProgress* FindSkillData(int32 skillTid) const;
+	FOnActivateSkill OnActivateSkill;
 	
 };

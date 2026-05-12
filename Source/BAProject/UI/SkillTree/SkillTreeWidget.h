@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "SkillNodeWidget.h"
-#include "Blueprint/UserWidget.h"
 #include "UI/System/PopupBase.h"
 #include "SkillTreeWidget.generated.h"
 
@@ -22,8 +21,8 @@ public:
 	void InitSkillTree();
 
 protected:
-	// 스킬 노드 생성 함수
-	USkillNodeWidget* CreateSkillNodeWidget(const FSkillTreeProgress& SkillData);
+	// 스킬 노드 생성 함수 TODO
+	// USkillNodeWidget* CreateSkillNodeWidget(const );
 	
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<USkillNodeWidget> SkillNodeWidgetClass;
