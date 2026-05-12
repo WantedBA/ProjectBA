@@ -21,10 +21,31 @@ struct BAPROJECT_API FPatrolPathRow : public FBARowBase
 	FName PathTag;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Patrol")
+	FString Point;
+
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Patrol")
 	TArray<FVector> Points;
 
 	virtual void PostRead() override
 	{
 		bTid = Tid;
+
+		Points.Empty();
+		if (!Point.IsEmpty())
+		{
+			// "(x,y,z), (x,y,z)" 형태를 파싱
+			TArray<FString> VectorStrings;
+			Point.ParseIntoArray(VectorStrings, TEXT("),"), true);
+
+			for (FString& VStr : VectorStrings)
+			{
+				VStr = VStr.Replace(TEXT("("), TEXT("")).Replace(TEXT(")"), TEXT("")).TrimStartAndEnd();
+				FVector Vec;
+				if (Vec.InitFromString(VStr))
+				{
+					Points.Add(Vec);
+				}
+			}
+		}
 	}
 };
