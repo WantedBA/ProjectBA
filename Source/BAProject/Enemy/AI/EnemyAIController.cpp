@@ -10,7 +10,7 @@ AEnemyAIController::AEnemyAIController()
 {
 }
 
-void AEnemyAIController::InitializeAI(int32 InTid)
+void AEnemyAIController::InitializeAI(int32 InTid, APawn* InPawn)
 {
 	Tid = InTid;
 
@@ -42,11 +42,23 @@ void AEnemyAIController::InitializeAI(int32 InTid)
 		UBlackboardComponent* BBComp = Blackboard;
 		if (UseBlackboard(BBAsset, BBComp))
 		{
-			// 초기 데이터 설정
-			Blackboard->SetValueAsInt(TEXT("MonsterTid"), InTid); // TID 저장 추가
-			Blackboard->SetValueAsVector(BBKey::HomePos, GetPawn()->GetActorLocation());
-			Blackboard->SetValueAsFloat(BBKey::DetectRange, static_cast<float>(MonsterRow->DetectRange));
-			Blackboard->SetValueAsFloat(BBKey::AttackRange, static_cast<float>(MonsterRow->AttackRange));
+			if (Blackboard)
+			{
+				Blackboard->SetValueAsInt(TEXT("MonsterTid"), InTid);
+				
+				APawn* ControlledPawn = InPawn ? InPawn : (APawn*)GetPawn();
+				if (ControlledPawn)
+				{
+					Blackboard->SetValueAsVector(BBKey::HomePos, ControlledPawn->GetActorLocation());
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("[AEnemyAIController] Pawn is null in InitializeAI (InPawn and GetPawn() are both null)"));
+				}
+
+				Blackboard->SetValueAsFloat(BBKey::DetectRange, static_cast<float>(MonsterRow->DetectRange));
+				Blackboard->SetValueAsFloat(BBKey::AttackRange, static_cast<float>(MonsterRow->AttackRange));
+			}
 
 			RunBehaviorTree(BTAsset);
 		}

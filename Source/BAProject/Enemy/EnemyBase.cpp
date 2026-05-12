@@ -36,7 +36,7 @@ void AEnemyBase::PossessedBy(AController* NewController)
 	{
 		if (MonsterTid != 0)
 		{
-			AIController->InitializeAI(MonsterTid);
+			AIController->InitializeAI(MonsterTid, this);
 		}
 	}
 }
@@ -76,7 +76,7 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 
 		if (AEnemyAIController* AIController = Cast<AEnemyAIController>(GetController()))
 		{
-			AIController->InitializeAI(MonsterTid);
+			AIController->InitializeAI(MonsterTid, this);
 		}
 	}
 }
