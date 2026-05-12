@@ -5,28 +5,30 @@
 #include "CoreMinimal.h"
 #include "SkillNodeWidget.h"
 #include "Blueprint/UserWidget.h"
+#include "UI/System/PopupBase.h"
 #include "SkillTreeWidget.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class BAPROJECT_API USkillTreeWidget : public UUserWidget
+class BAPROJECT_API USkillTreeWidget : public UPopupBase
 {
 	GENERATED_BODY()
 	
-// 스킬트리 최초 구성
 public:
+	// 스킬트리 최초 구성
 	UFUNCTION(BlueprintCallable, Category=SkillTree)
 	void InitSkillTree();
 
 protected:
-	// 스킬 노드 생성
+	// 스킬 노드 생성 함수
 	USkillNodeWidget* CreateSkillNodeWidget(const FSkillData& SkillData);
 	
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<USkillNodeWidget> SkillNodeWidgetClass;
 
+	// 스킬 Tid를 키 값으로 하는 스킬 노드 맵
 	UPROPERTY()
 	TMap<int32, TObjectPtr<USkillNodeWidget>> SkillNodeMap;
 	
