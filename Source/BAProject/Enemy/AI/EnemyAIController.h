@@ -12,7 +12,7 @@ class BAPROJECT_API AEnemyAIController : public AAIController
 public:
 	AEnemyAIController();
 
-	void InitializeAI(int32 InTid);
+	void InitializeAI(int32 InTid, APawn* InPawn = nullptr);
 	void StartAI();
 	void StopAI();
 

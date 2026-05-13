@@ -1,11 +1,11 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTDecorator.h"
 #include "BTDecorator_FindTarget.generated.h"
 
 /*
-* Á¶°Ç¹® ¿ëµµ, BlackBoard¿¡ TargetÀ» Ã¼Å©ÇÏ¿© Battle, Patrol ºĞ±âÇÔ
+* ì¡°ê±´ë¬¸ ìš©ë„, BlackBoardì— Targetì„ ì²´í¬í•˜ì—¬ Battle, Patrol ë¶„ê¸°í•¨
 */
 
 UCLASS()
