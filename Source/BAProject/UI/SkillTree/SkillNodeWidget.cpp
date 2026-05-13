@@ -22,6 +22,10 @@ void USkillNodeWidget::NativeOnInitialized()
 	{
 		SkillNodeButton->OnClicked.AddDynamic(this, &USkillNodeWidget::HandleSkillNodeButtonClicked);
 	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("SkillNodeButton is not initialized"));
+	}
 }
 
 void USkillNodeWidget::HandleSkillNodeButtonClicked()

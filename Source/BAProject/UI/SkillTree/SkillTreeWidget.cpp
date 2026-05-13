@@ -6,6 +6,29 @@
 #include "Instance/SkillTreeSubsystem.h"
 #include "Tables/BATableManager.h"
 
+void USkillTreeWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+	
+	// 화면에 생길 때 델리게이트 등록
+	GetGameInstance()->GetSubsystem<USkillTreeSubsystem>()->OnSkillNodeStateChange.AddUniqueDynamic(
+		this, &USkillTreeWidget::HandleSkillNodeStateChanged);
+}
+
+void USkillTreeWidget::NativeDestruct()
+{
+	Super::NativeDestruct();
+	
+	// 화면에서 해제될 때 델리게이트 해제
+	GetGameInstance()->GetSubsystem<USkillTreeSubsystem>()->OnSkillNodeStateChange.RemoveDynamic(
+		this, &USkillTreeWidget::HandleSkillNodeStateChanged);
+}
+
+void USkillTreeWidget::HandleSkillNodeStateChanged(int32 SkillId, ESkillNodeState NewState)
+{
+	SkillNodeMap[SkillId]->SetSkillNodeState(NewState);
+}
+
 void USkillTreeWidget::HandleSkillNodeClicked(int32 SkillId)
 {
 	// SkillTreeSubsystem으로 스킬Id 전달

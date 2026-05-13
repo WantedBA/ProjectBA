@@ -29,8 +29,12 @@ struct BAPROJECT_API FSkillRow : public FBARowBase
 	FString Prerequisites;
 	
 	// 위 값(Prerequisites)을 파싱해서 int32 배열로 변환한 값
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<int32> PrerequisiteIds;
+	
+	// 최초 초기화 이후 PrerequisiteIds으로 찾은 값 TODO: TableManager에서 저장
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<int32> ChildIds;
 
 	// 서로 동시에 찍을 수 없는 스킬들을 같은 그룹으로 묶음(0이면 그룹 없음)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")

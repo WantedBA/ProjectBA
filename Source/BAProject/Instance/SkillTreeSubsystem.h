@@ -8,8 +8,7 @@
 #include "Tables/BATableManager.h"
 #include "SkillTreeSubsystem.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDeactivateSkill, int32, NewSkillPoints);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnActivateSkill, int32, SkillTid);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSkillNodeStateChange, int32, SkillTid, ESkillNodeState, NewState);
 
 /**
  * 
@@ -30,20 +29,23 @@ public:
 // 스킬트리 상태 반환
 	bool CanLearnSkill(const int32 SkillId) const;
 
-	ESkillNodeState GetSkillNodeState(const int32 SkillId) const;
+	ESkillNodeState CalculateSkillNodeState(const int32 SkillId) const;
 
 	UFUNCTION(BlueprintCallable)
 	int32 GetAvailableSkillPoints() const;
 	
 // 스킬트리 상태 변경
 	UFUNCTION()
-	void TryToggleSkill(int32 SkillId);
+	void TryToggleSkill(int32 SkillTid);
 	
 	UFUNCTION()
-	void TryActivateSkill(int32 SkillId);
+	void TryActivateSkill(int32 SkillTid);
 	
 	UFUNCTION()
-	void DeactivateSkill(int32 SkillId);
+	void DeactivateSkill(int32 SkillTid);
+	
+private:
+	void ActivateSkill(int32 SkillTid);
 	
 private:
 // Subsystem
@@ -62,10 +64,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SkillTree)
 	TSet<int32> ActivatedSkillIds;
 	
+public:
 // Delegate
 	UPROPERTY(BlueprintAssignable)
-	FOnDeactivateSkill OnDeactivateSkill;
-	UPROPERTY(BlueprintAssignable)
-	FOnActivateSkill OnActivateSkill;
+	FOnSkillNodeStateChange OnSkillNodeStateChange;
 	
 };

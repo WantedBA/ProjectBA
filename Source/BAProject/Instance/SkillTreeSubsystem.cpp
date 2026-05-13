@@ -28,10 +28,10 @@ void USkillTreeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 bool USkillTreeSubsystem::CanLearnSkill(const int32 SkillId) const
 {
-	return GetSkillNodeState(SkillId) == ESkillNodeState::Available;
+	return CalculateSkillNodeState(SkillId) == ESkillNodeState::Available;
 }
 
-ESkillNodeState USkillTreeSubsystem::GetSkillNodeState(const int32 SkillId) const
+ESkillNodeState USkillTreeSubsystem::CalculateSkillNodeState(const int32 SkillId) const
 {
 	if (ActivatedSkillIds.Contains(SkillId))
 	{
@@ -63,25 +63,61 @@ int32 USkillTreeSubsystem::GetAvailableSkillPoints() const
 	return SkillPoints - UsedSkillPoints;
 }
 
-void USkillTreeSubsystem::TryToggleSkill(int32 SkillId)
+void USkillTreeSubsystem::TryToggleSkill(int32 SkillTid)
 {
-	ESkillNodeState SkillState = GetSkillNodeState(SkillId);
+	ESkillNodeState SkillState = CalculateSkillNodeState(SkillTid);
 	
 	if (SkillState == ESkillNodeState::Activated)
 	{
-		DeactivateSkill(SkillId);
+		DeactivateSkill(SkillTid);
 	}
 	else if (SkillState == ESkillNodeState::Available)
 	{
-		TryActivateSkill(SkillId);
+		TryActivateSkill(SkillTid);
 	}
 }
 
-void USkillTreeSubsystem::TryActivateSkill(int32 SkillId)
+void USkillTreeSubsystem::TryActivateSkill(int32 SkillTid)
 {
-	
+	if (GetAvailableSkillPoints() >= TableManager->FindSkill(SkillTid)->NeededSkillPoint)
+	{
+		ActivateSkill(SkillTid);
+	}
 }
 
-void USkillTreeSubsystem::DeactivateSkill(int32 SkillId)
+void USkillTreeSubsystem::DeactivateSkill(int32 SkillTid)
 {
+	// 재귀 종료 조건
+	if (!ActivatedSkillIds.Contains(SkillTid))
+	{
+		return;
+	}
+	
+	// 스킬 비활성화
+	ActivatedSkillIds.Remove(SkillTid);
+	OnSkillNodeStateChange.Broadcast(SkillTid, CalculateSkillNodeState(SkillTid));
+	UE_LOG(LogTemp, Log, TEXT("Skill %d deactivated"), SkillTid);
+	
+	// 자식 노드 상태 갱신
+	for (int32 ChildId : TableManager->FindSkill(SkillTid)->ChildIds)
+	{
+		DeactivateSkill(ChildId);
+	}
+}
+
+void USkillTreeSubsystem::ActivateSkill(int32 SkillTid)
+{
+	// 현재 노드 상태 변경
+	ActivatedSkillIds.Add(SkillTid);
+	OnSkillNodeStateChange.Broadcast(SkillTid, ESkillNodeState::Activated);
+	UE_LOG(LogTemp, Log, TEXT("Skill %d activated"), SkillTid);
+	
+	// 자식 노드 상태 확인
+	for (int32 ChildId : TableManager->FindSkill(SkillTid)->ChildIds)
+	{
+		if (CalculateSkillNodeState(ChildId) == ESkillNodeState::Available)
+		{
+			OnSkillNodeStateChange.Broadcast(ChildId, ESkillNodeState::Available);
+		}
+	}
 }

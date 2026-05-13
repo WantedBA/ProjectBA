@@ -16,18 +16,24 @@ class BAPROJECT_API USkillTreeWidget : public UPopupBase
 	GENERATED_BODY()
 	
 protected:
-	// SkillNodeWidget의 델리게이트로 실행됨
+	// 재정의 함수
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
+	
+// 델리게이트로 실행되는 함수
+	// SkillNodeWidget
 	UFUNCTION(BlueprintCallable, Category=SkillTree)
 	void HandleSkillNodeClicked(int32 SkillId);
-
 	
+	// SkillTreeSubsystem
+	UFUNCTION()
+	void HandleSkillNodeStateChanged(int32 SkillId, ESkillNodeState NewState);
+	
+// 데이터
+	// Table Manager에서 스킬 id 목록을 가져오는 함수
 	UFUNCTION(BlueprintCallable, Category=SkillTree)
 	TArray<int32> GetSkillTids() const;
 	
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<USkillNodeWidget> SkillNodeWidgetClass;
-	
-// 데이터
 	// 스킬 Tid를 키 값으로 하는 스킬 노드 맵
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SkillTree)
 	TMap<int32, TObjectPtr<USkillNodeWidget>> SkillNodeMap;
