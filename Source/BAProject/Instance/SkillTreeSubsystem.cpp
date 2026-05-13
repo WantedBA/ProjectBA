@@ -97,7 +97,9 @@ void USkillTreeSubsystem::TryActivateSkill(int32 SkillTid)
 	// 잔여 스킬 포인트 확인
 	if (GetAvailableSkillPoints() < TableManager->FindSkill(SkillTid)->NeededSkillPoint)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Not enough skill points to activate skill %d"), SkillTid);
+		UE_LOG(LogTemp, Log, 
+			TEXT("Not enough skill points to activate skill %d - requires: %d, available: %d"), 
+			SkillTid, TableManager->FindSkill(SkillTid)->NeededSkillPoint, GetAvailableSkillPoints());
 		return;
 	}
 	
