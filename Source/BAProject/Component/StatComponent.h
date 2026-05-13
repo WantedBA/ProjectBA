@@ -24,8 +24,11 @@ public:
 	(
 		const float InMaxHP, 
 		const float InMaxStamina, 
+		const float InStaminaRegenAmount, 
+		const float InStaminaRegenDelay, 
 		const float InMoveSpeed, 
 		const float InAttack, 
+		const float InAttackSpeed, 
 		const float InDefence
 	);
 
@@ -51,31 +54,40 @@ public:
 	FORCEINLINE float GetMoveSpeed() const { return MoveSpeed; }
 	FORCEINLINE void SetMoveSpeed(const float NewMoveSpeed) { MoveSpeed = NewMoveSpeed; }
 public:
-	UPROPERTY(BlueprintAssignable, Category = "Stat|Event")
+	UPROPERTY(BlueprintAssignable, Category = "Event")
 	FOnHPChanged OnHPChanged;
 
-	UPROPERTY(BlueprintAssignable, Category = "Stat|Event")
+	UPROPERTY(BlueprintAssignable, Category = "Event")
 	FOnDead OnDead;
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Health")
 	float MaxHP;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Health")
 	float CurrentHP;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Stamina")
 	float MaxStamina;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Stamina")
 	float CurrentStamina;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Stamina")
+	float StaminaRegenAmount;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Stamina")
+	float StaminaRegenDelay;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Movement")
 	float MoveSpeed;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Attack")
 	float Attack;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Attack")
+	float AttackSpeed;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Defence")
 	float Defence;
 };

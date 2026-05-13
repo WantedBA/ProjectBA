@@ -2,14 +2,16 @@
     "BaseStat": [
         {
             "Tid": 1,
-            "BaseHp": 200,
-            "BaseStamina": 200,
+            "MaxHp": 200,
+            "MaxStamina": 100,
+            "StaminaRegenAmount": 0.5,
+            "StaminaRegenDelay": 1,
             "WalkSpeed": 100,
             "RunSpeed": 400,
             "SprintSpeed": 700,
-            "BaseAttack": 50,
-            "BaseDefence": 10,
-            "BaseAttackSpeed": 1
+            "BaseAttack": 40,
+            "BaseAttackSpeed": 1,
+            "BaseDefence": 10
         }
     ],
     "ActionData": [
@@ -24,6 +26,12 @@
             "ActionType": 1,
             "CoolTime": 0,
             "ConsumeStamina": 5
+        },
+        {
+            "Tid": 10020,
+            "ActionType": 2,
+            "CoolTime": 0,
+            "ConsumeStamina": 0.5
         },
         {
             "Tid": 10021,

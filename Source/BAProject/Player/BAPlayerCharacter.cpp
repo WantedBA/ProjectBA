@@ -63,7 +63,7 @@ void ABAPlayerCharacter::Attack()
 
 void ABAPlayerCharacter::InitializeFromTable()
 {
-	UUserDataSubsystem* UserDataSubsystem = UUserDataSubsystem::Get(this);
+	const UUserDataSubsystem* UserDataSubsystem = UUserDataSubsystem::Get(this);
 	if (!UserDataSubsystem)
 	{
 		return;
@@ -72,8 +72,11 @@ void ABAPlayerCharacter::InitializeFromTable()
 	StatComponent->InitializeStats(
 		static_cast<float>(UserDataSubsystem->GetBaseStat().MaxHp),	
 		static_cast<float>(UserDataSubsystem->GetBaseStat().MaxStamina),
+		static_cast<float>(UserDataSubsystem->GetBaseStat().StaminaRegenAmount),
+		static_cast<float>(UserDataSubsystem->GetBaseStat().StaminaRegenDelay),
 		static_cast<float>(UserDataSubsystem->GetBaseStat().RunSpeed),
 		static_cast<float>(UserDataSubsystem->GetBaseStat().BaseAttack),
+		static_cast<float>(UserDataSubsystem->GetBaseStat().BaseAttackSpeed),
 		static_cast<float>(UserDataSubsystem->GetBaseStat().BaseDefence)
 	);
 }
