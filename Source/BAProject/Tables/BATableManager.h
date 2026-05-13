@@ -86,4 +86,7 @@ private:
 
 	UPROPERTY()
 	TArray<TObjectPtr<UDataTable>> LoadedTables;
+	
+// 스킬 데이터 정리
+	void BuildChildSkillLists();
 };
