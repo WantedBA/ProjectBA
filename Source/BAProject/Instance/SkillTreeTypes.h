@@ -9,5 +9,5 @@ enum class ESkillNodeState : uint8
 {
 	Locked		UMETA(DisplayName = "Locked"),
 	Available	UMETA(DisplayName = "Available"),
-	Learned		UMETA(DisplayName = "Learned"),
+	Activated	UMETA(DisplayName = "Activated"),
 };

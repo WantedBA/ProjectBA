@@ -26,8 +26,62 @@ void USkillTreeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	}
 }
 
+bool USkillTreeSubsystem::CanLearnSkill(const int32 SkillId) const
+{
+	return GetSkillNodeState(SkillId) == ESkillNodeState::Available;
+}
+
+ESkillNodeState USkillTreeSubsystem::GetSkillNodeState(const int32 SkillId) const
+{
+	if (ActivatedSkillIds.Contains(SkillId))
+	{
+		return ESkillNodeState::Activated;
+	}
+	
+	// 선행 스킬이 활성화되어 있는지 확인
+	const FSkillRow* SkillRow = TableManager->FindSkill(SkillId);
+	for (int32 PrerequisiteId : SkillRow->PrerequisiteIds)
+	{
+		if (!ActivatedSkillIds.Contains(PrerequisiteId))
+		{
+			return ESkillNodeState::Locked;
+		}
+	}
+	
+	return ESkillNodeState::Available;
+}
+
 int32 USkillTreeSubsystem::GetAvailableSkillPoints() const
 {
-	// TODO
-	return 10;
+	int32 UsedSkillPoints = 0;
+	
+	for (int32 ActivatedSkillId : ActivatedSkillIds)
+	{
+		UsedSkillPoints += TableManager->FindSkill(ActivatedSkillId)->NeededSkillPoint;
+	}
+	
+	return SkillPoints - UsedSkillPoints;
+}
+
+void USkillTreeSubsystem::TryToggleSkill(int32 SkillId)
+{
+	ESkillNodeState SkillState = GetSkillNodeState(SkillId);
+	
+	if (SkillState == ESkillNodeState::Activated)
+	{
+		DeactivateSkill(SkillId);
+	}
+	else if (SkillState == ESkillNodeState::Available)
+	{
+		TryActivateSkill(SkillId);
+	}
+}
+
+void USkillTreeSubsystem::TryActivateSkill(int32 SkillId)
+{
+	
+}
+
+void USkillTreeSubsystem::DeactivateSkill(int32 SkillId)
+{
 }

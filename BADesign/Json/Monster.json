@@ -10,7 +10,6 @@
             "Defence": 5,
             "DetectRange": 500,
             "AttackRange": 300,
-			"MoveSpeed": 300,
             "MeshPath": "/Game/1stBoss/Mesh/SKM_MidPoly.SKM_MidPoly",
             "BBPath": "/Game/AI/BB_Enemy.BB_Enemy",
             "BTPath": "/Game/AI/BT_Monster.BT_Monster"
@@ -25,7 +24,6 @@
             "Defence": 7,
             "DetectRange": 500,
             "AttackRange": 300,
-			"MoveSpeed": 300,
             "MeshPath": "/Game/1stBoss/Mesh/SKM_MidPoly.SKM_MidPoly",
             "BBPath": "/Game/AI/BB_Enemy.BB_Enemy",
             "BTPath": "/Game/AI/BT_Monster.BT_Monster"
@@ -40,7 +38,6 @@
             "Defence": 7,
             "DetectRange": 0,
             "AttackRange": 0,
-			"MoveSpeed": 300,
             "MeshPath": "/Game/1stBoss/Mesh/SKM_MidPoly.SKM_MidPoly",
             "BBPath": "/Game/AI/BB_Enemy.BB_Enemy",
             "BTPath": "/Game/AI/BT_1stBoss.BT_1stBoss"
@@ -55,7 +52,6 @@
             "Defence": 7,
             "DetectRange": 0,
             "AttackRange": 0,
-			"MoveSpeed": 300,
             "BBPath": "/Game/AI/BB_Enemy.BB_Enemy"
         },
         {
@@ -68,7 +64,6 @@
             "Defence": 7,
             "DetectRange": 0,
             "AttackRange": 0,
-			"MoveSpeed": 300,
             "BBPath": "/Game/AI/BB_Enemy.BB_Enemy"
         }
     ]

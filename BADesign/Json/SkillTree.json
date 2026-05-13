@@ -9,6 +9,16 @@
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Charged-Attack.Img_Charged-Attack",
             "PositionX": 100,
             "PositionY": 100
+        },
+        {
+            "SkillTid": 3334,
+            "SkillName": "일반 공격2",
+            "Description": "NNNN회 콤보 공격",
+            "bIsDefaultSkill": 1,
+            "NeededSkillPoint": 0,
+            "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Healing-Boost-_18_.Img_Healing-Boost-_18_",
+            "PositionX": 200,
+            "PositionY": 100
         }
     ]
 }

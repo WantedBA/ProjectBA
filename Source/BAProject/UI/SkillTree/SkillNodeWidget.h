@@ -7,7 +7,7 @@
 #include "Instance/SkillTreeTypes.h"
 #include "SkillNodeWidget.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSkillNodeClicked, int32, SkillId);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSkillNodeClickedDelegate, int32, SkillId);
 
 /**
  * 
@@ -18,6 +18,12 @@ class BAPROJECT_API USkillNodeWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
+	// Getter
+	[[nodiscard]] ESkillNodeState GetSkillNodeState() const
+	{
+		return SkillNodeState;
+	}
+
 	// Setter
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE void SetSkillNodeState(const ESkillNodeState InSkillNodeState)
@@ -27,7 +33,7 @@ public:
 	
 	// Delegate
 	UPROPERTY(BlueprintAssignable, Category = SkillTree)
-	FOnSkillNodeClicked OnSkillNodeClicked;
+	FOnSkillNodeClickedDelegate OnSkillNodeClicked;
 	
 protected:
 	// 재정의 함수

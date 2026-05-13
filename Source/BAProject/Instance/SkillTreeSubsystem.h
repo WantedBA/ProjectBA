@@ -23,20 +23,6 @@ public:
 	// 재정의 함수
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	
-	// 전역 접근
-	static USkillTreeSubsystem* Get(const UObject* WorldContext)
-	{
-		if (!WorldContext) return nullptr;
-
-		const UWorld* World = WorldContext->GetWorld();
-		if (!World) return nullptr;
-
-		const UGameInstance* GI = World->GetGameInstance();
-		if (!GI) return nullptr;
-
-		return GI->GetSubsystem<USkillTreeSubsystem>();
-	}
-	
 	// Getter
 	UFUNCTION(BlueprintPure)
 	FORCEINLINE int32 GetSkillPoints() const { return SkillPoints; }
@@ -50,29 +36,33 @@ public:
 	int32 GetAvailableSkillPoints() const;
 	
 // 스킬트리 상태 변경
-	void TryDeactivateSkill(const int32 SkillId);
+	UFUNCTION()
+	void TryToggleSkill(int32 SkillId);
+	
+	UFUNCTION()
+	void TryActivateSkill(int32 SkillId);
+	
+	UFUNCTION()
+	void DeactivateSkill(int32 SkillId);
 	
 private:
-	// Subsystem 참조
+// Subsystem
 	UPROPERTY()
 	TObjectPtr<class UUserDataSubsystem> UserData;
 	UPROPERTY()
 	TObjectPtr<UBATableManager> TableManager;
-	
-	// TableManager에서 스킬 정보 가져오는 함수
-	FORCEINLINE const struct FSkillRow* GetSkillRow(const int32 InTid) const { return TableManager->FindSkill(InTid); }
 
-// 저장된 데이터
 protected:
+// 저장된 데이터
 	// 배운 스킬 + 남은 스킬 포인트
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SkillTree)
 	int32 SkillPoints = 0;
 
 	// 배운 스킬 목록
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SkillTree)
-	TSet<int32> LearnedSkillIds;
+	TSet<int32> ActivatedSkillIds;
 	
-	// Delegate
+// Delegate
 	UPROPERTY(BlueprintAssignable)
 	FOnDeactivateSkill OnDeactivateSkill;
 	UPROPERTY(BlueprintAssignable)

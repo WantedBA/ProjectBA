@@ -39,9 +39,12 @@ public:
 	// 스킬 테이블
 	const FSkillRow* FindSkill(int32 InTid) const { return SkillTable.Find(InTid); }
 	
-	UFUNCTION(BlueprintCallable, Category = "BA|Table", meta = (DisplayName = "Find Skill"))
+	UFUNCTION(BlueprintCallable, Category = "BA|Table|Skill", meta = (DisplayName = "Find Skill"))
 	bool BP_FindSkill(int32 InTid, FSkillRow& OutRow) const;
 
+	const TMap<int32, FSkillRow*>& GetSkillMap() const { return SkillTable.GetMap(); }
+	
+	// 몬스터 테이블
 	const FMonsterRows* FindMonster(int32 InTid) const { return MonsterTable.Find(InTid); }
 	
 	const F1StageBossAttackRows* FindBossAttack1(int32 InTid) const { return BossAttackTable1.Find(InTid); }
