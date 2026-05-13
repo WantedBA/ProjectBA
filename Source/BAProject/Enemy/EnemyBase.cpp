@@ -16,6 +16,10 @@ AEnemyBase::AEnemyBase()
 
 	AIControllerClass = AEnemyAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationRoll = false;
 }
 
 void AEnemyBase::PostInitializeComponents()
@@ -67,6 +71,8 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 		if (GetCharacterMovement())
 		{
 			GetCharacterMovement()->MaxWalkSpeed = static_cast<float>(MonsterRow->MoveSpeed);
+			GetCharacterMovement()->bOrientRotationToMovement = true; // �̵� �������� ĳ���� ȸ��
+			GetCharacterMovement()->RotationRate = FRotator(0.0f, 360.0f, 0.0f); // ȸ�� �ӵ� ����
 		}
 
 		if (!MonsterRow->MeshPath.IsEmpty())
@@ -118,4 +124,15 @@ void AEnemyBase::SetState(EEnemyState NewState)
 	EEnemyState OldState = CurrentState;
 	CurrentState = NewState;
 	OnStateChanged.Broadcast(OldState, NewState);
+}
+
+void AEnemyBase::Attack()
+{
+	if (IsDead()) return;
+
+	SetState(EEnemyState::Attack);
+	if (CombatComponent && AttackMontage)
+	{
+		CombatComponent->ExecuteAttack(AttackMontage);
+	}
 }
