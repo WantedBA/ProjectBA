@@ -19,28 +19,34 @@ struct BAPROJECT_API FPlayerBaseStatRow : public FBARowBase
 	int32 Tid = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
-	int32 BaseHp = 0;
+	float MaxHp = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
-	int32 BaseStamina = 0;
+	float MaxStamina = 0.f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
-	int32 WalkSpeed = 0;
+	float StaminaRegenAmount = 0.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float StaminaRegenDelay = 0.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float WalkSpeed = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
-	int32 RunSpeed = 0;
+	float RunSpeed = 0.f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
-	int32 SprintSpeed = 0;
+	float SprintSpeed = 0.f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
-	int32 BaseAttack = 0;
+	float BaseAttack = 0.f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
-	int32 BaseDefence = 0;
+	float BaseAttackSpeed = 0.f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
-	int32 BaseAttackSpeed = 0;
+	float BaseDefence = 0.f;
 
 	virtual void PostRead() override
 	{
