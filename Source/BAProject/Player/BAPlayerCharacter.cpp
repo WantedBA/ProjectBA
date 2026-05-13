@@ -19,6 +19,9 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	// }
 	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
 
+	// 스탯 컴포넌트 생성
+	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));
+
 	GetMesh()->SetRelativeLocationAndRotation(
 		FVector(0.f, 0.f, -90.f),
 		FRotator(0.f, -90.f, 0.f)
@@ -53,7 +56,6 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	bUseControllerRotationRoll = false;
 	
 	GetCharacterMovement()->bOrientRotationToMovement = false;
-	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
 }
 
 void ABAPlayerCharacter::Attack()
@@ -68,17 +70,34 @@ void ABAPlayerCharacter::InitializeFromTable()
 	{
 		return;
 	}
+
+	const auto [
+		MaxHp,
+		MaxStamina,
+		StaminaRegenAmount,
+		StaminaRegenDelay,
+		WalkSpeed,
+		RunSpeed,
+		SprintSpeed,
+		BaseAttack,
+		BaseAttackSpeed,
+		BaseDefence
+	] = UserDataSubsystem->GetBaseStat();
 	
 	StatComponent->InitializeStats(
-		static_cast<float>(UserDataSubsystem->GetBaseStat().MaxHp),	
-		static_cast<float>(UserDataSubsystem->GetBaseStat().MaxStamina),
-		static_cast<float>(UserDataSubsystem->GetBaseStat().StaminaRegenAmount),
-		static_cast<float>(UserDataSubsystem->GetBaseStat().StaminaRegenDelay),
-		static_cast<float>(UserDataSubsystem->GetBaseStat().RunSpeed),
-		static_cast<float>(UserDataSubsystem->GetBaseStat().BaseAttack),
-		static_cast<float>(UserDataSubsystem->GetBaseStat().BaseAttackSpeed),
-		static_cast<float>(UserDataSubsystem->GetBaseStat().BaseDefence)
+		MaxHp,	
+		MaxStamina,
+		StaminaRegenAmount,
+		StaminaRegenDelay,
+		WalkSpeed,
+		RunSpeed,
+		SprintSpeed,
+		BaseAttack,
+		BaseAttackSpeed,
+		BaseDefence
 	);
+
+	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
 }
 
 void ABAPlayerCharacter::SetMovementState(EMovementState NewState)
