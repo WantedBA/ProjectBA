@@ -24,6 +24,16 @@ void USkillTreeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BATableManager is not found in SkillTreeSubsystem Initialize"));
 	}
+	
+	TArray<FSkillRow*> SkillRows;
+	TableManager->GetSkillMap().GenerateValueArray(SkillRows);
+	for (FSkillRow* SkillRow : SkillRows)
+	{
+		if (SkillRow->bIsDefaultSkill)
+		{
+			ActivateSkill(SkillRow->SkillTid);
+		}
+	}
 }
 
 bool USkillTreeSubsystem::CanLearnSkill(const int32 SkillId) const
@@ -75,18 +85,34 @@ void USkillTreeSubsystem::TryToggleSkill(int32 SkillTid)
 	{
 		TryActivateSkill(SkillTid);
 	}
+	else if (SkillState == ESkillNodeState::Locked)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Skill %d is locked and cannot be activated"), SkillTid);
+		return;
+	}
 }
 
 void USkillTreeSubsystem::TryActivateSkill(int32 SkillTid)
 {
-	if (GetAvailableSkillPoints() >= TableManager->FindSkill(SkillTid)->NeededSkillPoint)
+	// 잔여 스킬 포인트 확인
+	if (GetAvailableSkillPoints() < TableManager->FindSkill(SkillTid)->NeededSkillPoint)
 	{
-		ActivateSkill(SkillTid);
+		UE_LOG(LogTemp, Log, TEXT("Not enough skill points to activate skill %d"), SkillTid);
+		return;
 	}
+	
+	ActivateSkill(SkillTid);
 }
 
 void USkillTreeSubsystem::DeactivateSkill(int32 SkillTid)
 {
+	// 기본 스킬 확인
+	if (TableManager->FindSkill(SkillTid)->bIsDefaultSkill)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Cannot deactivate default skill %d"), SkillTid);
+		return;		
+	}
+	
 	// 재귀 종료 조건
 	if (!ActivatedSkillIds.Contains(SkillTid))
 	{
