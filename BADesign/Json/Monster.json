@@ -1,5 +1,5 @@
 {
-    "시트1": [
+    "Monster": [
         {
             "MonsterTid": 10001,
             "StageType": 1,
@@ -10,7 +10,9 @@
             "Defence": 5,
             "DetectRange": 500,
             "AttackRange": 300,
-            "MeshPath": "/Game/1stBoss/Mesh/SKM_MidPoly.SKM_MidPoly",
+            "MoveSpeed": 300,
+            "PatrolPathTid": 123,
+            "MeshPath": "/Game/BossPattern/DarkKnight/Mesh/SK_DarkKnight_02_Var_01.SK_DarkKnight_02_Var_01",
             "BBPath": "/Game/AI/BB_Enemy.BB_Enemy",
             "BTPath": "/Game/AI/BT_Monster.BT_Monster"
         },
@@ -24,7 +26,8 @@
             "Defence": 7,
             "DetectRange": 500,
             "AttackRange": 300,
-            "MeshPath": "/Game/1stBoss/Mesh/SKM_MidPoly.SKM_MidPoly",
+            "MoveSpeed": 300,
+            "MeshPath": "/Game/BossPattern/DarkKnight/Mesh/SK_DarkKnight_02_Var_01.SK_DarkKnight_02_Var_01",
             "BBPath": "/Game/AI/BB_Enemy.BB_Enemy",
             "BTPath": "/Game/AI/BT_Monster.BT_Monster"
         },
@@ -38,7 +41,8 @@
             "Defence": 7,
             "DetectRange": 0,
             "AttackRange": 0,
-            "MeshPath": "/Game/1stBoss/Mesh/SKM_MidPoly.SKM_MidPoly",
+            "MoveSpeed": 300,
+            "MeshPath": "/Game/BossPattern/DarkKnight/Mesh/SK_DarkKnight_02_Var_01.SK_DarkKnight_02_Var_01",
             "BBPath": "/Game/AI/BB_Enemy.BB_Enemy",
             "BTPath": "/Game/AI/BT_1stBoss.BT_1stBoss"
         },
@@ -52,6 +56,7 @@
             "Defence": 7,
             "DetectRange": 0,
             "AttackRange": 0,
+            "MoveSpeed": 300,
             "BBPath": "/Game/AI/BB_Enemy.BB_Enemy"
         },
         {
@@ -64,6 +69,7 @@
             "Defence": 7,
             "DetectRange": 0,
             "AttackRange": 0,
+            "MoveSpeed": 300,
             "BBPath": "/Game/AI/BB_Enemy.BB_Enemy"
         }
     ]
