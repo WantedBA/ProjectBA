@@ -17,27 +17,38 @@
     "ActionData": [
         {
             "Tid": 10001,
-            "ActionType": 0,
-            "CoolTime": 0,
-            "ConsumeStamina": 5
+            "Name": "LightAttack",
+            "Category": "Attack",
+            "StaminaCost": 15,
+            "MinRequiredStamina": 1
+        },
+        {
+            "Tid": 10002,
+            "Name": "HeavyAttack",
+            "Category": "Attack",
+            "StaminaCost": 30,
+            "MinRequiredStamina": 1
         },
         {
             "Tid": 10011,
-            "ActionType": 1,
-            "CoolTime": 0,
-            "ConsumeStamina": 5
+            "Name": "Guard",
+            "Category": "Defence",
+            "StaminaCost": 20,
+            "MinRequiredStamina": 1
         },
         {
             "Tid": 10020,
-            "ActionType": 2,
-            "CoolTime": 0,
-            "ConsumeStamina": 0.5
+            "Name": "Sprint",
+            "Category": "Movement",
+            "StaminaCost": 0.5,
+            "MinRequiredStamina": 1
         },
         {
             "Tid": 10021,
-            "ActionType": 2,
-            "CoolTime": 0,
-            "ConsumeStamina": 10
+            "Name": "DodgeRoll",
+            "Category": "Movement",
+            "StaminaCost": 12,
+            "MinRequiredStamina": 1
         }
     ]
 }

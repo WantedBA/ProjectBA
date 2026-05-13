@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Tables/BAPropTable.h"
+#include "Tables/PlayerEnums.h"
 #include "PlayerRows.generated.h"
 
 /**
@@ -63,10 +64,16 @@ struct BAPROJECT_API FPlayerActionDataRow : public FBARowBase
 	int32 Tid = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|ActionData")
-	int32 ActionType = 0;
+	FName Name = NAME_None;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|ActionData")
-	int32 ConsumeStamina = 0;
+	EPlayerActionCategory Category = EPlayerActionCategory::Movement;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|ActionData")
+	float StaminaCost = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|ActionData")
+	float MinRequiredStamina = 0.f;
 
 	virtual void PostRead() override
 	{
