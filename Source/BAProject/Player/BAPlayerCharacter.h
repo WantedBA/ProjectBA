@@ -26,15 +26,14 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = Initialization)
 	virtual void InitializeFromTable();
-
-	// Controller가 보행 상태를 변경할 수 있도록 공개
-	void SetMovementState(EMovementState NewState);
 	
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<class UStatComponent> StatComponent;
 	
-	
+public:
+	void SetMovementState(EMovementState NewState);
+
 private:
 	EMovementState CurrentMovementState = EMovementState::Run;
 	
