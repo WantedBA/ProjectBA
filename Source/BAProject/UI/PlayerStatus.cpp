@@ -3,14 +3,14 @@
 
 #include "UI/PlayerStatus.h"
 #include "StatusBar.h"
-#include "Instance/UserDataSubSystem.h"
+#include "Instance/UserDataSubsystem.h"
 
 void UPlayerStatus::NativeConstruct()
 {
 	Super::NativeConstruct();
 
 	// 전역 데이터 서브시스템 인스턴스 가져오기
-	UUserDataSubSystem* UserData = GetGameInstance()->GetSubsystem<UUserDataSubSystem>();
+	UUserDataSubsystem* UserData = GetGameInstance()->GetSubsystem<UUserDataSubsystem>();
 
 	if (UserData)
 	{

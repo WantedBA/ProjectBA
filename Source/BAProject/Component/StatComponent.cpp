@@ -36,3 +36,15 @@ void UStatComponent::InitializeStats(float InMaxHP, float InAttack, float InDefe
 	CurrentHP = MaxHP;
 	OnHPChanged.Broadcast(CurrentHP, MaxHP);
 }
+
+void UStatComponent::InitializeStats(const float InMaxHP, const float InMaxStamina, const float InMoveSpeed, const float InAttack, const float InDefence)
+{
+	MaxHP = InMaxHP;
+	CurrentHP = MaxHP;
+	MaxStamina = InMaxStamina;
+	CurrentStamina = MaxStamina;
+	MoveSpeed = InMoveSpeed;
+	Attack = InAttack;
+	Defence = InDefence;
+	OnHPChanged.Broadcast(CurrentHP, MaxHP);
+}

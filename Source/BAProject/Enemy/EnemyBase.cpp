@@ -34,9 +34,10 @@ void AEnemyBase::PossessedBy(AController* NewController)
 
 	if (AEnemyAIController* AIController = Cast<AEnemyAIController>(NewController))
 	{
+		UE_LOG(LogTemp, Log, TEXT("[%s] PossessedBy %s. MonsterTid: %d"), *GetName(), *NewController->GetName(), MonsterTid);
 		if (MonsterTid != 0)
 		{
-			AIController->InitializeAI(MonsterTid);
+			AIController->InitializeAI(MonsterTid, this);
 		}
 	}
 }
@@ -53,6 +54,8 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 
 	if (const FMonsterRows* MonsterRow = TableManager->FindMonster(InTid))
 	{
+		EnemyGrade = static_cast<EEnemyGrade>(MonsterRow->GradeType);
+
 		StatComponent->InitializeStats(
 			static_cast<float>(MonsterRow->MaxHp),
 			static_cast<float>(MonsterRow->Attack),
@@ -76,7 +79,7 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 
 		if (AEnemyAIController* AIController = Cast<AEnemyAIController>(GetController()))
 		{
-			AIController->InitializeAI(MonsterTid);
+			AIController->InitializeAI(MonsterTid, this);
 		}
 	}
 }

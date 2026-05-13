@@ -18,6 +18,14 @@ enum class EEnemyState : uint8
 	Dead
 };
 
+UENUM(BlueprintType)
+enum class EEnemyGrade : uint8
+{
+	None,
+	Elite,
+	Boss
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStateChanged, EEnemyState, OldState, EEnemyState, NewState);
 
 UCLASS(Abstract)
@@ -36,6 +44,8 @@ protected:
 	virtual void PossessedBy(AController* NewController) override;
 
 	virtual void OnDamaged(float FinalDamage, AActor* DamageCauser) override;
+
+	UFUNCTION()
 	virtual void OnDeath() override;
 
 	UFUNCTION(BlueprintCallable, Category = "State")
@@ -46,6 +56,9 @@ protected:
 
 	UFUNCTION(BlueprintPure, Category = "State")
 	EEnemyState GetCurrentState() const { return CurrentState; }
+
+	UFUNCTION(BlueprintPure, Category = "State")
+	EEnemyGrade GetEnemyGrade() const { return EnemyGrade; }
 
 	// 시각 연출 이벤트
 	UFUNCTION(BlueprintImplementableEvent, Category = "Enemy|Visuals", meta = (DisplayName = "OnHitVisuals"))
@@ -72,4 +85,7 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	EEnemyState CurrentState;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	EEnemyGrade EnemyGrade;
 };
