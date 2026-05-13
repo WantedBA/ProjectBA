@@ -71,33 +71,21 @@ void ABAPlayerCharacter::InitializeFromTable()
 		return;
 	}
 
-	const auto [
-		MaxHp,
-		MaxStamina,
-		StaminaRegenAmount,
-		StaminaRegenDelay,
-		WalkSpeed,
-		RunSpeed,
-		SprintSpeed,
-		BaseAttack,
-		BaseAttackSpeed,
-		BaseDefence
-	] = UserDataSubsystem->GetBaseStat();
-	
+	const FPlayerBaseStat BaseStat = UserDataSubsystem->GetBaseStat();
 	StatComponent->InitializeStats(
-		MaxHp,	
-		MaxStamina,
-		StaminaRegenAmount,
-		StaminaRegenDelay,
-		WalkSpeed,
-		RunSpeed,
-		SprintSpeed,
-		BaseAttack,
-		BaseAttackSpeed,
-		BaseDefence
+		BaseStat.MaxHp,	
+		BaseStat.MaxStamina,
+		BaseStat.StaminaRegenAmount,
+		BaseStat.StaminaRegenDelay,
+		BaseStat.WalkSpeed,
+		BaseStat.RunSpeed,
+		BaseStat.SprintSpeed,
+		BaseStat.BaseAttack,
+		BaseStat.BaseAttackSpeed,
+		BaseStat.BaseDefence
 	);
 
-	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = BaseStat.RunSpeed;
 }
 
 void ABAPlayerCharacter::SetMovementState(EMovementState NewState)
