@@ -14,7 +14,10 @@ namespace BBKey
 	const FName HomePos = TEXT("HomePos");
 	const FName PatrolPos = TEXT("PatrolPos");
 	const FName SplineIndex = TEXT("SplineIndex");
+	const FName SplineDistance = TEXT("SplineDistance");
 	const FName DetectRange = TEXT("DetectRange");
 	const FName AttackRange = TEXT("AttackRange");
+	const FName ReturnRange = TEXT("ReturnRange");
+	const FName IsReturning = TEXT("IsReturning");
 	const FName State = TEXT("State");
 }

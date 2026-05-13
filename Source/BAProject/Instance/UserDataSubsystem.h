@@ -17,21 +17,25 @@ struct FPlayerBaseStat
 	GENERATED_BODY()
 	
 	UPROPERTY(BlueprintReadWrite)
-	int32 MaxHp = 0; // BaseHp
+	float MaxHp = 0; // MaxHp
 	UPROPERTY(BlueprintReadWrite)
-	int32 MaxStamina = 0; // BaseStamina
+	float MaxStamina = 0.f; // MaxStamina
 	UPROPERTY(BlueprintReadWrite)
-	int32 WalkSpeed = 0; // WalkSpeed
+	float StaminaRegenAmount = 0.f; // StaminaRegenAmount
 	UPROPERTY(BlueprintReadWrite)
-	int32 RunSpeed = 0; // RunSpeed
+	float StaminaRegenDelay = 0.f; // StaminaRegenDelay
 	UPROPERTY(BlueprintReadWrite)
-	int32 SprintSpeed = 0; // SprintSpeed
+	float WalkSpeed = 0.f; // WalkSpeed
 	UPROPERTY(BlueprintReadWrite)
-	int32 BaseAttack = 0; // BaseAttack
+	float RunSpeed = 0.f; // RunSpeed
 	UPROPERTY(BlueprintReadWrite)
-	int32 BaseAttackSpeed = 0; // BaseAttackSpeed
+	float SprintSpeed = 0.f; // SprintSpeed
 	UPROPERTY(BlueprintReadWrite)
-	int32 BaseDefence = 0; // BaseDefence
+	float BaseAttack = 0.f; // BaseAttack
+	UPROPERTY(BlueprintReadWrite)
+	float BaseAttackSpeed = 0.f; // BaseAttackSpeed
+	UPROPERTY(BlueprintReadWrite)
+	float BaseDefence = 0.f; // BaseDefence
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHpChanged, float, CurrentHP, float, MaxHp);
