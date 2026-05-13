@@ -1,7 +1,9 @@
 #include "Player/BAPlayerCharacter.h"
 #include "Camera/CameraComponent.h"
+#include "Component/StatComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Instance/UserDataSubsystem.h"
 
 ABAPlayerCharacter::ABAPlayerCharacter()
 {
@@ -24,7 +26,6 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 720.f, 0.f);
-	// GetCharacterMovement()->JumpZVelocity = 800.f;
 
 	// back view, 3인칭 설정
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
@@ -52,9 +53,53 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	bUseControllerRotationRoll = false;
 	
 	GetCharacterMovement()->bOrientRotationToMovement = false;
+	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
 }
 
 void ABAPlayerCharacter::Attack()
 {
 	
+}
+
+void ABAPlayerCharacter::InitializeFromTable()
+{
+	UUserDataSubsystem* UserDataSubsystem = UUserDataSubsystem::Get(this);
+	if (!UserDataSubsystem)
+	{
+		return;
+	}
+	
+	StatComponent->InitializeStats(
+		static_cast<float>(UserDataSubsystem->GetBaseStat().MaxHp),	
+		static_cast<float>(UserDataSubsystem->GetBaseStat().MaxStamina),
+		static_cast<float>(UserDataSubsystem->GetBaseStat().RunSpeed),
+		static_cast<float>(UserDataSubsystem->GetBaseStat().BaseAttack),
+		static_cast<float>(UserDataSubsystem->GetBaseStat().BaseDefence)
+	);
+}
+
+void ABAPlayerCharacter::SetMovementState(EMovementState NewState)
+{
+	if (CurrentMovementState == NewState)
+	{
+		return;
+	}
+
+	CurrentMovementState = NewState;
+	
+	float NewSpeed = RunSpeed; // 기본값
+	switch (CurrentMovementState)
+	{
+	case EMovementState::Walk:
+		NewSpeed = WalkSpeed;
+		break;
+	case EMovementState::Run:
+		NewSpeed = RunSpeed;
+		break;
+	case EMovementState::Sprint:
+		NewSpeed = SprintSpeed;
+		break;
+	}
+	
+	GetCharacterMovement()->MaxWalkSpeed = NewSpeed;
 }

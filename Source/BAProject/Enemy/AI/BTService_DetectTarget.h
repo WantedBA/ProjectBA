@@ -1,11 +1,11 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTService.h"
 #include "BTService_DetectTarget.generated.h"
 
 /*
-* °ª °¨Áö¿ëµµ: ¼øÂû·çÆ®¸¦ µ¹¸é¼­ ÁÖ±âÀûÀ¸·Î Player¸¦ Ã£´Â ·ÎÁ÷
+* ê°’ ê°ì§€ìš©ë„: ìˆœì°°ë£¨íŠ¸ë¥¼ ëŒë©´ì„œ ì£¼ê¸°ì ìœ¼ë¡œ Playerë¥¼ ì°¾ëŠ” ë¡œì§
 */
 
 UCLASS()

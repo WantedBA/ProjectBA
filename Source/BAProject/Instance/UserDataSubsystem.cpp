@@ -26,10 +26,10 @@ UUserDataSubsystem* UUserDataSubsystem::Get(const UObject* WorldContext)
 {
 	if (!WorldContext) return nullptr;
 
-	UWorld* World = WorldContext->GetWorld();
+	const UWorld* World = WorldContext->GetWorld();
 	if (!World) return nullptr;
 
-	UGameInstance* GI = World->GetGameInstance();
+	const UGameInstance* GI = World->GetGameInstance();
 	if (!GI) return nullptr;
 
 	return GI->GetSubsystem<UUserDataSubsystem>();
@@ -37,14 +37,27 @@ UUserDataSubsystem* UUserDataSubsystem::Get(const UObject* WorldContext)
 
 void UUserDataSubsystem::SetBaseStat()
 {
-	//BaseStat.MaxHp = // 테이블에서 온 데이터 추가
-	
-	// 아래는 TableManager 호출 예시
-	UBATableManager* TableManager = GetGameInstance()->GetSubsystem<UBATableManager>();
-	if (!TableManager) return;
-	
-	//BaseStat은 TableManager에서 가져온 값으로 설정
-	
-	CurMaxHp = BaseStat.MaxHp;
-	CurMaxStamina  = BaseStat.MaxStamina;
+	const UBATableManager* TableManager = GetGameInstance()->GetSubsystem<UBATableManager>();
+	if (!TableManager)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[UserDataSubsystem] TableManager subsystem is null."));
+		return;
+	}
+
+	const FPlayerBaseStatRow* BaseStatRow = TableManager->FindPlayerBaseStat();
+	if (!BaseStatRow)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[UserDataSubsystem] Player BaseStat row(Tid=1) not found."));
+		return;
+	}
+
+	// BaseStat 멤버변수에 주입
+	BaseStat.MaxHp = BaseStatRow->BaseHp;
+	BaseStat.MaxStamina = BaseStatRow->BaseStamina;
+	BaseStat.WalkSpeed = BaseStatRow->WalkSpeed;
+	BaseStat.RunSpeed = BaseStatRow->RunSpeed;
+	BaseStat.SprintSpeed = BaseStatRow->SprintSpeed;
+	BaseStat.BaseAttack = BaseStatRow->BaseAttack;
+	BaseStat.BaseAttackSpeed = BaseStatRow->BaseAttackSpeed;
+	BaseStat.BaseDefence = BaseStatRow->BaseDefence;
 }
