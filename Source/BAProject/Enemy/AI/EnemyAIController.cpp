@@ -59,6 +59,8 @@ void AEnemyAIController::InitializeAI(int32 InTid, APawn* InPawn)
 
 				Blackboard->SetValueAsFloat(BBKey::DetectRange, static_cast<float>(MonsterRow->DetectRange));
 				Blackboard->SetValueAsFloat(BBKey::AttackRange, static_cast<float>(MonsterRow->AttackRange));
+				Blackboard->SetValueAsFloat(BBKey::ReturnRange, static_cast<float>(MonsterRow->DetectRange) * 2.5f);
+				Blackboard->SetValueAsBool(BBKey::IsReturning, false);
 			}
 
 			bool bStarted = RunBehaviorTree(BTAsset);

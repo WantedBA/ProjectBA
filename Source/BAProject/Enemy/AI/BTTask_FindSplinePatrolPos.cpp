@@ -72,15 +72,34 @@ EBTNodeResult::Type UBTTask_FindSplinePatrolPos::ExecuteTask(UBehaviorTreeCompon
 			if (PathActor)
 			{
 				USplineComponent* Spline = PathActor->GetSplineComponent();
-				int32 MaxPoints = Spline->GetNumberOfSplinePoints();
 
-				int32 CurrentIndex = BBComponent->GetValueAsInt(BBKey::SplineIndex);
-				int32 NextIndex = (CurrentIndex + 1) % MaxPoints;
+				// 1. 현재 스플라인 상의 진행 거리 가져오기, 처음 시작하거나 경로 이탈 후 복귀 시에는 -1.0f 등의 기본값임을 가정
+				float CurrentDistance = BBComponent->GetValueAsFloat(BBKey::SplineDistance);
 
-				FVector NextPos = Spline->GetLocationAtSplinePoint(NextIndex, ESplineCoordinateSpace::World);
+				// 2. 복귀 로직: 만약 경로를 새로 시작하거나 멀리 떨어져 있다면 가장 가까운 거리 찾기
+				// (여기서는 단순화를 위해 처음 0인 상태를 복귀 혹은 시작점으로 간주하거나 거리 체크 로직 추가 가능)
+				if (CurrentDistance <= 0.0f)
+				{
+					float ClosestInputKey = Spline->FindInputKeyClosestToWorldLocation(ControllingPawn->GetActorLocation());
+					CurrentDistance = Spline->GetDistanceAlongSplineAtSplineInputKey(ClosestInputKey);
+				}
+
+				// 3. 샘플링: 현재 위치에서 일정 거리(예: 50cm) 앞의 좌표를 목표로 설정
+				// 이 간격이 좁을수록 곡선에 더 밀착하지만, MoveTo가 너무 빈번해질 수 있음
+				float TargetDistance = CurrentDistance + 50.0f;
+
+				// 4. 루프 처리
+				float TotalLength = Spline->GetSplineLength();
+				if (TargetDistance >= TotalLength)
+				{
+					TargetDistance = FMath::Fmod(TargetDistance, TotalLength);
+				}
+
+				// 5. 좌표 추출 및 블랙보드 갱신
+				FVector NextPos = Spline->GetLocationAtDistanceAlongSpline(TargetDistance, ESplineCoordinateSpace::World);
 
 				BBComponent->SetValueAsVector(BBKey::PatrolPos, NextPos);
-				BBComponent->SetValueAsInt(BBKey::SplineIndex, NextIndex);
+				BBComponent->SetValueAsFloat(BBKey::SplineDistance, TargetDistance);
 
 				return EBTNodeResult::Succeeded;
 			}
