@@ -92,6 +92,17 @@ void ABAPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABAPlayerController::OnSprintCompleted);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Canceled, this, &ABAPlayerController::OnSprintCompleted);
 	}
+	
+	// 임시 기능
+	if (ensureMsgf(ToggleStrafeAction, TEXT("ToggleStrafeAction is not configured on %s"), *GetName()))
+	{
+		EnhancedInputComponent->BindAction(
+			ToggleStrafeAction,
+			ETriggerEvent::Started,
+			this,
+			&ABAPlayerController::ToggleStrafe
+		);
+	}
 }
 
 void ABAPlayerController::Move(const FInputActionValue& Value)
@@ -201,4 +212,20 @@ void ABAPlayerController::ApplyMovementStateByModifier() const
 	{
 		PC->SetMovementState(EMovementState::Run);
 	}
+}
+
+void ABAPlayerController::ToggleStrafe()
+{
+	ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
+	if (!PC)
+	{
+		return;
+	}
+
+	const EPlayerLocomotionMode NextMode =
+		PC->GetLocomotionMode() == EPlayerLocomotionMode::Strafe
+			? EPlayerLocomotionMode::Free
+			: EPlayerLocomotionMode::Strafe;
+
+	PC->SetLocomotionMode(NextMode);
 }

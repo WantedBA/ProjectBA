@@ -36,9 +36,6 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 		FRotator(0.f, -90.f, 0.f)
 	);
 
-	GetCharacterMovement()->bOrientRotationToMovement = true;
-	GetCharacterMovement()->RotationRate = FRotator(0.f, 720.f, 0.f);
-
 	// back view, 3인칭 설정
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
@@ -61,10 +58,10 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	
 	// 마우스 카메라 제어 Yaw축만 허용
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = true;
+	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 	
-	GetCharacterMovement()->bOrientRotationToMovement = false;
+	ApplyLocomotionMovementPolicy();
 	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
 }
 
@@ -73,6 +70,7 @@ void ABAPlayerCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	InitializeFromTable();
+	ApplyLocomotionMovementPolicy();
 	SetMovementState(EMovementState::Run);
 
 	// StatComponent가 존재할 경우 변경된 델리게이트에 핸들러 함수 바인딩
@@ -220,7 +218,18 @@ void ABAPlayerCharacter::SetMoveInputVector(const FVector2D& NewMoveInput)
 
 void ABAPlayerCharacter::SetLocomotionMode(const EPlayerLocomotionMode NewMode)
 {
+	if (CurrentLocomotionMode == NewMode)
+	{
+		return;
+	}
+
 	CurrentLocomotionMode = NewMode;
+	ApplyLocomotionMovementPolicy();
+}
+
+void ABAPlayerCharacter::SetCombatMode(const EPlayerCombatMode NewMode)
+{
+	CurrentCombatMode = NewMode;
 }
 
 EMovementState ABAPlayerCharacter::GetMovementState() const
@@ -231,6 +240,11 @@ EMovementState ABAPlayerCharacter::GetMovementState() const
 EPlayerLocomotionMode ABAPlayerCharacter::GetLocomotionMode() const
 {
 	return CurrentLocomotionMode;
+}
+
+EPlayerCombatMode ABAPlayerCharacter::GetCombatMode() const
+{
+	return CurrentCombatMode;
 }
 
 bool ABAPlayerCharacter::HasMoveInput() const
@@ -384,6 +398,36 @@ void ABAPlayerCharacter::UpdateSprintExhaustionLock()
 	if (StatComponent->GetCurrentStamina() >= SprintRestartStamina)
 	{
 		bSprintLockedAfterExhausted = false;
+	}
+}
+
+void ABAPlayerCharacter::ApplyLocomotionMovementPolicy()
+{
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (!MovementComponent)
+	{
+		return;
+	}
+
+	switch (CurrentLocomotionMode)
+	{
+	case EPlayerLocomotionMode::Strafe:
+		bUseControllerRotationYaw = true;
+		MovementComponent->bOrientRotationToMovement = false;
+		MovementComponent->RotationRate = FRotator(0.f, StrafeRotationRateYaw, 0.f);
+		MovementComponent->MaxAcceleration = StrafeMaxAcceleration;
+		MovementComponent->BrakingDecelerationWalking = StrafeBrakingDecelerationWalking;
+		MovementComponent->GroundFriction = StrafeGroundFriction;
+		break;
+	case EPlayerLocomotionMode::Free:
+	default:
+		bUseControllerRotationYaw = false;
+		MovementComponent->bOrientRotationToMovement = true;
+		MovementComponent->RotationRate = FRotator(0.f, FreeRotationRateYaw, 0.f);
+		MovementComponent->MaxAcceleration = FreeMaxAcceleration;
+		MovementComponent->BrakingDecelerationWalking = FreeBrakingDecelerationWalking;
+		MovementComponent->GroundFriction = FreeGroundFriction;
+		break;
 	}
 }
 

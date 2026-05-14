@@ -19,7 +19,14 @@ enum class EMovementState : uint8
 UENUM(BlueprintType)
 enum class EPlayerLocomotionMode : uint8
 {
-	Normal,
+	Free,
+	Strafe
+};
+
+UENUM(BlueprintType)
+enum class EPlayerCombatMode : uint8
+{
+	None,
 	Combat,
 	Block
 };
@@ -50,11 +57,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
 	void SetLocomotionMode(EPlayerLocomotionMode NewMode);
 
+	UFUNCTION(BlueprintCallable, Category = "Animation|Combat")
+	void SetCombatMode(EPlayerCombatMode NewMode);
+
 	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
 	EMovementState GetMovementState() const;
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
 	EPlayerLocomotionMode GetLocomotionMode() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Combat")
+	EPlayerCombatMode GetCombatMode() const;
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
 	bool HasMoveInput() const;
@@ -87,10 +100,36 @@ private:
 	float CalculateSprintStaminaCost(float DeltaTime) const;
 	void LockSprintIfExhausted();
 	void UpdateSprintExhaustionLock();
+	void ApplyLocomotionMovementPolicy();
 
 	EMovementState CurrentMovementState = EMovementState::Run;
-	EPlayerLocomotionMode CurrentLocomotionMode = EPlayerLocomotionMode::Normal;
+	EPlayerLocomotionMode CurrentLocomotionMode = EPlayerLocomotionMode::Free;
+	EPlayerCombatMode CurrentCombatMode = EPlayerCombatMode::None;
 	FVector2D MoveInputVector = FVector2D::ZeroVector;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
+	float FreeRotationRateYaw = 1440.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
+	float FreeMaxAcceleration = 8192.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
+	float FreeBrakingDecelerationWalking = 8192.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
+	float FreeGroundFriction = 12.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
+	float StrafeRotationRateYaw = 720.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
+	float StrafeMaxAcceleration = 2048.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
+	float StrafeBrakingDecelerationWalking = 2048.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
+	float StrafeGroundFriction = 8.f;
 	
 	UPROPERTY(EditAnywhere, Category="Movement")
 	float WalkSpeed = 100.0f;
