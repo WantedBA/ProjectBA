@@ -19,10 +19,12 @@ void USkillTreeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	if (!UserData)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UserDataSubsystem is not found in SkillTreeSubsystem Initialize"));
+		return;
 	}
 	if (!TableManager)
 	{
 		UE_LOG(LogTemp, Error, TEXT("BATableManager is not found in SkillTreeSubsystem Initialize"));
+		return;
 	}
 	
 	TArray<FSkillRow*> SkillRows;
@@ -50,6 +52,11 @@ ESkillNodeState USkillTreeSubsystem::CalculateSkillNodeState(const int32 SkillId
 	
 	// 선행 스킬이 활성화되어 있는지 확인
 	const FSkillRow* SkillRow = TableManager->FindSkill(SkillId);
+	if (!SkillRow)
+	{
+		UE_LOG(LogTemp, Error, TEXT("SkillRow is not found in CalculateSkillNodeState"));
+		return ESkillNodeState::Locked;
+	}
 	for (int32 PrerequisiteId : SkillRow->PrerequisiteIds)
 	{
 		if (!ActivatedSkillIds.Contains(PrerequisiteId))
@@ -70,7 +77,18 @@ int32 USkillTreeSubsystem::GetAvailableSkillPoints() const
 		UsedSkillPoints += TableManager->FindSkill(ActivatedSkillId)->NeededSkillPoint;
 	}
 	
-	return SkillPoints - UsedSkillPoints;
+	return SkillPoint - UsedSkillPoints;
+}
+
+FSkillTreeSaveData USkillTreeSubsystem::MakeSaveData() const
+{
+	return { SkillPoint, ActivatedSkillIds };
+}
+
+void USkillTreeSubsystem::ApplySaveData(const FSkillTreeSaveData& SaveData)
+{
+	SkillPoint = SaveData.SkillPoint;
+	ActivatedSkillIds = SaveData.ActivatedSkillIds;
 }
 
 void USkillTreeSubsystem::TryToggleSkill(int32 SkillTid)
