@@ -113,3 +113,35 @@ void ABAPlayerCharacter::SetMovementState(EMovementState NewState)
 	
 	GetCharacterMovement()->MaxWalkSpeed = NewSpeed;
 }
+
+void ABAPlayerCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// StatComponent가 존재할 경우 변경된 델리게이트에 핸들러 함수 바인딩
+	if (StatComponent)
+	{
+		// HP
+		StatComponent->OnHPChanged.AddDynamic(this, &ABAPlayerCharacter::OnHealthChanged);
+
+		// Stamina
+		StatComponent->OnStaminaChanged.AddDynamic(this, &ABAPlayerCharacter::OnStaminaChanged)
+
+	}
+}
+
+void ABAPlayerCharacter::OnHealthChanged(float CurrentHP, float MaxHP)
+{
+	// 수신된 데이터를 UserDataSubsystem으로 전달
+	UUserDataSubsystem* UserData = GetGameInstance()->GetSubsystem<UUserDataSubsystem>();
+	if (UserData)
+	{
+		// UI 갱신을 위해 서브시스템의 알림 함수 호출
+	}
+}
+
+void ABAPlayerCharacter::OnStaminaChanged(float CurrentStamina, float MaxStamina)
+{
+	UUserDataSubsystem User
+}
+

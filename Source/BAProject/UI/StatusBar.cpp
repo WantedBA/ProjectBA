@@ -4,6 +4,28 @@
 #include "UI/StatusBar.h"
 #include "Components\ProgressBar.h"
 
+UStatusBar::UStatusBar(const FObjectInitializer& ObjectInitializer)
+	:Super(ObjectInitializer)
+{
+	// 보간 속도 기본값 설정(에디터에서 변경 가능)
+	InterpSpeed = 5.0f;
+}
+
+void UStatusBar::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	// 위젯이 메모리에 올라오는 순간, 기본값을 100% 설정
+	CurrentDisplayPercent = 1.0f;
+	TargetPercent = 1.0f;
+	bIsFirstUpdeta = false;
+
+	if (Bar)
+	{
+		Bar->SetPercent(1.0f);
+	}
+}
+
 void UStatusBar::SetProgress(float Current, float Max)
 {
 	// 즉시 바를 깎는 대신, 도달해야 할 목표 설정
@@ -14,17 +36,10 @@ void UStatusBar::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	// 현재 보여지는 값이 목표값과 다른지 체크
-	if (!FMath::IsNearlyEqual(CurrentDisplayPercent, TargetPercent, 0.001f))
+	// 보간
+	if (!bIsFirstUpdeta && Bar)
 	{
-		// FInterpTo: 현재값에서 목표값으로 부드럽게 이동
-		// 델타 타임을 사용하여 프레임이 끊겨도 일정한 속도로 움직이게 함
 		CurrentDisplayPercent = FMath::FInterpTo(CurrentDisplayPercent, TargetPercent, InDeltaTime, InterpSpeed);
-
-		// 보간 값을 실제 위젯에 반영
-		if (Bar)
-		{
-			Bar->SetPercent(CurrentDisplayPercent);
-		}
+		Bar->SetPercent(CurrentDisplayPercent);
 	}
 }

@@ -102,6 +102,12 @@ void UStatComponent::SetCurrentStamina(const float NewCurrentStamina)
 	const float OldStamina = CurrentStamina;
 	CurrentStamina = FMath::Clamp(NewCurrentStamina, 0.f, MaxStamina);
 
+	// 스테미너 수치가 변경된 경우
+	if (OldStamina != CurrentStamina)
+	{
+		OnStaminaChanged.Broadcast(CurrentStamina, MaxStamina);
+	}
+
 	// 스테미너가 소모되고 있을 경우 타이머 최신화
 	if (CurrentStamina < OldStamina)
 	{

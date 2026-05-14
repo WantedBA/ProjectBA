@@ -53,6 +53,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	TObjectPtr<class UCameraComponent> Camera;
 
-protected: // TODO: 은성님과 HUD 협업, HUDInterface 구현 필요
+protected:
 	// virtual	void SetupHUDWidget(class UHUDWidget* InHUDWidget) override;
+
+	UFUNCTION()
+	void OnHealthChanged(float CurrentHP, float MaxHP);
+
+	void OnStaminaChanged(float CurrentStamina, float MaxStamina);
+
+	virtual void BeginPlay() override;
 };
