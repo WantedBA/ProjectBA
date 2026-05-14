@@ -39,7 +39,12 @@ void UStatusBar::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 	// 보간
 	if (!bIsFirstUpdeta && Bar)
 	{
-		CurrentDisplayPercent = FMath::FInterpTo(CurrentDisplayPercent, TargetPercent, InDeltaTime, InterpSpeed);
+		CurrentDisplayPercent = FMath::FInterpConstantTo(CurrentDisplayPercent, TargetPercent, InDeltaTime, InterpSpeed);
+
+		if (FMath::IsNearlyEqual(CurrentDisplayPercent, TargetPercent, 0.001f))
+		{
+			CurrentDisplayPercent = TargetPercent;
+		}
 		Bar->SetPercent(CurrentDisplayPercent);
 	}
 }

@@ -104,22 +104,6 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 
 	if (!IsSprintMovementActive() || !CanSprint())
 	{
-		if (GEngine)
-		{
-			const FString Reason = !IsSprintMovementActive() ? TEXT("NoMoveInput") : TEXT("CannotSprint");
-			GEngine->AddOnScreenDebugMessage(
-				SprintStopDebugMessageKey,
-				1.5f,
-				FColor::Red,
-				FString::Printf(TEXT("[Sprint Stop] Reason=%s Stamina=%.2f Min=%.2f HasData=%s Cost=%.2f Locked=%s"),
-					*Reason,
-					StatComponent ? StatComponent->GetCurrentStamina() : -1.f,
-					SprintMinRequiredStamina,
-					bHasSprintActionData ? TEXT("true") : TEXT("false"),
-					SprintStaminaCost,
-					bSprintLockedAfterExhausted ? TEXT("true") : TEXT("false"))
-			);
-		}
 		SetMovementState(EMovementState::Run);
 		return;
 	}
@@ -128,17 +112,6 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 
 	if (!CanSprint())
 	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(
-				SprintStopDebugMessageKey,
-				1.5f,
-				FColor::Red,
-				FString::Printf(TEXT("[Sprint Stop] Stamina exhausted. Stamina=%.2f Min=%.2f"),
-					StatComponent ? StatComponent->GetCurrentStamina() : -1.f,
-					SprintMinRequiredStamina)
-			);
-		}
 		SetMovementState(EMovementState::Run);
 	}
 }
@@ -191,7 +164,6 @@ void ABAPlayerCharacter::InitializeFromTable()
 		SprintMinRequiredStamina = 0.f;
 		SprintRestartStaminaPercent = 0.f;
 		bHasSprintActionData = false;
-		UE_LOG(LogTemp, Warning, TEXT("[BAPlayerCharacter] Sprint ActionData not found. Tid=%d"), SprintActionTid);
 	}
 
 	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
