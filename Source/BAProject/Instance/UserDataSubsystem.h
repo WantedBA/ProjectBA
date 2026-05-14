@@ -55,6 +55,9 @@ struct FPlayerActionData
 	float SprintRestartStaminaPercent = 0.f;
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPlayerHpChanged, float, CurrentHP, float, MaxHp);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPlayerStaminaChanged, float, CurrentStamina, float, MaxStamina);
+
 UCLASS()
 class BAPROJECT_API UUserDataSubsystem : public UGameInstanceSubsystem
 {
@@ -71,6 +74,15 @@ public:
 	FORCEINLINE FPlayerBaseStat GetBaseStat() const { return BaseStat; }
 	FORCEINLINE TMap<int32, FPlayerActionData> GetActionDataMap() const { return ActionDataMap;}
 	const FPlayerActionData* FindActionData(const int32 Tid) const { return ActionDataMap.Find(Tid); }
+
+	// UI
+	UPROPERTY(BlueprintAssignable, BlueprintCallable, Category = "User|Event")
+	FOnPlayerHpChanged OnPlayerHpChanged;
+	UPROPERTY(BlueprintAssignable, BlueprintCallable, Category = "User|Event")
+	FOnPlayerStaminaChanged OnPlayerStaminaChanged;
+
+	UFUNCTION(BlueprintCallable, Category = "User|Update")
+	void NotifyPlayerStatChanged(float CurrentHP, float MaxHP, float CurrentStamina, float MaxStamina);
 
 protected:
 	UPROPERTY(BlueprintReadOnly)

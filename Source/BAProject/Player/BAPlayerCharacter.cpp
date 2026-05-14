@@ -74,6 +74,19 @@ void ABAPlayerCharacter::BeginPlay()
 
 	InitializeFromTable();
 	SetMovementState(EMovementState::Run);
+
+	// StatComponent가 존재할 경우 변경된 델리게이트에 핸들러 함수 바인딩
+	if (StatComponent)
+	{
+		// HP
+		StatComponent->OnHPChanged.AddDynamic(this, &ABAPlayerCharacter::OnHealthChanged);
+
+		// Stamina
+		StatComponent->OnStaminaChanged.AddDynamic(this, &ABAPlayerCharacter::OnStaminaChanged);
+
+		OnHealthChanged(StatComponent->GetCurrentHP(), StatComponent->GetMaxHP());
+		OnStaminaChanged(StatComponent->GetCurrentStamina(), StatComponent->GetMaxStamina());
+	}
 }
 
 void ABAPlayerCharacter::Tick(float DeltaTime)
@@ -170,20 +183,6 @@ void ABAPlayerCharacter::InitializeFromTable()
 			? FMath::Clamp(SprintActionData->SprintRestartStaminaPercent, 0.f, 100.f)
 			: DefaultSprintRestartStaminaPercent;
 		bHasSprintActionData = true;
-
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(
-				SprintDebugMessageKey,
-				3.f,
-				FColor::Cyan,
-				FString::Printf(TEXT("[Sprint Data] Tid=%d Cost=%.2f MinRequired=%.2f Restart=%.2f%%"),
-					SprintActionTid,
-					SprintStaminaCost,
-					SprintMinRequiredStamina,
-					SprintRestartStaminaPercent)
-			);
-		}
 	}
 	else
 	{
@@ -370,25 +369,6 @@ void ABAPlayerCharacter::ConsumeSprintStamina(const float DeltaTime)
 	StatComponent->SetCurrentStamina(CurrentStamina - ConsumeAmount);
 
 	LockSprintIfExhausted();
-
-	const FString DebugText = FString::Printf(TEXT("[Sprint Consume] Cost=%.2f Delta=%.3f Consume=%.3f Stamina %.2f -> %.2f Locked=%s"),
-		SprintStaminaCost,
-		DeltaTime,
-		ConsumeAmount,
-		CurrentStamina,
-		StatComponent->GetCurrentStamina(),
-		bSprintLockedAfterExhausted ? TEXT("true") : TEXT("false"));
-	UE_LOG(LogTemp, Log, TEXT("%s"), *DebugText);
-
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(
-			SprintDebugMessageKey,
-			0.1f,
-			FColor::Cyan,
-			DebugText
-		);
-	}
 }
 
 float ABAPlayerCharacter::CalculateSprintStaminaCost(const float DeltaTime) const
@@ -446,5 +426,25 @@ void ABAPlayerCharacter::SetHasMoveInput(const bool bNewHasMoveInput)
 	if (!bHasMoveInput && CurrentMovementState == EMovementState::Sprint)
 	{
 		SetMovementState(EMovementState::Run);
+	}
+}
+
+void ABAPlayerCharacter::OnHealthChanged(float CurrentHP, float MaxHP)
+{
+	UUserDataSubsystem* UserData = GetGameInstance()->GetSubsystem<UUserDataSubsystem>();
+	if (UserData && StatComponent)
+	{
+		// 변경 된 HP및 현 시점의 스테미너 수치를 전달
+		UserData->NotifyPlayerStatChanged(CurrentHP, MaxHP, StatComponent->GetCurrentStamina(), StatComponent->GetMaxStamina());
+	}
+}
+
+void ABAPlayerCharacter::OnStaminaChanged(float CurrentStamina, float MaxStamina)
+{
+	UUserDataSubsystem* UserData = GetGameInstance()->GetSubsystem<UUserDataSubsystem>();
+	if (UserData && StatComponent)
+	{	
+		// 변경된 Stamina및 현 시점의 체력 수치를 전달
+		UserData->NotifyPlayerStatChanged(StatComponent->GetCurrentHP(), StatComponent->GetMaxHP(), CurrentStamina, MaxStamina);
 	}
 }
