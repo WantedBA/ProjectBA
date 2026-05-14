@@ -12,6 +12,7 @@ enum class EEnemyState : uint8
 {
 	Idle,
 	Move,
+	Chase,
 	Attack,
 	Hit,
 	Dead
@@ -26,6 +27,7 @@ enum class EEnemyGrade : uint8
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStateChanged, EEnemyState, OldState, EEnemyState, NewState);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnAnimationFinishedDelegate, EEnemyState);
 
 UCLASS(Abstract)
 class BAPROJECT_API AEnemyBase : public ACharacterBase
@@ -43,6 +45,8 @@ public:
 	UFUNCTION()
 	virtual void OnDeath() override;
 
+	virtual void OnEnemyAttackAniFinished(EEnemyState NewState);
+
 	UFUNCTION(BlueprintPure, Category = "State")
 	bool IsDead() const { return CurrentState == EEnemyState::Dead; }
 
@@ -57,6 +61,7 @@ protected:
 	virtual void PossessedBy(AController* NewController) override;
 
 	virtual void OnDamaged(float FinalDamage, AActor* DamageCauser) override;
+	virtual void UpdateMoveSpeed(EEnemyState NewState) override;
 
 	UFUNCTION(BlueprintCallable, Category = "State")
 	void SetState(EEnemyState NewState);
@@ -67,6 +72,9 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Enemy|Visuals", meta = (DisplayName = "OnDeadVisuals"))
 	void K2_OnDeadVisuals();
+
+public:
+	FOnAnimationFinishedDelegate OnAnimationFinished;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")

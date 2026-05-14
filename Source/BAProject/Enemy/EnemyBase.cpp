@@ -32,6 +32,8 @@ void AEnemyBase::PostInitializeComponents()
 	{
 		StatComponent->OnDead.AddDynamic(this, &AEnemyBase::OnDeath);
 	}
+
+	OnAnimationFinished.AddUObject(this, &AEnemyBase::OnEnemyAttackAniFinished);
 }
 
 void AEnemyBase::PossessedBy(AController* NewController)
@@ -110,6 +112,38 @@ void AEnemyBase::OnDamaged(float FinalDamage, AActor* DamageCauser)
 	K2_OnHitVisuals(GetActorLocation());
 }
 
+void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
+{
+	if (GetCharacterMovement() == nullptr)
+	{
+		return;
+	}
+
+	float TargetSpeed = 0.0f;
+	switch (NewState)
+	{
+	case EEnemyState::Chase:
+		TargetSpeed = GetCharacterMovement()->MaxWalkSpeed; // 보스 데이터 테이블 혹은 상수로 정의된 값
+		break;
+	case EEnemyState::Move:
+		TargetSpeed = GetCharacterMovement()->MaxWalkSpeed * 0.8f;
+		break;
+	default:
+		TargetSpeed = 0.0f;
+		break;
+	}
+
+	GetCharacterMovement()->MaxWalkSpeed = TargetSpeed;
+}
+
+void AEnemyBase::OnEnemyAttackAniFinished(EEnemyState NewState)
+{
+	if (IsValid(this) && CurrentState != EEnemyState::Dead)
+	{
+		SetState(NewState);
+	}
+}
+
 void AEnemyBase::OnDeath()
 {
 	Super::OnDeath();
@@ -136,6 +170,7 @@ void AEnemyBase::SetState(EEnemyState NewState)
 			// 다음 행위 중에는 BT 막기
 			bool bIsActionLocked = (CurrentState == EEnemyState::Attack || CurrentState == EEnemyState::Hit || CurrentState == EEnemyState::Dead);
 			BBComponent->SetValueAsBool(BBKey::IsActionLocked, bIsActionLocked);
+			UpdateMoveSpeed(CurrentState);
 		}
 	}
 
