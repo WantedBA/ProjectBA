@@ -45,7 +45,12 @@ public:
 	
 	// Skill
 	const FSkillRow* FindSkill(const int32 InTid) const { return SkillTable.Find(InTid); }
+	
+	UFUNCTION(BlueprintCallable, Category = "BA|Table|Skill", meta = (DisplayName = "Find Skill"))
+	bool BP_FindSkill(int32 InTid, FSkillRow& OutRow) const;
 
+	const TMap<int32, FSkillRow*>& GetSkillMap() const { return SkillTable.GetMap(); }
+	
 	// Monster
 	const FMonsterRows* FindMonster(const int32 InTid) const { return MonsterTable.Find(InTid); }
 	
@@ -81,4 +86,7 @@ private:
 
 	UPROPERTY()
 	TArray<TObjectPtr<UDataTable>> LoadedTables;
+	
+// 스킬 데이터 정리
+	void BuildChildSkillLists();
 };
