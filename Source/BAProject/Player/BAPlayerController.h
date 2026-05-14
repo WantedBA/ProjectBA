@@ -42,16 +42,18 @@ private:
 
 	// Input handlers
 	void Move(const FInputActionValue& Value);
+	void OnMoveCompleted();
 	void Look(const FInputActionValue& Value);
 	void LightAttack();
 	void OnWalkStarted();
 	void OnWalkCompleted();
 	void OnSprintStarted();
 	void OnSprintCompleted();
-	void ApplyMovementStateByModifier(bool bHasMoveInput) const;
+	void ApplyMovementStateByModifier() const;
 
 	bool bWalkModifierHeld = false;
 	bool bSprintModifierHeld = false;
+	bool bHasMoveInput = false;
 	
 // protected: TODO: 은성님 HUD 작업
 // 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
