@@ -96,7 +96,11 @@ void ABAPlayerController::SetupInputComponent()
 
 void ABAPlayerController::Move(const FInputActionValue& Value)
 {
-	const FVector2D Movement = Value.Get<FVector2D>();
+	FVector2D Movement = Value.Get<FVector2D>();
+	if (Movement.SizeSquared() > 1.f)
+	{
+		Movement.Normalize();
+	}
 
 	ABAPlayerCharacter* ControlledCharacter = Cast<ABAPlayerCharacter>(GetPawn());
 	if (!ControlledCharacter)
