@@ -31,13 +31,25 @@ struct BAPROJECT_API F1StageBossAttackRows : public FBARowBase
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
 	int32 Var3 = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
+	float Weight = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
+	int32 IdealRange = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
+	int32 AttackAngle = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
+	float ScoreMultiplier = 0.0f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
 	int32 Attack = 0;
 
 	virtual void PostRead() override
 	{
-		Tid = this->Tid;
+		bTid = Tid;
 	}
 };
 
@@ -63,13 +75,25 @@ struct BAPROJECT_API F2StageBossAttackRows : public FBARowBase
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
 	int32 Var3 = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
+	float Weight = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
+	int32 IdealRange = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
+	int32 AttackAngle = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
+	float ScoreMultiplier = 0.0f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
 	int32 Attack = 0;
 
 	virtual void PostRead() override
 	{
-		Tid = this->Tid;
+		bTid = Tid;
 	}
 };
 
@@ -95,12 +119,24 @@ struct BAPROJECT_API F3StageBossAttackRows : public FBARowBase
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
 	int32 Var3 = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
+	float Weight = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
+	int32 IdealRange = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
+	int32 AttackAngle = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
+	float ScoreMultiplier = 0.0f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
 	int32 Attack = 0;
 
 	virtual void PostRead() override
 	{
-		Tid = this->Tid;
+		bTid = Tid;
 	}
 };
