@@ -31,6 +31,7 @@ public:
 	// Player
 	FORCEINLINE const FPlayerBaseStatRow* FindPlayerBaseStat() const { return PlayerBaseStatTable.Find(1); } // 플레이어는 1명이므로 매직넘버 고정
 	FORCEINLINE const FPlayerActionDataRow* FindPlayerActionData(const int32 InTid) const { return PlayerActionDataTable.Find(InTid); }
+	FORCEINLINE const TMap<int32, FPlayerActionDataRow*>& GetPlayerActionDataTable() const { return PlayerActionDataTable.GetMap(); }
 	
 	// Consume
 	UFUNCTION(BlueprintCallable, Category = "BA|Table")

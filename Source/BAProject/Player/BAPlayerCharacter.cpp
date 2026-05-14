@@ -5,6 +5,15 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Instance/UserDataSubsystem.h"
 
+namespace
+{
+	// TODO: id 하드코딩
+	constexpr int32 SprintActionTid = 10020;
+	constexpr uint64 SprintDebugMessageKey = 12020;
+	constexpr uint64 SprintStopDebugMessageKey = 12021;
+	constexpr float DefaultSprintRestartStaminaPercent = 70.f;
+}
+
 ABAPlayerCharacter::ABAPlayerCharacter()
 {
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> CharacterMesh(TEXT("/Game/Character/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"));
@@ -56,6 +65,69 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	bUseControllerRotationRoll = false;
 	
 	GetCharacterMovement()->bOrientRotationToMovement = false;
+	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
+}
+
+void ABAPlayerCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	InitializeFromTable();
+	SetMovementState(EMovementState::Run);
+}
+
+void ABAPlayerCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (CurrentMovementState != EMovementState::Sprint)
+	{
+		UpdateSprintExhaustionLock();
+		return;
+	}
+
+	UpdateSprintExhaustionLock();
+	LockSprintIfExhausted();
+
+	if (!IsSprintMovementActive() || !CanSprint())
+	{
+		if (GEngine)
+		{
+			const FString Reason = !IsSprintMovementActive() ? TEXT("NoMoveInput") : TEXT("CannotSprint");
+			GEngine->AddOnScreenDebugMessage(
+				SprintStopDebugMessageKey,
+				1.5f,
+				FColor::Red,
+				FString::Printf(TEXT("[Sprint Stop] Reason=%s Stamina=%.2f Min=%.2f HasData=%s Cost=%.2f Locked=%s"),
+					*Reason,
+					StatComponent ? StatComponent->GetCurrentStamina() : -1.f,
+					SprintMinRequiredStamina,
+					bHasSprintActionData ? TEXT("true") : TEXT("false"),
+					SprintStaminaCost,
+					bSprintLockedAfterExhausted ? TEXT("true") : TEXT("false"))
+			);
+		}
+		SetMovementState(EMovementState::Run);
+		return;
+	}
+
+	ConsumeSprintStamina(DeltaTime);
+
+	if (!CanSprint())
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				SprintStopDebugMessageKey,
+				1.5f,
+				FColor::Red,
+				FString::Printf(TEXT("[Sprint Stop] Stamina exhausted. Stamina=%.2f Min=%.2f"),
+					StatComponent ? StatComponent->GetCurrentStamina() : -1.f,
+					SprintMinRequiredStamina)
+			);
+		}
+		SetMovementState(EMovementState::Run);
+	}
 }
 
 void ABAPlayerCharacter::Attack()
@@ -72,24 +144,74 @@ void ABAPlayerCharacter::InitializeFromTable()
 	}
 
 	const FPlayerBaseStat BaseStat = UserDataSubsystem->GetBaseStat();
+	WalkSpeed = BaseStat.WalkSpeed;
+	RunSpeed = BaseStat.RunSpeed;
+	SprintSpeed = BaseStat.SprintSpeed;
+
 	StatComponent->InitializeStats(
 		BaseStat.MaxHp,	
 		BaseStat.MaxStamina,
-		BaseStat.StaminaRegenAmount,
-		BaseStat.StaminaRegenDelay,
-		BaseStat.WalkSpeed,
-		BaseStat.RunSpeed,
-		BaseStat.SprintSpeed,
+		BaseStat.StaminaRecoveryPerSecond,
+		BaseStat.StaminaRecoveryDelay,
+		WalkSpeed,
+		RunSpeed,
+		SprintSpeed,
 		BaseStat.BaseAttack,
 		BaseStat.BaseAttackSpeed,
 		BaseStat.BaseDefence
 	);
 
-	GetCharacterMovement()->MaxWalkSpeed = BaseStat.RunSpeed;
+	if (const FPlayerActionData* SprintActionData = UserDataSubsystem->FindActionData(SprintActionTid))
+	{
+		SprintStaminaCost = FMath::Max(0.f, SprintActionData->StaminaCost);
+		SprintStaminaCostType = SprintActionData->StaminaCostType;
+		SprintMinRequiredStamina = FMath::Max(0.f, SprintActionData->MinRequiredStamina);
+		SprintRestartStaminaPercent = SprintActionData->SprintRestartStaminaPercent > 0.f
+			? FMath::Clamp(SprintActionData->SprintRestartStaminaPercent, 0.f, 100.f)
+			: DefaultSprintRestartStaminaPercent;
+		bHasSprintActionData = true;
+
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				SprintDebugMessageKey,
+				3.f,
+				FColor::Cyan,
+				FString::Printf(TEXT("[Sprint Data] Tid=%d Cost=%.2f MinRequired=%.2f Restart=%.2f%%"),
+					SprintActionTid,
+					SprintStaminaCost,
+					SprintMinRequiredStamina,
+					SprintRestartStaminaPercent)
+			);
+		}
+	}
+	else
+	{
+		SprintStaminaCost = 0.f;
+		SprintStaminaCostType = EPlayerStaminaCostType::Instant;
+		SprintMinRequiredStamina = 0.f;
+		SprintRestartStaminaPercent = 0.f;
+		bHasSprintActionData = false;
+		UE_LOG(LogTemp, Warning, TEXT("[BAPlayerCharacter] Sprint ActionData not found. Tid=%d"), SprintActionTid);
+	}
+
+	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
 }
 
 void ABAPlayerCharacter::SetMovementState(EMovementState NewState)
 {
+	UpdateSprintExhaustionLock();
+
+	if (NewState == EMovementState::Sprint)
+	{
+		LockSprintIfExhausted();
+	}
+
+	if (NewState == EMovementState::Sprint && !CanSprint())
+	{
+		NewState = EMovementState::Run;
+	}
+
 	if (CurrentMovementState == NewState)
 	{
 		return;
@@ -112,4 +234,115 @@ void ABAPlayerCharacter::SetMovementState(EMovementState NewState)
 	}
 	
 	GetCharacterMovement()->MaxWalkSpeed = NewSpeed;
+}
+
+bool ABAPlayerCharacter::CanSprint() const
+{
+	if (!bHasSprintActionData || !StatComponent)
+	{
+		return false;
+	}
+
+	const float CurrentStamina = StatComponent->GetCurrentStamina();
+	const float SprintRestartStamina = StatComponent->GetMaxStamina() * SprintRestartStaminaPercent / 100.f;
+
+	if (bSprintLockedAfterExhausted && CurrentStamina < SprintRestartStamina)
+	{
+		return false;
+	}
+
+	return CurrentStamina >= SprintMinRequiredStamina
+		&& (SprintStaminaCost <= 0.f ||  CurrentStamina > 0.f);
+}
+
+bool ABAPlayerCharacter::IsSprintMovementActive() const
+{
+	return bHasMoveInput;
+}
+
+void ABAPlayerCharacter::ConsumeSprintStamina(const float DeltaTime)
+{
+	if (!StatComponent || SprintStaminaCost <= 0.f)
+	{
+		return;
+	}
+
+	const float CurrentStamina = StatComponent->GetCurrentStamina();
+	const float ConsumeAmount = CalculateSprintStaminaCost(DeltaTime);
+	StatComponent->SetCurrentStamina(CurrentStamina - ConsumeAmount);
+
+	LockSprintIfExhausted();
+
+	const FString DebugText = FString::Printf(TEXT("[Sprint Consume] Cost=%.2f Delta=%.3f Consume=%.3f Stamina %.2f -> %.2f Locked=%s"),
+		SprintStaminaCost,
+		DeltaTime,
+		ConsumeAmount,
+		CurrentStamina,
+		StatComponent->GetCurrentStamina(),
+		bSprintLockedAfterExhausted ? TEXT("true") : TEXT("false"));
+	UE_LOG(LogTemp, Log, TEXT("%s"), *DebugText);
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			SprintDebugMessageKey,
+			0.1f,
+			FColor::Cyan,
+			DebugText
+		);
+	}
+}
+
+float ABAPlayerCharacter::CalculateSprintStaminaCost(const float DeltaTime) const
+{
+	if (!StatComponent)
+	{
+		return 0.f;
+	}
+
+	switch (SprintStaminaCostType)
+	{
+	case EPlayerStaminaCostType::PerSecond:
+		return StatComponent->GetMaxStamina() * SprintStaminaCost / 100.f * DeltaTime;
+	case EPlayerStaminaCostType::Instant:
+	default:
+		return SprintStaminaCost;
+	}
+}
+
+void ABAPlayerCharacter::LockSprintIfExhausted()
+{
+	if (!StatComponent || SprintStaminaCost <= 0.f)
+	{
+		return;
+	}
+
+	if (StatComponent->GetCurrentStamina() <= 0.f)
+	{
+		bSprintLockedAfterExhausted = true;
+	}
+}
+
+void ABAPlayerCharacter::UpdateSprintExhaustionLock()
+{
+	if (!bSprintLockedAfterExhausted || !StatComponent)
+	{
+		return;
+	}
+
+	const float SprintRestartStamina = StatComponent->GetMaxStamina() * SprintRestartStaminaPercent / 100.f;
+	if (StatComponent->GetCurrentStamina() >= SprintRestartStamina)
+	{
+		bSprintLockedAfterExhausted = false;
+	}
+}
+
+void ABAPlayerCharacter::SetHasMoveInput(const bool bNewHasMoveInput)
+{
+	bHasMoveInput = bNewHasMoveInput;
+
+	if (!bHasMoveInput && CurrentMovementState == EMovementState::Sprint)
+	{
+		SetMovementState(EMovementState::Run);
+	}
 }
