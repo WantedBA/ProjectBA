@@ -97,6 +97,7 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 		return;
 	}
 
+	UpdateSprintEntryRotation(DeltaTime);
 	UpdateSprintExhaustionLock();
 	LockSprintIfExhausted();
 
@@ -181,12 +182,23 @@ void ABAPlayerCharacter::SetMovementState(EMovementState NewState)
 		NewState = EMovementState::Run;
 	}
 
+	const EMovementState PreviousMovementState = CurrentMovementState;
 	if (CurrentMovementState == NewState)
 	{
 		return;
 	}
 
 	CurrentMovementState = NewState;
+	if (CurrentMovementState == EMovementState::Sprint)
+	{
+		bSprintEntryRotationLocked = CurrentLocomotionMode == EPlayerLocomotionMode::Strafe;
+		SprintEntryElapsedTime = 0.f;
+	}
+	else if (PreviousMovementState == EMovementState::Sprint)
+	{
+		bSprintEntryRotationLocked = false;
+		SprintEntryElapsedTime = 0.f;
+	}
 	
 	float NewSpeed = RunSpeed; // 기본값
 	switch (CurrentMovementState)
@@ -203,6 +215,7 @@ void ABAPlayerCharacter::SetMovementState(EMovementState NewState)
 	}
 	
 	GetCharacterMovement()->MaxWalkSpeed = NewSpeed;
+	ApplyLocomotionMovementPolicy();
 }
 
 void ABAPlayerCharacter::SetMoveInputVector(const FVector2D& NewMoveInput)
@@ -409,6 +422,17 @@ void ABAPlayerCharacter::ApplyLocomotionMovementPolicy()
 		return;
 	}
 
+	if (CurrentMovementState == EMovementState::Sprint && !ShouldUseSprintEntryRotationLock())
+	{
+		bUseControllerRotationYaw = false;
+		MovementComponent->bOrientRotationToMovement = true;
+		MovementComponent->RotationRate = FRotator(0.f, FreeRotationRateYaw, 0.f);
+		MovementComponent->MaxAcceleration = FreeMaxAcceleration;
+		MovementComponent->BrakingDecelerationWalking = FreeBrakingDecelerationWalking;
+		MovementComponent->GroundFriction = FreeGroundFriction;
+		return;
+	}
+
 	switch (CurrentLocomotionMode)
 	{
 	case EPlayerLocomotionMode::Strafe:
@@ -429,6 +453,31 @@ void ABAPlayerCharacter::ApplyLocomotionMovementPolicy()
 		MovementComponent->GroundFriction = FreeGroundFriction;
 		break;
 	}
+}
+
+void ABAPlayerCharacter::UpdateSprintEntryRotation(const float DeltaTime)
+{
+	if (!bSprintEntryRotationLocked)
+	{
+		return;
+	}
+
+	SprintEntryElapsedTime += DeltaTime;
+
+	const float OrientationSpeed = SprintSpeed * SprintStrafeEntryOrientationSpeedRatio;
+	const bool bHasBlendedLongEnough = SprintEntryElapsedTime >= SprintStrafeEntryBlendTime;
+	const bool bReachedSprintOrientationSpeed = GetGroundSpeed() >= OrientationSpeed;
+
+	if (bHasBlendedLongEnough && bReachedSprintOrientationSpeed)
+	{
+		bSprintEntryRotationLocked = false;
+		ApplyLocomotionMovementPolicy();
+	}
+}
+
+bool ABAPlayerCharacter::ShouldUseSprintEntryRotationLock() const
+{
+	return CurrentMovementState == EMovementState::Sprint && bSprintEntryRotationLocked;
 }
 
 void ABAPlayerCharacter::SetHasMoveInput(const bool bNewHasMoveInput)
