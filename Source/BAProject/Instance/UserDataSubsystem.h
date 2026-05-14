@@ -17,7 +17,7 @@ struct FPlayerBaseStat
 	UPROPERTY(BlueprintReadWrite)
 	float MaxStamina = 0.f; // MaxStamina
 	UPROPERTY(BlueprintReadWrite)
-	float StaminaRecoveryAmount = 0.f; // StaminaRecoveryAmount
+	float StaminaRecoveryPerSecond = 0.f; // StaminaRecoveryPerSecond
 	UPROPERTY(BlueprintReadWrite)
 	float StaminaRecoveryDelay = 0.f; // StaminaRecoveryDelay
 	UPROPERTY(BlueprintReadWrite)
@@ -48,7 +48,11 @@ struct FPlayerActionData
 	UPROPERTY(BlueprintReadWrite)
 	float StaminaCost = 0.f;
 	UPROPERTY(BlueprintReadWrite)
+	EPlayerStaminaCostType StaminaCostType = EPlayerStaminaCostType::Instant;
+	UPROPERTY(BlueprintReadWrite)
 	float MinRequiredStamina = 0.f;
+	UPROPERTY(BlueprintReadWrite)
+	float SprintRestartStaminaPercent = 0.f;
 };
 
 UCLASS()

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Character/CharacterBase.h"
+#include "Tables/PlayerEnums.h"
 #include "BAPlayerCharacter.generated.h"
 
 class UInputAction;
@@ -41,6 +42,9 @@ private:
 	bool CanSprint() const;
 	bool IsSprintMovementActive() const;
 	void ConsumeSprintStamina(float DeltaTime);
+	float CalculateSprintStaminaCost(float DeltaTime) const;
+	void LockSprintIfExhausted();
+	void UpdateSprintExhaustionLock();
 
 	EMovementState CurrentMovementState = EMovementState::Run;
 	
@@ -53,10 +57,13 @@ private:
 	UPROPERTY(EditAnywhere, Category="Movement")
 	float SprintSpeed = 700.0f;
 
-	float SprintStaminaCostPerSecond = 0.f;
+	float SprintStaminaCost = 0.f;
+	EPlayerStaminaCostType SprintStaminaCostType = EPlayerStaminaCostType::Instant;
 	float SprintMinRequiredStamina = 0.f;
+	float SprintRestartStaminaPercent = 0.f;
 	bool bHasSprintActionData = false;
 	bool bHasMoveInput = false;
+	bool bSprintLockedAfterExhausted = false;
 	
 protected:
 	UPROPERTY(VisibleAnywhere, Category = Camera)

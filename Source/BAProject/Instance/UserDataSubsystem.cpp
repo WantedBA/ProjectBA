@@ -54,7 +54,7 @@ void UUserDataSubsystem::SetBaseStat()
 
 	BaseStat.MaxHp = BaseStatRow->MaxHp;
 	BaseStat.MaxStamina = BaseStatRow->MaxStamina;
-	BaseStat.StaminaRecoveryAmount = BaseStatRow->StaminaRecoveryAmount;
+	BaseStat.StaminaRecoveryPerSecond = BaseStatRow->StaminaRecoveryPerSecond;
 	BaseStat.StaminaRecoveryDelay = BaseStatRow->StaminaRecoveryDelay;
 	BaseStat.WalkSpeed = BaseStatRow->WalkSpeed;
 	BaseStat.RunSpeed = BaseStatRow->RunSpeed;
@@ -93,7 +93,9 @@ void UUserDataSubsystem::SetActionData()
 		Data.Name               = Row->Name;
 		Data.Category           = Row->Category;
 		Data.StaminaCost        = Row->StaminaCost;
+		Data.StaminaCostType    = Row->StaminaCostType;
 		Data.MinRequiredStamina = Row->MinRequiredStamina;
+		Data.SprintRestartStaminaPercent = Row->SprintRestartStaminaPercent;
 		ActionDataMap.Add(Row->Tid, Data);
 	}
 

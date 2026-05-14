@@ -4,8 +4,8 @@
             "Tid": 1,
             "MaxHp": 200,
             "MaxStamina": 100,
-            "StaminaRecoveryAmount": 33.3333333333,
-            "StaminaRecoveryDelay": 1,
+            "StaminaRecoveryPerSecond": 33.3333333333,
+            "StaminaRecoveryDelay": 0.15,
             "WalkSpeed": 100,
             "RunSpeed": 400,
             "SprintSpeed": 700,
@@ -20,35 +20,45 @@
             "Name": "LightAttack",
             "Category": "Attack",
             "StaminaCost": 15,
-            "MinRequiredStamina": 1
+            "StaminaCostType": "Instant",
+            "MinRequiredStamina": 1,
+            "SprintRestartStaminaPercent": 0
         },
         {
             "Tid": 10002,
             "Name": "HeavyAttack",
             "Category": "Attack",
             "StaminaCost": 30,
-            "MinRequiredStamina": 1
+            "StaminaCostType": "Instant",
+            "MinRequiredStamina": 1,
+            "SprintRestartStaminaPercent": 0
         },
         {
             "Tid": 10011,
             "Name": "Guard",
             "Category": "Defence",
             "StaminaCost": 20,
-            "MinRequiredStamina": 1
+            "StaminaCostType": "Instant",
+            "MinRequiredStamina": 1,
+            "SprintRestartStaminaPercent": 0
         },
         {
             "Tid": 10020,
             "Name": "Sprint",
             "Category": "Movement",
-            "StaminaCost": 0.5,
-            "MinRequiredStamina": 1
+            "StaminaCost": 20,
+            "StaminaCostType": "PerSecond",
+            "MinRequiredStamina": 0,
+            "SprintRestartStaminaPercent": 70
         },
         {
             "Tid": 10021,
             "Name": "DodgeRoll",
             "Category": "Movement",
             "StaminaCost": 12,
-            "MinRequiredStamina": 1
+            "StaminaCostType": "Instant",
+            "MinRequiredStamina": 1,
+            "SprintRestartStaminaPercent": 0
         }
     ]
 }

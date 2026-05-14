@@ -21,8 +21,8 @@ void UStatComponent::TickComponent
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// 현재 스테미너가 꽉 찼거나 바닥났을 경우, 혹은 리젠 양이 0일 경우 타이머 초기화
-	if (MaxStamina <= 0.f || StaminaRecoveryAmount <= 0.f || CurrentStamina >= MaxStamina)
+	// 현재 스테미너가 꽉 찼거나 바닥났을 경우, 혹은 회복률이 0일 경우 타이머 초기화
+	if (MaxStamina <= 0.f || StaminaRecoveryPerSecond <= 0.f || CurrentStamina >= MaxStamina)
 	{
 		StaminaRecoveryDelayRemaining = 0.f;
 		SetComponentTickEnabled(false);
@@ -36,8 +36,10 @@ void UStatComponent::TickComponent
 		return;
 	}
 
-	// 리젠 양에 프레임 경과 시간 곱한만큼 회복
-	SetCurrentStamina(CurrentStamina + StaminaRecoveryAmount * DeltaTime);
+	// 초당 회복률을 실제 초당 회복량으로 바꾼 뒤, 이번 프레임 시간만큼만 회복
+	const float RecoveryAmountPerSecond = MaxStamina * StaminaRecoveryPerSecond / 100.f;
+	const float RecoveryAmountThisFrame = RecoveryAmountPerSecond * DeltaTime;
+	SetCurrentStamina(CurrentStamina + RecoveryAmountThisFrame);
 }
 
 void UStatComponent::ApplyDamage(float DamageAmount)
@@ -75,7 +77,7 @@ void UStatComponent::InitializeStats
 (
 	const float InMaxHP,
 	const float InMaxStamina,
-	const float InStaminaRecoveryAmount,
+	const float InStaminaRecoveryPerSecond,
 	const float InStaminaRecoveryDelay,
 	const float InWalkSpeed,
 	const float InRunSpeed,
@@ -89,7 +91,7 @@ void UStatComponent::InitializeStats
 	CurrentHP = MaxHP;
 	MaxStamina = InMaxStamina;
 	CurrentStamina = MaxStamina;
-	StaminaRecoveryAmount = InStaminaRecoveryAmount;
+	StaminaRecoveryPerSecond = InStaminaRecoveryPerSecond;
 	StaminaRecoveryDelay = InStaminaRecoveryDelay;
 	StaminaRecoveryDelayRemaining = 0.f;
 	SetComponentTickEnabled(false);
@@ -111,7 +113,7 @@ void UStatComponent::SetCurrentStamina(const float NewCurrentStamina)
 	if (CurrentStamina < OldStamina)
 	{
 		StaminaRecoveryDelayRemaining = StaminaRecoveryDelay;
-		SetComponentTickEnabled(CurrentStamina < MaxStamina && StaminaRecoveryAmount > 0.f);
+		SetComponentTickEnabled(CurrentStamina < MaxStamina && StaminaRecoveryPerSecond > 0.f);
 
 		const FString DebugText = FString::Printf(TEXT("[Stamina Consume] %.2f -> %.2f / %.2f RecoveryDelay=%.2f"),
 			OldStamina,

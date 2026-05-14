@@ -26,7 +26,7 @@ struct BAPROJECT_API FPlayerBaseStatRow : public FBARowBase
 	float MaxStamina = 0.f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
-	float StaminaRecoveryAmount = 0.f;
+	float StaminaRecoveryPerSecond = 0.f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
 	float StaminaRecoveryDelay = 0.f;
@@ -73,7 +73,13 @@ struct BAPROJECT_API FPlayerActionDataRow : public FBARowBase
 	float StaminaCost = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|ActionData")
+	EPlayerStaminaCostType StaminaCostType = EPlayerStaminaCostType::Instant;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|ActionData")
 	float MinRequiredStamina = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|ActionData")
+	float SprintRestartStaminaPercent = 0.f;
 
 	virtual void PostRead() override
 	{
