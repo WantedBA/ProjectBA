@@ -21,11 +21,11 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	{
 		GetMesh()->SetSkeletalMesh(CharacterMesh.Object);
 	}
-	// static ConstructorHelpers::FClassFinder<UAnimInstance> CharacterAnim(TEXT("/Game/Character/Animation/ABP_ABCharacter.ABP_ABCharacter_C"));
-	// if (CharacterAnim.Succeeded())
-	// {
-	// 	GetMesh()->SetAnimInstanceClass(CharacterAnim.Class);
-	// }
+	static ConstructorHelpers::FClassFinder<UAnimInstance> CharacterAnim(TEXT("/Game/Character/Player/Animation/ABP_Player.ABP_Player_C"));
+	if (CharacterAnim.Succeeded())
+	{
+		GetMesh()->SetAnimInstanceClass(CharacterAnim.Class);
+	}
 	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
 
 	// 스탯 컴포넌트 생성
@@ -235,6 +235,104 @@ void ABAPlayerCharacter::SetMovementState(EMovementState NewState)
 	GetCharacterMovement()->MaxWalkSpeed = NewSpeed;
 }
 
+void ABAPlayerCharacter::SetMoveInputVector(const FVector2D& NewMoveInput)
+{
+	MoveInputVector = NewMoveInput;
+	if (MoveInputVector.SizeSquared() > 1.f)
+	{
+		MoveInputVector.Normalize();
+	}
+
+	SetHasMoveInput(!MoveInputVector.IsNearlyZero());
+}
+
+void ABAPlayerCharacter::SetLocomotionMode(const EPlayerLocomotionMode NewMode)
+{
+	CurrentLocomotionMode = NewMode;
+}
+
+EMovementState ABAPlayerCharacter::GetMovementState() const
+{
+	return CurrentMovementState;
+}
+
+EPlayerLocomotionMode ABAPlayerCharacter::GetLocomotionMode() const
+{
+	return CurrentLocomotionMode;
+}
+
+bool ABAPlayerCharacter::HasMoveInput() const
+{
+	return bHasMoveInput;
+}
+
+FVector2D ABAPlayerCharacter::GetMoveInputVector() const
+{
+	return MoveInputVector;
+}
+
+FVector ABAPlayerCharacter::GetMoveInputWorldDirection() const
+{
+	if (!bHasMoveInput)
+	{
+		return FVector::ZeroVector;
+	}
+
+	const FRotator ControlRot = GetControlRotation();
+	const FRotator YawRot(0.f, ControlRot.Yaw, 0.f);
+	const FVector Forward = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
+	const FVector Right = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
+
+	return (Forward * MoveInputVector.Y + Right * MoveInputVector.X).GetSafeNormal();
+}
+
+FVector ABAPlayerCharacter::GetMoveInputLocalDirection() const
+{
+	const FVector WorldDirection = GetMoveInputWorldDirection();
+	if (WorldDirection.IsNearlyZero())
+	{
+		return FVector::ZeroVector;
+	}
+
+	return GetActorTransform().InverseTransformVectorNoScale(WorldDirection).GetSafeNormal();
+}
+
+float ABAPlayerCharacter::GetMoveInputDirectionAngle() const
+{
+	const FVector LocalDirection = GetMoveInputLocalDirection();
+	if (LocalDirection.IsNearlyZero())
+	{
+		return 0.f;
+	}
+
+	return FMath::RadiansToDegrees(FMath::Atan2(LocalDirection.Y, LocalDirection.X));
+}
+
+float ABAPlayerCharacter::GetVelocityDirectionAngle() const
+{
+	FVector LocalVelocity = GetActorTransform().InverseTransformVectorNoScale(GetVelocity());
+	LocalVelocity.Z = 0.f;
+
+	if (LocalVelocity.IsNearlyZero())
+	{
+		return 0.f;
+	}
+
+	LocalVelocity.Normalize();
+	return FMath::RadiansToDegrees(FMath::Atan2(LocalVelocity.Y, LocalVelocity.X));
+}
+
+float ABAPlayerCharacter::GetGroundSpeed() const
+{
+	const FVector Velocity = GetVelocity();
+	return FVector(Velocity.X, Velocity.Y, 0.f).Size();
+}
+
+bool ABAPlayerCharacter::IsSprintLockedAfterExhausted() const
+{
+	return bSprintLockedAfterExhausted;
+}
+
 bool ABAPlayerCharacter::CanSprint() const
 {
 	if (!bHasSprintActionData || !StatComponent)
@@ -320,6 +418,10 @@ void ABAPlayerCharacter::UpdateSprintExhaustionLock()
 void ABAPlayerCharacter::SetHasMoveInput(const bool bNewHasMoveInput)
 {
 	bHasMoveInput = bNewHasMoveInput;
+	if (!bHasMoveInput)
+	{
+		MoveInputVector = FVector2D::ZeroVector;
+	}
 
 	if (!bHasMoveInput && CurrentMovementState == EMovementState::Sprint)
 	{

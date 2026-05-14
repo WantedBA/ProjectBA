@@ -16,6 +16,14 @@ enum class EMovementState : uint8
 	Sprint
 };
 
+UENUM(BlueprintType)
+enum class EPlayerLocomotionMode : uint8
+{
+	Normal,
+	Combat,
+	Block
+};
+
 UCLASS()
 class BAPROJECT_API ABAPlayerCharacter : public ACharacterBase
 {
@@ -36,7 +44,41 @@ protected:
 	
 public:
 	void SetMovementState(EMovementState NewState);
+	void SetMoveInputVector(const FVector2D& NewMoveInput);
 	void SetHasMoveInput(bool bNewHasMoveInput);
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
+	void SetLocomotionMode(EPlayerLocomotionMode NewMode);
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	EMovementState GetMovementState() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	EPlayerLocomotionMode GetLocomotionMode() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	bool HasMoveInput() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	FVector2D GetMoveInputVector() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	FVector GetMoveInputWorldDirection() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	FVector GetMoveInputLocalDirection() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	float GetMoveInputDirectionAngle() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	float GetVelocityDirectionAngle() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	float GetGroundSpeed() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	bool IsSprintLockedAfterExhausted() const;
 
 private:
 	bool CanSprint() const;
@@ -47,6 +89,8 @@ private:
 	void UpdateSprintExhaustionLock();
 
 	EMovementState CurrentMovementState = EMovementState::Run;
+	EPlayerLocomotionMode CurrentLocomotionMode = EPlayerLocomotionMode::Normal;
+	FVector2D MoveInputVector = FVector2D::ZeroVector;
 	
 	UPROPERTY(EditAnywhere, Category="Movement")
 	float WalkSpeed = 100.0f;
