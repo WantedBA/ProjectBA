@@ -98,7 +98,7 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 {
 	const FVector2D Movement = Value.Get<FVector2D>();
 
-	ACharacter* ControlledCharacter = Cast<ACharacter>(GetPawn());
+	ABAPlayerCharacter* ControlledCharacter = Cast<ABAPlayerCharacter>(GetPawn());
 	if (!ControlledCharacter)
 	{
 		UE_LOG(LogTemp, Error, TEXT("[Input][Move] ControlledCharacter is null."));
@@ -106,6 +106,7 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 	}
 
 	bHasMoveInput = !Movement.IsNearlyZero();
+	ControlledCharacter->SetMoveInputVector(Movement);
 	ApplyMovementStateByModifier();
 	
 	const FRotator ControlRot = GetControlRotation();
@@ -121,6 +122,12 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 void ABAPlayerController::OnMoveCompleted()
 {
 	bHasMoveInput = false;
+
+	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
+	{
+		PC->SetMoveInputVector(FVector2D::ZeroVector);
+	}
+
 	ApplyMovementStateByModifier();
 }
 
