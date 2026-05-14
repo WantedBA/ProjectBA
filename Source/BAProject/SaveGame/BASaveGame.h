@@ -12,7 +12,7 @@ struct FSkillTreeSaveData
 	GENERATED_BODY()
 	
 	UPROPERTY(SaveGame)
-	int32 SkillPoint;
+	int32 SkillPoint = -1;
 	
 	UPROPERTY(SaveGame)
 	TSet<int32> ActivatedSkillIds;
