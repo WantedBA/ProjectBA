@@ -15,6 +15,12 @@ class BAPROJECT_API UStatComponent : public UActorComponent
 public:
 	UStatComponent();
 
+public:
+	UPROPERTY(BlueprintAssignable, Category = "Event")
+	FOnHPChanged OnHPChanged;
+	UPROPERTY(BlueprintAssignable, Category = "Event")
+	FOnDead OnDead;
+
 	UFUNCTION(BlueprintCallable, Category = "Stat")
 	void ApplyDamage(float DamageAmount);
 
@@ -24,8 +30,13 @@ public:
 	(
 		const float InMaxHP, 
 		const float InMaxStamina, 
-		const float InMoveSpeed, 
+		const float InStaminaRegenAmount, 
+		const float InStaminaRegenDelay, 
+		const float InWalkSpeed, 
+		const float InRunSpeed, 
+		const float InSprintSpeed, 
 		const float InAttack, 
+		const float InAttackSpeed, 
 		const float InDefence
 	);
 
@@ -46,36 +57,43 @@ public:
 	FORCEINLINE float GetMaxStamina() const { return MaxStamina; }
 	FORCEINLINE void SetMaxStamina(const float NewMaxStamina) { MaxStamina = NewMaxStamina; }
 	FORCEINLINE float GetCurrentStamina() const { return CurrentStamina; }
-	FORCEINLINE void SetCurrentStamina(const float NewCurrentStamina) { CurrentStamina = NewCurrentStamina; }
+	void SetCurrentStamina(const float NewCurrentStamina);
 
-	FORCEINLINE float GetMoveSpeed() const { return MoveSpeed; }
-	FORCEINLINE void SetMoveSpeed(const float NewMoveSpeed) { MoveSpeed = NewMoveSpeed; }
-public:
-	UPROPERTY(BlueprintAssignable, Category = "Stat|Event")
-	FOnHPChanged OnHPChanged;
-
-	UPROPERTY(BlueprintAssignable, Category = "Stat|Event")
-	FOnDead OnDead;
+	FORCEINLINE float GetWalkSpeed() const { return WalkSpeed; }
+	FORCEINLINE float GetRunSpeed() const { return RunSpeed; }
+	FORCEINLINE float GetSprintSpeed() const { return SprintSpeed; }
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
-	float MaxHP;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Health")
+	float MaxHP;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Health")
 	float CurrentHP;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Stamina")
 	float MaxStamina;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Stamina")
 	float CurrentStamina;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Stamina")
+	float StaminaRegenAmount;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Stamina")
+	float StaminaRegenDelay;
+
+	float StaminaRegenDelayRemaining = 0.f;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
-	float MoveSpeed;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Movement")
+	float WalkSpeed;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Movement")
+	float RunSpeed;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Movement")
+	float SprintSpeed;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Attack")
 	float Attack;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Attack")
+	float AttackSpeed;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Defence")
 	float Defence;
 };

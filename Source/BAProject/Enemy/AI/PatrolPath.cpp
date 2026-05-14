@@ -5,7 +5,11 @@ APatrolPath::APatrolPath()
 	PrimaryActorTick.bCanEverTick = false;
 
 	SplineComponent = CreateDefaultSubobject<USplineComponent>(TEXT("SplineComponent"));
+	SplineComponent->SetClosedLoop(true);
 	SetRootComponent(SplineComponent);
+
+	SplineComponent->EditorUnselectedSplineSegmentColor = FLinearColor::Red;
+	SplineComponent->EditorSelectedSplineSegmentColor = FLinearColor::White;
 }
 
 void APatrolPath::PrintPathCoordinates()
