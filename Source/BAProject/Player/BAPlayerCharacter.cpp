@@ -36,8 +36,6 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 		FRotator(0.f, -90.f, 0.f)
 	);
 
-	GetCharacterMovement()->RotationRate = FRotator(0.f, 720.f, 0.f);
-
 	// back view, 3인칭 설정
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
@@ -63,7 +61,7 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 	
-	ApplyLocomotionRotationPolicy();
+	ApplyLocomotionMovementPolicy();
 	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
 }
 
@@ -72,6 +70,7 @@ void ABAPlayerCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	InitializeFromTable();
+	ApplyLocomotionMovementPolicy();
 	SetMovementState(EMovementState::Run);
 
 	// StatComponent가 존재할 경우 변경된 델리게이트에 핸들러 함수 바인딩
@@ -253,7 +252,7 @@ void ABAPlayerCharacter::SetLocomotionMode(const EPlayerLocomotionMode NewMode)
 	}
 
 	CurrentLocomotionMode = NewMode;
-	ApplyLocomotionRotationPolicy();
+	ApplyLocomotionMovementPolicy();
 }
 
 void ABAPlayerCharacter::SetCombatMode(const EPlayerCombatMode NewMode)
@@ -430,18 +429,32 @@ void ABAPlayerCharacter::UpdateSprintExhaustionLock()
 	}
 }
 
-void ABAPlayerCharacter::ApplyLocomotionRotationPolicy()
+void ABAPlayerCharacter::ApplyLocomotionMovementPolicy()
 {
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (!MovementComponent)
+	{
+		return;
+	}
+
 	switch (CurrentLocomotionMode)
 	{
 	case EPlayerLocomotionMode::Strafe:
 		bUseControllerRotationYaw = true;
-		GetCharacterMovement()->bOrientRotationToMovement = false;
+		MovementComponent->bOrientRotationToMovement = false;
+		MovementComponent->RotationRate = FRotator(0.f, StrafeRotationRateYaw, 0.f);
+		MovementComponent->MaxAcceleration = StrafeMaxAcceleration;
+		MovementComponent->BrakingDecelerationWalking = StrafeBrakingDecelerationWalking;
+		MovementComponent->GroundFriction = StrafeGroundFriction;
 		break;
 	case EPlayerLocomotionMode::Free:
 	default:
 		bUseControllerRotationYaw = false;
-		GetCharacterMovement()->bOrientRotationToMovement = true;
+		MovementComponent->bOrientRotationToMovement = true;
+		MovementComponent->RotationRate = FRotator(0.f, FreeRotationRateYaw, 0.f);
+		MovementComponent->MaxAcceleration = FreeMaxAcceleration;
+		MovementComponent->BrakingDecelerationWalking = FreeBrakingDecelerationWalking;
+		MovementComponent->GroundFriction = FreeGroundFriction;
 		break;
 	}
 }
