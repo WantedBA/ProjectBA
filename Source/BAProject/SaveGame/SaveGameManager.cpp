@@ -9,6 +9,8 @@
 
 void USaveGameManager::Initialize(FSubsystemCollectionBase& Collection)
 {
+	Collection.InitializeDependency<USkillTreeSubsystem>();
+	
 	Super::Initialize(Collection);
 }
 
