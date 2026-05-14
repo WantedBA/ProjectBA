@@ -1,7 +1,15 @@
 # Agent Workflow Notes
 
-- Split implementation work into small, reviewable commits.
-- Prefer committing by coherent step and keep each commit to roughly two or three related files when practical.
-- Do not mix unrelated user or generated changes into agent commits.
-- Before each commit, review the staged diff and commit only the files that belong to that step.
-- Use concise commit messages that describe the behavior or data change, not just the files changed.
+- 구현 작업은 작고 검토 가능한 단위로 나눠 커밋한다.
+- 가능하면 하나의 커밋은 응집된 단계 하나를 담고, 관련 파일 두세 개 정도로 작게 유지한다.
+- 사용자가 만든 변경이나 무관한 생성물은 에이전트 커밋에 섞지 않는다.
+- 커밋 전에는 staged diff를 확인하고, 해당 단계에 속한 파일만 스테이징한다.
+- 커밋 메시지는 한글로 작성하고, 파일명이 아니라 동작이나 데이터 변경 의도를 설명한다.
+
+## Unreal Editor Guidance
+
+- 언리얼 에디터에서 사용자가 직접 해야 하는 작업이 있으면, 에이전트는 사용자를 단계별로 지휘하듯 구체적으로 안내한다.
+- 안내는 현재 위치, 클릭할 메뉴/버튼, 생성할 에셋 이름, 저장 위치, 설정값, 검증 방법을 포함한다.
+- 한 번에 너무 많은 작업을 던지지 말고, 에디터에서 확인 가능한 체크포인트 단위로 나눠 안내한다.
+- 사용자가 에디터에서 수행한 뒤 알려줘야 하는 결과를 명확히 말한다.
+- 에디터 작업으로 생성/수정된 에셋은 이후 `git status`로 확인하고, 에이전트가 커밋할 때는 관련 에셋만 별도 커밋으로 묶는다.
