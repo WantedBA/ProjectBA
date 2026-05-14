@@ -17,9 +17,9 @@ struct FPlayerBaseStat
 	UPROPERTY(BlueprintReadWrite)
 	float MaxStamina = 0.f; // MaxStamina
 	UPROPERTY(BlueprintReadWrite)
-	float StaminaRegenAmount = 0.f; // StaminaRegenAmount
+	float StaminaRecoveryAmount = 0.f; // StaminaRecoveryAmount
 	UPROPERTY(BlueprintReadWrite)
-	float StaminaRegenDelay = 0.f; // StaminaRegenDelay
+	float StaminaRecoveryDelay = 0.f; // StaminaRecoveryDelay
 	UPROPERTY(BlueprintReadWrite)
 	float WalkSpeed = 0.f; // WalkSpeed
 	UPROPERTY(BlueprintReadWrite)

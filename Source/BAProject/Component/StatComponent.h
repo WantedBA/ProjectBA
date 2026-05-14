@@ -30,8 +30,8 @@ public:
 	(
 		const float InMaxHP, 
 		const float InMaxStamina, 
-		const float InStaminaRegenAmount, 
-		const float InStaminaRegenDelay, 
+		const float InStaminaRecoveryAmount,
+		const float InStaminaRecoveryDelay,
 		const float InWalkSpeed, 
 		const float InRunSpeed, 
 		const float InSprintSpeed, 
@@ -76,11 +76,11 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Stamina")
 	float CurrentStamina;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Stamina")
-	float StaminaRegenAmount;
+	float StaminaRecoveryAmount;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Stamina")
-	float StaminaRegenDelay;
+	float StaminaRecoveryDelay;
 
-	float StaminaRegenDelayRemaining = 0.f;
+	float StaminaRecoveryDelayRemaining = 0.f;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Movement")
 	float WalkSpeed;

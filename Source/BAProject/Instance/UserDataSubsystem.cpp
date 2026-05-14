@@ -54,8 +54,8 @@ void UUserDataSubsystem::SetBaseStat()
 
 	BaseStat.MaxHp = BaseStatRow->MaxHp;
 	BaseStat.MaxStamina = BaseStatRow->MaxStamina;
-	BaseStat.StaminaRegenAmount = BaseStatRow->StaminaRegenAmount;
-	BaseStat.StaminaRegenDelay = BaseStatRow->StaminaRegenDelay;
+	BaseStat.StaminaRecoveryAmount = BaseStatRow->StaminaRecoveryAmount;
+	BaseStat.StaminaRecoveryDelay = BaseStatRow->StaminaRecoveryDelay;
 	BaseStat.WalkSpeed = BaseStatRow->WalkSpeed;
 	BaseStat.RunSpeed = BaseStatRow->RunSpeed;
 	BaseStat.SprintSpeed = BaseStatRow->SprintSpeed;

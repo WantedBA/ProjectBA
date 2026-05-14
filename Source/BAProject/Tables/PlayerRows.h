@@ -26,10 +26,10 @@ struct BAPROJECT_API FPlayerBaseStatRow : public FBARowBase
 	float MaxStamina = 0.f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
-	float StaminaRegenAmount = 0.f;
+	float StaminaRecoveryAmount = 0.f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
-	float StaminaRegenDelay = 0.f;
+	float StaminaRecoveryDelay = 0.f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
 	float WalkSpeed = 0.f;

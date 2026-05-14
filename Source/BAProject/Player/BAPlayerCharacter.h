@@ -22,6 +22,8 @@ class BAPROJECT_API ABAPlayerCharacter : public ACharacterBase
 	
 public:
 	ABAPlayerCharacter();
+	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 	virtual void Attack() override;
 	
 	UFUNCTION(BlueprintCallable, Category = Initialization)
@@ -33,8 +35,13 @@ protected:
 	
 public:
 	void SetMovementState(EMovementState NewState);
+	void SetHasMoveInput(bool bNewHasMoveInput);
 
 private:
+	bool CanSprint() const;
+	bool IsSprintMovementActive() const;
+	void ConsumeSprintStamina(float DeltaTime);
+
 	EMovementState CurrentMovementState = EMovementState::Run;
 	
 	UPROPERTY(EditAnywhere, Category="Movement")
@@ -45,6 +52,11 @@ private:
 	
 	UPROPERTY(EditAnywhere, Category="Movement")
 	float SprintSpeed = 700.0f;
+
+	float SprintStaminaCostPerSecond = 0.f;
+	float SprintMinRequiredStamina = 0.f;
+	bool bHasSprintActionData = false;
+	bool bHasMoveInput = false;
 	
 protected:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
