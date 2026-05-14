@@ -70,7 +70,18 @@ int32 USkillTreeSubsystem::GetAvailableSkillPoints() const
 		UsedSkillPoints += TableManager->FindSkill(ActivatedSkillId)->NeededSkillPoint;
 	}
 	
-	return SkillPoints - UsedSkillPoints;
+	return SkillPoint - UsedSkillPoints;
+}
+
+FSkillTreeSaveData USkillTreeSubsystem::MakeSaveData() const
+{
+	return { SkillPoint, ActivatedSkillIds };
+}
+
+void USkillTreeSubsystem::ApplySaveData(const FSkillTreeSaveData& SaveData)
+{
+	SkillPoint = SaveData.SkillPoint;
+	ActivatedSkillIds = SaveData.ActivatedSkillIds;
 }
 
 void USkillTreeSubsystem::TryToggleSkill(int32 SkillTid)
