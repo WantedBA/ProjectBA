@@ -21,11 +21,11 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	{
 		GetMesh()->SetSkeletalMesh(CharacterMesh.Object);
 	}
-	// static ConstructorHelpers::FClassFinder<UAnimInstance> CharacterAnim(TEXT("/Game/Character/Animation/ABP_ABCharacter.ABP_ABCharacter_C"));
-	// if (CharacterAnim.Succeeded())
-	// {
-	// 	GetMesh()->SetAnimInstanceClass(CharacterAnim.Class);
-	// }
+	static ConstructorHelpers::FClassFinder<UAnimInstance> CharacterAnim(TEXT("/Game/Character/Player/Animation/ABP_Player.ABP_Player_C"));
+	if (CharacterAnim.Succeeded())
+	{
+		GetMesh()->SetAnimInstanceClass(CharacterAnim.Class);
+	}
 	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
 
 	// 스탯 컴포넌트 생성
