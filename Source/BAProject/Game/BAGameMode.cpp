@@ -9,7 +9,7 @@ ABAGameMode::ABAGameMode()
 	PlayerControllerClass = ABAPlayerController::StaticClass();
 
 	static ConstructorHelpers::FClassFinder<APlayerController> PlayerControllerRef(
-		TEXT("/Game/Character/Blueprints/BP_PlayerController.BP_PlayerController_C"));
+		TEXT("/Game/Character/Player/Core/BP_PlayerController.BP_PlayerController_C"));
 	if (PlayerControllerRef.Succeeded())
 	{
 		PlayerControllerClass = PlayerControllerRef.Class;
