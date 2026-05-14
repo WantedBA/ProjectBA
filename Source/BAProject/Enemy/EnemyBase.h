@@ -4,7 +4,6 @@
 #include "Character/CharacterBase.h"
 #include "EnemyBase.generated.h"
 
-class UStateComponent;
 class UStatComponent;
 class UCombatComponent;
 
@@ -41,17 +40,8 @@ public:
 
 	virtual void Attack();
 
-protected:
-	virtual void PostInitializeComponents() override;
-	virtual void PossessedBy(AController* NewController) override;
-
-	virtual void OnDamaged(float FinalDamage, AActor* DamageCauser) override;
-
 	UFUNCTION()
 	virtual void OnDeath() override;
-
-	UFUNCTION(BlueprintCallable, Category = "State")
-	void SetState(EEnemyState NewState);
 
 	UFUNCTION(BlueprintPure, Category = "State")
 	bool IsDead() const { return CurrentState == EEnemyState::Dead; }
@@ -61,6 +51,15 @@ protected:
 
 	UFUNCTION(BlueprintPure, Category = "State")
 	EEnemyGrade GetEnemyGrade() const { return EnemyGrade; }
+
+protected:
+	virtual void PostInitializeComponents() override;
+	virtual void PossessedBy(AController* NewController) override;
+
+	virtual void OnDamaged(float FinalDamage, AActor* DamageCauser) override;
+
+	UFUNCTION(BlueprintCallable, Category = "State")
+	void SetState(EEnemyState NewState);
 
 	// 시각 연출 이벤트
 	UFUNCTION(BlueprintImplementableEvent, Category = "Enemy|Visuals", meta = (DisplayName = "OnHitVisuals"))

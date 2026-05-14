@@ -4,6 +4,8 @@
 #include "Component/CombatComponent.h"
 #include "Tables/BATableManager.h"
 #include "Tables/MonsterRows.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "Constants/BAProjectConstant.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 AEnemyBase::AEnemyBase()
@@ -36,7 +38,8 @@ void AEnemyBase::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
-	if (AEnemyAIController* AIController = Cast<AEnemyAIController>(NewController))
+	AEnemyAIController* AIController = Cast<AEnemyAIController>(NewController);
+	if (AIController)
 	{
 		UE_LOG(LogTemp, Log, TEXT("[%s] PossessedBy %s. MonsterTid: %d"), *GetName(), *NewController->GetName(), MonsterTid);
 		if (MonsterTid != 0)
@@ -53,6 +56,7 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 	UBATableManager* TableManager = UBATableManager::Get(this);
 	if (TableManager == nullptr)
 	{
+		UE_LOG(LogTemp, Log, TEXT("[AEnemyBase] Monster data not found for Tid: %d"), MonsterTid);
 		return;
 	}
 
@@ -71,8 +75,8 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 		if (GetCharacterMovement())
 		{
 			GetCharacterMovement()->MaxWalkSpeed = static_cast<float>(MonsterRow->MoveSpeed);
-			GetCharacterMovement()->bOrientRotationToMovement = true; // �̵� �������� ĳ���� ȸ��
-			GetCharacterMovement()->RotationRate = FRotator(0.0f, 360.0f, 0.0f); // ȸ�� �ӵ� ����
+			GetCharacterMovement()->bOrientRotationToMovement = true;
+			GetCharacterMovement()->RotationRate = FRotator(0.0f, 360.0f, 0.0f);
 		}
 
 		if (!MonsterRow->MeshPath.IsEmpty())
@@ -116,13 +120,25 @@ void AEnemyBase::OnDeath()
 
 void AEnemyBase::SetState(EEnemyState NewState)
 {
-	if (CurrentState == NewState || IsDead())
+	if (CurrentState == NewState || (CurrentState == EEnemyState::Dead && NewState != EEnemyState::Dead))
 	{
 		return;
 	}
 
 	EEnemyState OldState = CurrentState;
 	CurrentState = NewState;
+
+	if (AEnemyAIController* AIController = Cast<AEnemyAIController>(GetController()))
+	{
+		UBlackboardComponent* BBComponent = AIController->GetBlackboardComponent();
+		if (BBComponent)
+		{
+			// 다음 행위 중에는 BT 막기
+			bool bIsActionLocked = (CurrentState == EEnemyState::Attack || CurrentState == EEnemyState::Hit || CurrentState == EEnemyState::Dead);
+			BBComponent->SetValueAsBool(BBKey::IsActionLocked, bIsActionLocked);
+		}
+	}
+
 	OnStateChanged.Broadcast(OldState, NewState);
 }
 
