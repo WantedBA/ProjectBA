@@ -56,12 +56,13 @@ public:
 	UFUNCTION(BlueprintPure, Category = "State")
 	EEnemyGrade GetEnemyGrade() const { return EnemyGrade; }
 
+	virtual void UpdateMoveSpeed(EEnemyState NewState);
+
 protected:
 	virtual void PostInitializeComponents() override;
 	virtual void PossessedBy(AController* NewController) override;
 
 	virtual void OnDamaged(float FinalDamage, AActor* DamageCauser) override;
-	virtual void UpdateMoveSpeed(EEnemyState NewState) override;
 
 	UFUNCTION(BlueprintCallable, Category = "State")
 	void SetState(EEnemyState NewState);
