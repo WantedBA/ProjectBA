@@ -39,6 +39,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Enemy")
 	virtual void InitializeFromTable(int32 InTid);
 
+	virtual void Attack();
+
 protected:
 	virtual void PostInitializeComponents() override;
 	virtual void PossessedBy(AController* NewController) override;
@@ -88,4 +90,7 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	EEnemyGrade EnemyGrade;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	TObjectPtr<UAnimMontage> AttackMontage;
 };

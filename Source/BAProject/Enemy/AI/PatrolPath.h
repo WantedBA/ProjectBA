@@ -24,4 +24,12 @@ public:
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "Path")
 	TObjectPtr<USplineComponent> SplineComponent;
+	UPROPERTY(EditAnywhere, Category = "Path|Visualization")
+	FColor PathColor = FColor::Green;
+
+	UPROPERTY(EditAnywhere, Category = "Path|Visualization")
+	float PathThickness = 10.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Path|Visualization")
+	bool bShowDebugPath = true;
 };
