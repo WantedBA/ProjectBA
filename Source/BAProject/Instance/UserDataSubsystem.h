@@ -55,8 +55,8 @@ struct FPlayerActionData
 	float SprintRestartStaminaPercent = 0.f;
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHpChanged, float, CurrentHP, float, MaxHp);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStaminaChanged, float, CurrentStamina, float, MaxStamina);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPlayerHpChanged, float, CurrentHP, float, MaxHp);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPlayerStaminaChanged, float, CurrentStamina, float, MaxStamina);
 
 UCLASS()
 class BAPROJECT_API UUserDataSubsystem : public UGameInstanceSubsystem
@@ -77,9 +77,12 @@ public:
 
 	// UI
 	UPROPERTY(BlueprintAssignable, BlueprintCallable, Category = "User|Event")
-	FOnHpChanged OnHpChanged;
+	FOnPlayerHpChanged OnPlayerHpChanged;
 	UPROPERTY(BlueprintAssignable, BlueprintCallable, Category = "User|Event")
-	FOnStaminaChanged OnStaminaChanged;
+	FOnPlayerStaminaChanged OnPlayerStaminaChanged;
+
+	UFUNCTION(BlueprintCallable, Category = "User|Update")
+	void NotifyPlayerStatChanged(float CurrentHP, float MaxHP, float CurrentStamina, float MaxStamina);
 
 protected:
 	UPROPERTY(BlueprintReadOnly)

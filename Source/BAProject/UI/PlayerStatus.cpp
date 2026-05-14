@@ -15,10 +15,10 @@ void UPlayerStatus::NativeConstruct()
 	if (UserData)
 	{
 		// [체력] 서브시스템의 HP 변경을 UpdateHP 함수에 등록
-		UserData->OnHpChanged.AddDynamic(this, &UPlayerStatus::UpdateHP);
+		UserData->OnPlayerHpChanged.AddDynamic(this, &UPlayerStatus::UpdateHP);
 
 		// [스테미너] 서브시스템의 Stamina 변경을 UpdateStamina 함수에 등록
-		UserData->OnStaminaChanged.AddDynamic(this, &UPlayerStatus::UpdateStamina);
+		UserData->OnPlayerStaminaChanged.AddDynamic(this, &UPlayerStatus::UpdateStamina);
 
 	}
 }

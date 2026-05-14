@@ -77,8 +77,6 @@ protected:
 
 	UFUNCTION()
 	void OnHealthChanged(float CurrentHP, float MaxHP);
-
+	UFUNCTION()
 	void OnStaminaChanged(float CurrentStamina, float MaxStamina);
-
-	virtual void BeginPlay() override;
 };

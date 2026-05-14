@@ -121,22 +121,6 @@ void UStatComponent::SetCurrentStamina(const float NewCurrentStamina)
 		StaminaRecoveryDelayRemaining = StaminaRecoveryDelay;
 		SetComponentTickEnabled(CurrentStamina < MaxStamina && StaminaRecoveryPerSecond > 0.f);
 
-		const FString DebugText = FString::Printf(TEXT("[Stamina Consume] %.2f -> %.2f / %.2f RecoveryDelay=%.2f"),
-			OldStamina,
-			CurrentStamina,
-			MaxStamina,
-			StaminaRecoveryDelayRemaining);
-		UE_LOG(LogTemp, Log, TEXT("%s"), *DebugText);
-
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(
-				StaminaDebugMessageKey,
-				0.1f,
-				FColor::Yellow,
-				DebugText
-			);
-		}
 		return;
 	}
 
@@ -145,21 +129,5 @@ void UStatComponent::SetCurrentStamina(const float NewCurrentStamina)
 	{
 		StaminaRecoveryDelayRemaining = 0.f;
 		SetComponentTickEnabled(false);
-	}
-
-	if (CurrentStamina > OldStamina && GEngine)
-	{
-		const FString DebugText = FString::Printf(TEXT("[Stamina Regen] %.2f -> %.2f / %.2f"),
-			OldStamina,
-			CurrentStamina,
-			MaxStamina);
-		UE_LOG(LogTemp, Log, TEXT("%s"), *DebugText);
-
-		GEngine->AddOnScreenDebugMessage(
-			StaminaDebugMessageKey,
-			0.1f,
-			FColor::Green,
-			DebugText
-		);
 	}
 }
