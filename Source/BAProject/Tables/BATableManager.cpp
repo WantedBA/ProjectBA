@@ -35,6 +35,9 @@ void UBATableManager::Initialize(FSubsystemCollectionBase& Collection)
 	{
 		Table->PostRead();
 	}
+	
+	// SkillRow ChildId 생성
+	BuildChildSkillLists();
 
 	UE_LOG(LogTemp, Log, TEXT("[BATableManager] %d table(s) loaded."), PostReadList.Num());
 }
@@ -69,6 +72,16 @@ bool UBATableManager::BP_FindConsume(int32 InTid, FConsumeItemRow& OutRow) const
 	return false;
 }
 
+bool UBATableManager::BP_FindSkill(int32 InTid, FSkillRow& OutRow) const
+{
+	if (const FSkillRow* Row = SkillTable.Find(InTid))
+	{
+		OutRow = *Row;
+		return true;
+	}
+	return false;
+}
+
 template<typename RowType, typename KeyType>
 void UBATableManager::LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const FString AssetPath)
 {
@@ -82,4 +95,46 @@ void UBATableManager::LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const 
 	LoadedTables.Add(DataTable);
 	OutTable.Build(DataTable);
 	PostReadList.Add(&OutTable);
+}
+
+void UBATableManager::BuildChildSkillLists()
+{
+	const TMap<int32, FSkillRow*>& SkillMap = SkillTable.GetMap();
+	
+	for (const TPair<int32, FSkillRow*>& Pair : SkillMap)
+	{
+		if (Pair.Value)
+		{
+			Pair.Value->ChildIds.Reset();
+		}
+	}
+
+	for (const TPair<int32, FSkillRow*>& Pair : SkillMap)
+	{
+		const int32 SkillTid = Pair.Key;
+		const FSkillRow* SkillRow = Pair.Value;
+
+		if (!SkillRow)
+		{
+			continue;
+		}
+
+		for (const int32 PrerequisiteId : SkillRow->PrerequisiteIds)
+		{
+			FSkillRow* const* ParentRowPtr = SkillMap.Find(PrerequisiteId);
+			if (!ParentRowPtr || !(*ParentRowPtr))
+			{
+				UE_LOG(
+					LogTemp,
+					Warning,
+					TEXT("[BATableManager] Skill %d has invalid prerequisite id: %d"),
+					SkillTid,
+					PrerequisiteId
+				);
+				continue;
+			}
+
+			(*ParentRowPtr)->ChildIds.AddUnique(SkillTid);
+		}
+	}
 }

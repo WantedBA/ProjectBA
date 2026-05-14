@@ -31,6 +31,7 @@ public:
 	// Player
 	FORCEINLINE const FPlayerBaseStatRow* FindPlayerBaseStat() const { return PlayerBaseStatTable.Find(1); } // 플레이어는 1명이므로 매직넘버 고정
 	FORCEINLINE const FPlayerActionDataRow* FindPlayerActionData(const int32 InTid) const { return PlayerActionDataTable.Find(InTid); }
+	FORCEINLINE const TMap<int32, FPlayerActionDataRow*>& GetPlayerActionDataTable() const { return PlayerActionDataTable.GetMap(); }
 	
 	// Consume
 	UFUNCTION(BlueprintCallable, Category = "BA|Table")
@@ -45,7 +46,12 @@ public:
 	
 	// Skill
 	const FSkillRow* FindSkill(const int32 InTid) const { return SkillTable.Find(InTid); }
+	
+	UFUNCTION(BlueprintCallable, Category = "BA|Table|Skill", meta = (DisplayName = "Find Skill"))
+	bool BP_FindSkill(int32 InTid, FSkillRow& OutRow) const;
 
+	const TMap<int32, FSkillRow*>& GetSkillMap() const { return SkillTable.GetMap(); }
+	
 	// Monster
 	const FMonsterRows* FindMonster(const int32 InTid) const { return MonsterTable.Find(InTid); }
 	
@@ -81,4 +87,7 @@ private:
 
 	UPROPERTY()
 	TArray<TObjectPtr<UDataTable>> LoadedTables;
+	
+// 스킬 데이터 정리
+	void BuildChildSkillLists();
 };

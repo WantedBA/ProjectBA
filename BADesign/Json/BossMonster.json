@@ -5,6 +5,10 @@
             "CoolTime": 2,
             "ConditionType": 1,
             "Var1": 10000,
+            "Weight": 1,
+            "IdealRange": 150,
+            "AttackAngle": 45,
+            "ScoreMultiplier": 1,
             "Attack": 30
         },
         {
@@ -13,6 +17,10 @@
             "ConditionType": 2,
             "Var1": 3000,
             "Var2": 80,
+            "Weight": 1.2,
+            "IdealRange": 200,
+            "AttackAngle": 30,
+            "ScoreMultiplier": 1.5,
             "Attack": 100
         },
         {
@@ -21,6 +29,10 @@
             "ConditionType": 3,
             "Var1": 2000,
             "Var2": 20,
+            "Weight": 1.5,
+            "IdealRange": 800,
+            "AttackAngle": 15,
+            "ScoreMultiplier": 1.2,
             "Attack": 150
         },
         {
@@ -29,7 +41,11 @@
             "ConditionType": 4,
             "Var1": 2000,
             "Var2": 1,
-            "Var3": 5
+            "Var3": 5,
+            "Weight": 2,
+            "IdealRange": 1200,
+            "AttackAngle": 180,
+            "ScoreMultiplier": 1
         }
     ],
     "2StageBossAttack": [
@@ -38,6 +54,10 @@
             "CoolTime": 2,
             "ConditionType": 1,
             "Var1": 10000,
+            "Weight": 1,
+            "IdealRange": 150,
+            "AttackAngle": 45,
+            "ScoreMultiplier": 1,
             "Attack": 30
         },
         {
@@ -46,6 +66,10 @@
             "ConditionType": 2,
             "Var1": 3000,
             "Var2": 80,
+            "Weight": 1.2,
+            "IdealRange": 200,
+            "AttackAngle": 30,
+            "ScoreMultiplier": 1.5,
             "Attack": 100
         },
         {
@@ -54,6 +78,10 @@
             "ConditionType": 3,
             "Var1": 2000,
             "Var2": 20,
+            "Weight": 1.5,
+            "IdealRange": 800,
+            "AttackAngle": 15,
+            "ScoreMultiplier": 1.2,
             "Attack": 150
         },
         {
@@ -62,7 +90,11 @@
             "ConditionType": 4,
             "Var1": 2000,
             "Var2": 1,
-            "Var3": 5
+            "Var3": 5,
+            "Weight": 2,
+            "IdealRange": 1200,
+            "AttackAngle": 180,
+            "ScoreMultiplier": 1
         }
     ],
     "3StageBossAttack": [
@@ -71,6 +103,10 @@
             "CoolTime": 2,
             "ConditionType": 1,
             "Var1": 10000,
+            "Weight": 1,
+            "IdealRange": 150,
+            "AttackAngle": 45,
+            "ScoreMultiplier": 1,
             "Attack": 30
         },
         {
@@ -79,6 +115,10 @@
             "ConditionType": 2,
             "Var1": 3000,
             "Var2": 80,
+            "Weight": 1.2,
+            "IdealRange": 200,
+            "AttackAngle": 30,
+            "ScoreMultiplier": 1.5,
             "Attack": 100
         },
         {
@@ -87,6 +127,10 @@
             "ConditionType": 3,
             "Var1": 2000,
             "Var2": 20,
+            "Weight": 1.5,
+            "IdealRange": 800,
+            "AttackAngle": 15,
+            "ScoreMultiplier": 1.2,
             "Attack": 150
         },
         {
@@ -95,7 +139,11 @@
             "ConditionType": 4,
             "Var1": 2000,
             "Var2": 1,
-            "Var3": 5
+            "Var3": 5,
+            "Weight": 2,
+            "IdealRange": 1200,
+            "AttackAngle": 180,
+            "ScoreMultiplier": 1
         }
     ]
 }
