@@ -29,6 +29,22 @@ void USkillTreeWidget::HandleSkillNodeStateChanged(int32 SkillId, ESkillNodeStat
 	SkillNodeMap[SkillId]->SetSkillNodeState(NewState);
 }
 
+void USkillTreeWidget::RefreshAllSkillNodeState()
+{
+	const USkillTreeSubsystem* SkillTreeSubsystem = GetGameInstance()->GetSubsystem<USkillTreeSubsystem>();
+
+	if (!SkillTreeSubsystem)
+	{
+		UE_LOG(LogTemp, Error, TEXT("USkillTreeWidget::RefreshAllSkillNodeState - SkillTreeSubsystem is not found"));
+		return;
+	}
+	
+	for (auto& SkillNodePair : SkillNodeMap)
+	{
+		SkillNodePair.Value->SetSkillNodeState(SkillTreeSubsystem->CalculateSkillNodeState(SkillNodePair.Key));
+	}
+}
+
 void USkillTreeWidget::HandleSkillNodeClicked(int32 SkillId)
 {
 	// SkillTreeSubsystem으로 스킬Id 전달

@@ -9,6 +9,8 @@
 void USkillNodeWidget::SetSkillNodeState(const ESkillNodeState InSkillNodeState)
 {
 	SkillNodeState = InSkillNodeState;
+	
+	// UI 갱신
 	OnSkillNodeStateChanged();
 	
 	// TODO: 디버그용 임시 코드 
