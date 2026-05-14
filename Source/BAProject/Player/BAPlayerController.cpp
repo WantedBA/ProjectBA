@@ -65,6 +65,8 @@ void ABAPlayerController::SetupInputComponent()
 	if (ensureMsgf(RunAction, TEXT("RunAction is not configured on %s"), *GetName()))
 	{
 		EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Triggered, this, &ABAPlayerController::Move);
+		EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &ABAPlayerController::OnMoveCompleted);
+		EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Canceled, this, &ABAPlayerController::OnMoveCompleted);
 	}
 
 	if (ensureMsgf(LookAction, TEXT("LookAction is not configured on %s"), *GetName()))
@@ -103,7 +105,8 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 		return;
 	}
 
-	ApplyMovementStateByModifier(!Movement.IsNearlyZero());
+	bHasMoveInput = !Movement.IsNearlyZero();
+	ApplyMovementStateByModifier();
 	
 	const FRotator ControlRot = GetControlRotation();
 	const FRotator YawRot(0.f, ControlRot.Yaw, 0.f);
@@ -113,6 +116,12 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 
 	ControlledCharacter->AddMovementInput(Forward, Movement.Y);
 	ControlledCharacter->AddMovementInput(Right, Movement.X);
+}
+
+void ABAPlayerController::OnMoveCompleted()
+{
+	bHasMoveInput = false;
+	ApplyMovementStateByModifier();
 }
 
 void ABAPlayerController::Look(const FInputActionValue& Value)
@@ -133,32 +142,36 @@ void ABAPlayerController::LightAttack()
 void ABAPlayerController::OnWalkStarted()
 {
 	bWalkModifierHeld = true;
+	ApplyMovementStateByModifier();
 }
 
 void ABAPlayerController::OnWalkCompleted()
 {
 	bWalkModifierHeld = false;
-	ApplyMovementStateByModifier(false);
+	ApplyMovementStateByModifier();
 }
 
 void ABAPlayerController::OnSprintStarted()
 {
 	bSprintModifierHeld = true;
+	ApplyMovementStateByModifier();
 }
 
 void ABAPlayerController::OnSprintCompleted()
 {
 	bSprintModifierHeld = false;
-	ApplyMovementStateByModifier(false);
+	ApplyMovementStateByModifier();
 }
 
-void ABAPlayerController::ApplyMovementStateByModifier(const bool bHasMoveInput) const
+void ABAPlayerController::ApplyMovementStateByModifier() const
 {
 	ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
 	if (!PC)
 	{
 		return;
 	}
+
+	PC->SetHasMoveInput(bHasMoveInput);
 
 	if (!bHasMoveInput)
 	{

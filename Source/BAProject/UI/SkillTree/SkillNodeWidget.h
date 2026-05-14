@@ -4,18 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "Instance/UserDataSubsystem.h"
+#include "Instance/SkillTreeTypes.h"
 #include "SkillNodeWidget.generated.h"
 
-struct FSkillTreeProgress;
-// 게임 중 스킬 상태
-UENUM(BlueprintType)
-enum class ESkillNodeState : uint8
-{
-	Locked		UMETA(DisplayName = "Locked"),
-	Available	UMETA(DisplayName = "Available"),
-	Learned		UMETA(DisplayName = "Learned"),
-};
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSkillNodeClickedDelegate, int32, SkillId);
 
 /**
  * 
@@ -24,40 +16,44 @@ UCLASS()
 class BAPROJECT_API USkillNodeWidget : public UUserWidget
 {
 	GENERATED_BODY()
-	
-protected:
-	// 재정의 함수
-	virtual void NativePreConstruct() override;
 
 public:
-	// 최초 생성 이후 1회 초기화
-	void InitSkillNodeData(const FSkillTreeProgress& InitData);
+	// Getter
+	[[nodiscard]] ESkillNodeState GetSkillNodeState() const
+	{
+		return SkillNodeState;
+	}
 
-// 고정 데이터
-protected:
-	UPROPERTY(BlueprintReadOnly, Category = SkillTree)
-	int32 SkillId = -1;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = SkillTree)
-	TArray<int32> PrerequisiteSkillIds;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = SkillTree)
-	TArray<int32> ChildSkillIds;
-	
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = SkillTree)
-	// class FSkillData SkillData;
-
-public:
 	// Setter
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE void SetSkillNodeState(const ESkillNodeState InSkillNodeState)
 	{
 		this->SkillNodeState = InSkillNodeState;
 	}
-
-// 변동 가능한 데이터
+	
+	// Delegate
+	UPROPERTY(BlueprintAssignable, Category = SkillTree)
+	FOnSkillNodeClickedDelegate OnSkillNodeClicked;
+	
 protected:
-	// 게임 중 스킬 상태(SkillTree에서 설정)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = SkillTree)
+	// 재정의 함수
+	virtual void NativePreConstruct() override;
+	virtual void NativeOnInitialized() override;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<class UButton> SkillNodeButton;
+	
+// 데이터
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ExposeOnSpawn = "true"), Category = SkillTree)
+	int32 SkillId = -1;
+	
+	// 게임 중 스킬 상태
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = SkillTree)
 	ESkillNodeState SkillNodeState = ESkillNodeState::Locked;
 	
+private:
+	// 브로드캐스팅 -> SkillTree에서 수신
+	UFUNCTION()
+	void HandleSkillNodeButtonClicked();
 };

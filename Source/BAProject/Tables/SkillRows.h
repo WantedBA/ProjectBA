@@ -29,8 +29,12 @@ struct BAPROJECT_API FSkillRow : public FBARowBase
 	FString Prerequisites;
 	
 	// 위 값(Prerequisites)을 파싱해서 int32 배열로 변환한 값
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<int32> PrerequisiteIds;
+	
+	// 최초 초기화 이후 PrerequisiteIds으로 찾은 값 TODO: TableManager에서 저장
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<int32> ChildIds;
 
 	// 서로 동시에 찍을 수 없는 스킬들을 같은 그룹으로 묶음(0이면 그룹 없음)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
@@ -42,11 +46,29 @@ struct BAPROJECT_API FSkillRow : public FBARowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
 	int32 NeededSkillPoint = 0;
-
+	
+	// 아이콘 경로
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
+	FString IconPathString;
+	
+	// IconPathString 값을 TSoftObjectPath로 변환하여 사용
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
+	TSoftObjectPtr<UTexture2D> IconTexture;
+	
+	// Canvas Slot 내 위치
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
+	float PositionX = 0.0f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
+	float PositionY = 0.0f;
+	
 	virtual void PostRead() override
 	{
 		bTid = SkillTid;
+		
+		// 필요한 값 변환
 		PrerequisiteIds = ParseIntArray(Prerequisites);
+		IconTexture = ConvertToSoftObjectPtr(IconPathString);
 	}
 
 	// 문자열을 쉼표로 구분하여 int32 배열로 변환
@@ -65,5 +87,10 @@ struct BAPROJECT_API FSkillRow : public FBARowBase
 			}
 		}
 		return Result;
+	}
+	
+	static TSoftObjectPtr<UTexture2D> ConvertToSoftObjectPtr(const FString& IconPathString)
+	{
+		return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(IconPathString));
 	}
 };
