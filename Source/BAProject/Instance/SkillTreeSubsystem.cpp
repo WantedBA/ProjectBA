@@ -136,6 +136,7 @@ void USkillTreeSubsystem::DeactivateSkill(int32 SkillTid)
 	// 재귀 종료 조건
 	if (!ActivatedSkillIds.Contains(SkillTid))
 	{
+		OnSkillNodeStateChange.Broadcast(SkillTid, CalculateSkillNodeState(SkillTid));
 		return;
 	}
 	
