@@ -36,7 +36,6 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 		FRotator(0.f, -90.f, 0.f)
 	);
 
-	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 720.f, 0.f);
 
 	// back view, 3인칭 설정
@@ -61,10 +60,10 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	
 	// 마우스 카메라 제어 Yaw축만 허용
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = true;
+	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 	
-	GetCharacterMovement()->bOrientRotationToMovement = false;
+	ApplyLocomotionRotationPolicy();
 	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
 }
 
@@ -248,7 +247,18 @@ void ABAPlayerCharacter::SetMoveInputVector(const FVector2D& NewMoveInput)
 
 void ABAPlayerCharacter::SetLocomotionMode(const EPlayerLocomotionMode NewMode)
 {
+	if (CurrentLocomotionMode == NewMode)
+	{
+		return;
+	}
+
 	CurrentLocomotionMode = NewMode;
+	ApplyLocomotionRotationPolicy();
+}
+
+void ABAPlayerCharacter::SetCombatMode(const EPlayerCombatMode NewMode)
+{
+	CurrentCombatMode = NewMode;
 }
 
 EMovementState ABAPlayerCharacter::GetMovementState() const
@@ -259,6 +269,11 @@ EMovementState ABAPlayerCharacter::GetMovementState() const
 EPlayerLocomotionMode ABAPlayerCharacter::GetLocomotionMode() const
 {
 	return CurrentLocomotionMode;
+}
+
+EPlayerCombatMode ABAPlayerCharacter::GetCombatMode() const
+{
+	return CurrentCombatMode;
 }
 
 bool ABAPlayerCharacter::HasMoveInput() const
@@ -412,6 +427,22 @@ void ABAPlayerCharacter::UpdateSprintExhaustionLock()
 	if (StatComponent->GetCurrentStamina() >= SprintRestartStamina)
 	{
 		bSprintLockedAfterExhausted = false;
+	}
+}
+
+void ABAPlayerCharacter::ApplyLocomotionRotationPolicy()
+{
+	switch (CurrentLocomotionMode)
+	{
+	case EPlayerLocomotionMode::Strafe:
+		bUseControllerRotationYaw = true;
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+		break;
+	case EPlayerLocomotionMode::Free:
+	default:
+		bUseControllerRotationYaw = false;
+		GetCharacterMovement()->bOrientRotationToMovement = true;
+		break;
 	}
 }
 
