@@ -3,25 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SkillTreeTypes.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Tables/BATableManager.h"
 #include "SkillTreeSubsystem.generated.h"
 
-// Todo: 임의 작업 후에 SkillData 관련 구조체 제대로 설정되면 변경 요망.
-USTRUCT(BlueprintType)
-struct FSkillTreeProgress
-{
-	GENERATED_BODY()
-	
-	UPROPERTY(BlueprintReadOnly)
-	int32 SkillTid;
-	UPROPERTY(BlueprintReadOnly)
-	int32 SkillCost = 1; // 스킬 획득 비용(스킬포인트)
-};
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSkillPointsChanged, int32, NewSkillPoints);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAddSkillData, FSkillTreeProgress, SkillData);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRemoveSkillData, int32, SkillTid);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSkillNodeStateChange, int32, SkillTid, ESkillNodeState, NewState);
 
 /**
  * 
@@ -35,55 +22,51 @@ public:
 	// 재정의 함수
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	
-	// 전역 접근
-	static USkillTreeSubsystem* Get(const UObject* WorldContext);
-	
 	// Getter
 	UFUNCTION(BlueprintPure)
-	int32 GetSkillPoints() const { return SkillPoints; }
+	FORCEINLINE int32 GetSkillPoints() const { return SkillPoints; }
+
+// 스킬트리 상태 반환
+	bool CanLearnSkill(const int32 SkillId) const;
+
+	ESkillNodeState CalculateSkillNodeState(const int32 SkillId) const;
+
+	UFUNCTION(BlueprintCallable)
+	int32 GetAvailableSkillPoints() const;
+	
+// 스킬트리 상태 변경
+	UFUNCTION()
+	void TryToggleSkill(int32 SkillTid);
+	
+	UFUNCTION()
+	void TryActivateSkill(int32 SkillTid);
+	
+	UFUNCTION()
+	void DeactivateSkill(int32 SkillTid);
 	
 private:
-	// Subsystem 참조
+	void ActivateSkill(int32 SkillTid);
+	
+private:
+// Subsystem
 	UPROPERTY()
 	TObjectPtr<class UUserDataSubsystem> UserData;
 	UPROPERTY()
 	TObjectPtr<UBATableManager> TableManager;
-	
-	// TableManager에서 스킬 정보 가져오는 함수
-	const struct FSkillRow* GetSkillRow(const int32 InTid) const { return TableManager->FindSkill(InTid); }
-	
 
-// -----------------------------------------------------------------------------------------------------
-	
-	
-// 스킬트리 관련
-	//SkillPoint
-	// UFUNCTION(BlueprintCallable)
-	// void AddSkillPoints(int32 Amount);
-
-	//AddSkill
-	void AddSkillData(FSkillTreeProgress data);
-	void AddSkillData(int32 skillTid);
-	
-	//RemoveSkill
-	void RemoveSkillData(int32 skillTid);
-	
-		
-	//Delegate
-	UPROPERTY(BlueprintAssignable)
-	FOnSkillPointsChanged OnSkillPointsChanged;
-	UPROPERTY(BlueprintAssignable)
-	FOnAddSkillData OnAddSkillData;
-	UPROPERTY(BlueprintAssignable)
-	FOnRemoveSkillData OnRemoveSkillData;
-	
-	const FSkillTreeProgress* FindSkillData(int32 skillTid) const;
-	
-	
 protected:
-	UPROPERTY(BlueprintReadWrite)
-	int32 SkillPoints = 0;
+// 저장된 데이터
+	// 배운 스킬 + 남은 스킬 포인트
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SkillTree)
+	int32 SkillPoints = 3;
 
-	UPROPERTY(BlueprintReadOnly)
-	TArray<FSkillTreeProgress> OwnedSkillDatas;
+	// 배운 스킬 목록
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SkillTree)
+	TSet<int32> ActivatedSkillIds;
+	
+public:
+// Delegate
+	UPROPERTY(BlueprintAssignable)
+	FOnSkillNodeStateChange OnSkillNodeStateChange;
+	
 };

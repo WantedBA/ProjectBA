@@ -1,5 +1,10 @@
 #include "Component/StatComponent.h"
 
+namespace
+{
+	constexpr uint64 StaminaDebugMessageKey = 13020;
+}
+
 UStatComponent::UStatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
@@ -16,23 +21,25 @@ void UStatComponent::TickComponent
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// 현재 스테미너가 꽉 찼거나 바닥났을 경우, 혹은 리젠 양이 0일 경우 타이머 초기화
-	if (MaxStamina <= 0.f || StaminaRegenAmount <= 0.f || CurrentStamina >= MaxStamina)
+	// 현재 스테미너가 꽉 찼거나 바닥났을 경우, 혹은 회복률이 0일 경우 타이머 초기화
+	if (MaxStamina <= 0.f || StaminaRecoveryPerSecond <= 0.f || CurrentStamina >= MaxStamina)
 	{
-		StaminaRegenDelayRemaining = 0.f;
+		StaminaRecoveryDelayRemaining = 0.f;
 		SetComponentTickEnabled(false);
 		return;
 	}
 
 	// 리젠 딜레이가 남아있을 경우 프레임 경과 시간만큼 딜레이 차감
-	if (StaminaRegenDelayRemaining > 0.f)
+	if (StaminaRecoveryDelayRemaining > 0.f)
 	{
-		StaminaRegenDelayRemaining = FMath::Max(0.f, StaminaRegenDelayRemaining - DeltaTime);
+		StaminaRecoveryDelayRemaining = FMath::Max(0.f, StaminaRecoveryDelayRemaining - DeltaTime);
 		return;
 	}
 
-	// 리젠 양에 프레임 경과 시간 곱한만큼 회복
-	SetCurrentStamina(CurrentStamina + StaminaRegenAmount * DeltaTime);
+	// 초당 회복률을 실제 초당 회복량으로 바꾼 뒤, 이번 프레임 시간만큼만 회복
+	const float RecoveryAmountPerSecond = MaxStamina * StaminaRecoveryPerSecond / 100.f;
+	const float RecoveryAmountThisFrame = RecoveryAmountPerSecond * DeltaTime;
+	SetCurrentStamina(CurrentStamina + RecoveryAmountThisFrame);
 }
 
 void UStatComponent::ApplyDamage(float DamageAmount)
@@ -70,8 +77,8 @@ void UStatComponent::InitializeStats
 (
 	const float InMaxHP,
 	const float InMaxStamina,
-	const float InStaminaRegenAmount,
-	const float InStaminaRegenDelay,
+	const float InStaminaRecoveryPerSecond,
+	const float InStaminaRecoveryDelay,
 	const float InWalkSpeed,
 	const float InRunSpeed,
 	const float InSprintSpeed,
@@ -84,9 +91,9 @@ void UStatComponent::InitializeStats
 	CurrentHP = MaxHP;
 	MaxStamina = InMaxStamina;
 	CurrentStamina = MaxStamina;
-	StaminaRegenAmount = InStaminaRegenAmount;
-	StaminaRegenDelay = InStaminaRegenDelay;
-	StaminaRegenDelayRemaining = 0.f;
+	StaminaRecoveryPerSecond = InStaminaRecoveryPerSecond;
+	StaminaRecoveryDelay = InStaminaRecoveryDelay;
+	StaminaRecoveryDelayRemaining = 0.f;
 	SetComponentTickEnabled(false);
 	WalkSpeed = InWalkSpeed;
 	RunSpeed = InRunSpeed;
@@ -111,15 +118,48 @@ void UStatComponent::SetCurrentStamina(const float NewCurrentStamina)
 	// 스테미너가 소모되고 있을 경우 타이머 최신화
 	if (CurrentStamina < OldStamina)
 	{
-		StaminaRegenDelayRemaining = StaminaRegenDelay;
-		SetComponentTickEnabled(CurrentStamina < MaxStamina && StaminaRegenAmount > 0.f);
+		StaminaRecoveryDelayRemaining = StaminaRecoveryDelay;
+		SetComponentTickEnabled(CurrentStamina < MaxStamina && StaminaRecoveryPerSecond > 0.f);
+
+		const FString DebugText = FString::Printf(TEXT("[Stamina Consume] %.2f -> %.2f / %.2f RecoveryDelay=%.2f"),
+			OldStamina,
+			CurrentStamina,
+			MaxStamina,
+			StaminaRecoveryDelayRemaining);
+		UE_LOG(LogTemp, Log, TEXT("%s"), *DebugText);
+
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				StaminaDebugMessageKey,
+				0.1f,
+				FColor::Yellow,
+				DebugText
+			);
+		}
 		return;
 	}
 
 	// 스테미너 다 찼으면 타이머 초기화
 	if (CurrentStamina >= MaxStamina)
 	{
-		StaminaRegenDelayRemaining = 0.f;
+		StaminaRecoveryDelayRemaining = 0.f;
 		SetComponentTickEnabled(false);
+	}
+
+	if (CurrentStamina > OldStamina && GEngine)
+	{
+		const FString DebugText = FString::Printf(TEXT("[Stamina Regen] %.2f -> %.2f / %.2f"),
+			OldStamina,
+			CurrentStamina,
+			MaxStamina);
+		UE_LOG(LogTemp, Log, TEXT("%s"), *DebugText);
+
+		GEngine->AddOnScreenDebugMessage(
+			StaminaDebugMessageKey,
+			0.1f,
+			FColor::Green,
+			DebugText
+		);
 	}
 }
