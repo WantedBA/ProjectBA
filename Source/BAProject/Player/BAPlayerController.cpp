@@ -105,7 +105,6 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 	ABAPlayerCharacter* ControlledCharacter = Cast<ABAPlayerCharacter>(GetPawn());
 	if (!ControlledCharacter)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[Input][Move] ControlledCharacter is null."));
 		return;
 	}
 
