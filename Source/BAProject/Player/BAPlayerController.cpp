@@ -92,20 +92,35 @@ void ABAPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABAPlayerController::OnSprintCompleted);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Canceled, this, &ABAPlayerController::OnSprintCompleted);
 	}
+	
+	// 임시 기능
+	if (ensureMsgf(ToggleStrafeAction, TEXT("ToggleStrafeAction is not configured on %s"), *GetName()))
+	{
+		EnhancedInputComponent->BindAction(
+			ToggleStrafeAction,
+			ETriggerEvent::Started,
+			this,
+			&ABAPlayerController::ToggleStrafe
+		);
+	}
 }
 
 void ABAPlayerController::Move(const FInputActionValue& Value)
 {
-	const FVector2D Movement = Value.Get<FVector2D>();
+	FVector2D Movement = Value.Get<FVector2D>();
+	if (Movement.SizeSquared() > 1.f)
+	{
+		Movement.Normalize();
+	}
 
-	ACharacter* ControlledCharacter = Cast<ACharacter>(GetPawn());
+	ABAPlayerCharacter* ControlledCharacter = Cast<ABAPlayerCharacter>(GetPawn());
 	if (!ControlledCharacter)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[Input][Move] ControlledCharacter is null."));
 		return;
 	}
 
 	bHasMoveInput = !Movement.IsNearlyZero();
+	ControlledCharacter->SetMoveInputVector(Movement);
 	ApplyMovementStateByModifier();
 	
 	const FRotator ControlRot = GetControlRotation();
@@ -121,6 +136,12 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 void ABAPlayerController::OnMoveCompleted()
 {
 	bHasMoveInput = false;
+
+	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
+	{
+		PC->SetMoveInputVector(FVector2D::ZeroVector);
+	}
+
 	ApplyMovementStateByModifier();
 }
 
@@ -191,4 +212,20 @@ void ABAPlayerController::ApplyMovementStateByModifier() const
 	{
 		PC->SetMovementState(EMovementState::Run);
 	}
+}
+
+void ABAPlayerController::ToggleStrafe()
+{
+	ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
+	if (!PC)
+	{
+		return;
+	}
+
+	const EPlayerLocomotionMode NextMode =
+		PC->GetLocomotionMode() == EPlayerLocomotionMode::Strafe
+			? EPlayerLocomotionMode::Free
+			: EPlayerLocomotionMode::Strafe;
+
+	PC->SetLocomotionMode(NextMode);
 }
