@@ -12,4 +12,3 @@ AMapInfoActor::AMapInfoActor()
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
 
 }
-
