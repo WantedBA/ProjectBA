@@ -52,8 +52,10 @@ void UUserDataSubsystem::SetBaseStat()
 	}
 
 	// BaseStat 멤버변수에 주입
-	BaseStat.MaxHp = BaseStatRow->BaseHp;
-	BaseStat.MaxStamina = BaseStatRow->BaseStamina;
+	BaseStat.MaxHp = BaseStatRow->MaxHp;
+	BaseStat.MaxStamina = BaseStatRow->MaxStamina;
+	BaseStat.StaminaRegenAmount = BaseStatRow->StaminaRegenAmount;
+	BaseStat.StaminaRegenDelay = BaseStatRow->StaminaRegenDelay;
 	BaseStat.WalkSpeed = BaseStatRow->WalkSpeed;
 	BaseStat.RunSpeed = BaseStatRow->RunSpeed;
 	BaseStat.SprintSpeed = BaseStatRow->SprintSpeed;

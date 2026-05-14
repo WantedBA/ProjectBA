@@ -3,6 +3,7 @@
 
 #include "UI/SkillTree/SkillNodeWidget.h"
 
+#include "Components/Button.h"
 #include "Instance/SkillTreeSubsystem.h"
 
 void USkillNodeWidget::NativePreConstruct()
@@ -13,9 +14,21 @@ void USkillNodeWidget::NativePreConstruct()
 	SetAlignmentInViewport(FVector2D(0.5f, 0.5f));
 }
 
-void USkillNodeWidget::InitSkillNodeData(const FSkillTreeProgress& InitData)
+void USkillNodeWidget::NativeOnInitialized()
 {
-	// TODO: 연결된 스킬 정보 초기화, ConnectionLine 자식으로 추가
+	Super::NativeOnInitialized();
 	
-	
+	if (SkillNodeButton)
+	{
+		SkillNodeButton->OnClicked.AddDynamic(this, &USkillNodeWidget::HandleSkillNodeButtonClicked);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("SkillNodeButton is not initialized"));
+	}
+}
+
+void USkillNodeWidget::HandleSkillNodeButtonClicked()
+{
+	OnSkillNodeClicked.Broadcast(SkillId);
 }
