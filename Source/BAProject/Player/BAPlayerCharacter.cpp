@@ -332,6 +332,16 @@ bool ABAPlayerCharacter::IsSprintLockedAfterExhausted() const
 	return bSprintLockedAfterExhausted;
 }
 
+bool ABAPlayerCharacter::IsSprintEntryRotationLocked() const
+{
+	return ShouldUseSprintEntryRotationLock();
+}
+
+float ABAPlayerCharacter::GetSprintTurnDeltaAngle() const
+{
+	return FMath::FindDeltaAngleDegrees(GetVelocityDirectionAngle(), GetMoveInputDirectionAngle());
+}
+
 bool ABAPlayerCharacter::CanSprint() const
 {
 	if (!bHasSprintActionData || !StatComponent)

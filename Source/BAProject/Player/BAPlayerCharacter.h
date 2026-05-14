@@ -93,6 +93,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
 	bool IsSprintLockedAfterExhausted() const;
 
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	bool IsSprintEntryRotationLocked() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	float GetSprintTurnDeltaAngle() const;
+
 private:
 	bool CanSprint() const;
 	bool IsSprintMovementActive() const;
