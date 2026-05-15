@@ -100,6 +100,9 @@ public:
 	float GetSprintTurnDeltaAngle() const;
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	float GetTurnaroundToControlRotationAngle() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
 	bool IsSprintStopRequested() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
@@ -109,10 +112,10 @@ public:
 	void CompleteSprintStopAnimation();
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
-	bool IsSprintTurnaroundRequested() const;
+	bool IsTurnaroundRequested() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
-	void CompleteSprintTurnaroundAnimation();
+	void CompleteTurnaroundAnimation();
 
 private:
 	bool CanSprint() const;
@@ -195,7 +198,7 @@ private:
 	bool bSprintStopRequested = false;
 	bool bSprintStopMovementLocked = false;
 	bool bSprintStopStartedFromStrafe = false;
-	bool bSprintTurnaroundRequested = false;
+	bool bTurnaroundRequested = false;
 	bool bCanRequestSprintStopFromRecentExit = false;
 	float SprintEntryElapsedTime = 0.f;
 	float SprintStopRequestRemainingTime = 0.f;

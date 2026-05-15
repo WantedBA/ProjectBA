@@ -353,6 +353,13 @@ float ABAPlayerCharacter::GetSprintTurnDeltaAngle() const
 	return FMath::FindDeltaAngleDegrees(GetVelocityDirectionAngle(), GetMoveInputDirectionAngle());
 }
 
+float ABAPlayerCharacter::GetTurnaroundToControlRotationAngle() const
+{
+	const float CurrentYaw = GetActorRotation().Yaw;
+	const float TargetYaw = GetControlRotation().Yaw;
+	return FMath::FindDeltaAngleDegrees(CurrentYaw, TargetYaw);
+}
+
 bool ABAPlayerCharacter::IsSprintStopRequested() const
 {
 	return bSprintStopRequested;
@@ -362,12 +369,12 @@ void ABAPlayerCharacter::ClearSprintStopRequest()
 {
 	const bool bWasSprintStopActive = bSprintStopRequested
 		|| bSprintStopMovementLocked
-		|| bSprintTurnaroundRequested;
+		|| bTurnaroundRequested;
 
 	bSprintStopRequested = false;
 	bSprintStopMovementLocked = false;
 	bSprintStopStartedFromStrafe = false;
-	bSprintTurnaroundRequested = false;
+	bTurnaroundRequested = false;
 	SprintStopRequestRemainingTime = 0.f;
 	bCanRequestSprintStopFromRecentExit = false;
 	SprintStopRequestWindowRemainingTime = 0.f;
@@ -387,7 +394,7 @@ void ABAPlayerCharacter::CompleteSprintStopAnimation()
 
 	if (bSprintStopStartedFromStrafe)
 	{
-		bSprintTurnaroundRequested = true;
+		bTurnaroundRequested = true;
 		return;
 	}
 
@@ -396,14 +403,14 @@ void ABAPlayerCharacter::CompleteSprintStopAnimation()
 	ApplyLocomotionMovementPolicy();
 }
 
-bool ABAPlayerCharacter::IsSprintTurnaroundRequested() const
+bool ABAPlayerCharacter::IsTurnaroundRequested() const
 {
-	return bSprintTurnaroundRequested;
+	return bTurnaroundRequested;
 }
 
-void ABAPlayerCharacter::CompleteSprintTurnaroundAnimation()
+void ABAPlayerCharacter::CompleteTurnaroundAnimation()
 {
-	bSprintTurnaroundRequested = false;
+	bTurnaroundRequested = false;
 	bSprintStopMovementLocked = false;
 	bSprintStopStartedFromStrafe = false;
 	ApplyLocomotionMovementPolicy();
@@ -562,7 +569,7 @@ void ABAPlayerCharacter::RequestSprintStop()
 	bSprintStopRequested = true;
 	bSprintStopMovementLocked = true;
 	bSprintStopStartedFromStrafe = CurrentLocomotionMode == EPlayerLocomotionMode::Strafe;
-	bSprintTurnaroundRequested = false;
+	bTurnaroundRequested = false;
 	bCanRequestSprintStopFromRecentExit = false;
 	SprintStopRequestWindowRemainingTime = 0.f;
 	SprintStopRequestRemainingTime = FMath::Max(0.f, SprintStopRequestHoldTime);
