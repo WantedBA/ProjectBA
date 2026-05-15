@@ -76,7 +76,6 @@ struct BAPROJECT_API FSkillRow : public FBARowBase
 	// 문자열을 쉼표로 구분하여 int32 배열로 변환
 	static TArray<int32> ParseIntArray(const FString& InString)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Parsing prerequisites: %s"), *InString);
 		TArray<int32> Result;
 		TArray<FString> Tokens;
 		InString.ParseIntoArray(Tokens, TEXT(","), true);

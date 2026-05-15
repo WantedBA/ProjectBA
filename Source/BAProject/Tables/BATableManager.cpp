@@ -9,7 +9,34 @@
 void UBATableManager::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+	
+	LoadAllTables();
+}
 
+void UBATableManager::Deinitialize()
+{
+	PostReadList.Reset();
+	LoadedTables.Reset();
+	Super::Deinitialize();
+}
+
+UBATableManager* UBATableManager::Get(const UObject* WorldContext)
+{
+	return GEngine ? GEngine->GetEngineSubsystem<UBATableManager>() : nullptr;
+}
+
+#if WITH_EDITOR
+void UBATableManager::ReloadAllTables()
+{
+	PostReadList.Reset();
+	LoadedTables.Reset();
+	
+	LoadAllTables();
+}
+#endif
+
+void UBATableManager::LoadAllTables()
+{
 	const FString TablePath = FString(TablePath::LoadTablePath);
 	
 	// Player
@@ -40,18 +67,6 @@ void UBATableManager::Initialize(FSubsystemCollectionBase& Collection)
 	BuildChildSkillLists();
 
 	UE_LOG(LogTemp, Log, TEXT("[BATableManager] %d table(s) loaded."), PostReadList.Num());
-}
-
-void UBATableManager::Deinitialize()
-{
-	PostReadList.Reset();
-	LoadedTables.Reset();
-	Super::Deinitialize();
-}
-
-UBATableManager* UBATableManager::Get(const UObject* WorldContext)
-{
-		return GEngine ? GEngine->GetEngineSubsystem<UBATableManager>() : nullptr;
 }
 
 bool UBATableManager::BP_FindConsume(int32 InTid, FConsumeItemRow& OutRow) const
