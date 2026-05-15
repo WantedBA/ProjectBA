@@ -117,6 +117,9 @@ private:
 	bool ShouldUseSprintEntryRotationLock() const;
 	void RequestSprintStop();
 	void UpdateSprintStopRequest(float DeltaTime);
+	void StartSprintStopRequestWindow();
+	void UpdateSprintStopRequestWindow(float DeltaTime);
+	bool CanRequestSprintStop() const;
 
 	EMovementState CurrentMovementState = EMovementState::Run;
 	EPlayerLocomotionMode CurrentLocomotionMode = EPlayerLocomotionMode::Free;
@@ -154,10 +157,13 @@ private:
 	float SprintStrafeEntryOrientationSpeedRatio = 0.85f;
 
 	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
-	float SprintStopRequestHoldTime = 0.2f;
+	float SprintStopRequestHoldTime = 0.35f;
 
 	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
-	float SprintStopMinSpeed = 300.f;
+	float SprintStopMinSpeed = 150.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
+	float SprintStopRequestWindowTime = 0.2f;
 	
 	UPROPERTY(EditAnywhere, Category="Movement")
 	float WalkSpeed = 100.0f;
@@ -177,8 +183,10 @@ private:
 	bool bSprintLockedAfterExhausted = false;
 	bool bSprintEntryRotationLocked = false;
 	bool bSprintStopRequested = false;
+	bool bCanRequestSprintStopFromRecentExit = false;
 	float SprintEntryElapsedTime = 0.f;
 	float SprintStopRequestRemainingTime = 0.f;
+	float SprintStopRequestWindowRemainingTime = 0.f;
 	
 protected:
 	UPROPERTY(VisibleAnywhere, Category = Camera)

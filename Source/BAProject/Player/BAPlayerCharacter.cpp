@@ -92,6 +92,7 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	UpdateSprintStopRequest(DeltaTime);
+	UpdateSprintStopRequestWindow(DeltaTime);
 
 	if (CurrentMovementState != EMovementState::Sprint)
 	{
@@ -199,7 +200,9 @@ void ABAPlayerCharacter::SetMovementState(EMovementState NewState)
 	}
 	else if (PreviousMovementState == EMovementState::Sprint)
 	{
-		if (!bHasMoveInput && GetGroundSpeed() >= SprintStopMinSpeed)
+		StartSprintStopRequestWindow();
+
+		if (!bHasMoveInput && CanRequestSprintStop())
 		{
 			RequestSprintStop();
 		}
@@ -541,6 +544,36 @@ void ABAPlayerCharacter::SetHasMoveInput(const bool bNewHasMoveInput)
 	{
 		SetMovementState(EMovementState::Run);
 	}
+	else if (!bHasMoveInput && bCanRequestSprintStopFromRecentExit && CanRequestSprintStop())
+	{
+		RequestSprintStop();
+	}
+}
+
+void ABAPlayerCharacter::StartSprintStopRequestWindow()
+{
+	bCanRequestSprintStopFromRecentExit = true;
+	SprintStopRequestWindowRemainingTime = FMath::Max(0.f, SprintStopRequestWindowTime);
+}
+
+void ABAPlayerCharacter::UpdateSprintStopRequestWindow(const float DeltaTime)
+{
+	if (!bCanRequestSprintStopFromRecentExit)
+	{
+		return;
+	}
+
+	SprintStopRequestWindowRemainingTime -= DeltaTime;
+	if (SprintStopRequestWindowRemainingTime <= 0.f)
+	{
+		bCanRequestSprintStopFromRecentExit = false;
+		SprintStopRequestWindowRemainingTime = 0.f;
+	}
+}
+
+bool ABAPlayerCharacter::CanRequestSprintStop() const
+{
+	return !bSprintStopRequested && GetGroundSpeed() >= SprintStopMinSpeed;
 }
 
 void ABAPlayerCharacter::OnHealthChanged(float CurrentHP, float MaxHP)
