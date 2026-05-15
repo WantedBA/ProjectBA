@@ -93,12 +93,6 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
 	bool IsSprintLockedAfterExhausted() const;
 
-	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
-	bool IsSprintEntryRotationLocked() const;
-
-	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
-	float GetSprintTurnDeltaAngle() const;
-
 private:
 	bool CanSprint() const;
 	bool IsSprintMovementActive() const;
@@ -107,8 +101,6 @@ private:
 	void LockSprintIfExhausted();
 	void UpdateSprintExhaustionLock();
 	void ApplyLocomotionMovementPolicy();
-	void UpdateSprintEntryRotation(float DeltaTime);
-	bool ShouldUseSprintEntryRotationLock() const;
 
 	EMovementState CurrentMovementState = EMovementState::Run;
 	EPlayerLocomotionMode CurrentLocomotionMode = EPlayerLocomotionMode::Free;
@@ -138,12 +130,6 @@ private:
 
 	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
 	float StrafeGroundFriction = 8.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
-	float SprintStrafeEntryBlendTime = 0.25f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
-	float SprintStrafeEntryOrientationSpeedRatio = 0.85f;
 	
 	UPROPERTY(EditAnywhere, Category="Movement")
 	float WalkSpeed = 100.0f;
@@ -161,8 +147,6 @@ private:
 	bool bHasSprintActionData = false;
 	bool bHasMoveInput = false;
 	bool bSprintLockedAfterExhausted = false;
-	bool bSprintEntryRotationLocked = false;
-	float SprintEntryElapsedTime = 0.f;
 	
 protected:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
