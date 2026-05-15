@@ -7,7 +7,7 @@
 
 UInteractorComponent::UInteractorComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
 }
 
 void UInteractorComponent::BeginPlay()
@@ -74,7 +74,7 @@ void UInteractorComponent::TryInteract()
 
 void UInteractorComponent::UpdateBestInteractable()
 {
-	UObject* Best = SelectBest();
+	AActor* Best = SelectBest();
 	if (Best != CurrentInteractable)
 	{
 		SetCurrentInteractable(Best);
@@ -86,7 +86,7 @@ void UInteractorComponent::UpdateBestInteractable()
 	}
 }
 
-UObject* UInteractorComponent::SelectBest() const
+AActor* UInteractorComponent::SelectBest() const
 {
 	if (!DetectionSphere) return nullptr;
         AActor* Owner = GetOwner();
@@ -109,7 +109,7 @@ UObject* UInteractorComponent::SelectBest() const
         TArray<AActor*> Overlapping;
         DetectionSphere->GetOverlappingActors(Overlapping);
 
-        UObject* Best = nullptr;
+        AActor* Best = nullptr;
         float BestScore = TNumericLimits<float>::Max();
 
         for (AActor* Candidate : Overlapping)
@@ -144,10 +144,10 @@ UObject* UInteractorComponent::SelectBest() const
         return Best;
 }
 
-void UInteractorComponent::SetCurrentInteractable(UObject* NewInteractable)
+void UInteractorComponent::SetCurrentInteractable(AActor* NewInteractable)
 {
 	if (NewInteractable == CurrentInteractable) return;
-	UObject* Old = CurrentInteractable;
+	AActor* Old = CurrentInteractable;
 
 	// 외곽선 갱신
 	if (Old) SetOutline(Old, false);
@@ -168,7 +168,7 @@ void UInteractorComponent::SetCurrentInteractable(UObject* NewInteractable)
 	OnInteractableChanged.Broadcast(NewInteractable, Old);
 }
 
-void UInteractorComponent::SetOutline(UObject* Object, bool bEnabled) const
+void UInteractorComponent::SetOutline(AActor* Object, bool bEnabled) const
 {
 	if (!Object) return;
 	AActor* Actor = Cast<AActor>(Object);
@@ -194,7 +194,7 @@ void UInteractorComponent::SetOutline(UObject* Object, bool bEnabled) const
 	}
 }
 
-void UInteractorComponent::ShowWidgetTarget(UObject* Target)
+void UInteractorComponent::ShowWidgetTarget(AActor* Target)
 {
 	APlayerController* PC = GetOwnerController();
 	if (!PC || !WidgetClass) return;
@@ -232,7 +232,7 @@ void UInteractorComponent::RefreshWidgetPrompt()
 	}
 }
 
-FVector UInteractorComponent::GetInteractionLocation(UObject* Object) const
+FVector UInteractorComponent::GetInteractionLocation(AActor* Object) const
 {
 	if (!Object) return FVector::ZeroVector;
 	// 인터페이스가 정의한 위치 우선

@@ -11,7 +11,7 @@ class USphereComponent;
 #include "InteractorComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnInteractableChanged, 
-	UObject*, NewInteractable, UObject*, OldInteractable);
+	AActor*, NewInteractable, AActor*, OldInteractable);
 
 UCLASS(ClassGroup=(Interaction), meta=(BlueprintSpawnableComponent), Blueprintable)
 class BAPROJECT_API UInteractorComponent : public UActorComponent
@@ -30,21 +30,21 @@ public:
 	void TryInteract();
 	
 	UFUNCTION(BlueprintPure, Category="Interaction")
-	UObject* GetCurrentInteractable() const {return CurrentInteractable;}
+	AActor* GetCurrentInteractable() const {return CurrentInteractable;}
 	
 	UPROPERTY(BlueprintAssignable, Category = "Interaction")
 	FOnInteractableChanged OnInteractableChanged;
 	
 private:
 	void UpdateBestInteractable();
-	UObject* SelectBest() const;
-	void SetCurrentInteractable(UObject* NewInteractable);
-	void SetOutline(UObject* Object, bool bEnabled) const;
-	void ShowWidgetTarget(UObject* Target);
+	AActor* SelectBest() const;
+	void SetCurrentInteractable(AActor* NewInteractable);
+	void SetOutline(AActor* Object, bool bEnabled) const;
+	void ShowWidgetTarget(AActor* Target);
 	void HideWidget();
 	void RefreshWidgetPrompt();
 	
-	FVector GetInteractionLocation(UObject* Object) const;
+	FVector GetInteractionLocation(AActor* Object) const;
 	APlayerController* GetOwnerController() const;
 	
 protected:
@@ -79,7 +79,7 @@ protected:
 	
 private:
 	UPROPERTY(Transient)
-	TObjectPtr<UObject> CurrentInteractable;
+	TObjectPtr<AActor> CurrentInteractable;
 	
 	UPROPERTY(Transient)
 	TObjectPtr<UInteractionWidget> CurrentWidget;
