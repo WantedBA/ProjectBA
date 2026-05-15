@@ -360,14 +360,53 @@ bool ABAPlayerCharacter::IsSprintStopRequested() const
 
 void ABAPlayerCharacter::ClearSprintStopRequest()
 {
-	const bool bWasSprintStopRequested = bSprintStopRequested;
-	bSprintStopRequested = false;
-	SprintStopRequestRemainingTime = 0.f;
+	const bool bWasSprintStopActive = bSprintStopRequested
+		|| bSprintStopMovementLocked
+		|| bSprintTurnaroundRequested;
 
-	if (bWasSprintStopRequested)
+	bSprintStopRequested = false;
+	bSprintStopMovementLocked = false;
+	bSprintStopStartedFromStrafe = false;
+	bSprintTurnaroundRequested = false;
+	SprintStopRequestRemainingTime = 0.f;
+	bCanRequestSprintStopFromRecentExit = false;
+	SprintStopRequestWindowRemainingTime = 0.f;
+
+	if (bWasSprintStopActive)
 	{
 		ApplyLocomotionMovementPolicy();
 	}
+}
+
+void ABAPlayerCharacter::CompleteSprintStopAnimation()
+{
+	bSprintStopRequested = false;
+	SprintStopRequestRemainingTime = 0.f;
+	bCanRequestSprintStopFromRecentExit = false;
+	SprintStopRequestWindowRemainingTime = 0.f;
+
+	if (bSprintStopStartedFromStrafe)
+	{
+		bSprintTurnaroundRequested = true;
+		return;
+	}
+
+	bSprintStopMovementLocked = false;
+	bSprintStopStartedFromStrafe = false;
+	ApplyLocomotionMovementPolicy();
+}
+
+bool ABAPlayerCharacter::IsSprintTurnaroundRequested() const
+{
+	return bSprintTurnaroundRequested;
+}
+
+void ABAPlayerCharacter::CompleteSprintTurnaroundAnimation()
+{
+	bSprintTurnaroundRequested = false;
+	bSprintStopMovementLocked = false;
+	bSprintStopStartedFromStrafe = false;
+	ApplyLocomotionMovementPolicy();
 }
 
 bool ABAPlayerCharacter::CanSprint() const
@@ -521,6 +560,9 @@ bool ABAPlayerCharacter::ShouldUseSprintEntryRotationLock() const
 void ABAPlayerCharacter::RequestSprintStop()
 {
 	bSprintStopRequested = true;
+	bSprintStopMovementLocked = true;
+	bSprintStopStartedFromStrafe = CurrentLocomotionMode == EPlayerLocomotionMode::Strafe;
+	bSprintTurnaroundRequested = false;
 	bCanRequestSprintStopFromRecentExit = false;
 	SprintStopRequestWindowRemainingTime = 0.f;
 	SprintStopRequestRemainingTime = FMath::Max(0.f, SprintStopRequestHoldTime);
@@ -537,7 +579,8 @@ void ABAPlayerCharacter::UpdateSprintStopRequest(const float DeltaTime)
 	SprintStopRequestRemainingTime -= DeltaTime;
 	if (SprintStopRequestRemainingTime <= 0.f)
 	{
-		ClearSprintStopRequest();
+		bSprintStopRequested = false;
+		SprintStopRequestRemainingTime = 0.f;
 	}
 }
 
@@ -599,6 +642,7 @@ bool ABAPlayerCharacter::ShouldUseSprintMovementPolicy() const
 {
 	return CurrentMovementState == EMovementState::Sprint
 		|| bSprintStopRequested
+		|| bSprintStopMovementLocked
 		|| bCanRequestSprintStopFromRecentExit;
 }
 

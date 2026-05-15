@@ -105,6 +105,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
 	void ClearSprintStopRequest();
 
+	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
+	void CompleteSprintStopAnimation();
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	bool IsSprintTurnaroundRequested() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
+	void CompleteSprintTurnaroundAnimation();
+
 private:
 	bool CanSprint() const;
 	bool IsSprintMovementActive() const;
@@ -184,6 +193,9 @@ private:
 	bool bSprintLockedAfterExhausted = false;
 	bool bSprintEntryRotationLocked = false;
 	bool bSprintStopRequested = false;
+	bool bSprintStopMovementLocked = false;
+	bool bSprintStopStartedFromStrafe = false;
+	bool bSprintTurnaroundRequested = false;
 	bool bCanRequestSprintStopFromRecentExit = false;
 	float SprintEntryElapsedTime = 0.f;
 	float SprintStopRequestRemainingTime = 0.f;
