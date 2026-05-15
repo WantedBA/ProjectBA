@@ -5,6 +5,7 @@
 #include "StatComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHPChanged, float, CurrentHP, float, MaxHP);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStaminaChanged, float, CurrentStamina, float, MaxStamina);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDead);
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -18,6 +19,8 @@ public:
 public:
 	UPROPERTY(BlueprintAssignable, Category = "Event")
 	FOnHPChanged OnHPChanged;
+	UPROPERTY(BlueprintAssignable, Category = "Event")
+	FOnStaminaChanged OnStaminaChanged;
 	UPROPERTY(BlueprintAssignable, Category = "Event")
 	FOnDead OnDead;
 
