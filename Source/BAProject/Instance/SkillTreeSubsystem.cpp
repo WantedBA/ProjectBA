@@ -14,7 +14,7 @@ void USkillTreeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	Super::Initialize(Collection);
 	
 	UserData = GetGameInstance()->GetSubsystem<UUserDataSubsystem>();
-	TableManager = GetGameInstance()->GetSubsystem<UBATableManager>();
+	TableManager = UBATableManager::Get(this);
 	
 	if (!UserData)
 	{

@@ -18,7 +18,7 @@
  * 등록 순서대로 PostRead 단계를 일괄 실행한다.
  */
 UCLASS()
-class BAPROJECT_API UBATableManager : public UGameInstanceSubsystem
+class BAPROJECT_API UBATableManager : public UEngineSubsystem
 {
 	GENERATED_BODY()
 

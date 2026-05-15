@@ -51,15 +51,7 @@ void UBATableManager::Deinitialize()
 
 UBATableManager* UBATableManager::Get(const UObject* WorldContext)
 {
-	if (!WorldContext)
-	{
-		return nullptr;
-	}
-	if (UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(WorldContext))
-	{
-		return GameInstance->GetSubsystem<UBATableManager>();
-	}
-	return nullptr;
+		return GEngine ? GEngine->GetEngineSubsystem<UBATableManager>() : nullptr;
 }
 
 bool UBATableManager::BP_FindConsume(int32 InTid, FConsumeItemRow& OutRow) const
