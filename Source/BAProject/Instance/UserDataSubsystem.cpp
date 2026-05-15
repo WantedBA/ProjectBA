@@ -9,9 +9,6 @@ UUserDataSubsystem::UUserDataSubsystem()
 
 void UUserDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-	//SubSystem간 순서보장을 위한 의존성 설정 
-	Collection.InitializeDependency<UBATableManager>(); 
-	
 	Super::Initialize(Collection);
 	
 	SetBaseStat();
@@ -52,7 +49,7 @@ void UUserDataSubsystem::NotifyPlayerStatChanged(float CurrentHP, float MaxHP, f
 
 void UUserDataSubsystem::SetBaseStat()
 {
-	const UBATableManager* TableManager = GetGameInstance()->GetSubsystem<UBATableManager>();
+	const UBATableManager* TableManager = UBATableManager::Get(this);
 	if (!TableManager)
 	{
 		UE_LOG(LogTemp, Error, TEXT("[UserDataSubsystem] TableManager subsystem is null."));
@@ -82,7 +79,7 @@ void UUserDataSubsystem::SetBaseStat()
 
 void UUserDataSubsystem::SetActionData()
 {
-	const UBATableManager* TableManager = GetGameInstance()->GetSubsystem<UBATableManager>();
+	const UBATableManager* TableManager = UBATableManager::Get(this);
 	if (!TableManager)
 	{
 		UE_LOG(LogTemp, Error, TEXT("[UserDataSubsystem] TableManager subsystem is null."));

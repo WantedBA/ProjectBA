@@ -26,10 +26,7 @@ public:
 
 	// Setter
 	UFUNCTION(BlueprintCallable)
-	FORCEINLINE void SetSkillNodeState(const ESkillNodeState InSkillNodeState)
-	{
-		this->SkillNodeState = InSkillNodeState;
-	}
+	void SetSkillNodeState(const ESkillNodeState InSkillNodeState);
 	
 	// Delegate
 	UPROPERTY(BlueprintAssignable, Category = SkillTree)
@@ -49,11 +46,16 @@ protected:
 	int32 SkillId = -1;
 	
 	// 게임 중 스킬 상태
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = SkillTree)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = SkillTree, FieldNotify)
 	ESkillNodeState SkillNodeState = ESkillNodeState::Locked;
 	
 private:
 	// 브로드캐스팅 -> SkillTree에서 수신
 	UFUNCTION()
 	void HandleSkillNodeButtonClicked();
+	
+protected:
+	// 상태 변경 시 블루프린트에서 값 수정
+	UFUNCTION(BlueprintImplementableEvent)
+	void OnSkillNodeStateChanged();
 };
