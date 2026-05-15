@@ -134,6 +134,7 @@ private:
 	bool CanRequestSprintStop() const;
 	bool ShouldUseSprintMovementPolicy() const;
 	void UpdateTurnaroundRotation(float DeltaTime);
+	void RequestTurnaround();
 
 	EMovementState CurrentMovementState = EMovementState::Run;
 	EPlayerLocomotionMode CurrentLocomotionMode = EPlayerLocomotionMode::Free;
@@ -181,6 +182,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
 	float TurnaroundRotationRateYaw = 720.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
+	float TurnaroundMaxDuration = 1.f;
 	
 	UPROPERTY(EditAnywhere, Category="Movement")
 	float WalkSpeed = 100.0f;
@@ -202,11 +206,13 @@ private:
 	bool bSprintStopRequested = false;
 	bool bSprintStopMovementLocked = false;
 	bool bSprintStopStartedFromStrafe = false;
+	bool bSprintStopShouldTurnaround = false;
 	bool bTurnaroundRequested = false;
 	bool bCanRequestSprintStopFromRecentExit = false;
 	float SprintEntryElapsedTime = 0.f;
 	float SprintStopRequestRemainingTime = 0.f;
 	float SprintStopRequestWindowRemainingTime = 0.f;
+	float TurnaroundElapsedTime = 0.f;
 	
 protected:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
