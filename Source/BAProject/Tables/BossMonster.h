@@ -18,6 +18,9 @@ struct BAPROJECT_API F1StageBossAttackRows : public FBARowBase
 	int32 Tid = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
+	FString MontagePath;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
 	int32 CoolTime = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
@@ -62,6 +65,9 @@ struct BAPROJECT_API F2StageBossAttackRows : public FBARowBase
 	int32 Tid = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
+	FString MontagePath;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
 	int32 CoolTime = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
@@ -104,6 +110,9 @@ struct BAPROJECT_API F3StageBossAttackRows : public FBARowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
 	int32 Tid = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
+	FString MontagePath;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
 	int32 CoolTime = 0;
