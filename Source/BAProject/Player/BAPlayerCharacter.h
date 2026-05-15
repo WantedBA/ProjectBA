@@ -133,6 +133,7 @@ private:
 	void UpdateSprintStopRequestWindow(float DeltaTime);
 	bool CanRequestSprintStop() const;
 	bool ShouldUseSprintMovementPolicy() const;
+	void UpdateTurnaroundRotation(float DeltaTime);
 
 	EMovementState CurrentMovementState = EMovementState::Run;
 	EPlayerLocomotionMode CurrentLocomotionMode = EPlayerLocomotionMode::Free;
@@ -177,6 +178,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
 	float SprintStopRequestWindowTime = 0.2f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
+	float TurnaroundRotationRateYaw = 720.f;
 	
 	UPROPERTY(EditAnywhere, Category="Movement")
 	float WalkSpeed = 100.0f;

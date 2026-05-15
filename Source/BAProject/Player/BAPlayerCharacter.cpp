@@ -93,6 +93,7 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 
 	UpdateSprintStopRequest(DeltaTime);
 	UpdateSprintStopRequestWindow(DeltaTime);
+	UpdateTurnaroundRotation(DeltaTime);
 
 	if (CurrentMovementState != EMovementState::Sprint)
 	{
@@ -395,6 +396,7 @@ void ABAPlayerCharacter::CompleteSprintStopAnimation()
 	if (bSprintStopStartedFromStrafe)
 	{
 		bTurnaroundRequested = true;
+		ApplyLocomotionMovementPolicy();
 		return;
 	}
 
@@ -503,6 +505,16 @@ void ABAPlayerCharacter::ApplyLocomotionMovementPolicy()
 	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
 	if (!MovementComponent)
 	{
+		return;
+	}
+
+	if (bTurnaroundRequested)
+	{
+		bUseControllerRotationYaw = false;
+		MovementComponent->bOrientRotationToMovement = false;
+		MovementComponent->MaxAcceleration = StrafeMaxAcceleration;
+		MovementComponent->BrakingDecelerationWalking = StrafeBrakingDecelerationWalking;
+		MovementComponent->GroundFriction = StrafeGroundFriction;
 		return;
 	}
 
@@ -651,6 +663,23 @@ bool ABAPlayerCharacter::ShouldUseSprintMovementPolicy() const
 		|| bSprintStopRequested
 		|| bSprintStopMovementLocked
 		|| bCanRequestSprintStopFromRecentExit;
+}
+
+void ABAPlayerCharacter::UpdateTurnaroundRotation(const float DeltaTime)
+{
+	if (!bTurnaroundRequested)
+	{
+		return;
+	}
+
+	const FRotator CurrentRotation = GetActorRotation();
+	const float TargetYaw = GetControlRotation().Yaw;
+	const float NewYaw = FMath::FixedTurn(
+		CurrentRotation.Yaw,
+		TargetYaw,
+		FMath::Max(0.f, TurnaroundRotationRateYaw) * DeltaTime);
+
+	SetActorRotation(FRotator(CurrentRotation.Pitch, NewYaw, CurrentRotation.Roll));
 }
 
 void ABAPlayerCharacter::OnHealthChanged(float CurrentHP, float MaxHP)
