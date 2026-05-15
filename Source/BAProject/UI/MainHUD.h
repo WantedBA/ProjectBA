@@ -19,10 +19,6 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	class UPlayerStatus* PlayerStatus; // HUD 상태창 연결
 
-	// 미니맵 위젯 연결
-	UPROPERTY(meta = (BindWidget))
-	class UMinimapLayer* Minimap;
-
 public:
 	// 값 업데이트
 	void UpdatePlayerHP(float Current, float Max);

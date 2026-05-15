@@ -5,9 +5,8 @@
 #include "SubSystemUI.h"
 
 UPopupBase::UPopupBase(const FObjectInitializer& ObjectInitializer)
-	:Super(ObjectInitializer)
 {
-	SetIsFocusable(true);
+	bIsFocusable = true;
 
 	SortOrder = 3;
 }

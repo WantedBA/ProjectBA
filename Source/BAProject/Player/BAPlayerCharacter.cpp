@@ -21,11 +21,11 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	{
 		GetMesh()->SetSkeletalMesh(CharacterMesh.Object);
 	}
-	static ConstructorHelpers::FClassFinder<UAnimInstance> CharacterAnim(TEXT("/Game/Character/Player/Animation/ABP_Player.ABP_Player_C"));
-	if (CharacterAnim.Succeeded())
-	{
-		GetMesh()->SetAnimInstanceClass(CharacterAnim.Class);
-	}
+	// static ConstructorHelpers::FClassFinder<UAnimInstance> CharacterAnim(TEXT("/Game/Character/Animation/ABP_ABCharacter.ABP_ABCharacter_C"));
+	// if (CharacterAnim.Succeeded())
+	// {
+	// 	GetMesh()->SetAnimInstanceClass(CharacterAnim.Class);
+	// }
 	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
 
 	// 스탯 컴포넌트 생성
@@ -35,6 +35,9 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 		FVector(0.f, 0.f, -90.f),
 		FRotator(0.f, -90.f, 0.f)
 	);
+
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 720.f, 0.f);
 
 	// back view, 3인칭 설정
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
@@ -58,10 +61,10 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	
 	// 마우스 카메라 제어 Yaw축만 허용
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
+	bUseControllerRotationYaw = true;
 	bUseControllerRotationRoll = false;
 	
-	ApplyLocomotionMovementPolicy();
+	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
 }
 
@@ -70,21 +73,7 @@ void ABAPlayerCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	InitializeFromTable();
-	ApplyLocomotionMovementPolicy();
 	SetMovementState(EMovementState::Run);
-
-	// StatComponent가 존재할 경우 변경된 델리게이트에 핸들러 함수 바인딩
-	if (StatComponent)
-	{
-		// HP
-		StatComponent->OnHPChanged.AddDynamic(this, &ABAPlayerCharacter::OnHealthChanged);
-
-		// Stamina
-		StatComponent->OnStaminaChanged.AddDynamic(this, &ABAPlayerCharacter::OnStaminaChanged);
-
-		OnHealthChanged(StatComponent->GetCurrentHP(), StatComponent->GetMaxHP());
-		OnStaminaChanged(StatComponent->GetCurrentStamina(), StatComponent->GetMaxStamina());
-	}
 }
 
 void ABAPlayerCharacter::Tick(float DeltaTime)
@@ -97,12 +86,27 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 		return;
 	}
 
-	UpdateSprintEntryRotation(DeltaTime);
 	UpdateSprintExhaustionLock();
 	LockSprintIfExhausted();
 
 	if (!IsSprintMovementActive() || !CanSprint())
 	{
+		if (GEngine)
+		{
+			const FString Reason = !IsSprintMovementActive() ? TEXT("NoMoveInput") : TEXT("CannotSprint");
+			GEngine->AddOnScreenDebugMessage(
+				SprintStopDebugMessageKey,
+				1.5f,
+				FColor::Red,
+				FString::Printf(TEXT("[Sprint Stop] Reason=%s Stamina=%.2f Min=%.2f HasData=%s Cost=%.2f Locked=%s"),
+					*Reason,
+					StatComponent ? StatComponent->GetCurrentStamina() : -1.f,
+					SprintMinRequiredStamina,
+					bHasSprintActionData ? TEXT("true") : TEXT("false"),
+					SprintStaminaCost,
+					bSprintLockedAfterExhausted ? TEXT("true") : TEXT("false"))
+			);
+		}
 		SetMovementState(EMovementState::Run);
 		return;
 	}
@@ -111,6 +115,17 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 
 	if (!CanSprint())
 	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				SprintStopDebugMessageKey,
+				1.5f,
+				FColor::Red,
+				FString::Printf(TEXT("[Sprint Stop] Stamina exhausted. Stamina=%.2f Min=%.2f"),
+					StatComponent ? StatComponent->GetCurrentStamina() : -1.f,
+					SprintMinRequiredStamina)
+			);
+		}
 		SetMovementState(EMovementState::Run);
 	}
 }
@@ -155,6 +170,20 @@ void ABAPlayerCharacter::InitializeFromTable()
 			? FMath::Clamp(SprintActionData->SprintRestartStaminaPercent, 0.f, 100.f)
 			: DefaultSprintRestartStaminaPercent;
 		bHasSprintActionData = true;
+
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				SprintDebugMessageKey,
+				3.f,
+				FColor::Cyan,
+				FString::Printf(TEXT("[Sprint Data] Tid=%d Cost=%.2f MinRequired=%.2f Restart=%.2f%%"),
+					SprintActionTid,
+					SprintStaminaCost,
+					SprintMinRequiredStamina,
+					SprintRestartStaminaPercent)
+			);
+		}
 	}
 	else
 	{
@@ -163,6 +192,7 @@ void ABAPlayerCharacter::InitializeFromTable()
 		SprintMinRequiredStamina = 0.f;
 		SprintRestartStaminaPercent = 0.f;
 		bHasSprintActionData = false;
+		UE_LOG(LogTemp, Warning, TEXT("[BAPlayerCharacter] Sprint ActionData not found. Tid=%d"), SprintActionTid);
 	}
 
 	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
@@ -182,23 +212,12 @@ void ABAPlayerCharacter::SetMovementState(EMovementState NewState)
 		NewState = EMovementState::Run;
 	}
 
-	const EMovementState PreviousMovementState = CurrentMovementState;
 	if (CurrentMovementState == NewState)
 	{
 		return;
 	}
 
 	CurrentMovementState = NewState;
-	if (CurrentMovementState == EMovementState::Sprint)
-	{
-		bSprintEntryRotationLocked = CurrentLocomotionMode == EPlayerLocomotionMode::Strafe;
-		SprintEntryElapsedTime = 0.f;
-	}
-	else if (PreviousMovementState == EMovementState::Sprint)
-	{
-		bSprintEntryRotationLocked = false;
-		SprintEntryElapsedTime = 0.f;
-	}
 	
 	float NewSpeed = RunSpeed; // 기본값
 	switch (CurrentMovementState)
@@ -215,131 +234,6 @@ void ABAPlayerCharacter::SetMovementState(EMovementState NewState)
 	}
 	
 	GetCharacterMovement()->MaxWalkSpeed = NewSpeed;
-	ApplyLocomotionMovementPolicy();
-}
-
-void ABAPlayerCharacter::SetMoveInputVector(const FVector2D& NewMoveInput)
-{
-	MoveInputVector = NewMoveInput;
-	if (MoveInputVector.SizeSquared() > 1.f)
-	{
-		MoveInputVector.Normalize();
-	}
-
-	SetHasMoveInput(!MoveInputVector.IsNearlyZero());
-}
-
-void ABAPlayerCharacter::SetLocomotionMode(const EPlayerLocomotionMode NewMode)
-{
-	if (CurrentLocomotionMode == NewMode)
-	{
-		return;
-	}
-
-	CurrentLocomotionMode = NewMode;
-	ApplyLocomotionMovementPolicy();
-}
-
-void ABAPlayerCharacter::SetCombatMode(const EPlayerCombatMode NewMode)
-{
-	CurrentCombatMode = NewMode;
-}
-
-EMovementState ABAPlayerCharacter::GetMovementState() const
-{
-	return CurrentMovementState;
-}
-
-EPlayerLocomotionMode ABAPlayerCharacter::GetLocomotionMode() const
-{
-	return CurrentLocomotionMode;
-}
-
-EPlayerCombatMode ABAPlayerCharacter::GetCombatMode() const
-{
-	return CurrentCombatMode;
-}
-
-bool ABAPlayerCharacter::HasMoveInput() const
-{
-	return bHasMoveInput;
-}
-
-FVector2D ABAPlayerCharacter::GetMoveInputVector() const
-{
-	return MoveInputVector;
-}
-
-FVector ABAPlayerCharacter::GetMoveInputWorldDirection() const
-{
-	if (!bHasMoveInput)
-	{
-		return FVector::ZeroVector;
-	}
-
-	const FRotator ControlRot = GetControlRotation();
-	const FRotator YawRot(0.f, ControlRot.Yaw, 0.f);
-	const FVector Forward = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
-	const FVector Right = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
-
-	return (Forward * MoveInputVector.Y + Right * MoveInputVector.X).GetSafeNormal();
-}
-
-FVector ABAPlayerCharacter::GetMoveInputLocalDirection() const
-{
-	const FVector WorldDirection = GetMoveInputWorldDirection();
-	if (WorldDirection.IsNearlyZero())
-	{
-		return FVector::ZeroVector;
-	}
-
-	return GetActorTransform().InverseTransformVectorNoScale(WorldDirection).GetSafeNormal();
-}
-
-float ABAPlayerCharacter::GetMoveInputDirectionAngle() const
-{
-	const FVector LocalDirection = GetMoveInputLocalDirection();
-	if (LocalDirection.IsNearlyZero())
-	{
-		return 0.f;
-	}
-
-	return FMath::RadiansToDegrees(FMath::Atan2(LocalDirection.Y, LocalDirection.X));
-}
-
-float ABAPlayerCharacter::GetVelocityDirectionAngle() const
-{
-	FVector LocalVelocity = GetActorTransform().InverseTransformVectorNoScale(GetVelocity());
-	LocalVelocity.Z = 0.f;
-
-	if (LocalVelocity.IsNearlyZero())
-	{
-		return 0.f;
-	}
-
-	LocalVelocity.Normalize();
-	return FMath::RadiansToDegrees(FMath::Atan2(LocalVelocity.Y, LocalVelocity.X));
-}
-
-float ABAPlayerCharacter::GetGroundSpeed() const
-{
-	const FVector Velocity = GetVelocity();
-	return FVector(Velocity.X, Velocity.Y, 0.f).Size();
-}
-
-bool ABAPlayerCharacter::IsSprintLockedAfterExhausted() const
-{
-	return bSprintLockedAfterExhausted;
-}
-
-bool ABAPlayerCharacter::IsSprintEntryRotationLocked() const
-{
-	return ShouldUseSprintEntryRotationLock();
-}
-
-float ABAPlayerCharacter::GetSprintTurnDeltaAngle() const
-{
-	return FMath::FindDeltaAngleDegrees(GetVelocityDirectionAngle(), GetMoveInputDirectionAngle());
 }
 
 bool ABAPlayerCharacter::CanSprint() const
@@ -378,6 +272,25 @@ void ABAPlayerCharacter::ConsumeSprintStamina(const float DeltaTime)
 	StatComponent->SetCurrentStamina(CurrentStamina - ConsumeAmount);
 
 	LockSprintIfExhausted();
+
+	const FString DebugText = FString::Printf(TEXT("[Sprint Consume] Cost=%.2f Delta=%.3f Consume=%.3f Stamina %.2f -> %.2f Locked=%s"),
+		SprintStaminaCost,
+		DeltaTime,
+		ConsumeAmount,
+		CurrentStamina,
+		StatComponent->GetCurrentStamina(),
+		bSprintLockedAfterExhausted ? TEXT("true") : TEXT("false"));
+	UE_LOG(LogTemp, Log, TEXT("%s"), *DebugText);
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			SprintDebugMessageKey,
+			0.1f,
+			FColor::Cyan,
+			DebugText
+		);
+	}
 }
 
 float ABAPlayerCharacter::CalculateSprintStaminaCost(const float DeltaTime) const
@@ -424,102 +337,12 @@ void ABAPlayerCharacter::UpdateSprintExhaustionLock()
 	}
 }
 
-void ABAPlayerCharacter::ApplyLocomotionMovementPolicy()
-{
-	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
-	if (!MovementComponent)
-	{
-		return;
-	}
-
-	if (CurrentMovementState == EMovementState::Sprint && !ShouldUseSprintEntryRotationLock())
-	{
-		bUseControllerRotationYaw = false;
-		MovementComponent->bOrientRotationToMovement = true;
-		MovementComponent->RotationRate = FRotator(0.f, FreeRotationRateYaw, 0.f);
-		MovementComponent->MaxAcceleration = FreeMaxAcceleration;
-		MovementComponent->BrakingDecelerationWalking = FreeBrakingDecelerationWalking;
-		MovementComponent->GroundFriction = FreeGroundFriction;
-		return;
-	}
-
-	switch (CurrentLocomotionMode)
-	{
-	case EPlayerLocomotionMode::Strafe:
-		bUseControllerRotationYaw = true;
-		MovementComponent->bOrientRotationToMovement = false;
-		MovementComponent->RotationRate = FRotator(0.f, StrafeRotationRateYaw, 0.f);
-		MovementComponent->MaxAcceleration = StrafeMaxAcceleration;
-		MovementComponent->BrakingDecelerationWalking = StrafeBrakingDecelerationWalking;
-		MovementComponent->GroundFriction = StrafeGroundFriction;
-		break;
-	case EPlayerLocomotionMode::Free:
-	default:
-		bUseControllerRotationYaw = false;
-		MovementComponent->bOrientRotationToMovement = true;
-		MovementComponent->RotationRate = FRotator(0.f, FreeRotationRateYaw, 0.f);
-		MovementComponent->MaxAcceleration = FreeMaxAcceleration;
-		MovementComponent->BrakingDecelerationWalking = FreeBrakingDecelerationWalking;
-		MovementComponent->GroundFriction = FreeGroundFriction;
-		break;
-	}
-}
-
-void ABAPlayerCharacter::UpdateSprintEntryRotation(const float DeltaTime)
-{
-	if (!bSprintEntryRotationLocked)
-	{
-		return;
-	}
-
-	SprintEntryElapsedTime += DeltaTime;
-
-	const float OrientationSpeed = SprintSpeed * SprintStrafeEntryOrientationSpeedRatio;
-	const bool bHasBlendedLongEnough = SprintEntryElapsedTime >= SprintStrafeEntryBlendTime;
-	const bool bReachedSprintOrientationSpeed = GetGroundSpeed() >= OrientationSpeed;
-
-	if (bHasBlendedLongEnough && bReachedSprintOrientationSpeed)
-	{
-		bSprintEntryRotationLocked = false;
-		ApplyLocomotionMovementPolicy();
-	}
-}
-
-bool ABAPlayerCharacter::ShouldUseSprintEntryRotationLock() const
-{
-	return CurrentMovementState == EMovementState::Sprint && bSprintEntryRotationLocked;
-}
-
 void ABAPlayerCharacter::SetHasMoveInput(const bool bNewHasMoveInput)
 {
 	bHasMoveInput = bNewHasMoveInput;
-	if (!bHasMoveInput)
-	{
-		MoveInputVector = FVector2D::ZeroVector;
-	}
 
 	if (!bHasMoveInput && CurrentMovementState == EMovementState::Sprint)
 	{
 		SetMovementState(EMovementState::Run);
-	}
-}
-
-void ABAPlayerCharacter::OnHealthChanged(float CurrentHP, float MaxHP)
-{
-	UUserDataSubsystem* UserData = GetGameInstance()->GetSubsystem<UUserDataSubsystem>();
-	if (UserData && StatComponent)
-	{
-		// 변경 된 HP및 현 시점의 스테미너 수치를 전달
-		UserData->NotifyPlayerStatChanged(CurrentHP, MaxHP, StatComponent->GetCurrentStamina(), StatComponent->GetMaxStamina());
-	}
-}
-
-void ABAPlayerCharacter::OnStaminaChanged(float CurrentStamina, float MaxStamina)
-{
-	UUserDataSubsystem* UserData = GetGameInstance()->GetSubsystem<UUserDataSubsystem>();
-	if (UserData && StatComponent)
-	{	
-		// 변경된 Stamina및 현 시점의 체력 수치를 전달
-		UserData->NotifyPlayerStatChanged(StatComponent->GetCurrentHP(), StatComponent->GetMaxHP(), CurrentStamina, MaxStamina);
 	}
 }
