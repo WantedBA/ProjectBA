@@ -19,7 +19,7 @@ struct BAPROJECT_API FSkillRow : public FBARowBase
 	int32 SkillTid = 0;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-	int32 TextTid;
+	int32 TextTid = 0;
 
 	// 엑셀에서 읽어올 값
 	UPROPERTY(BlueprintReadOnly, Category = "Skill", meta = (HideInDetailPanel))
