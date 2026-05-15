@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTDecorator.h"
-#include "BTDecorator_CheckDistance.generated.h"
+#include "BTDecorator_CheckAttackRange.generated.h"
 
 UENUM(BlueprintType)
 enum class EDistanceCondition : uint8
@@ -12,15 +12,15 @@ enum class EDistanceCondition : uint8
 };
 
 /**
- * 조건문 용도, TargetActor와의 거리가 AttackRange 기준 조건에 맞는지 체크하는 데코레이터
+ * 일반 몬스터의 기본 AttackRange 기준 조건에 맞는지 체크하는 데코레이터
  */
 UCLASS()
-class BAPROJECT_API UBTDecorator_CheckDistance : public UBTDecorator
+class BAPROJECT_API UBTDecorator_CheckAttackRange : public UBTDecorator
 {
 	GENERATED_BODY()
 
 public:
-    UBTDecorator_CheckDistance();
+    UBTDecorator_CheckAttackRange();
 
 protected:
     virtual bool CalculateRawConditionValue(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) const override;
