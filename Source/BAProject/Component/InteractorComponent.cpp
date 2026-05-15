@@ -4,6 +4,9 @@
 #include "UI/Interaction/InteractionWidget.h"
 #include "Components/SphereComponent.h"
 #include "Interactable/Interactable.h"
+#include "Camera/CameraComponent.h"
+#include "Materials/MaterialInterface.h"
+
 
 UInteractorComponent::UInteractorComponent()
 {
@@ -31,6 +34,15 @@ void UInteractorComponent::BeginPlay()
 		DetectionSphere->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
 		DetectionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 		DetectionSphere->SetGenerateOverlapEvents(true);
+		
+		if (OutlineMaterial)
+		{
+			if (UCameraComponent* Cam = Owner->FindComponentByClass<UCameraComponent>())
+			{
+				FWeightedBlendable Blendable(1.0f, OutlineMaterial);
+				Cam->PostProcessSettings.WeightedBlendables.Array.Add(Blendable);
+			}
+		}
 	}
 }
 
@@ -151,7 +163,8 @@ void UInteractorComponent::SetCurrentInteractable(AActor* NewInteractable)
 
 	// 외곽선 갱신
 	if (Old) SetOutline(Old, false);
-	if (NewInteractable) SetOutline(NewInteractable, true);
+	if (NewInteractable) 
+		SetOutline(NewInteractable, true);
 
 	CurrentInteractable = NewInteractable;
 

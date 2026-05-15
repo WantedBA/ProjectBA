@@ -7,6 +7,7 @@
 
 class UInteractionWidget;
 class USphereComponent;
+class UMaterialInterface;
 
 #include "InteractorComponent.generated.h"
 
@@ -74,6 +75,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction|Debug")
 	bool bShowDebug = true;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction|Outline")
+	TObjectPtr<UMaterialInterface> OutlineMaterial;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USphereComponent> DetectionSphere;
 	
