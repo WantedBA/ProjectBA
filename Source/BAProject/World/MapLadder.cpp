@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright TeamBA. All Rights Reserved.
 
 
 #include "World/MapLadder.h"
@@ -15,7 +15,7 @@ AMapLadder::AMapLadder()
 void AMapLadder::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 }
 
 // Called every frame
@@ -24,4 +24,3 @@ void AMapLadder::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 }
-
