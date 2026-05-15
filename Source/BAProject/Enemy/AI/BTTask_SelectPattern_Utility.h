@@ -2,15 +2,19 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTTaskNode.h"
-#include "BTTask_Attack.generated.h"
+#include "BTTask_SelectPattern_Utility.generated.h"
 
+
+/**
+ * 조건에 따라 가중치값을 주고 Pattern을 선택하는 Task
+ */
 UCLASS()
-class BAPROJECT_API UBTTask_Attack : public UBTTaskNode
+class BAPROJECT_API UBTTask_SelectPattern_Utility : public UBTTaskNode
 {
 	GENERATED_BODY()
 
 public:
-	UBTTask_Attack();
+	UBTTask_SelectPattern_Utility();
 
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 };
