@@ -357,9 +357,25 @@ float ABAPlayerCharacter::GetSprintTurnDeltaAngle() const
 
 float ABAPlayerCharacter::GetTurnaroundToControlRotationAngle() const
 {
-	const float CurrentYaw = GetActorRotation().Yaw;
-	const float TargetYaw = GetControlRotation().Yaw;
-	return FMath::FindDeltaAngleDegrees(CurrentYaw, TargetYaw);
+	if (!IsTurnaroundRequested())
+	{
+		return 0.f;
+	}
+
+	return TurnaroundAnimationAngle;
+}
+
+float ABAPlayerCharacter::GetTurnaroundPlayRate() const
+{
+	if (!IsTurnaroundRequested())
+	{
+		return 1.f;
+	}
+
+	const float AbsAngle = FMath::Abs(TurnaroundAnimationAngle);
+	const float SafeAngle = FMath::Max(AbsAngle, TurnaroundPlayRateMinAngle);
+	const float RawPlayRate = TurnaroundPlayRateReferenceAngle / SafeAngle;
+	return FMath::Clamp(RawPlayRate, TurnaroundMinPlayRate, TurnaroundMaxPlayRate);
 }
 
 bool ABAPlayerCharacter::IsSprintStopRequested() const
@@ -371,17 +387,22 @@ void ABAPlayerCharacter::ClearSprintStopRequest()
 {
 	const bool bWasSprintStopActive = bSprintStopRequested
 		|| bSprintStopMovementLocked
+		|| bTurnaroundQueuedAfterSprintStop
+		|| bCanBeginTurnaroundAfterSprintStop
 		|| bTurnaroundRequested;
 
 	bSprintStopRequested = false;
 	bSprintStopMovementLocked = false;
 	bSprintStopStartedFromStrafe = false;
 	bSprintStopShouldTurnaround = false;
+	bTurnaroundQueuedAfterSprintStop = false;
+	bCanBeginTurnaroundAfterSprintStop = false;
 	bTurnaroundRequested = false;
 	SprintStopRequestRemainingTime = 0.f;
 	bCanRequestSprintStopFromRecentExit = false;
 	SprintStopRequestWindowRemainingTime = 0.f;
 	TurnaroundElapsedTime = 0.f;
+	TurnaroundAnimationAngle = 0.f;
 
 	if (bWasSprintStopActive)
 	{
@@ -401,10 +422,11 @@ void ABAPlayerCharacter::CompleteSprintStopAnimation()
 		return;
 	}
 
-	if (bSprintStopShouldTurnaround)
+	if (bTurnaroundQueuedAfterSprintStop)
 	{
-		bSprintStopShouldTurnaround = false;
-		RequestTurnaround();
+		TurnaroundAnimationAngle = FMath::FindDeltaAngleDegrees(GetActorRotation().Yaw, GetControlRotation().Yaw);
+		bCanBeginTurnaroundAfterSprintStop = true;
+		ApplyLocomotionMovementPolicy();
 		return;
 	}
 
@@ -416,16 +438,38 @@ void ABAPlayerCharacter::CompleteSprintStopAnimation()
 
 bool ABAPlayerCharacter::IsTurnaroundRequested() const
 {
-	return bTurnaroundRequested;
+	return bCanBeginTurnaroundAfterSprintStop || bTurnaroundRequested;
+}
+
+bool ABAPlayerCharacter::IsTurnaroundQueuedAfterSprintStop() const
+{
+	return bTurnaroundQueuedAfterSprintStop;
+}
+
+void ABAPlayerCharacter::BeginTurnaroundAnimation()
+{
+	if (bTurnaroundRequested || !bCanBeginTurnaroundAfterSprintStop)
+	{
+		return;
+	}
+
+	bTurnaroundQueuedAfterSprintStop = false;
+	bCanBeginTurnaroundAfterSprintStop = false;
+	bTurnaroundRequested = true;
+	TurnaroundElapsedTime = 0.f;
+	ApplyLocomotionMovementPolicy();
 }
 
 void ABAPlayerCharacter::CompleteTurnaroundAnimation()
 {
+	bTurnaroundQueuedAfterSprintStop = false;
+	bCanBeginTurnaroundAfterSprintStop = false;
 	bTurnaroundRequested = false;
 	bSprintStopMovementLocked = false;
 	bSprintStopStartedFromStrafe = false;
 	bSprintStopShouldTurnaround = false;
 	TurnaroundElapsedTime = 0.f;
+	TurnaroundAnimationAngle = 0.f;
 	ApplyLocomotionMovementPolicy();
 }
 
@@ -592,6 +636,9 @@ void ABAPlayerCharacter::RequestSprintStop()
 	bSprintStopRequested = true;
 	bSprintStopMovementLocked = true;
 	bSprintStopStartedFromStrafe = bSprintStopShouldTurnaround;
+	bTurnaroundQueuedAfterSprintStop = bSprintStopShouldTurnaround;
+	bCanBeginTurnaroundAfterSprintStop = false;
+	bSprintStopShouldTurnaround = false;
 	bTurnaroundRequested = false;
 	bCanRequestSprintStopFromRecentExit = false;
 	SprintStopRequestWindowRemainingTime = 0.f;
@@ -617,7 +664,10 @@ void ABAPlayerCharacter::UpdateSprintStopRequest(const float DeltaTime)
 void ABAPlayerCharacter::SetHasMoveInput(const bool bNewHasMoveInput)
 {
 	bHasMoveInput = bNewHasMoveInput;
-	if (bHasMoveInput && (bSprintStopRequested || bSprintStopMovementLocked || bTurnaroundRequested))
+	if (bHasMoveInput && (bSprintStopRequested
+		|| bSprintStopMovementLocked
+		|| bTurnaroundQueuedAfterSprintStop
+		|| IsTurnaroundRequested()))
 	{
 		ClearSprintStopRequest();
 	}
@@ -673,6 +723,8 @@ bool ABAPlayerCharacter::ShouldUseSprintMovementPolicy() const
 	return CurrentMovementState == EMovementState::Sprint
 		|| bSprintStopRequested
 		|| bSprintStopMovementLocked
+		|| bTurnaroundQueuedAfterSprintStop
+		|| bCanBeginTurnaroundAfterSprintStop
 		|| bCanRequestSprintStopFromRecentExit;
 }
 
@@ -685,27 +737,10 @@ void ABAPlayerCharacter::UpdateTurnaroundRotation(const float DeltaTime)
 
 	TurnaroundElapsedTime += DeltaTime;
 
-	const FRotator CurrentRotation = GetActorRotation();
-	const float TargetYaw = GetControlRotation().Yaw;
-	const float NewYaw = FMath::FixedTurn(
-		CurrentRotation.Yaw,
-		TargetYaw,
-		FMath::Max(0.f, TurnaroundRotationRateYaw) * DeltaTime);
-
-	SetActorRotation(FRotator(CurrentRotation.Pitch, NewYaw, CurrentRotation.Roll));
-
 	if (TurnaroundElapsedTime >= TurnaroundMaxDuration)
 	{
 		CompleteTurnaroundAnimation();
 	}
-}
-
-void ABAPlayerCharacter::RequestTurnaround()
-{
-	bSprintStopShouldTurnaround = false;
-	bTurnaroundRequested = true;
-	TurnaroundElapsedTime = 0.f;
-	ApplyLocomotionMovementPolicy();
 }
 
 void ABAPlayerCharacter::OnHealthChanged(float CurrentHP, float MaxHP)

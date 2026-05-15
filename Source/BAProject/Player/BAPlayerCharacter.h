@@ -103,6 +103,9 @@ public:
 	float GetTurnaroundToControlRotationAngle() const;
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	float GetTurnaroundPlayRate() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
 	bool IsSprintStopRequested() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
@@ -113,6 +116,12 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
 	bool IsTurnaroundRequested() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	bool IsTurnaroundQueuedAfterSprintStop() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
+	void BeginTurnaroundAnimation();
 
 	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
 	void CompleteTurnaroundAnimation();
@@ -134,7 +143,6 @@ private:
 	bool CanRequestSprintStop() const;
 	bool ShouldUseSprintMovementPolicy() const;
 	void UpdateTurnaroundRotation(float DeltaTime);
-	void RequestTurnaround();
 
 	EMovementState CurrentMovementState = EMovementState::Run;
 	EPlayerLocomotionMode CurrentLocomotionMode = EPlayerLocomotionMode::Free;
@@ -181,10 +189,19 @@ private:
 	float SprintStopRequestWindowTime = 0.2f;
 
 	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
-	float TurnaroundRotationRateYaw = 720.f;
+	float TurnaroundMaxDuration = 3.f;
 
 	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
-	float TurnaroundMaxDuration = 1.f;
+	float TurnaroundPlayRateReferenceAngle = 90.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
+	float TurnaroundPlayRateMinAngle = 30.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
+	float TurnaroundMinPlayRate = 1.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
+	float TurnaroundMaxPlayRate = 2.5f;
 	
 	UPROPERTY(EditAnywhere, Category="Movement")
 	float WalkSpeed = 100.0f;
@@ -207,12 +224,15 @@ private:
 	bool bSprintStopMovementLocked = false;
 	bool bSprintStopStartedFromStrafe = false;
 	bool bSprintStopShouldTurnaround = false;
+	bool bTurnaroundQueuedAfterSprintStop = false;
+	bool bCanBeginTurnaroundAfterSprintStop = false;
 	bool bTurnaroundRequested = false;
 	bool bCanRequestSprintStopFromRecentExit = false;
 	float SprintEntryElapsedTime = 0.f;
 	float SprintStopRequestRemainingTime = 0.f;
 	float SprintStopRequestWindowRemainingTime = 0.f;
 	float TurnaroundElapsedTime = 0.f;
+	float TurnaroundAnimationAngle = 0.f;
 	
 protected:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
