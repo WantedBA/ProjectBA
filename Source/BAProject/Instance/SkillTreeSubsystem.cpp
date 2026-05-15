@@ -167,4 +167,13 @@ void USkillTreeSubsystem::ActivateSkill(int32 SkillTid)
 			OnSkillNodeStateChange.Broadcast(ChildId, ESkillNodeState::Available);
 		}
 	}
+	
+	// 상호 배타 그룹 적용
+	if (!TableManager->FindSkill(SkillTid)->ExclusiveSkills.IsEmpty())
+	{
+		for (int32 ExclusiveSkillId : TableManager->FindSkill(SkillTid)->ExclusiveSkillIds)
+		{
+			DeactivateSkill(ExclusiveSkillId);
+		}
+	}
 }
