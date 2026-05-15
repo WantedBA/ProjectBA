@@ -120,6 +120,7 @@ private:
 	void StartSprintStopRequestWindow();
 	void UpdateSprintStopRequestWindow(float DeltaTime);
 	bool CanRequestSprintStop() const;
+	bool ShouldUseSprintMovementPolicy() const;
 
 	EMovementState CurrentMovementState = EMovementState::Run;
 	EPlayerLocomotionMode CurrentLocomotionMode = EPlayerLocomotionMode::Free;

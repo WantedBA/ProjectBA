@@ -360,8 +360,14 @@ bool ABAPlayerCharacter::IsSprintStopRequested() const
 
 void ABAPlayerCharacter::ClearSprintStopRequest()
 {
+	const bool bWasSprintStopRequested = bSprintStopRequested;
 	bSprintStopRequested = false;
 	SprintStopRequestRemainingTime = 0.f;
+
+	if (bWasSprintStopRequested)
+	{
+		ApplyLocomotionMovementPolicy();
+	}
 }
 
 bool ABAPlayerCharacter::CanSprint() const
@@ -454,7 +460,7 @@ void ABAPlayerCharacter::ApplyLocomotionMovementPolicy()
 		return;
 	}
 
-	if (CurrentMovementState == EMovementState::Sprint && !ShouldUseSprintEntryRotationLock())
+	if (ShouldUseSprintMovementPolicy() && !ShouldUseSprintEntryRotationLock())
 	{
 		bUseControllerRotationYaw = false;
 		MovementComponent->bOrientRotationToMovement = true;
@@ -515,7 +521,10 @@ bool ABAPlayerCharacter::ShouldUseSprintEntryRotationLock() const
 void ABAPlayerCharacter::RequestSprintStop()
 {
 	bSprintStopRequested = true;
+	bCanRequestSprintStopFromRecentExit = false;
+	SprintStopRequestWindowRemainingTime = 0.f;
 	SprintStopRequestRemainingTime = FMath::Max(0.f, SprintStopRequestHoldTime);
+	ApplyLocomotionMovementPolicy();
 }
 
 void ABAPlayerCharacter::UpdateSprintStopRequest(const float DeltaTime)
@@ -535,6 +544,11 @@ void ABAPlayerCharacter::UpdateSprintStopRequest(const float DeltaTime)
 void ABAPlayerCharacter::SetHasMoveInput(const bool bNewHasMoveInput)
 {
 	bHasMoveInput = bNewHasMoveInput;
+	if (bHasMoveInput && bSprintStopRequested)
+	{
+		ClearSprintStopRequest();
+	}
+
 	if (!bHasMoveInput)
 	{
 		MoveInputVector = FVector2D::ZeroVector;
@@ -574,6 +588,11 @@ void ABAPlayerCharacter::UpdateSprintStopRequestWindow(const float DeltaTime)
 bool ABAPlayerCharacter::CanRequestSprintStop() const
 {
 	return !bSprintStopRequested && GetGroundSpeed() >= SprintStopMinSpeed;
+}
+
+bool ABAPlayerCharacter::ShouldUseSprintMovementPolicy() const
+{
+	return CurrentMovementState == EMovementState::Sprint || bSprintStopRequested;
 }
 
 void ABAPlayerCharacter::OnHealthChanged(float CurrentHP, float MaxHP)
