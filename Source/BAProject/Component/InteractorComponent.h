@@ -32,7 +32,11 @@ public:
 	
 	UFUNCTION(BlueprintPure, Category="Interaction")
 	AActor* GetCurrentInteractable() const {return CurrentInteractable;}
-	
+
+	// C++로 동적 생성된 컴포넌트에 OutlineMaterial을 주입할 때 사용
+	UFUNCTION(BlueprintCallable, Category="Interaction|Outline")
+	void SetOutlineMaterial(UMaterialInterface* InMaterial) { OutlineMaterial = InMaterial; }
+
 	UPROPERTY(BlueprintAssignable, Category = "Interaction")
 	FOnInteractableChanged OnInteractableChanged;
 	
@@ -53,17 +57,25 @@ protected:
 		meta = (ClampMin = "0.0"))
 	float DetectionRadius = 400.f;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction", 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction",
 		meta = (ClampMin = "0.0"))
-	float MaxInteractionDistance = 300.f;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction", 
+	float MaxInteractionDistance = 200.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction",
 		meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float ScreenWeight = 0.6f;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction", 
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction",
 		meta = (ClampMin = "0.0"))
 	float ScanInterval = 0.1f;
+
+	// Pawn forward 기준 dot 임계값. 0.5 ≒ ±60° cone. -1 = 전방향 허용
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction|View",
+		meta = (ClampMin = "-1.0", ClampMax = "1.0"))
+	float MinForwardDot = 0.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction|View")
+	bool bRequireLineOfSight = true;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction|Outline",
 				meta = (ClampMin = "0", ClampMax = "255"))
