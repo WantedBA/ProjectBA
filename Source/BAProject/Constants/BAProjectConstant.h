@@ -19,5 +19,8 @@ namespace BBKey
 	const FName AttackRange = TEXT("AttackRange");
 	const FName ReturnRange = TEXT("ReturnRange");
 	const FName IsReturning = TEXT("IsReturning");
-	const FName State = TEXT("State");
+	const FName SelectedPatternIndex = TEXT("SelectedPatternIndex");
+	const FName TargetDistance = TEXT("TargetDistance");
+	const FName IsActionLocked = TEXT("IsActionLocked");
+	const FName TargetAngle = TEXT("TargetAngle");
 }
