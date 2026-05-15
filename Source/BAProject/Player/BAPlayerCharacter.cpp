@@ -606,7 +606,7 @@ void ABAPlayerCharacter::UpdateSprintStopRequest(const float DeltaTime)
 void ABAPlayerCharacter::SetHasMoveInput(const bool bNewHasMoveInput)
 {
 	bHasMoveInput = bNewHasMoveInput;
-	if (bHasMoveInput && bSprintStopRequested)
+	if (bHasMoveInput && (bSprintStopRequested || bSprintStopMovementLocked || bTurnaroundRequested))
 	{
 		ClearSprintStopRequest();
 	}
