@@ -136,6 +136,7 @@ void USkillTreeSubsystem::DeactivateSkill(int32 SkillTid)
 	// 재귀 종료 조건
 	if (!ActivatedSkillIds.Contains(SkillTid))
 	{
+		OnSkillNodeStateChange.Broadcast(SkillTid, CalculateSkillNodeState(SkillTid));
 		return;
 	}
 	
@@ -164,6 +165,15 @@ void USkillTreeSubsystem::ActivateSkill(int32 SkillTid)
 		if (CalculateSkillNodeState(ChildId) == ESkillNodeState::Available)
 		{
 			OnSkillNodeStateChange.Broadcast(ChildId, ESkillNodeState::Available);
+		}
+	}
+	
+	// 상호 배타 그룹 적용
+	if (!TableManager->FindSkill(SkillTid)->ExclusiveSkills.IsEmpty())
+	{
+		for (int32 ExclusiveSkillId : TableManager->FindSkill(SkillTid)->ExclusiveSkillIds)
+		{
+			DeactivateSkill(ExclusiveSkillId);
 		}
 	}
 }
