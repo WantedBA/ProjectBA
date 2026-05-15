@@ -1,4 +1,4 @@
-// Copyright TeamBA. All Rights Reserved.
+ï»¿// Copyright TeamBA. All Rights Reserved.
 
 #include "World/InvisibleWall.h"
 #include "Components/SphereComponent.h"
@@ -8,9 +8,9 @@
 AInvisibleWall::AInvisibleWall()
 {
     PrimaryActorTick.bCanEverTick = true;
-    PrimaryActorTick.bStartWithTickEnabled = false; // ÇÃ·¹ÀÌ¾î°¡ ±ÙÁ¢ÇÒ ¶§¸¸ Tick
+    PrimaryActorTick.bStartWithTickEnabled = false; // í”Œë ˆì´ì–´ê°€ ê·¼ì ‘í•  ë•Œë§Œ Tick
 
-    bStartActive = true; // ÀÏ¹İ Åõ¸íº®Àº Ç×»ó È°¼ºÈ­
+    bStartActive = true; // ì¼ë°˜ íˆ¬ëª…ë²½ì€ í•­ìƒ í™œì„±í™”
 
     ProximitySphere = CreateDefaultSubobject<USphereComponent>(TEXT("ProximitySphere"));
     ProximitySphere->SetupAttachment(GetRootComponent());
@@ -44,7 +44,7 @@ void AInvisibleWall::Tick(float DeltaTime)
     float Distance = BlockingBox->GetDistanceToCollision(TrackedActor->GetActorLocation(), ClosestPoint);
     if (Distance < 0.f)
     {
-        Distance = 0.f; // Äõ¸® ½ÇÆĞ½Ã ¡æ ¿ÏÀü Ç¥½Ã
+        Distance = 0.f; // ì¿¼ë¦¬ ì‹¤íŒ¨ì‹œ â†’ ì™„ì „ í‘œì‹œ
     }
 
     const float Opacity = FMath::GetMappedRangeValueClamped(
@@ -74,5 +74,5 @@ void AInvisibleWall::HandleProximityEnd(UPrimitiveComponent* OverlappedComponent
 
     TrackedActor = nullptr;
     SetActorTickEnabled(false);
-	SetWallOpacity(0.f); // ÇÃ·¹ÀÌ¾î°¡ ¸Ö¾îÁö¸é ´Ù½Ã ¿ÏÀüÈ÷ Åõ¸íÇÏ°Ô ¼³Á¤
+	SetWallOpacity(0.f); // í”Œë ˆì´ì–´ê°€ ë©€ì–´ì§€ë©´ ë‹¤ì‹œ ì™„ì „íˆ íˆ¬ëª…í•˜ê²Œ ì„¤ì •
 }

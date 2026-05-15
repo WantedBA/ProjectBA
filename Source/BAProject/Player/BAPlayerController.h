@@ -39,7 +39,10 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> SprintAction;
-
+	
+	UPROPERTY(EditDefaultsOnly, Category="Input")
+	TObjectPtr<UInputAction> InteractAction;
+	
 	// 락온 개발 전 임시 버튼
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> ToggleStrafeAction;
@@ -54,6 +57,7 @@ private:
 	void OnSprintStarted();
 	void OnSprintCompleted();
 	void ApplyMovementStateByModifier() const;
+	void OnInteract();
 	// 임시 기능
 	void ToggleStrafe();
 

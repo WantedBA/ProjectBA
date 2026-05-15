@@ -1,4 +1,4 @@
-// Copyright TeamBA. All Rights Reserved.
+ï»¿// Copyright TeamBA. All Rights Reserved.
 
 #pragma once
 #include "CoreMinimal.h"
@@ -41,12 +41,12 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     TObjectPtr<UBoxComponent> TriggerVolume;
 
-    // ÀÌ Å¬·¡½º(¶Ç´Â ÇÏÀ§ Å¬·¡½º)ÀÎ ¾×ÅÍ¸¸ ÀÌº¥Æ®¸¦ Broadcast. ºñ¿ì¸é ÀüºÎ Çã¿ë
+    // ì´ í´ë˜ìŠ¤(ë˜ëŠ” í•˜ìœ„ í´ë˜ìŠ¤)ì¸ ì•¡í„°ë§Œ ì´ë²¤íŠ¸ë¥¼ Broadcast. ë¹„ìš°ë©´ ì „ë¶€ í—ˆìš©
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Trigger")
     TSubclassOf<AActor> TargetFilterClass;
 
-    // ÀÌ º¼·ıÀÌ ÀÛµ¿½ÃÅ³ ´ë»ó ¾×ÅÍµé
-    // BP ±×·¡ÇÁ¿¡¼­ OnVolumeBeginOverlap Ã³¸® ½Ã ÀĞ¾î¼­ »ç¿ë
+    // ì´ ë³¼ë¥¨ì´ ì‘ë™ì‹œí‚¬ ëŒ€ìƒ ì•¡í„°ë“¤
+    // BP ê·¸ë˜í”„ì—ì„œ OnVolumeBeginOverlap ì²˜ë¦¬ ì‹œ ì½ì–´ì„œ ì‚¬ìš©
     UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Trigger")
     TArray<TObjectPtr<AActor>> TargetActors;
 };

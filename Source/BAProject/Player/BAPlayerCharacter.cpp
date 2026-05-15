@@ -4,6 +4,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Instance/UserDataSubsystem.h"
+#include "Component/InteractorComponent.h"
+#include "Materials/MaterialInterface.h"
 
 namespace
 {
@@ -30,6 +32,17 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 
 	// 스탯 컴포넌트 생성
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));
+
+	// 상호작용 컴포넌트 생성
+	InteractorComponent = CreateDefaultSubobject<UInteractorComponent>(TEXT("InteractorComponent"));
+
+	// C++ 동적 생성이라 BP 슬롯이 없으므로 외곽선용 PostProcess 머티리얼을 코드에서 주입
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> OutlinePPMat(
+		TEXT("/Game/UI/Interaction/M_PP_Outline.M_PP_Outline"));
+	if (OutlinePPMat.Succeeded() && InteractorComponent)
+	{
+		InteractorComponent->SetOutlineMaterial(OutlinePPMat.Object);
+	}
 
 	GetMesh()->SetRelativeLocationAndRotation(
 		FVector(0.f, 0.f, -90.f),

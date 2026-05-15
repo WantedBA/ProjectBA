@@ -7,6 +7,7 @@
 
 class UInputAction;
 class UInputMappingContext;
+class UInteractorComponent;
 
 UENUM(BlueprintType)
 enum class EMovementState : uint8
@@ -48,6 +49,9 @@ public:
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<class UStatComponent> StatComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly ,Category = "Components")
+	TObjectPtr<UInteractorComponent> InteractorComponent;
 	
 public:
 	void SetMovementState(EMovementState NewState);
@@ -98,6 +102,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
 	float GetSprintTurnDeltaAngle() const;
+	
+	UFUNCTION(BlueprintPure, Category="Interaction")
+	UInteractorComponent* GetInteractorComponent() const {return InteractorComponent;}
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
 	float GetTurnaroundToControlRotationAngle() const;

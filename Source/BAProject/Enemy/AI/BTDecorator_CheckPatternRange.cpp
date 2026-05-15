@@ -1,4 +1,4 @@
-#include "Enemy/AI/BTDecorator_CheckPatternRange.h"
+ï»¿#include "Enemy/AI/BTDecorator_CheckPatternRange.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
 #include "Constants/BAProjectConstant.h"
@@ -37,6 +37,6 @@ bool UBTDecorator_CheckPatternRange::CalculateRawConditionValue(UBehaviorTreeCom
 	float TargetDist = BBComp->GetValueAsFloat(BBKey::TargetDistance);
 	float Distance = FVector::Dist(Boss->GetActorLocation(), Target->GetActorLocation());
 
-	// [¼öÁ¤] ÇöÀç °Å¸®°¡ ¸ñÇ¥ »ç°Å¸®º¸´Ù '¸Ö ¶§' ÀÌ ½ÃÄö½º(ÀÌµ¿)¸¦ ½ÇÇàÇÔ
+	// [ìˆ˜ì •] í˜„ìž¬ ê±°ë¦¬ê°€ ëª©í‘œ ì‚¬ê±°ë¦¬ë³´ë‹¤ 'ë©€ ë•Œ' ì´ ì‹œí€€ìŠ¤(ì´ë™)ë¥¼ ì‹¤í–‰í•¨
 	return Distance > (TargetDist + AcceptanceRadius);
 }

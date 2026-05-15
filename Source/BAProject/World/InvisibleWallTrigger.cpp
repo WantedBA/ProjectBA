@@ -1,4 +1,4 @@
-// Copyright TeamBA. All Rights Reserved.
+ï»¿// Copyright TeamBA. All Rights Reserved.
 
 
 #include "World/InvisibleWallTrigger.h"
@@ -8,7 +8,7 @@ AInvisibleWallTrigger::AInvisibleWallTrigger()
 {
     PrimaryActorTick.bCanEverTick = false;
 
-    bStartActive = false; // ÀÌº¥Æ® º®Àº Æò¼Ò ¿­·Á ÀÖÀ½
+    bStartActive = false; // ì´ë²¤íŠ¸ ë²½ì€ í‰ì†Œ ì—´ë ¤ ìˆìŒ
 }
 
 void AInvisibleWallTrigger::BeginPlay()
@@ -20,7 +20,7 @@ void AInvisibleWallTrigger::BeginPlay()
         LinkedVolume->OnVolumeBeginOverlap.AddDynamic(this, &AInvisibleWallTrigger::HandleVolumeOverlap);
     }
 
-    SetWallOpacity(0.f); // Æò¼Ò ¿­¸² ¡æ ºñÁÖ¾ó ²¨µÒ
+    SetWallOpacity(0.f); // í‰ì†Œ ì—´ë¦¼ â†’ ë¹„ì£¼ì–¼ êº¼ë‘ 
 }
 
 void AInvisibleWallTrigger::HandleVolumeOverlap(AActor* OverlappingActor)
@@ -32,7 +32,7 @@ void AInvisibleWallTrigger::HandleVolumeOverlap(AActor* OverlappingActor)
 
     bConsumed = true;
     SetWallActive(true);
-    SetWallOpacity(1.f); // ¹°°á ¸ÓÆ¼¸®¾ó Ç¥½Ã ¡æ ¸·ÇûÀ½À» À¯Àú¿¡°Ô ÀÎÁö½ÃÅ´
+    SetWallOpacity(1.f); // ë¬¼ê²° ë¨¸í‹°ë¦¬ì–¼ í‘œì‹œ â†’ ë§‰í˜”ìŒì„ ìœ ì €ì—ê²Œ ì¸ì§€ì‹œí‚´
     OnWallClosed.Broadcast(this);
 }
 
