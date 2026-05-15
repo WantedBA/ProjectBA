@@ -91,6 +91,8 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	UpdateSprintStopRequest(DeltaTime);
+
 	if (CurrentMovementState != EMovementState::Sprint)
 	{
 		UpdateSprintExhaustionLock();
@@ -191,11 +193,17 @@ void ABAPlayerCharacter::SetMovementState(EMovementState NewState)
 	CurrentMovementState = NewState;
 	if (CurrentMovementState == EMovementState::Sprint)
 	{
+		ClearSprintStopRequest();
 		bSprintEntryRotationLocked = CurrentLocomotionMode == EPlayerLocomotionMode::Strafe;
 		SprintEntryElapsedTime = 0.f;
 	}
 	else if (PreviousMovementState == EMovementState::Sprint)
 	{
+		if (!bHasMoveInput && GetGroundSpeed() >= SprintStopMinSpeed)
+		{
+			RequestSprintStop();
+		}
+
 		bSprintEntryRotationLocked = false;
 		SprintEntryElapsedTime = 0.f;
 	}
@@ -340,6 +348,17 @@ bool ABAPlayerCharacter::IsSprintEntryRotationLocked() const
 float ABAPlayerCharacter::GetSprintTurnDeltaAngle() const
 {
 	return FMath::FindDeltaAngleDegrees(GetVelocityDirectionAngle(), GetMoveInputDirectionAngle());
+}
+
+bool ABAPlayerCharacter::IsSprintStopRequested() const
+{
+	return bSprintStopRequested;
+}
+
+void ABAPlayerCharacter::ClearSprintStopRequest()
+{
+	bSprintStopRequested = false;
+	SprintStopRequestRemainingTime = 0.f;
 }
 
 bool ABAPlayerCharacter::CanSprint() const
@@ -488,6 +507,26 @@ void ABAPlayerCharacter::UpdateSprintEntryRotation(const float DeltaTime)
 bool ABAPlayerCharacter::ShouldUseSprintEntryRotationLock() const
 {
 	return CurrentMovementState == EMovementState::Sprint && bSprintEntryRotationLocked;
+}
+
+void ABAPlayerCharacter::RequestSprintStop()
+{
+	bSprintStopRequested = true;
+	SprintStopRequestRemainingTime = FMath::Max(0.f, SprintStopRequestHoldTime);
+}
+
+void ABAPlayerCharacter::UpdateSprintStopRequest(const float DeltaTime)
+{
+	if (!bSprintStopRequested)
+	{
+		return;
+	}
+
+	SprintStopRequestRemainingTime -= DeltaTime;
+	if (SprintStopRequestRemainingTime <= 0.f)
+	{
+		ClearSprintStopRequest();
+	}
 }
 
 void ABAPlayerCharacter::SetHasMoveInput(const bool bNewHasMoveInput)
