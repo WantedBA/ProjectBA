@@ -1,7 +1,7 @@
 #include "Enemy/AI/BTDecorator_CheckPatternRange.h"
-#include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
 #include "Constants/BAProjectConstant.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 UBTDecorator_CheckPatternRange::UBTDecorator_CheckPatternRange()
 {
@@ -34,7 +34,7 @@ bool UBTDecorator_CheckPatternRange::CalculateRawConditionValue(UBehaviorTreeCom
 		return false;
 	}
 
-	float TargetDist = BBComp->GetValueAsFloat(BBKey::TargetDistance);
+	float TargetDist = BBComp->GetValueAsFloat(BBKey::AttackRange);
 	float Distance = FVector::Dist(Boss->GetActorLocation(), Target->GetActorLocation());
 
 	// [수정] 현재 거리가 목표 사거리보다 '멀 때' 이 시퀀스(이동)를 실행함

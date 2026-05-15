@@ -100,6 +100,23 @@ void ABoss::LoadBossPatterns(int32 StageType)
 	}
 }
 
+void ABoss::OnDeath()
+{
+	Super::OnDeath();
+
+	//// [Opinion] 보스만의 특별한 연출: 슬로우 모션 및 강렬한 Dissolve 시작
+	//UGameplayStatics::SetGlobalTimeDilation(GetWorld(), 0.5f);
+
+	//// 보스 전용 몽타주 재생 및 머티리얼 파라미터 제어 시작
+	//if (BossDeathMontage)
+	//{
+	//	PlayAnimMontage(BossDeathMontage);
+	//}
+
+	//// 보스는 사망 시 주변에 광역 데미지를 주거나 이펙트를 생성하는 로직 추가 가능
+	//SpawnBossDeathVFX();
+}
+
 bool ABoss::IsPatternAvailable(int32 PatternTid) const
 {
 	return PatternCooldownMap.Contains(PatternTid) == false;

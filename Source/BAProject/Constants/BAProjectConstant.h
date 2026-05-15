@@ -23,4 +23,5 @@ namespace BBKey
 	const FName TargetDistance = TEXT("TargetDistance");
 	const FName IsActionLocked = TEXT("IsActionLocked");
 	const FName TargetAngle = TEXT("TargetAngle");
+	const FName EnemyState = TEXT("State");
 }

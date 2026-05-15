@@ -50,6 +50,20 @@ void UCombatComponent::CheckAnimNotifyHitEnd()
 	SetComponentTickEnabled(false);
 }
 
+void UCombatComponent::SetWeaponCollisionActive(bool bActive)
+{
+	bIsHitChecking = bActive;
+	if (bActive)
+	{
+		HitActors.Empty();
+		SetComponentTickEnabled(true);
+	}
+	else
+	{
+		SetComponentTickEnabled(false);
+	}
+}
+
 void UCombatComponent::CheckHit()
 {
 	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());

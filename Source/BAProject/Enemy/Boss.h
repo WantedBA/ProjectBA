@@ -72,7 +72,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 	void LoadBossPatterns(int32 StageType);
-
+	virtual void OnDeath() override;
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Combat")
 	TMap<int32, TObjectPtr<UAnimMontage>> LoadedMontageMap;

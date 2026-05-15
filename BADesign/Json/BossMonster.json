@@ -33,7 +33,7 @@
             "Var1": 5000,
             "Var2": 20,
             "Weight": 1.5,
-            "IdealRange": 800,
+            "IdealRange": 300,
             "AttackAngle": 15,
             "ScoreMultiplier": 1.2,
             "Attack": 150
@@ -46,7 +46,7 @@
             "Var1": 2000,
             "Var2": 20,
             "Weight": 1.5,
-            "IdealRange": 800,
+            "IdealRange": 280,
             "AttackAngle": 15,
             "ScoreMultiplier": 1.2,
             "Attack": 150
@@ -59,7 +59,7 @@
             "Var2": 1,
             "Var3": 5,
             "Weight": 2,
-            "IdealRange": 1200,
+            "IdealRange": 1000,
             "AttackAngle": 180,
             "ScoreMultiplier": 1
         }

@@ -32,8 +32,6 @@ void AEnemyBase::PostInitializeComponents()
 	{
 		StatComponent->OnDead.AddDynamic(this, &AEnemyBase::OnDeath);
 	}
-
-	OnAnimationFinished.AddUObject(this, &AEnemyBase::OnEnemyAttackAniFinished);
 }
 
 void AEnemyBase::PossessedBy(AController* NewController)
@@ -116,6 +114,7 @@ void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
 {
 	if (GetCharacterMovement() == nullptr)
 	{
+
 		return;
 	}
 
@@ -136,11 +135,37 @@ void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
 	GetCharacterMovement()->MaxWalkSpeed = TargetSpeed;
 }
 
+void AEnemyBase::UpdateBlackBoardState()
+{
+	AAIController* AIController = Cast<AAIController>(GetController());
+	if (AIController == nullptr)
+	{
+		return;
+	}
+
+	UBlackboardComponent* BBComp = AIController->GetBlackboardComponent();
+	if (BBComp == nullptr)
+	{
+		return;
+	}
+
+	BBComp->SetValueAsEnum(BBKey::EnemyState, static_cast<uint8>(CurrentState));
+
+	bool bIsActionLocked = (CurrentState == EEnemyState::Attack ||
+		CurrentState == EEnemyState::Hit ||	CurrentState == EEnemyState::Dead);
+	BBComp->SetValueAsBool(BBKey::IsActionLocked, bIsActionLocked);
+}
+
 void AEnemyBase::OnEnemyAttackAniFinished(EEnemyState NewState)
 {
 	if (IsValid(this) && CurrentState != EEnemyState::Dead)
 	{
 		SetState(NewState);
+	}
+
+	if (OnAttackAnimationFinished.IsBound())
+	{
+		OnAttackAnimationFinished.Broadcast(NewState);
 	}
 }
 
@@ -148,6 +173,14 @@ void AEnemyBase::OnDeath()
 {
 	Super::OnDeath();
 	SetState(EEnemyState::Dead);
+
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->StopMovementImmediately();
+		GetCharacterMovement()->DisableMovement();
+	}
+
+	SetActorEnableCollision(false);
 
 	K2_OnDeadVisuals();
 }
@@ -162,17 +195,8 @@ void AEnemyBase::SetState(EEnemyState NewState)
 	EEnemyState OldState = CurrentState;
 	CurrentState = NewState;
 
-	if (AEnemyAIController* AIController = Cast<AEnemyAIController>(GetController()))
-	{
-		UBlackboardComponent* BBComponent = AIController->GetBlackboardComponent();
-		if (BBComponent)
-		{
-			// 다음 행위 중에는 BT 막기
-			bool bIsActionLocked = (CurrentState == EEnemyState::Attack || CurrentState == EEnemyState::Hit || CurrentState == EEnemyState::Dead);
-			BBComponent->SetValueAsBool(BBKey::IsActionLocked, bIsActionLocked);
-			UpdateMoveSpeed(CurrentState);
-		}
-	}
+	UpdateBlackBoardState();
+	UpdateMoveSpeed(CurrentState);
 
 	OnStateChanged.Broadcast(OldState, NewState);
 }

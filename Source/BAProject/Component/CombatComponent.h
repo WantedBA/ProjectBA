@@ -23,6 +23,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void CheckAnimNotifyHitEnd();
 
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void SetWeaponCollisionActive(bool bActive);
+
 protected:
 	void CheckHit();
 

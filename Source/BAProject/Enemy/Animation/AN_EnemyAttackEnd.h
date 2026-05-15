@@ -3,15 +3,15 @@
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotify.h"
 #include "Enemy/EnemyBase.h"
-#include "AnimNotify_AttackEnd.generated.h"
+#include "AN_EnemyAttackEnd.generated.h"
 
 UCLASS()
-class BAPROJECT_API UAnimNotify_AttackEnd : public UAnimNotify
+class BAPROJECT_API UAN_EnemyAttackEnd : public UAnimNotify
 {
 	GENERATED_BODY()
 
 public:
-    virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation) override;
+    virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference) override;
 
 public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Logic")
