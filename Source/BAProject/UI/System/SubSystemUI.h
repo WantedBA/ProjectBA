@@ -43,17 +43,6 @@ protected:
 	// 인터페이스(IStackElem) 타입으로 쌓을 스택 바구니
 	TStack<IStackElem*> UIStack;
 
-	// 위젯의 애니메이션이 끝났을 때 실행할 삭제 함수
-	UFUNCTION()
-	void OnWidgetCloseAnimationFinished(ULayerBase* Widget);
-
-	// 모든 팝업 뒤에 적용할 블러 위젯
-	UPROPERTY()
-	class UUserWidget* GlobalBlurWidget;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BA|UI")
-	TSubclassOf<UUserWidget> BlurWidgetClass;
-
 private:
 	// 스택 상황에 따라 마우스 커서와 입력 모드 결정
 	void RefreshInputMode();

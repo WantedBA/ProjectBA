@@ -40,10 +40,6 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> SprintAction;
 
-	// 락온 개발 전 임시 버튼
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	TObjectPtr<UInputAction> ToggleStrafeAction;
-	
 	// Input handlers
 	void Move(const FInputActionValue& Value);
 	void OnMoveCompleted();
@@ -54,8 +50,6 @@ private:
 	void OnSprintStarted();
 	void OnSprintCompleted();
 	void ApplyMovementStateByModifier() const;
-	// 임시 기능
-	void ToggleStrafe();
 
 	bool bWalkModifierHeld = false;
 	bool bSprintModifierHeld = false;

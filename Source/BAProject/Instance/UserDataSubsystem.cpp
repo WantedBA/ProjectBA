@@ -36,20 +36,6 @@ UUserDataSubsystem* UUserDataSubsystem::Get(const UObject* WorldContext)
 	return GI->GetSubsystem<UUserDataSubsystem>();
 }
 
-void UUserDataSubsystem::NotifyPlayerStatChanged(float CurrentHP, float MaxHP, float CurrentStamina, float MaxStamina)
-{
-	// 캐릭터로부터 받은 데이터를 UI용 채널로 전달
-	if (OnPlayerHpChanged.IsBound())
-	{
-		OnPlayerHpChanged.Broadcast(CurrentHP, MaxHP);
-	}
-
-	if (OnPlayerStaminaChanged.IsBound())
-	{
-		OnPlayerStaminaChanged.Broadcast(CurrentStamina, MaxStamina);
-	}
-}
-
 void UUserDataSubsystem::SetBaseStat()
 {
 	const UBATableManager* TableManager = GetGameInstance()->GetSubsystem<UBATableManager>();

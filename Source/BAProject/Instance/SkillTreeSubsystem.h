@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "SkillTreeTypes.h"
-#include "SaveGame/BASaveGame.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Tables/BATableManager.h"
 #include "SkillTreeSubsystem.generated.h"
@@ -25,21 +24,15 @@ public:
 	
 	// Getter
 	UFUNCTION(BlueprintPure)
-	[[nodiscard]]  int32 GetSkillPoints() const { return SkillPoint; }
-	UFUNCTION()
-	[[nodiscard]] TSet<int32> GetActivatedSkillIds() const { return ActivatedSkillIds; }
+	FORCEINLINE int32 GetSkillPoints() const { return SkillPoints; }
 
 // 스킬트리 상태 반환
 	bool CanLearnSkill(const int32 SkillId) const;
-	
+
 	ESkillNodeState CalculateSkillNodeState(const int32 SkillId) const;
 
 	UFUNCTION(BlueprintCallable)
 	int32 GetAvailableSkillPoints() const;
-
-// 세이브, 로드
-	FSkillTreeSaveData MakeSaveData() const;
-	void ApplySaveData(const FSkillTreeSaveData& SaveData);
 	
 // 스킬트리 상태 변경
 	UFUNCTION()
@@ -65,7 +58,7 @@ protected:
 // 저장된 데이터
 	// 배운 스킬 + 남은 스킬 포인트
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SkillTree)
-	int32 SkillPoint = 3;
+	int32 SkillPoints = 3;
 
 	// 배운 스킬 목록
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SkillTree)
