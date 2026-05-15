@@ -582,6 +582,11 @@ void ABAPlayerCharacter::UpdateSprintStopRequestWindow(const float DeltaTime)
 	{
 		bCanRequestSprintStopFromRecentExit = false;
 		SprintStopRequestWindowRemainingTime = 0.f;
+
+		if (!bSprintStopRequested)
+		{
+			ApplyLocomotionMovementPolicy();
+		}
 	}
 }
 
@@ -592,7 +597,9 @@ bool ABAPlayerCharacter::CanRequestSprintStop() const
 
 bool ABAPlayerCharacter::ShouldUseSprintMovementPolicy() const
 {
-	return CurrentMovementState == EMovementState::Sprint || bSprintStopRequested;
+	return CurrentMovementState == EMovementState::Sprint
+		|| bSprintStopRequested
+		|| bCanRequestSprintStopFromRecentExit;
 }
 
 void ABAPlayerCharacter::OnHealthChanged(float CurrentHP, float MaxHP)
