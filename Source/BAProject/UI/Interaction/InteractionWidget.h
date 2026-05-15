@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright TeamBA. All Rights Reserved.
 
 #pragma once
 
@@ -9,8 +9,12 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(Abstract, Blueprintable)
 class BAPROJECT_API UInteractionWidget : public UUserWidget
 {
 	GENERATED_BODY()
+	
+public:
+	UFUNCTION(BlueprintImplementableEvent, Category="Interaction")
+	void SetPrompt(const FText& prompt);
 };
