@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "UI/MinimapLayer.h"
@@ -6,14 +6,14 @@
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
-#include "Kismet/GameplayStatics.h" // ¾×ÅÍ °Ë»ö¿ë
-#include "Map/MapInfoActor.h"		// ¸Ê Á¤º¸ ¾×ÅÍ
+#include "Kismet/GameplayStatics.h" // ì•¡í„° ê²€ìƒ‰ìš©
+#include "Map/MapInfoActor.h"		// ë§µ ì •ë³´ ì•¡í„°
 
 void UMinimapLayer::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// ¿ùµå¿¡ ¹èÄ¡µÈ MapInfoActor Ã£¾Æ¼­ ÀúÀå
+	// ì›”ë“œì— ë°°ì¹˜ëœ MapInfoActor ì°¾ì•„ì„œ ì €ì¥
 	TArray<AActor*> FoundActors;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMapInfoActor::StaticClass(), FoundActors);
 
@@ -22,10 +22,10 @@ void UMinimapLayer::NativeConstruct()
 		StoredMapInfo = Cast<AMapInfoActor>(FoundActors[0]);
 		if (StoredMapInfo)
 		{
-			// [µ¥ÀÌÅÍ ÁÖÀÔ] ¸Ê¿¡ ÀÛ¼ºµÈ Á¤º¸ »ç¿ë
+			// [ë°ì´í„° ì£¼ì…] ë§µì— ì‘ì„±ëœ ì •ë³´ ì‚¬ìš©
 			WorldSize = StoredMapInfo->MapWorldSize;
 
-			// [ÀÌ¹ÌÁö ÀÚµ¿ º¯°æ] ¸Ê Àü¿ë Áöµµ·Î ±³Ã¼
+			// [ì´ë¯¸ì§€ ìë™ ë³€ê²½] ë§µ ì „ìš© ì§€ë„ë¡œ êµì²´
 			if (MapImage && StoredMapInfo->MapTexture)
 			{
 				MapImage->SetBrushFromTexture(StoredMapInfo->MapTexture);
@@ -38,41 +38,41 @@ void UMinimapLayer::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	// ÇÃ·¹ÀÌ¾î Ä³¸¯ÅÍ¿Í À§Ä¡ Á¤º¸ °¡Á®¿À±â
+	// í”Œë ˆì´ì–´ ìºë¦­í„°ì™€ ìœ„ì¹˜ ì •ë³´ ê°€ì ¸ì˜¤ê¸°
 	APawn* PlayerPawn = GetOwningPlayerPawn();
 	
-	// ¿¹¿Ü Ã³¸®
+	// ì˜ˆì™¸ ì²˜ë¦¬
 	if (!PlayerPawn || !PlayerMarker || !MapImage || !StoredMapInfo)
 	{
 		return;
 	}
 
-	// µ¥ÀÌÅÍ °¡Á®¿À±â (ÇÃ·¹ÀÌ¾î À§Ä¡, ¸Ê Áß½ÉÁ¡)
+	// ë°ì´í„° ê°€ì ¸ì˜¤ê¸° (í”Œë ˆì´ì–´ ìœ„ì¹˜, ë§µ ì¤‘ì‹¬ì )
 	FVector PlayerLocation = PlayerPawn->GetActorLocation();
 	FVector MapCenterLocation = StoredMapInfo->GetActorLocation();
 
-	// ¸Ê Áß½ÉÁ¡À¸·ÎºÎÅÍ »ó´ë °Å¸® °è»ê
+	// ë§µ ì¤‘ì‹¬ì ìœ¼ë¡œë¶€í„° ìƒëŒ€ ê±°ë¦¬ ê³„ì‚°
 	FVector RelativeLocation = PlayerLocation - MapCenterLocation;
 
-	// À§Á¬ ÀÌµ¿ (Áöµµ ÀÌ¹ÌÁö ÀÌµ¿)
+	// ìœ„ì ¯ ì´ë™ (ì§€ë„ ì´ë¯¸ì§€ ì´ë™)
 	if (UCanvasPanelSlot* MapSlot = Cast<UCanvasPanelSlot>(MapImage->Slot))
 	{
-		// ¿¡µğÅÍ¿¡¼­ ¼³Á¤ÇÑ ½ÇÁ¦ ÀÌ¹ÌÁö Åª¤Ó¸¦ ±âÁØÀ¸·Î ºñÀ² °è»ê
+		// ì—ë””í„°ì—ì„œ ì„¤ì •í•œ ì‹¤ì œ ì´ë¯¸ì§€ í­ã…£ë¥¼ ê¸°ì¤€ìœ¼ë¡œ ë¹„ìœ¨ ê³„ì‚°
 		float ActualImageSize = MapSlot->GetSize().X;
 
-		// ¿ùµå ÀÌµ¿ ºñÀ²À» ÀÌ¹ÌÁö Å©±â¿¡ ¹İ¿µ
+		// ì›”ë“œ ì´ë™ ë¹„ìœ¨ì„ ì´ë¯¸ì§€ í¬ê¸°ì— ë°˜ì˜
 		float MapX = -(RelativeLocation.Y / WorldSize) * ActualImageSize;
 		float MapY = (RelativeLocation.X / WorldSize) * ActualImageSize;
 
 		MapSlot->SetPosition(FVector2D(MapX, MapY));
 
-		// [È¸Àü] MapContainer ÀÚÃ¼¸¦ È¸Àü°ª¸¸Å­ µ¹¸²
-		// ÄÁÅ×ÀÌ³Ê°¡ ÇöÀ§Ä¡¸¦ ±âÁØÀ¸·Î È¸Àü
+		// [íšŒì „] MapContainer ìì²´ë¥¼ íšŒì „ê°’ë§Œí¼ ëŒë¦¼
+		// ì»¨í…Œì´ë„ˆê°€ í˜„ìœ„ì¹˜ë¥¼ ê¸°ì¤€ìœ¼ë¡œ íšŒì „
 		float PlayerYaw = PlayerPawn->GetActorRotation().Yaw;
 		MapContainer->SetRenderTransformAngle(-PlayerYaw);
 	}
 
-	// [¸¶Ä¿ ¼³Á¤] ¸¶Ä¿´Â Ç×»ó À§¸¦ ÇâÇÏµµ·Ï °íÁ¤
+	// [ë§ˆì»¤ ì„¤ì •] ë§ˆì»¤ëŠ” í•­ìƒ ìœ„ë¥¼ í–¥í•˜ë„ë¡ ê³ ì •
 	PlayerMarker->SetRenderTransformAngle(-90.f);
 
 	if (UCanvasPanelSlot* MarkerSlot = Cast<UCanvasPanelSlot>(PlayerMarker->Slot))

@@ -1,4 +1,4 @@
-// Copyright TeamBA. All Rights Reserved.
+ï»¿// Copyright TeamBA. All Rights Reserved.
 
 #pragma once
 
@@ -18,7 +18,7 @@ public:
 	// Sets default values for this actor's properties
 	AInvisibleWallBase();
 
-	//BP ¿¡¼­ »ç¿ëÇÒ Â÷´Ü CollisionÀÇ OnOff ÇÔ¼ö
+	//BP ì—ì„œ ì‚¬ìš©í•  ì°¨ë‹¨ Collisionì˜ OnOff í•¨ìˆ˜
 	UFUNCTION(BlueprintCallable, Category = "InvisibleWall")
 	void SetWallActive(bool isActive);
 
@@ -28,6 +28,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	// WallMesh í¬ê¸°ë¥¼ BlockingBoxì˜ BoxExtentì— ë§ì¶¤ (BlockingBoxëŠ” ë””í…Œì¼ì—ì„œ ì§ì ‘ í¸ì§‘)
 	virtual void OnConstruction(const FTransform& Transform) override;
 
 	void SetWallOpacity(float Opacity);
@@ -39,21 +40,18 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> WallMesh;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "InvisibleWall")
-	FVector BoxExtent = FVector(100.f, 10.f, 200.f);
-
-	// ½ÃÀÛ ½Ã Â÷´Ü ¿©ºÎ
+	// ì‹œì‘ ì‹œ ì°¨ë‹¨ ì—¬ë¶€
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "InvisibleWall")
 	bool bStartActive = true;
 
-	// ºñÁÖ¾ó ¸ÓÆ¼¸®¾ó.
+	// ë¹„ì£¼ì–¼ ë¨¸í‹°ë¦¬ì–¼.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "InvisibleWall|Visual")
 	TObjectPtr<UMaterialInterface> WallMaterial;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "InvisibleWall|Visual")
 	FName OpacityParameterName = TEXT("Opacity");
 
-	//Material µ¿Àû »ı¼º¿ë
+	//Material ë™ì  ìƒì„±ìš©
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> WallMID;
 

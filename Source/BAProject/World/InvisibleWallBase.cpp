@@ -1,9 +1,10 @@
-// Copyright TeamBA. All Rights Reserved.
+﻿// Copyright TeamBA. All Rights Reserved.
 
 
 #include "World/InvisibleWallBase.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 
 // Sets default values
@@ -13,11 +14,11 @@ AInvisibleWallBase::AInvisibleWallBase()
 
     BlockingBox = CreateDefaultSubobject<UBoxComponent>(TEXT("BlockingBox"));
     SetRootComponent(BlockingBox);
-    BlockingBox->SetBoxExtent(BoxExtent);
+    BlockingBox->SetBoxExtent(FVector(100.f, 10.f, 200.f)); // 기본 크기 (이후 디테일/인스턴스에서 직접 편집)
     BlockingBox->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     BlockingBox->SetCollisionObjectType(ECC_WorldStatic);
     BlockingBox->SetCollisionResponseToAllChannels(ECR_Ignore);
-    BlockingBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block); // �÷��̾� + ��(�� �� Pawn) ����
+    BlockingBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block); // 플레이어 + 적(둘 다 Pawn) 차단
 
     WallMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WallMesh"));
     WallMesh->SetupAttachment(BlockingBox);
@@ -29,9 +30,17 @@ void AInvisibleWallBase::OnConstruction(const FTransform& Transform)
 {
     Super::OnConstruction(Transform);
 
-    if (BlockingBox)
+    // BlockingBox는 여기서 건드리지 않음(디테일에서 직접 편집). WallMesh만 BlockingBox 크기에 맞춤.
+    if (WallMesh && WallMesh->GetStaticMesh())
     {
-        BlockingBox->SetBoxExtent(BoxExtent);
+        const FVector BoxExtent = BlockingBox->GetUnscaledBoxExtent();
+        const FVector MeshExtent = WallMesh->GetStaticMesh()->GetBoundingBox().GetExtent();
+
+        FVector NewScale = FVector::OneVector;
+        if (!FMath::IsNearlyZero(MeshExtent.X)) { NewScale.X = BoxExtent.X / MeshExtent.X; }
+        if (!FMath::IsNearlyZero(MeshExtent.Y)) { NewScale.Y = BoxExtent.Y / MeshExtent.Y; }
+        if (!FMath::IsNearlyZero(MeshExtent.Z)) { NewScale.Z = BoxExtent.Z / MeshExtent.Z; }
+        WallMesh->SetRelativeScale3D(NewScale);
     }
 }
 
