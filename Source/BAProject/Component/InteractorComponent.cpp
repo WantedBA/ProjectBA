@@ -1,7 +1,7 @@
 // Copyright TeamBA. All Rights Reserved.
 
 #include "InteractorComponent.h"
-#include "InteractionWidget.h"
+#include "UI/Interaction/InteractionWidget.h"
 #include "Components/SphereComponent.h"
 #include "Interactable/Interactable.h"
 

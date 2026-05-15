@@ -4,6 +4,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
+#include "Component/InteractorComponent.h"
 
 ABAPlayerController::ABAPlayerController()
 {
@@ -91,6 +92,15 @@ void ABAPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ABAPlayerController::OnSprintStarted);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABAPlayerController::OnSprintCompleted);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Canceled, this, &ABAPlayerController::OnSprintCompleted);
+	}
+	
+	if (ensureMsgf(InteractAction, TEXT("InteractAction is not configured on %s"), *GetName()))
+	{
+		EnhancedInputComponent->BindAction(
+			InteractAction,
+			ETriggerEvent::Started,
+			this,
+			&ABAPlayerController::OnInteract);
 	}
 	
 	// 임시 기능
@@ -211,6 +221,22 @@ void ABAPlayerController::ApplyMovementStateByModifier() const
 	else
 	{
 		PC->SetMovementState(EMovementState::Run);
+	}
+}
+
+void ABAPlayerController::OnInteract()
+{
+	ABAPlayerCharacter* PC = 
+		Cast<ABAPlayerCharacter>(GetPawn());
+	if (!PC)
+	{
+		return;
+	}
+	
+	UInteractorComponent* Interactor = PC->GetInteractorComponent();
+	if (Interactor)
+	{
+		Interactor->TryInteract();
 	}
 }
 

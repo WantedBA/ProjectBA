@@ -4,6 +4,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Instance/UserDataSubsystem.h"
+#include "Component/InteractorComponent.h"
 
 namespace
 {
@@ -31,6 +32,9 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	// 스탯 컴포넌트 생성
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));
 
+	// 상호작용 컴포넌트 생성
+	InteractorComponent = CreateDefaultSubobject<UInteractorComponent>(TEXT("InteractorComponent"));
+	
 	GetMesh()->SetRelativeLocationAndRotation(
 		FVector(0.f, 0.f, -90.f),
 		FRotator(0.f, -90.f, 0.f)
