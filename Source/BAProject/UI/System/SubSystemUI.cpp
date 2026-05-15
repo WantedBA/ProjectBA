@@ -82,40 +82,77 @@ void USubSystemUI::PopUI()
 	// LayerBase로 형변환 하여 위젯 기능 실행
 	TopElem->OnPopped();
 
-	// 화면에서 제거
-	if (UUserWidget* Widget = Cast<UUserWidget>(TopElem))
+	// 애니메이션 재생
+	if (ULayerBase* Widget = Cast<ULayerBase>(TopElem))
 	{
-		Widget->RemoveFromParent(); // 메모리 관리
+		// 위젯 애니메이션 종료 시점을 수신하기 위해 델리게이트 바인딩
+		Widget->OnCloseAnimationFinished.AddDynamic(this, &USubSystemUI::OnWidgetCloseAnimationFinished);
+
+		// 위젯 내부의 닫기 로직(애니메이션 재생 등) 트리거
+		Widget->StartCloseProcess();
 	}
 
 	RefreshInputMode();
-
 	UE_LOG(LogTemp, Log, TEXT("UI Popped! 현재 스택 개수: %d"), UIStack.Num());
 
 }
 
+void USubSystemUI::OnWidgetCloseAnimationFinished(ULayerBase* Widget)
+{
+	if (Widget)
+	{
+		// 화면에서 지우고 메모리 정리
+		Widget->RemoveFromParent();
+		UE_LOG(LogTemp, Log, TEXT("[%s] 삭제 완료"), *Widget->GetName());
+	}
+}
+
 void USubSystemUI::RefreshInputMode()
 {
-	// 현재 스택에 팝업이 하나라도 있는지 체크
+	// 현재 스택에 최상단 요소를 확인하여 팝업 유무 판별
 	bool bHasPopup = false;
 
 	if (!UIStack.IsEmpty())
 	{
 		IStackElem* TopElem = UIStack.Peek(); // 가장 위 요소 확인
-		
 		if (TopElem && TopElem->GetStackType() == EStackElemType::Popup)
 		{
 			bHasPopup = true;
 		}
 	}
 
-	// 플레이어 컨트롤러에서 마우스 커서 제어
+	// 글로벌 블러 위젯 관리 로직
+	if (bHasPopup)
+	{
+		// 블러 위젯 클래스가 설정되어 있고, 아직 생성되지 않았다면 생성
+		if (!GlobalBlurWidget && BlurWidgetClass)
+		{
+			GlobalBlurWidget = CreateWidget<UUserWidget>(GetWorld(), BlurWidgetClass);
+		}
+
+		// 블러 위젯이 존재하고 현재 화면에 없다면 뷰포트에 추가
+		// Order = HUD(1), Popup(3)
+		if (GlobalBlurWidget && !GlobalBlurWidget->IsInViewport())
+		{
+			GlobalBlurWidget->AddToViewport(2);
+		}
+	}
+	else
+	{
+		// 팝업이 한개도 없는 상태라면 화면에서 블러 위젯 제거
+		if (GlobalBlurWidget && GlobalBlurWidget->IsInViewport())
+		{
+			GlobalBlurWidget->RemoveFromParent();
+		}
+	}
+
+	// 입력 모드 및 마우스 커서 제어 로직
 	APlayerController* PC = GetWorld()->GetFirstPlayerController();
 	if (PC)
 	{
 		if (bHasPopup)
 		{
-			// 팝업이 있다면 마우스 커서 활성화
+			// 팝업이 있다면 UI 전용 입력 모드로 변경후 커서 활성화
 			FInputModeUIOnly InputMode;
 			PC->SetInputMode(InputMode);
 			PC->bShowMouseCursor = true;

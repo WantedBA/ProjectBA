@@ -16,6 +16,21 @@ enum class EMovementState : uint8
 	Sprint
 };
 
+UENUM(BlueprintType)
+enum class EPlayerLocomotionMode : uint8
+{
+	Free,
+	Strafe
+};
+
+UENUM(BlueprintType)
+enum class EPlayerCombatMode : uint8
+{
+	None,
+	Combat,
+	Block
+};
+
 UCLASS()
 class BAPROJECT_API ABAPlayerCharacter : public ACharacterBase
 {
@@ -36,7 +51,53 @@ protected:
 	
 public:
 	void SetMovementState(EMovementState NewState);
+	void SetMoveInputVector(const FVector2D& NewMoveInput);
 	void SetHasMoveInput(bool bNewHasMoveInput);
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
+	void SetLocomotionMode(EPlayerLocomotionMode NewMode);
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Combat")
+	void SetCombatMode(EPlayerCombatMode NewMode);
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	EMovementState GetMovementState() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	EPlayerLocomotionMode GetLocomotionMode() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Combat")
+	EPlayerCombatMode GetCombatMode() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	bool HasMoveInput() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	FVector2D GetMoveInputVector() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	FVector GetMoveInputWorldDirection() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	FVector GetMoveInputLocalDirection() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	float GetMoveInputDirectionAngle() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	float GetVelocityDirectionAngle() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	float GetGroundSpeed() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	bool IsSprintLockedAfterExhausted() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	bool IsSprintEntryRotationLocked() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	float GetSprintTurnDeltaAngle() const;
 
 private:
 	bool CanSprint() const;
@@ -45,8 +106,44 @@ private:
 	float CalculateSprintStaminaCost(float DeltaTime) const;
 	void LockSprintIfExhausted();
 	void UpdateSprintExhaustionLock();
+	void ApplyLocomotionMovementPolicy();
+	void UpdateSprintEntryRotation(float DeltaTime);
+	bool ShouldUseSprintEntryRotationLock() const;
 
 	EMovementState CurrentMovementState = EMovementState::Run;
+	EPlayerLocomotionMode CurrentLocomotionMode = EPlayerLocomotionMode::Free;
+	EPlayerCombatMode CurrentCombatMode = EPlayerCombatMode::None;
+	FVector2D MoveInputVector = FVector2D::ZeroVector;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
+	float FreeRotationRateYaw = 1440.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
+	float FreeMaxAcceleration = 8192.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
+	float FreeBrakingDecelerationWalking = 8192.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
+	float FreeGroundFriction = 12.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
+	float StrafeRotationRateYaw = 720.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
+	float StrafeMaxAcceleration = 2048.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
+	float StrafeBrakingDecelerationWalking = 2048.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
+	float StrafeGroundFriction = 8.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
+	float SprintStrafeEntryBlendTime = 0.25f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
+	float SprintStrafeEntryOrientationSpeedRatio = 0.85f;
 	
 	UPROPERTY(EditAnywhere, Category="Movement")
 	float WalkSpeed = 100.0f;
@@ -64,6 +161,8 @@ private:
 	bool bHasSprintActionData = false;
 	bool bHasMoveInput = false;
 	bool bSprintLockedAfterExhausted = false;
+	bool bSprintEntryRotationLocked = false;
+	float SprintEntryElapsedTime = 0.f;
 	
 protected:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
@@ -72,6 +171,11 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	TObjectPtr<class UCameraComponent> Camera;
 
-protected: // TODO: 은성님과 HUD 협업, HUDInterface 구현 필요
+protected:
 	// virtual	void SetupHUDWidget(class UHUDWidget* InHUDWidget) override;
+
+	UFUNCTION()
+	void OnHealthChanged(float CurrentHP, float MaxHP);
+	UFUNCTION()
+	void OnStaminaChanged(float CurrentStamina, float MaxStamina);
 };
