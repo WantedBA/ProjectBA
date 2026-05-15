@@ -43,23 +43,27 @@ void FBAProjectEditorModule::RegisterMenus()
 			FToolMenuSection& DataSection = InSubMenu->AddSection(
 				"Data", LOCTEXT("DataSection", "Data"));
 
-			DataSection.AddMenuEntry(
+			// GenerateTableData
+			/*DataSection.AddMenuEntry(
 				"GenerateTableData",
 				LOCTEXT("GenerateTableDataLabel", "GenerateTableData"),
 				LOCTEXT("GenerateTableDataTooltip",
 					"Run the Excel -> JSON converter and rebuild every DataTable under /Game/Table."),
 				FSlateIcon(),
-				FUIAction(FExecuteAction::CreateStatic(&FBATableGenerator::Generate)));
+				FUIAction(FExecuteAction::CreateStatic(&FBATableGenerator::Generate)));*/
 			
 			// Reload
 			DataSection.AddMenuEntry(
-				"ReloadTableData",
-				LOCTEXT("ReloadTableDataLabel", "ReloadTableData"),
+				"GenerateAndReloadTableData",
+				LOCTEXT("ReloadTableDataLabel", "Generate & Reload Table Data"),
 				LOCTEXT("ReloadTableDataTooltip",
 					"Reload every DataTable under /Game/Table."),
 				FSlateIcon(),
 				FUIAction(FExecuteAction::CreateLambda([]()
 				{
+					// Generate
+					FBATableGenerator::Generate();
+					// Reload
 					if (!GEngine)
 					{
 						UE_LOG(LogTemp, Warning, TEXT("GEngine is null, cannot reload table data."));
