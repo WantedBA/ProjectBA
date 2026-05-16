@@ -157,6 +157,12 @@ void ABAPlayerCharacter::InitializeFromTable()
 	RunSpeed = BaseStat.RunSpeed;
 	SprintSpeed = BaseStat.SprintSpeed;
 
+	// 사다리 관련 스탯 초기화
+	LadderClimbSpeedSlow = BaseStat.LadderClimbSpeedSlow;
+	LadderClimbSpeedFast = BaseStat.LadderClimbSpeedFast;
+	LadderSlideDownSpeed = BaseStat.LadderSlideDownSpeed;
+	LadderExitClearance = BaseStat.LadderExitClearance;
+
 	StatComponent->InitializeStats(
 		BaseStat.MaxHp,	
 		BaseStat.MaxStamina,

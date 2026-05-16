@@ -49,6 +49,18 @@ struct BAPROJECT_API FPlayerBaseStatRow : public FBARowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
 	float BaseDefence = 0.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float LadderClimbSpeedSlow = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float LadderClimbSpeedFast = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float LadderSlideDownSpeed = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float LadderExitClearance = 0.f;
+
 	virtual void PostRead() override
 	{
 		bTid = Tid;
