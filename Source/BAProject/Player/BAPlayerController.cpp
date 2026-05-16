@@ -132,6 +132,15 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 	bHasMoveInput = !Movement.IsNearlyZero();
 	ControlledCharacter->SetMoveInputVector(Movement);
 	ApplyMovementStateByModifier();
+
+	UE_LOG(LogTemp, Warning, TEXT("[Ladder] Controller Move  IsOnLadder=%d  Mv=(%.2f,%.2f)"),
+		ControlledCharacter->IsOnLadder() ? 1 : 0, Movement.X, Movement.Y);
+
+	// 사다리 모드: 일반 이동 입력 무시 (캐릭터 Tick이 등반 처리)
+	if (ControlledCharacter->IsOnLadder())
+	{
+		return;
+	}
 	
 	const FRotator ControlRot = GetControlRotation();
 	const FRotator YawRot(0.f, ControlRot.Yaw, 0.f);
@@ -230,6 +239,13 @@ void ABAPlayerController::OnInteract()
 		Cast<ABAPlayerCharacter>(GetPawn());
 	if (!PC)
 	{
+		return;
+	}
+
+	// 사다리 매달린 상태: 카메라 방향과 무관하게 즉시 이탈
+	if (PC->IsOnLadder())
+	{
+		PC->ExitLadder(PC->GetActorLocation());
 		return;
 	}
 	

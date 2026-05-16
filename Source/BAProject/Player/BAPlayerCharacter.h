@@ -8,6 +8,7 @@
 class UInputAction;
 class UInputMappingContext;
 class UInteractorComponent;
+class AMapLadder;
 
 UENUM(BlueprintType)
 enum class EMovementState : uint8
@@ -106,6 +107,9 @@ public:
 	UFUNCTION(BlueprintPure, Category="Interaction")
 	UInteractorComponent* GetInteractorComponent() const {return InteractorComponent;}
 
+	UFUNCTION(BlueprintPure, Category="Ladder")
+	float GetLadderClimbVelocity() const;
+
 	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
 	float GetTurnaroundToControlRotationAngle() const;
 
@@ -133,6 +137,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
 	void CompleteTurnaroundAnimation();
 
+	UFUNCTION(BlueprintCallable, Category = "Ladder")
+	void EnterLadder(AMapLadder* Ladder, const FVector& EntryLocation, const FRotator& FaceRotation);
+
+	UFUNCTION(BlueprintCallable, Category = "Ladder")
+	void ExitLadder(const FVector& ExitLocation);
+
+	UFUNCTION(BlueprintPure, Category = "Ladder")
+	bool IsOnLadder() const { return bIsOnLadder; }
+
+	UFUNCTION(BlueprintPure, Category = "Ladder")
+	AMapLadder* GetCurrentLadder() const { return CurrentLadder.Get(); }
+
 private:
 	bool CanSprint() const;
 	bool IsSprintMovementActive() const;
@@ -150,6 +166,7 @@ private:
 	bool CanRequestSprintStop() const;
 	bool ShouldUseSprintMovementPolicy() const;
 	void UpdateTurnaroundRotation(float DeltaTime);
+	void TickLadderClimb(float DeltaTime);
 
 	EMovementState CurrentMovementState = EMovementState::Run;
 	EPlayerLocomotionMode CurrentLocomotionMode = EPlayerLocomotionMode::Free;
@@ -219,6 +236,18 @@ private:
 	UPROPERTY(EditAnywhere, Category="Movement")
 	float SprintSpeed = 700.0f;
 
+	UPROPERTY(EditAnywhere, Category = "Movement|Ladder", meta = (ClampMin = "0.0"))
+	float LadderClimbSpeedSlow = 120.f;
+
+	UPROPERTY(EditAnywhere, Category = "Movement|Ladder", meta = (ClampMin = "0.0"))
+	float LadderClimbSpeedFast = 280.f;
+
+	UPROPERTY(EditAnywhere, Category = "Movement|Ladder", meta = (ClampMin = "0.0"))
+	float LadderSlideDownSpeed = 600.f;  //빠른 하강
+
+	UPROPERTY(EditAnywhere, Category = "Movement|Ladder", meta = (ClampMin = "0.0"))
+	float LadderExitClearance = 80.f;    //이탈 시 사다리 너머로 밀어낼 거리
+
 	float SprintStaminaCost = 0.f;
 	EPlayerStaminaCostType SprintStaminaCostType = EPlayerStaminaCostType::Instant;
 	float SprintMinRequiredStamina = 0.f;
@@ -240,6 +269,8 @@ private:
 	float SprintStopRequestWindowRemainingTime = 0.f;
 	float TurnaroundElapsedTime = 0.f;
 	float TurnaroundAnimationAngle = 0.f;
+	bool bIsOnLadder = false;
+	TWeakObjectPtr<AMapLadder> CurrentLadder;
 	
 protected:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
