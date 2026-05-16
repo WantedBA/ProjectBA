@@ -132,12 +132,6 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 	bHasMoveInput = !Movement.IsNearlyZero();
 	ControlledCharacter->SetMoveInputVector(Movement);
 	ApplyMovementStateByModifier();
-	
-	const FVector MoveDirection = ControlledCharacter->GetMoveInputWorldDirection();
-	if (!MoveDirection.IsNearlyZero())
-	{
-		ControlledCharacter->AddMovementInput(MoveDirection, Movement.Size());
-	}
 }
 
 void ABAPlayerController::OnMoveCompleted()

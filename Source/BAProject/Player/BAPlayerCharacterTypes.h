@@ -20,19 +20,21 @@ enum class EPlayerLocomotionMode : uint8
 };
 
 UENUM(BlueprintType)
+enum class EPlayerMovementPhase : uint8
+{
+	None,
+	Start,
+	Loop,
+	Stop,
+	Turn
+};
+
+UENUM(BlueprintType)
 enum class EPlayerCombatMode : uint8
 {
 	None,
 	Combat,
 	Block
-};
-
-enum class EPlayerTurnaroundState : uint8
-{
-	None,
-	QueuedAfterSprintStop,
-	ReadyToBeginAfterSprintStop,
-	Playing
 };
 
 USTRUCT(BlueprintType)
@@ -90,80 +92,91 @@ struct FBAPlayerLocomotionSettings
 };
 
 USTRUCT(BlueprintType)
-struct FBAPlayerSprintSettings
+struct FBAPlayerMovementPhaseSettings
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, Category = "Movement|Sprint")
-	float StrafeEntryBlendTime = 0.25f;
+	UPROPERTY(EditAnywhere, Category = "Movement|Phase")
+	bool bUseStart = false;
 
-	UPROPERTY(EditAnywhere, Category = "Movement|Sprint")
-	float StrafeEntryOrientationSpeedRatio = 0.85f;
+	UPROPERTY(EditAnywhere, Category = "Movement|Phase")
+	bool bUseStop = false;
 
-	UPROPERTY(EditAnywhere, Category = "Movement|Sprint")
-	float StopRequestHoldTime = 0.35f;
+	UPROPERTY(EditAnywhere, Category = "Movement|Phase")
+	bool bUseTurn = false;
 
-	UPROPERTY(EditAnywhere, Category = "Movement|Sprint")
-	float StopMinSpeed = 150.f;
+	UPROPERTY(EditAnywhere, Category = "Movement|Phase")
+	bool bStartUsesRootMotion = true;
 
-	UPROPERTY(EditAnywhere, Category = "Movement|Sprint")
-	float StopRequestWindowTime = 0.2f;
+	UPROPERTY(EditAnywhere, Category = "Movement|Phase")
+	bool bStopUsesRootMotion = true;
+
+	UPROPERTY(EditAnywhere, Category = "Movement|Phase")
+	bool bTurnUsesRootMotion = true;
+
+	UPROPERTY(EditAnywhere, Category = "Movement|Phase")
+	float TurnMinAngle = 90.f;
+
+	UPROPERTY(EditAnywhere, Category = "Movement|Phase")
+	float TurnMinSpeed = 150.f;
 };
 
 USTRUCT(BlueprintType)
-struct FBAPlayerTurnaroundSettings
+struct FBAPlayerMovementGaitSettings
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, Category = "Movement|Turnaround")
-	float MaxDuration = 3.f;
+	UPROPERTY(EditAnywhere, Category = "Movement|Gait")
+	FBAPlayerMovementPhaseSettings Walk;
 
-	UPROPERTY(EditAnywhere, Category = "Movement|Turnaround")
-	float PlayRateReferenceAngle = 90.f;
+	UPROPERTY(EditAnywhere, Category = "Movement|Gait")
+	FBAPlayerMovementPhaseSettings Run;
 
-	UPROPERTY(EditAnywhere, Category = "Movement|Turnaround")
-	float PlayRateMinAngle = 30.f;
+	UPROPERTY(EditAnywhere, Category = "Movement|Gait")
+	FBAPlayerMovementPhaseSettings Sprint;
+};
 
-	UPROPERTY(EditAnywhere, Category = "Movement|Turnaround")
-	float MinPlayRate = 1.f;
+USTRUCT(BlueprintType)
+struct FBAPlayerSprintCostSettings
+{
+	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, Category = "Movement|Turnaround")
-	float MaxPlayRate = 2.5f;
+	UPROPERTY(VisibleAnywhere, Category = "Movement|Sprint")
+	float StaminaCost = 0.f;
+
+	UPROPERTY(VisibleAnywhere, Category = "Movement|Sprint")
+	EPlayerStaminaCostType StaminaCostType = EPlayerStaminaCostType::Instant;
+
+	UPROPERTY(VisibleAnywhere, Category = "Movement|Sprint")
+	float MinRequiredStamina = 0.f;
+
+	UPROPERTY(VisibleAnywhere, Category = "Movement|Sprint")
+	float RestartStaminaPercent = 70.f;
+
+	UPROPERTY(VisibleAnywhere, Category = "Movement|Sprint")
+	bool bHasActionData = false;
 };
 
 struct FBAPlayerMovementRuntimeState
 {
-	EMovementState MovementState = EMovementState::Run;
+	EMovementState DesiredGait = EMovementState::Run;
+	EMovementState ActiveGait = EMovementState::Run;
 	EPlayerLocomotionMode LocomotionMode = EPlayerLocomotionMode::Free;
+	EPlayerMovementPhase Phase = EPlayerMovementPhase::None;
 	EPlayerCombatMode CombatMode = EPlayerCombatMode::None;
 	FVector2D MoveInputVector = FVector2D::ZeroVector;
-	FVector2D SmoothedMoveInputVector = FVector2D::ZeroVector;
+	FVector2D InterpolatedMoveInputVector = FVector2D::ZeroVector;
+	FVector2D PhaseEntryInputVector = FVector2D::ZeroVector;
+	FVector PhaseEntryWorldDirection = FVector::ZeroVector;
 	bool bHasMoveInput = false;
-	bool bHasSmoothedMoveInput = false;
-	float SmoothedMoveInputMemoryRemainingTime = 0.f;
+	bool bHasInterpolatedMoveInput = false;
+	bool bWaitingForPhaseAnimation = false;
+	float InterpolatedMoveInputMemoryRemainingTime = 0.f;
+	float PhaseEntryLocalAngle = 0.f;
+	float PhaseElapsedTime = 0.f;
 };
 
 struct FBAPlayerSprintRuntimeState
 {
-	float StaminaCost = 0.f;
-	EPlayerStaminaCostType StaminaCostType = EPlayerStaminaCostType::Instant;
-	float MinRequiredStamina = 0.f;
-	float RestartStaminaPercent = 0.f;
-	bool bHasActionData = false;
 	bool bLockedAfterExhausted = false;
-	bool bKeepStrafeRotationDuringSprintEntry = false;
-	bool bSprintStopRequested = false;
-	bool bMovementLockedBySprintStop = false;
-	bool bShouldTurnaroundAfterSprintStop = false;
-	bool bCanRequestStopFromRecentExit = false;
-	float EntryElapsedTime = 0.f;
-	float StopRequestRemainingTime = 0.f;
-	float StopRequestWindowRemainingTime = 0.f;
-};
-
-struct FBAPlayerTurnaroundRuntimeState
-{
-	EPlayerTurnaroundState State = EPlayerTurnaroundState::None;
-	float ElapsedTime = 0.f;
-	float AnimationAngle = 0.f;
 };
