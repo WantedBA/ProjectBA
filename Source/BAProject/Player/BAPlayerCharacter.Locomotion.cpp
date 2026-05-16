@@ -73,6 +73,23 @@ void ABAPlayerCharacter::SetMoveInputVector(const FVector2D& NewMoveInput)
 	}
 
 	SetHasMoveInput(!MovementRuntime.MoveInputVector.IsNearlyZero());
+
+	if (MovementRuntime.bHasMoveInput && !MovementRuntime.bHasSmoothedMoveInput)
+	{
+		FVector2D SeedInput = GetMoveInputVectorFromWorldDirection(GetVelocity());
+		if (SeedInput.IsNearlyZero())
+		{
+			SeedInput = MovementRuntime.MoveInputVector;
+		}
+
+		MovementRuntime.SmoothedMoveInputVector = SeedInput;
+		MovementRuntime.bHasSmoothedMoveInput = true;
+	}
+
+	if (MovementRuntime.bHasMoveInput)
+	{
+		MovementRuntime.SmoothedMoveInputMemoryRemainingTime = LocomotionSettings.MoveInputDirectionMemoryTime;
+	}
 }
 
 // 이동 모드(Free/Strafe)를 변경하고 회전 및 가속 정책을 즉시 재적용한다.
@@ -135,8 +152,9 @@ FVector ABAPlayerCharacter::GetMoveInputWorldDirection() const
 	const FRotator YawRot(0.f, ControlRot.Yaw, 0.f);
 	const FVector Forward = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
 	const FVector Right = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
+	const FVector2D DirectionInput = GetMoveInputDirectionVector();
 
-	return (Forward * MovementRuntime.MoveInputVector.Y + Right * MovementRuntime.MoveInputVector.X).GetSafeNormal();
+	return (Forward * DirectionInput.Y + Right * DirectionInput.X).GetSafeNormal();
 }
 
 // 월드 좌표 이동 입력을 캐릭터 로컬 좌표로 변환하여 반환한다.
@@ -151,16 +169,17 @@ FVector ABAPlayerCharacter::GetMoveInputLocalDirection() const
 	return GetActorTransform().InverseTransformVectorNoScale(WorldDirection).GetSafeNormal();
 }
 
-// 캐릭터 로컬 기준 이동 입력 방향을 애니메이션 재생용 각도로 반환한다.
+// AnimBP 호환을 위해 기존 이름을 유지하되, 방향 값은 실제 속도 기준으로 계산한다.
 float ABAPlayerCharacter::GetMoveInputDirectionAngle() const
 {
-	const FVector LocalDirection = GetMoveInputLocalDirection();
-	if (LocalDirection.IsNearlyZero())
+	const float DirectionAngle = GetVelocityDirectionAngle();
+	if (const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+		MovementComponent && MovementComponent->bOrientRotationToMovement)
 	{
-		return 0.f;
+		return FMath::Clamp(DirectionAngle, -45.f, 45.f);
 	}
 
-	return FMath::RadiansToDegrees(FMath::Atan2(LocalDirection.Y, LocalDirection.X));
+	return DirectionAngle;
 }
 
 // 캐릭터 로컬 기준 현재 속도 방향을 애니메이션 재생용 각도로 반환한다.
@@ -251,6 +270,92 @@ void ABAPlayerCharacter::ApplyTurnaroundMovementPolicy(UCharacterMovementCompone
 	MovementComponent.MaxAcceleration = LocomotionSettings.StrafeMaxAcceleration;
 	MovementComponent.BrakingDecelerationWalking = LocomotionSettings.StrafeBrakingDecelerationWalking;
 	MovementComponent.GroundFriction = LocomotionSettings.StrafeGroundFriction;
+}
+
+// 입력 방향을 각도 기준으로 회전시켜 Free 이동에서 직각 꺾임 대신 곡선 이동을 만든다.
+void ABAPlayerCharacter::UpdateSmoothedMoveInput(const float DeltaTime)
+{
+	if (!MovementRuntime.bHasMoveInput)
+	{
+		const FVector2D VelocityInput = GetMoveInputVectorFromWorldDirection(GetVelocity());
+		if (!VelocityInput.IsNearlyZero())
+		{
+			MovementRuntime.SmoothedMoveInputVector = VelocityInput;
+			MovementRuntime.bHasSmoothedMoveInput = true;
+			MovementRuntime.SmoothedMoveInputMemoryRemainingTime = LocomotionSettings.MoveInputDirectionMemoryTime;
+			return;
+		}
+
+		if (MovementRuntime.bHasSmoothedMoveInput)
+		{
+			MovementRuntime.SmoothedMoveInputMemoryRemainingTime -= DeltaTime;
+			if (MovementRuntime.SmoothedMoveInputMemoryRemainingTime <= 0.f)
+			{
+				MovementRuntime.SmoothedMoveInputVector = FVector2D::ZeroVector;
+				MovementRuntime.bHasSmoothedMoveInput = false;
+				MovementRuntime.SmoothedMoveInputMemoryRemainingTime = 0.f;
+			}
+		}
+		return;
+	}
+
+	const FVector2D TargetInput = MovementRuntime.MoveInputVector.GetSafeNormal();
+	if (TargetInput.IsNearlyZero())
+	{
+		return;
+	}
+
+	MovementRuntime.SmoothedMoveInputMemoryRemainingTime = LocomotionSettings.MoveInputDirectionMemoryTime;
+
+	if (!MovementRuntime.bHasSmoothedMoveInput || MovementRuntime.SmoothedMoveInputVector.IsNearlyZero())
+	{
+		MovementRuntime.SmoothedMoveInputVector = TargetInput;
+		MovementRuntime.bHasSmoothedMoveInput = true;
+		return;
+	}
+
+	const FVector2D CurrentInput = MovementRuntime.SmoothedMoveInputVector.GetSafeNormal();
+	const float CurrentAngle = FMath::RadiansToDegrees(FMath::Atan2(CurrentInput.X, CurrentInput.Y));
+	const float TargetAngle = FMath::RadiansToDegrees(FMath::Atan2(TargetInput.X, TargetInput.Y));
+	const float DeltaAngle = FMath::FindDeltaAngleDegrees(CurrentAngle, TargetAngle);
+	const float MaxStep = FMath::Max(0.f, LocomotionSettings.MoveInputDirectionRotationRate) * DeltaTime;
+	const float NextAngle = CurrentAngle + FMath::Clamp(DeltaAngle, -MaxStep, MaxStep);
+	const float NextAngleRadians = FMath::DegreesToRadians(NextAngle);
+
+	MovementRuntime.SmoothedMoveInputVector = FVector2D(FMath::Sin(NextAngleRadians), FMath::Cos(NextAngleRadians));
+	MovementRuntime.bHasSmoothedMoveInput = true;
+}
+
+// 실제 이동 회전이 MovementComponent에 맡겨진 상태에서만 보간된 입력 방향을 사용한다.
+FVector2D ABAPlayerCharacter::GetMoveInputDirectionVector() const
+{
+	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (MovementComponent && MovementComponent->bOrientRotationToMovement && MovementRuntime.bHasSmoothedMoveInput)
+	{
+		return MovementRuntime.SmoothedMoveInputVector;
+	}
+
+	return MovementRuntime.MoveInputVector;
+}
+
+// 월드 방향을 현재 컨트롤 yaw 기준의 2D 입력 벡터로 되돌린다.
+FVector2D ABAPlayerCharacter::GetMoveInputVectorFromWorldDirection(const FVector& WorldDirection) const
+{
+	FVector FlatDirection = WorldDirection;
+	FlatDirection.Z = 0.f;
+	if (FlatDirection.IsNearlyZero() || FlatDirection.Size2D() < LocomotionSettings.MoveInputDirectionVelocitySeedMinSpeed)
+	{
+		return FVector2D::ZeroVector;
+	}
+
+	FlatDirection.Normalize();
+
+	const FRotator ControlRot = GetControlRotation();
+	const FRotator YawRot(0.f, ControlRot.Yaw, 0.f);
+	const FVector Forward = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
+	const FVector Right = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
+
+	return FVector2D(FVector::DotProduct(FlatDirection, Right), FVector::DotProduct(FlatDirection, Forward)).GetSafeNormal();
 }
 
 // 이동 입력 유무 변화에 따라 Sprint 정지 또는 Turnaround를 자동으로 처리한다.

@@ -108,6 +108,7 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	UpdateSmoothedMoveInput(DeltaTime);
 	UpdateSprintStopRequest(DeltaTime);
 	UpdateSprintStopRequestWindow(DeltaTime);
 	UpdateTurnaroundRotation(DeltaTime);

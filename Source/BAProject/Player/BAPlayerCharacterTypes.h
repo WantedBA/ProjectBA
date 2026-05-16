@@ -78,6 +78,15 @@ struct FBAPlayerLocomotionSettings
 
 	UPROPERTY(EditAnywhere, Category = "Movement|Locomotion")
 	float StrafeGroundFriction = 8.f;
+
+	UPROPERTY(EditAnywhere, Category = "Movement|Locomotion")
+	float MoveInputDirectionRotationRate = 720.f;
+
+	UPROPERTY(EditAnywhere, Category = "Movement|Locomotion")
+	float MoveInputDirectionMemoryTime = 0.5f;
+
+	UPROPERTY(EditAnywhere, Category = "Movement|Locomotion")
+	float MoveInputDirectionVelocitySeedMinSpeed = 50.f;
 };
 
 USTRUCT(BlueprintType)
@@ -128,7 +137,10 @@ struct FBAPlayerMovementRuntimeState
 	EPlayerLocomotionMode LocomotionMode = EPlayerLocomotionMode::Free;
 	EPlayerCombatMode CombatMode = EPlayerCombatMode::None;
 	FVector2D MoveInputVector = FVector2D::ZeroVector;
+	FVector2D SmoothedMoveInputVector = FVector2D::ZeroVector;
 	bool bHasMoveInput = false;
+	bool bHasSmoothedMoveInput = false;
+	float SmoothedMoveInputMemoryRemainingTime = 0.f;
 };
 
 struct FBAPlayerSprintRuntimeState

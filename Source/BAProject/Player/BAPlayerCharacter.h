@@ -126,6 +126,9 @@ private:
 	void ApplyFreeMovementPolicy(class UCharacterMovementComponent& MovementComponent);
 	void ApplyStrafeMovementPolicy(class UCharacterMovementComponent& MovementComponent);
 	void ApplyTurnaroundMovementPolicy(class UCharacterMovementComponent& MovementComponent);
+	void UpdateSmoothedMoveInput(float DeltaTime);
+	FVector2D GetMoveInputDirectionVector() const;
+	FVector2D GetMoveInputVectorFromWorldDirection(const FVector& WorldDirection) const;
 	bool ShouldUseSprintMovementPolicy() const;
 
 	// Sprint internals

@@ -133,14 +133,11 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 	ControlledCharacter->SetMoveInputVector(Movement);
 	ApplyMovementStateByModifier();
 	
-	const FRotator ControlRot = GetControlRotation();
-	const FRotator YawRot(0.f, ControlRot.Yaw, 0.f);
-
-	const FVector Forward = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
-	const FVector Right = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
-
-	ControlledCharacter->AddMovementInput(Forward, Movement.Y);
-	ControlledCharacter->AddMovementInput(Right, Movement.X);
+	const FVector MoveDirection = ControlledCharacter->GetMoveInputWorldDirection();
+	if (!MoveDirection.IsNearlyZero())
+	{
+		ControlledCharacter->AddMovementInput(MoveDirection, Movement.Size());
+	}
 }
 
 void ABAPlayerController::OnMoveCompleted()
