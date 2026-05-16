@@ -11,7 +11,7 @@
  * Player.xlsx 의 "BaseStat" 시트 한 행.
  * 필드 이름은 JSON 키와 정확히 일치해야 한다 (Player.json 참고).
  */
-USTRUCT(BlueprintType)
+USTRUCT(BlueprintType, meta = (BASheet = "BaseStat"))
 struct BAPROJECT_API FPlayerBaseStatRow : public FBARowBase
 {
 	GENERATED_BODY()
@@ -67,7 +67,7 @@ struct BAPROJECT_API FPlayerBaseStatRow : public FBARowBase
 	}
 };
 
-USTRUCT(BlueprintType)
+USTRUCT(BlueprintType, meta = (BASheet = "ActionData"))
 struct BAPROJECT_API FPlayerActionDataRow : public FBARowBase
 {
 	GENERATED_BODY()

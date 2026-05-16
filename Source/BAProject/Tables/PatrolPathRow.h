@@ -9,7 +9,7 @@
 /**
  * PatrolPath.xlsx 의 "PatrolPath" 시트 한 행.
  */
-USTRUCT(BlueprintType)
+USTRUCT(BlueprintType, meta = (BASheet = "PatrolPath"))
 struct BAPROJECT_API FPatrolPathRow : public FBARowBase
 {
 	GENERATED_BODY()
