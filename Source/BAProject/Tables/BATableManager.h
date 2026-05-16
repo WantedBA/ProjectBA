@@ -18,7 +18,7 @@
  * 등록 순서대로 PostRead 단계를 일괄 실행한다.
  */
 UCLASS()
-class BAPROJECT_API UBATableManager : public UGameInstanceSubsystem
+class BAPROJECT_API UBATableManager : public UEngineSubsystem
 {
 	GENERATED_BODY()
 
@@ -27,7 +27,15 @@ public:
 	virtual void Deinitialize() override;
 
 	static UBATableManager* Get(const UObject* WorldContext);
+	
+#if WITH_EDITOR
+	void ReloadAllTables();
+#endif
+	
+private:
+	void LoadAllTables();
 
+public:
 	// Player
 	FORCEINLINE const FPlayerBaseStatRow* FindPlayerBaseStat() const { return PlayerBaseStatTable.Find(1); } // 플레이어는 1명이므로 매직넘버 고정
 	FORCEINLINE const FPlayerActionDataRow* FindPlayerActionData(const int32 InTid) const { return PlayerActionDataTable.Find(InTid); }

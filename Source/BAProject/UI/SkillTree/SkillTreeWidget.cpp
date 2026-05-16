@@ -29,18 +29,41 @@ void USkillTreeWidget::HandleSkillNodeStateChanged(int32 SkillId, ESkillNodeStat
 	SkillNodeMap[SkillId]->SetSkillNodeState(NewState);
 }
 
+void USkillTreeWidget::RefreshAllSkillNodeState()
+{
+	UGameInstance* GameInstance = GetGameInstance();
+	if (!GameInstance)
+	{
+		UE_LOG(LogTemp, Error, TEXT("USkillTreeWidget::RefreshAllSkillNodeState - GameInstance is not found"));
+		return;
+	}
+	
+	const USkillTreeSubsystem* SkillTreeSubsystem = GameInstance->GetSubsystem<USkillTreeSubsystem>();
+
+	if (!SkillTreeSubsystem)
+	{
+		UE_LOG(LogTemp, Error, TEXT("USkillTreeWidget::RefreshAllSkillNodeState - SkillTreeSubsystem is not found"));
+		return;
+	}
+	
+	for (auto& SkillNodePair : SkillNodeMap)
+	{
+		SkillNodePair.Value->SetSkillNodeState(SkillTreeSubsystem->CalculateSkillNodeState(SkillNodePair.Key));
+	}
+}
+
+TArray<int32> USkillTreeWidget::GetSkillTids() const
+{
+	// 스킬 키 배열 생성
+	TArray<int32> SkillTids;
+	UBATableManager::Get(this)->GetSkillMap().GenerateKeyArray(SkillTids);
+	return SkillTids;
+}
+
+
 void USkillTreeWidget::HandleSkillNodeClicked(int32 SkillId)
 {
 	// SkillTreeSubsystem으로 스킬Id 전달
 	GetGameInstance()->GetSubsystem<USkillTreeSubsystem>()->TryToggleSkill(SkillId);
 }
 
-TArray<int32> USkillTreeWidget::GetSkillTids() const
-{
-	// Table Manager에서 Map을 가져와 키 배열 생성
-	// TODO: WBP 생성 로직 cpp로 이동(현재 블루프린트에 구현되어 있음)
-	TArray<int32> SkillTids;
-	TMap<int32, FSkillRow*> SkillMap = GetGameInstance()->GetSubsystem<UBATableManager>()->GetSkillMap();
-	SkillMap.GenerateKeyArray(SkillTids);
-	return SkillTids;
-}

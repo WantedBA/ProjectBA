@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -15,11 +15,11 @@ public:
 	// Sets default values for this actor's properties
 	AMapInfoActor();
 
-	// ¸ÊÀÇ °¡·Î/¼¼·Î ¿ùµå Å©±â (¿¡µğÅÍ¿¡¼­ Á÷Á¢ ÀÔ·Â)
+	// ë§µì˜ ê°€ë¡œ/ì„¸ë¡œ ì›”ë“œ í¬ê¸° (ì—ë””í„°ì—ì„œ ì§ì ‘ ì…ë ¥)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MapInfo")
 	float MapWorldSize = 10000.0f;
 
-	// ¸Ê Àü¿ë ¹Ì´Ï¸Ê ÀÌ¹ÌÁö
+	// ë§µ ì „ìš© ë¯¸ë‹ˆë§µ ì´ë¯¸ì§€
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MapInfo")
 	class UTexture2D* MapTexture;
 

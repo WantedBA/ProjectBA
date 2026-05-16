@@ -19,10 +19,7 @@ struct BAPROJECT_API FSkillRow : public FBARowBase
 	int32 SkillTid = 0;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-	FString SkillName;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-	FString Description;
+	int32 TextTid = 0;
 
 	// 엑셀에서 읽어올 값
 	UPROPERTY(BlueprintReadOnly, Category = "Skill", meta = (HideInDetailPanel))
@@ -36,9 +33,13 @@ struct BAPROJECT_API FSkillRow : public FBARowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<int32> ChildIds;
 
-	// 서로 동시에 찍을 수 없는 스킬들을 같은 그룹으로 묶음(0이면 그룹 없음)
+	// 서로 동시에 찍을 수 없는 스킬
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-	int32 ExclusiveGroupId = 0;
+	FString ExclusiveSkills;
+	
+	// 위 값을 파싱해서 int32 배열로 변환
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<int32> ExclusiveSkillIds;
 
 	// 기본 스킬인지 여부(기본 스킬이면 할당 해제 불가)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
@@ -69,12 +70,12 @@ struct BAPROJECT_API FSkillRow : public FBARowBase
 		// 필요한 값 변환
 		PrerequisiteIds = ParseIntArray(Prerequisites);
 		IconTexture = ConvertToSoftObjectPtr(IconPathString);
+		ExclusiveSkillIds = ParseIntArray(ExclusiveSkills);
 	}
 
 	// 문자열을 쉼표로 구분하여 int32 배열로 변환
 	static TArray<int32> ParseIntArray(const FString& InString)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Parsing prerequisites: %s"), *InString);
 		TArray<int32> Result;
 		TArray<FString> Tokens;
 		InString.ParseIntoArray(Tokens, TEXT(","), true);
