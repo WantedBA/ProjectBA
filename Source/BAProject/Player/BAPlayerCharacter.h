@@ -137,6 +137,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
 	void CompleteTurnaroundAnimation();
 
+	//사다리 관련
 	UFUNCTION(BlueprintCallable, Category = "Ladder")
 	void EnterLadder(AMapLadder* Ladder, const FVector& EntryLocation, const FRotator& FaceRotation);
 
@@ -148,6 +149,13 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Ladder")
 	AMapLadder* GetCurrentLadder() const { return CurrentLadder.Get(); }
+
+	//컷씬 이동 관련
+	UFUNCTION(BlueprintCallable, Category = "Movement")
+	void LockMovementForCutscene();
+
+	UFUNCTION(BlueprintCallable, Category = "Movement")
+	void UnlockMovementForCutscene();
 
 private:
 	bool CanSprint() const;

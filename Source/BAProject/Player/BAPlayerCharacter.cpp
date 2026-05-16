@@ -546,6 +546,23 @@ float ABAPlayerCharacter::GetLadderClimbVelocity() const
 	return 0.f;
 }
 
+void ABAPlayerCharacter::LockMovementForCutscene()
+{
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->StopMovementImmediately();
+		Move->SetMovementMode(MOVE_None);
+	}
+}
+
+void ABAPlayerCharacter::UnlockMovementForCutscene()
+{
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->SetMovementMode(MOVE_Walking);
+	}
+}
+
 bool ABAPlayerCharacter::CanSprint() const
 {
 	if (!bHasSprintActionData || !StatComponent)
