@@ -4,19 +4,69 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Interactable/Interactable.h"
 #include "MapLadder.generated.h"
 
+class UStaticMeshComponent;
+class USceneComponent;
+class ABAPlayerCharacter;
+
 UCLASS()
-class BAPROJECT_API AMapLadder : public AActor
+class BAPROJECT_API AMapLadder : public AActor, public IInteractable
 {
 	GENERATED_BODY()
 
 public:
-	AMapLadder();
+    AMapLadder();
+    virtual void OnConstruction(const FTransform& Transform) override;
+
+    virtual bool CanInteract_Implementation(AActor* Interactor) const override;
+    virtual void Interact_Implementation(AActor* Interactor) override;
+    virtual FText GetInteractionPrompt_Implementation() const override;
+    virtual FVector GetInteractionLocation_Implementation() const override;
+
+    UFUNCTION(BlueprintPure, Category = "Ladder")
+    FVector GetBottomEntryLocation() const;
+
+    UFUNCTION(BlueprintPure, Category = "Ladder")
+    FVector GetTopEntryLocation() const;
+
+    UFUNCTION(BlueprintPure, Category = "Ladder")
+    FRotator GetClimbFaceRotation() const;
+
+    UFUNCTION(BlueprintPure, Category = "Ladder")
+    float GetTotalHeight() const { return SegmentCount * SegmentHeight; }
 
 protected:
-	virtual void BeginPlay() override;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+    TObjectPtr<USceneComponent> LadderRoot;
 
-public:
-	virtual void Tick(float DeltaTime) override;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+    TObjectPtr<UInstancedStaticMeshComponent> SegmentISMC;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+    TObjectPtr<USceneComponent> BottomEntry;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+    TObjectPtr<USceneComponent> TopEntry;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+    TObjectPtr<USceneComponent> InteractionPivot;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ladder|Visual")
+    TObjectPtr<UStaticMesh> SegmentMeshAsset;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ladder|Visual",
+        meta = (ClampMin = "1"))
+    int32 SegmentCount = 3;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ladder|Visual",
+        meta = (ClampMin = "1.0"))
+    float SegmentHeight = 100.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ladder|UI")
+    FText PromptEnter = NSLOCTEXT("Ladder", "Enter", "E - 사다리 타기");
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ladder|UI")
+    FText PromptExit = NSLOCTEXT("Ladder", "Exit", "E - 내리기");
 };

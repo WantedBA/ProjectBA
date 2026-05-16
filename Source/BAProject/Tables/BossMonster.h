@@ -9,7 +9,7 @@
 /**
  * BossMonster.xlsx 의 각 시트.
  */
-USTRUCT(BlueprintType)
+USTRUCT(BlueprintType, meta = (BASheet = "1StageBossAttack"))
 struct BAPROJECT_API F1StageBossAttackRows : public FBARowBase
 {
 	GENERATED_BODY()
@@ -56,7 +56,7 @@ struct BAPROJECT_API F1StageBossAttackRows : public FBARowBase
 	}
 };
 
-USTRUCT(BlueprintType)
+USTRUCT(BlueprintType, meta = (BASheet = "2StageBossAttack"))
 struct BAPROJECT_API F2StageBossAttackRows : public FBARowBase
 {
 	GENERATED_BODY()
@@ -103,7 +103,7 @@ struct BAPROJECT_API F2StageBossAttackRows : public FBARowBase
 	}
 };
 
-USTRUCT(BlueprintType)
+USTRUCT(BlueprintType, meta = (BASheet = "3StageBossAttack"))
 struct BAPROJECT_API F3StageBossAttackRows : public FBARowBase
 {
 	GENERATED_BODY()

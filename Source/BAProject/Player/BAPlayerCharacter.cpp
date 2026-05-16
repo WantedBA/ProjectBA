@@ -6,6 +6,7 @@
 #include "Instance/UserDataSubsystem.h"
 #include "Component/InteractorComponent.h"
 #include "Materials/MaterialInterface.h"
+#include "World/MapLadder.h"
 
 namespace
 {
@@ -104,6 +105,12 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (bIsOnLadder)
+	{
+		TickLadderClimb(DeltaTime);
+		return;
+	}
+
 	UpdateSprintStopRequest(DeltaTime);
 	UpdateSprintStopRequestWindow(DeltaTime);
 	UpdateTurnaroundRotation(DeltaTime);
@@ -149,6 +156,12 @@ void ABAPlayerCharacter::InitializeFromTable()
 	WalkSpeed = BaseStat.WalkSpeed;
 	RunSpeed = BaseStat.RunSpeed;
 	SprintSpeed = BaseStat.SprintSpeed;
+
+	// 사다리 관련 스탯 초기화
+	LadderClimbSpeedSlow = BaseStat.LadderClimbSpeedSlow;
+	LadderClimbSpeedFast = BaseStat.LadderClimbSpeedFast;
+	LadderSlideDownSpeed = BaseStat.LadderSlideDownSpeed;
+	LadderExitClearance = BaseStat.LadderExitClearance;
 
 	StatComponent->InitializeStats(
 		BaseStat.MaxHp,	
@@ -486,6 +499,70 @@ void ABAPlayerCharacter::CompleteTurnaroundAnimation()
 	ApplyLocomotionMovementPolicy();
 }
 
+void ABAPlayerCharacter::EnterLadder(AMapLadder* Ladder, const FVector& EntryLocation, const FRotator& FaceRotation)
+{
+	if (!Ladder) return;
+
+	CurrentLadder = Ladder;
+	bIsOnLadder = true;
+
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->StopMovementImmediately();
+		Move->SetMovementMode(MOVE_Flying);
+		Move->bOrientRotationToMovement = false;
+	}
+
+	SetActorLocationAndRotation(EntryLocation, FaceRotation);
+}
+
+void ABAPlayerCharacter::ExitLadder(const FVector& ExitLocation)
+{
+	bIsOnLadder = false;
+	CurrentLadder.Reset();
+
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->SetMovementMode(MOVE_Walking);
+	}
+
+	SetActorLocation(ExitLocation);
+	ApplyLocomotionMovementPolicy();
+}
+
+float ABAPlayerCharacter::GetLadderClimbVelocity() const
+{
+	if (!bIsOnLadder) return 0.f;
+	const float VInput = MoveInputVector.Y;
+	const bool bSprint = (CurrentMovementState == EMovementState::Sprint);
+	if (VInput > KINDA_SMALL_NUMBER)
+	{
+		return bSprint ? LadderClimbSpeedFast : LadderClimbSpeedSlow;
+	}
+	if (VInput < -KINDA_SMALL_NUMBER)
+	{
+		return bSprint ? -LadderSlideDownSpeed : -LadderClimbSpeedSlow;
+	}
+	return 0.f;
+}
+
+void ABAPlayerCharacter::LockMovementForCutscene()
+{
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->StopMovementImmediately();
+		Move->SetMovementMode(MOVE_None);
+	}
+}
+
+void ABAPlayerCharacter::UnlockMovementForCutscene()
+{
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->SetMovementMode(MOVE_Walking);
+	}
+}
+
 bool ABAPlayerCharacter::CanSprint() const
 {
 	if (!bHasSprintActionData || !StatComponent)
@@ -753,6 +830,64 @@ void ABAPlayerCharacter::UpdateTurnaroundRotation(const float DeltaTime)
 	if (TurnaroundElapsedTime >= TurnaroundMaxDuration)
 	{
 		CompleteTurnaroundAnimation();
+	}
+}
+
+void ABAPlayerCharacter::TickLadderClimb(float DeltaTime)
+{
+	if (!CurrentLadder.IsValid())
+	{
+		ExitLadder(GetActorLocation());
+		return;
+	}
+
+	AMapLadder* Ladder = CurrentLadder.Get();
+	const float VInput = MoveInputVector.Y;  // W/S
+	const bool bSprintHeld = (CurrentMovementState == EMovementState::Sprint);
+
+	float Speed = 0.f;
+	if (VInput > KINDA_SMALL_NUMBER)
+	{
+		// 위로: Sprint면 빠르게
+		Speed = bSprintHeld ? LadderClimbSpeedFast : LadderClimbSpeedSlow;
+	}
+	else if (VInput < -KINDA_SMALL_NUMBER)
+	{
+		// 아래로: Sprint면 슬라이드 다운
+		Speed = bSprintHeld ? -LadderSlideDownSpeed : -LadderClimbSpeedSlow;
+	}
+
+	// Sprint 시 스태미너 소비 (위/아래 모두). 고갈되면 Run으로 강등
+	if (bSprintHeld && FMath::Abs(VInput) > KINDA_SMALL_NUMBER)
+	{
+		ConsumeSprintStamina(DeltaTime);
+		if (!CanSprint())
+		{
+			SetMovementState(EMovementState::Run);
+		}
+	}
+
+	if (FMath::Abs(Speed) > KINDA_SMALL_NUMBER)
+	{
+		// sweep=false: 사다리/캡슐 충돌로 막히지 않게 직접 이동
+		AddActorWorldOffset(FVector(0.f, 0.f, Speed * DeltaTime), false);
+	}
+
+	// 자동 이탈 — 이동 방향과 일치할 때만 (진입 직후 즉시 트리거 방지)
+	const FVector Pos = GetActorLocation();
+	const FVector TopLoc = Ladder->GetTopEntryLocation();
+	const FVector BotLoc = Ladder->GetBottomEntryLocation();
+
+	if (Speed > 0.f && Pos.Z >= TopLoc.Z)
+	{
+		// 위로 올라가다가 상단 도달 — 사다리 너머(forward) 약간 밀어내고 이탈
+		const FVector Exit = TopLoc + GetActorForwardVector() * LadderExitClearance;
+		ExitLadder(Exit);
+	}
+	else if (Speed < 0.f && Pos.Z <= BotLoc.Z)
+	{
+		// 아래로 내려가다가 하단 도달 — BottomEntry 위치로
+		ExitLadder(BotLoc);
 	}
 }
 

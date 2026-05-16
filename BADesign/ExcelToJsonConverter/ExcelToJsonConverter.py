@@ -70,12 +70,12 @@ def find_client_row(df: pd.DataFrame):
 def convert_sheet(df: pd.DataFrame):
     client_r = find_client_row(df)
     if client_r is None:
-        return None
+        return None, None
 
     header_r = client_r + 1
     data_start = header_r + 1
     if header_r >= len(df):
-        return []
+        return [], None
 
     flag_row = df.iloc[client_r, 1:]
     header_row = df.iloc[header_r, 1:]
@@ -89,6 +89,13 @@ def convert_sheet(df: pd.DataFrame):
         else:
             headers.append(h)
 
+    # 포함 플래그가 켜진 유효 헤더 중 첫 번째 = 키 컬럼명
+    key_column = None
+    for use, name in zip(flags, headers):
+        if use and name is not None:
+            key_column = str(name)
+            break
+
     rows = []
     for _, raw in data_block.iterrows():
         record = {}
@@ -101,7 +108,7 @@ def convert_sheet(df: pd.DataFrame):
             record[str(name)] = v
         if record:
             rows.append(record)
-    return rows
+    return rows, key_column
 
 
 def convert_excel_to_json() -> int:
@@ -121,6 +128,8 @@ def convert_excel_to_json() -> int:
         print("[BAConverter] No .xlsx files found.")
         return 0
 
+    recipe = {}  # sheet_name -> first column name (key column)
+
     for xlsx in files:
         print(f"[BAConverter] Processing {xlsx.name}")
         try:
@@ -133,7 +142,7 @@ def convert_excel_to_json() -> int:
 
         result = {}
         for sheet_name, df in sheets.items():
-            rows = convert_sheet(df)
+            rows, key_column = convert_sheet(df)
             if rows is None:
                 print(
                     f'[BAConverter]   Sheet "{sheet_name}": no Client marker. Skipped.'
@@ -142,8 +151,23 @@ def convert_excel_to_json() -> int:
             if not rows:
                 print(f'[BAConverter]   Sheet "{sheet_name}": empty. Skipped.')
                 continue
+            if key_column is None:
+                print(
+                    f'[BAConverter]   Sheet "{sheet_name}": no key column. Skipped.'
+                )
+                continue
             result[sheet_name] = rows
-            print(f'[BAConverter]   Sheet "{sheet_name}": {len(rows)} rows.')
+            if sheet_name in recipe and recipe[sheet_name] != key_column:
+                print(
+                    f'[BAConverter] WARNING: sheet "{sheet_name}" key column conflict '
+                    f'({recipe[sheet_name]} vs {key_column})',
+                    file=sys.stderr,
+                )
+            recipe[sheet_name] = key_column
+            print(
+                f'[BAConverter]   Sheet "{sheet_name}": {len(rows)} rows '
+                f'(key="{key_column}").'
+            )
 
         if not result:
             print(f"[BAConverter]   {xlsx.name} produced no output. Skipped.")
@@ -153,6 +177,11 @@ def convert_excel_to_json() -> int:
         with open(out_file, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False, indent=4)
         print(f"[BAConverter]   Saved {out_file}")
+
+    recipe_file = out_dir / "SheetRecipe.json"
+    with open(recipe_file, "w", encoding="utf-8") as f:
+        json.dump(recipe, f, ensure_ascii=False, indent=4)
+    print(f"[BAConverter] Saved recipe {recipe_file} ({len(recipe)} sheets)")
 
     return 0
 
