@@ -133,9 +133,6 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 	ControlledCharacter->SetMoveInputVector(Movement);
 	ApplyMovementStateByModifier();
 
-	UE_LOG(LogTemp, Warning, TEXT("[Ladder] Controller Move  IsOnLadder=%d  Mv=(%.2f,%.2f)"),
-		ControlledCharacter->IsOnLadder() ? 1 : 0, Movement.X, Movement.Y);
-
 	// 사다리 모드: 일반 이동 입력 무시 (캐릭터 Tick이 등반 처리)
 	if (ControlledCharacter->IsOnLadder())
 	{

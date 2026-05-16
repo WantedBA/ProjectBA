@@ -107,8 +107,6 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 
 	if (bIsOnLadder)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[Ladder] Tick climbing  V=%.2f  Pos=%s"),
-			MoveInputVector.Y, *GetActorLocation().ToString());
 		TickLadderClimb(DeltaTime);
 		return;
 	}
@@ -498,9 +496,6 @@ void ABAPlayerCharacter::CompleteTurnaroundAnimation()
 void ABAPlayerCharacter::EnterLadder(AMapLadder* Ladder, const FVector& EntryLocation, const FRotator& FaceRotation)
 {
 	if (!Ladder) return;
-
-	UE_LOG(LogTemp, Warning, TEXT("[Ladder] EnterLadder called  EntryLoc=%s"),
-		*EntryLocation.ToString());
 
 	CurrentLadder = Ladder;
 	bIsOnLadder = true;
