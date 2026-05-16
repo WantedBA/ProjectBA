@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -15,47 +15,54 @@ class BAPROJECT_API UQuickSlotBase : public UBaseWidget
 	GENERATED_BODY()
 	
 protected:
-	// ½½·Ô¿¡ Ç¥½ÃµÉ ¾ÆÀÌÄÜ ÀÌ¹ÌÁö (WBP¿¡¼­ ÀÌ¸§ ¸ÂÃçÁÙ °Í)
+	// ìŠ¬ë¡¯ì— í‘œì‹œë  ì•„ì´ì½˜ ì´ë¯¸ì§€ (WBPì—ì„œ ì´ë¦„ ë§ì¶°ì¤„ ê²ƒ)
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, AllowPrivateAccess = "true"), Category = "BA|UI")
 	class UImage* SlotIcon;
 
-	// ³²Àº ¾ÆÀÌÅÛ °³¼ö Ç¥½ÃÇÒ ÅØ½ºÆ®(WBP¿¡¼­ ÀÌ¸§ ¸ÂÃçÁÙ °Í)
+	// ë‚¨ì€ ì•„ì´í…œ ê°œìˆ˜ í‘œì‹œí•  í…ìŠ¤íŠ¸(WBPì—ì„œ ì´ë¦„ ë§ì¶°ì¤„ ê²ƒ)
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget, AllowPrivateAccess = "true"), Category = "BA|UI")
 	class UTextBlock* CountText;
 
-	// ½Ç½Ã°£ ÄğÅ¸ÀÓ ¹× Èæ¹é È¿°ú Á¦¾î¸¦ À§ÇÑ ´ÙÀÌ³ª¹Í ¸ÓÆ¼¸®¾ó
+	// ì‹¤ì‹œê°„ ì¿¨íƒ€ì„ ë° í‘ë°± íš¨ê³¼ ì œì–´ë¥¼ ìœ„í•œ ë‹¤ì´ë‚˜ë¯¹ ë¨¸í‹°ë¦¬ì–¼
 	UPROPERTY()
 	class UMaterialInstanceDynamic* IconMID;
 
-	// ÄğÅ¸ÀÓ °ü¸®¿ë ³»ºÎ º¯¼ö
+	// ì¿¨íƒ€ì„ ê´€ë¦¬ìš© ë‚´ë¶€ ë³€ìˆ˜
 	float MaxCooldown = 0.0f;
 	float CurrnetCooldown = 0.0f;
 	bool bIsCooldownActive = false;
 
-	// HP ¹°¾à Äü½½·Ô À§Á¬
-	UPROPERTY(meta = (BindWidget))
-	class UQuickSlotBase* HPSlot;
+	// ì—ë””í„° íŒ¨ë„ì—ì„œ ìŠ¬ë¡¯ë³„ ì•„ì´ì½˜ ì ìš©
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "BA|UI")
+	class UTexture2D* DefaultIcon;
 
-	// ½ºÅ×¹Ì³Ê ¹°¾à Äü½½·Ô À§Á¬
-	UPROPERTY(meta = (BindWidget))
-	class UQuickSlotBase* StaminaSlot;
+	// í€µìŠ¬ë¡¯ì— í‘œì‹œë  ë‹¨ì¶•í‚¤ ì´ë¦„
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "BA|UI")
+	FText HotKeyName;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	class UTextBlock* HotKeyText;
 
 public:
-	// ¾ÆÀÌÅÛ »ç¿ë ½Ã È£ÃâÇÏ¿© ÄğÅ¸ÀÓÀ» ½ÃÀÛÇÏ´Â ÇÔ¼ö
+	// ì•„ì´í…œ ì‚¬ìš© ì‹œ í˜¸ì¶œí•˜ì—¬ ì¿¨íƒ€ì„ì„ ì‹œì‘í•˜ëŠ” í•¨ìˆ˜
 	UFUNCTION(BlueprintCallable, Category = "BA|UI|QuickSlot")
 	void StartCooldown(float Duration);
 
 	UFUNCTION(BlueprintCallable, Category = "BA|UI|QuickSlot")
 	void UpdateCount(int32 NewCount);
 
-	// ¿¡µğÅÍ¿¡¼­ ½½·ÔÀÇ ¾ÆÀÌÄÜ ÀÌ¹ÌÁö¸¦ ¼³Á¤ÇÏ´Â ÇÔ¼ö
+	// ì—ë””í„°ì—ì„œ ìŠ¬ë¡¯ì˜ ì•„ì´ì½˜ ì´ë¯¸ì§€ë¥¼ ì„¤ì •í•˜ëŠ” í•¨ìˆ˜
 	UFUNCTION(BlueprintCallable, Category = "BA|UI|QuickSlot")
 	void SetSlotIcon(UTexture2D* NewIcon);
 
 protected:
-	// À§Á¬ ÃÊ±âÈ­ ½Ã ¸ÓÆ¼¸®¾ó ÀÎ½ºÅÏ½º »ı¼º
+	// ìœ„ì ¯ ì´ˆê¸°í™” ì‹œ ë¨¸í‹°ë¦¬ì–¼ ì¸ìŠ¤í„´ìŠ¤ ìƒì„±
 	virtual void NativeConstruct() override;
 
-	// ¸Å ÇÁ·¹ÀÓ ÄğÅ¸ÀÓ ¼öÄ¡¸¦ °è»êÇÏ¿© ¸Ó¸®Æ¼¾ó¿¡ Àü´Ş
+	// ë§¤ í”„ë ˆì„ ì¿¨íƒ€ì„ ìˆ˜ì¹˜ë¥¼ ê³„ì‚°í•˜ì—¬ ë¨¸ë¦¬í‹°ì–¼ì— ì „ë‹¬
 	virtual void NativeTick(const FGeometry& MyGeomtry, float InDeltaTime) override;
+
+	// ì—ë””í„° ì‹¤ì‹œê°„ ë°˜ì˜ í•¨ìˆ˜
+	virtual void NativePreConstruct() override;
+
 };

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "UI/QuickSlotBase.h"
@@ -11,7 +11,7 @@ void UQuickSlotBase::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// SlotIcon À§Á¬¿¡¼­ ¸ÓÆ¼¸®¾óÀ» °¡Á®¿Í ½Ç½Ã°£ ÆÄ¶ó¹ÌÅÍ ¼öÁ¤ÀÌ °¡´ÉÇÑ ´ÙÀÌ³ª¹Í ¸ÓÆ¼¸®¾ó·Î º¯È¯
+	// SlotIcon ìœ„ì ¯ì—ì„œ ë¨¸í‹°ë¦¬ì–¼ì„ ê°€ì ¸ì™€ ì‹¤ì‹œê°„ íŒŒë¼ë¯¸í„° ìˆ˜ì •ì´ ê°€ëŠ¥í•œ ë‹¤ì´ë‚˜ë¯¹ ë¨¸í‹°ë¦¬ì–¼ë¡œ ë³€í™˜
 	if (SlotIcon)
 	{
 		IconMID = SlotIcon->GetDynamicMaterial();
@@ -22,28 +22,51 @@ void UQuickSlotBase::NativeTick(const FGeometry& MyGeomtry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeomtry, InDeltaTime);
 
-	// ÄğÅ¸ÀÓÀÌ È°¼ºÈ­µÈ »óÅÂ¶ó¸é ¸Å ÇÁ·¹ÀÓ ³²Àº ½Ã°£À» ±ğ°í ¸ÓÆ¼¸®¾ó ¸¶½ºÅ©¸¦ Á¶Àı
+	// ì¿¨íƒ€ì„ì´ í™œì„±í™”ëœ ìƒíƒœë¼ë©´ ë§¤ í”„ë ˆì„ ë‚¨ì€ ì‹œê°„ì„ ê¹ê³  ë¨¸í‹°ë¦¬ì–¼ ë§ˆìŠ¤í¬ë¥¼ ì¡°ì ˆ
 	if (bIsCooldownActive && IconMID)
 	{
 		CurrnetCooldown -= InDeltaTime;
 
-		// ÄğÅ¸ÀÓ ÁøÇà ºñÀ² °è»ê (1.0 -> 0.0)
-		float Percent = FMath::Clamp(CurrnetCooldown / MaxCooldown, 0.0f, 1.0f);
+		// ì¿¨íƒ€ì„ ì§„í–‰ ë¹„ìœ¨ ê³„ì‚° (1.0 -> 0.0)
+		float Percent =1.0f - FMath::Clamp(CurrnetCooldown / MaxCooldown, 0.0f, 1.0f);
 
-		// ¸ÓÆ¼¸®¾ó ±×·¡ÇÁ¿¡¼­ ¸¸µç 'CooldownPercent' ÆÄ¶ó¹ÌÅÍ¿¡ °ªÀ» ÁÖÀÔ
+		// ë¨¸í‹°ë¦¬ì–¼ ê·¸ë˜í”„ì—ì„œ ë§Œë“  'CooldownPercent' íŒŒë¼ë¯¸í„°ì— ê°’ì„ ì£¼ì…
 		IconMID->SetScalarParameterValue(TEXT("CooldownPercent"), Percent);
 
-		// ÄğÅ¸ÀÓ Á¾·á ÆÇÁ¤
+		// ì¿¨íƒ€ì„ ì¢…ë£Œ íŒì •
 		if (CurrnetCooldown <= 0.0f)
 		{
 			bIsCooldownActive = false;
+
+			IconMID->SetScalarParameterValue(TEXT("CooldownPercent"), 1.0f);
 		}
+	}
+}
+
+void UQuickSlotBase::NativePreConstruct()
+{
+	Super::NativePreConstruct();
+
+	if (SlotIcon && !IconMID)
+	{
+		IconMID = SlotIcon->GetDynamicMaterial();
+	}
+
+	// ì—ë””í„°ì—ì„œ ì´ë¯¸ì§€ ì ìš© ì‹œ ë””ìì´ë„ˆ ì°½ì— ì¦‰ê° ë°˜ì˜
+	if (DefaultIcon)
+	{
+		SetSlotIcon(DefaultIcon);
+	}
+
+	if (HotKeyText)
+	{
+		HotKeyText->SetText(HotKeyName);
 	}
 }
 
 void UQuickSlotBase::StartCooldown(float Duration)
 {
-	// ÄğÅ¸ÀÓ Áö¼Ó ½Ã°£À» ¼³Á¤ÇÏ°í Å¸ÀÌ¸Ó¸¦ ½ÃÀÛÇÔ
+	// ì¿¨íƒ€ì„ ì§€ì† ì‹œê°„ì„ ì„¤ì •í•˜ê³  íƒ€ì´ë¨¸ë¥¼ ì‹œì‘í•¨
 	if (Duration <= 0.0f)
 	{
 		return;
@@ -52,18 +75,24 @@ void UQuickSlotBase::StartCooldown(float Duration)
 	MaxCooldown = Duration;
 	CurrnetCooldown = Duration;
 	bIsCooldownActive = true;
+
+	// ì¿¨íƒ€ì„ì´ ì‹œì‘ë˜ë©´ ìŠ¬ë¡¯ì„ ì–´ë‘¡ê²Œ ë§Œë“¦
+	if (IconMID)
+	{
+		IconMID->SetScalarParameterValue(TEXT("CooldownPercent"), 0.0f);
+	}
 }
 
 
 void UQuickSlotBase::UpdateCount(int32 NewCount)
 {
-	// °³¼ö ÅØ½ºÆ®¸¦ È­¸é¿¡ Ç¥½Ã
+	// ê°œìˆ˜ í…ìŠ¤íŠ¸ë¥¼ í™”ë©´ì— í‘œì‹œ
 	if (CountText)
 	{
 		CountText->SetText(FText::AsNumber(NewCount));
 	}
 
-	// ¹°¾àÀÌ 0°³¶ó¸é 'bIsLocked' ÆÄ¶ó¹ÌÅÍ¸¦ 1.0À¸·Î ¸¸µé¾î ¾ÆÀÌÄÜÀ» Èæ¹éÀ¸·Î º¯°æÇÔ
+	// ë¬¼ì•½ì´ 0ê°œë¼ë©´ 'bIsLocked' íŒŒë¼ë¯¸í„°ë¥¼ 1.0ìœ¼ë¡œ ë§Œë“¤ì–´ ì•„ì´ì½˜ì„ í‘ë°±ìœ¼ë¡œ ë³€ê²½í•¨
 	if (IconMID)
 	{
 		float LockedVal = (NewCount <= 0) ? 1.0f : 0.0f;
@@ -75,7 +104,7 @@ void UQuickSlotBase::SetSlotIcon(UTexture2D* NewIcon)
 {
 	if (NewIcon && IconMID)
 	{
-		// ¸ÓÆ¼¸®¾ó ¾È¿¡ ÀÖ´Â 'IconTexture' ÀÌ¸§ÀÇ Ä­¿¡ »õ·Î¿î ÀÌ¹ÌÁö Àû¿ë
+		// ë¨¸í‹°ë¦¬ì–¼ ì•ˆì— ìˆëŠ” 'IconTexture' ì´ë¦„ì˜ ì¹¸ì— ìƒˆë¡œìš´ ì´ë¯¸ì§€ ì ìš©
 		IconMID->SetTextureParameterValue(TEXT("IconTexture"), NewIcon);
 	}
 }

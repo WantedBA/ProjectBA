@@ -23,6 +23,14 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	class UMinimapLayer* Minimap;
 
+	// HP 물약 퀵슬롯 위젯
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BA|UI")
+	class UQuickSlotBase* HPSlot;
+
+	// 스테미너 물약 퀵슬롯 위젯
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BA|UI")
+	class UQuickSlotBase* StaminaSlot;
+
 public:
 	// 값 업데이트
 	void UpdatePlayerHP(float Current, float Max);
