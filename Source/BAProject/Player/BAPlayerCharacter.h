@@ -2,35 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "Character/CharacterBase.h"
-#include "Tables/PlayerEnums.h"
+#include "Player/BAPlayerCharacterTypes.h"
 #include "BAPlayerCharacter.generated.h"
 
-class UInputAction;
-class UInputMappingContext;
+class UCameraComponent;
 class UInteractorComponent;
-
-UENUM(BlueprintType)
-enum class EMovementState : uint8
-{
-	Walk,
-	Run,
-	Sprint
-};
-
-UENUM(BlueprintType)
-enum class EPlayerLocomotionMode : uint8
-{
-	Free,
-	Strafe
-};
-
-UENUM(BlueprintType)
-enum class EPlayerCombatMode : uint8
-{
-	None,
-	Combat,
-	Block
-};
+class USpringArmComponent;
+class UStatComponent;
 
 UCLASS()
 class BAPROJECT_API ABAPlayerCharacter : public ACharacterBase
@@ -38,6 +16,7 @@ class BAPROJECT_API ABAPlayerCharacter : public ACharacterBase
 	GENERATED_BODY()
 	
 public:
+	// Lifecycle
 	ABAPlayerCharacter();
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -45,15 +24,8 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = Initialization)
 	virtual void InitializeFromTable();
-	
-protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<class UStatComponent> StatComponent;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly ,Category = "Components")
-	TObjectPtr<UInteractorComponent> InteractorComponent;
-	
-public:
+
+	// Input and state setters
 	void SetMovementState(EMovementState NewState);
 	void SetMoveInputVector(const FVector2D& NewMoveInput);
 	void SetHasMoveInput(bool bNewHasMoveInput);
@@ -64,6 +36,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Animation|Combat")
 	void SetCombatMode(EPlayerCombatMode NewMode);
 
+	// Animation query API
 	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
 	EMovementState GetMovementState() const;
 
@@ -102,9 +75,6 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
 	float GetSprintTurnDeltaAngle() const;
-	
-	UFUNCTION(BlueprintPure, Category="Interaction")
-	UInteractorComponent* GetInteractorComponent() const {return InteractorComponent;}
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
 	float GetTurnaroundToControlRotationAngle() const;
@@ -133,120 +103,64 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
 	void CompleteTurnaroundAnimation();
 
+	// Interaction API
+	UFUNCTION(BlueprintPure, Category = "Interaction")
+	UInteractorComponent* GetInteractorComponent() const { return InteractorComponent; }
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UStatComponent> StatComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UInteractorComponent> InteractorComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = Camera)
+	TObjectPtr<USpringArmComponent> SpringArm;
+
+	UPROPERTY(VisibleAnywhere, Category = Camera)
+	TObjectPtr<UCameraComponent> Camera;
+
 private:
+	// Locomotion internals
+	void ApplyLocomotionMovementPolicy();
+	void ApplyFreeMovementPolicy(class UCharacterMovementComponent& MovementComponent);
+	void ApplyStrafeMovementPolicy(class UCharacterMovementComponent& MovementComponent);
+	void ApplyTurnaroundMovementPolicy(class UCharacterMovementComponent& MovementComponent);
+	bool ShouldUseSprintMovementPolicy() const;
+
+	// Sprint internals
 	bool CanSprint() const;
 	bool IsSprintMovementActive() const;
 	void ConsumeSprintStamina(float DeltaTime);
 	float CalculateSprintStaminaCost(float DeltaTime) const;
 	void LockSprintIfExhausted();
 	void UpdateSprintExhaustionLock();
-	void ApplyLocomotionMovementPolicy();
 	void UpdateSprintEntryRotation(float DeltaTime);
-	bool ShouldUseSprintEntryRotationLock() const;
+	bool ShouldKeepStrafeRotationDuringSprintEntry() const;
 	void RequestSprintStop();
 	void UpdateSprintStopRequest(float DeltaTime);
 	void StartSprintStopRequestWindow();
 	void UpdateSprintStopRequestWindow(float DeltaTime);
 	bool CanRequestSprintStop() const;
-	bool ShouldUseSprintMovementPolicy() const;
+
+	// Turnaround internals
 	void UpdateTurnaroundRotation(float DeltaTime);
 
-	EMovementState CurrentMovementState = EMovementState::Run;
-	EPlayerLocomotionMode CurrentLocomotionMode = EPlayerLocomotionMode::Free;
-	EPlayerCombatMode CurrentCombatMode = EPlayerCombatMode::None;
-	FVector2D MoveInputVector = FVector2D::ZeroVector;
+	UPROPERTY(EditAnywhere, Category = "Movement", meta = (ShowOnlyInnerProperties))
+	FBAPlayerMovementSpeedSettings SpeedSettings;
 
-	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
-	float FreeRotationRateYaw = 1440.f;
+	UPROPERTY(EditAnywhere, Category = "Movement|Locomotion", meta = (ShowOnlyInnerProperties))
+	FBAPlayerLocomotionSettings LocomotionSettings;
 
-	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
-	float FreeMaxAcceleration = 8192.f;
+	UPROPERTY(EditAnywhere, Category = "Movement|Sprint", meta = (ShowOnlyInnerProperties))
+	FBAPlayerSprintSettings SprintSettings;
 
-	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
-	float FreeBrakingDecelerationWalking = 8192.f;
+	UPROPERTY(EditAnywhere, Category = "Movement|Turnaround", meta = (ShowOnlyInnerProperties))
+	FBAPlayerTurnaroundSettings TurnaroundSettings;
 
-	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
-	float FreeGroundFriction = 12.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
-	float StrafeRotationRateYaw = 720.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
-	float StrafeMaxAcceleration = 2048.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
-	float StrafeBrakingDecelerationWalking = 2048.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
-	float StrafeGroundFriction = 8.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
-	float SprintStrafeEntryBlendTime = 0.25f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
-	float SprintStrafeEntryOrientationSpeedRatio = 0.85f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
-	float SprintStopRequestHoldTime = 0.35f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
-	float SprintStopMinSpeed = 150.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
-	float SprintStopRequestWindowTime = 0.2f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
-	float TurnaroundMaxDuration = 3.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
-	float TurnaroundPlayRateReferenceAngle = 90.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
-	float TurnaroundPlayRateMinAngle = 30.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
-	float TurnaroundMinPlayRate = 1.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
-	float TurnaroundMaxPlayRate = 2.5f;
-	
-	UPROPERTY(EditAnywhere, Category="Movement")
-	float WalkSpeed = 100.0f;
-	
-	UPROPERTY(EditAnywhere, Category="Movement")
-	float RunSpeed = 400.0f;
-	
-	UPROPERTY(EditAnywhere, Category="Movement")
-	float SprintSpeed = 700.0f;
-
-	float SprintStaminaCost = 0.f;
-	EPlayerStaminaCostType SprintStaminaCostType = EPlayerStaminaCostType::Instant;
-	float SprintMinRequiredStamina = 0.f;
-	float SprintRestartStaminaPercent = 0.f;
-	bool bHasSprintActionData = false;
-	bool bHasMoveInput = false;
-	bool bSprintLockedAfterExhausted = false;
-	bool bSprintEntryRotationLocked = false;
-	bool bSprintStopRequested = false;
-	bool bSprintStopMovementLocked = false;
-	bool bSprintStopStartedFromStrafe = false;
-	bool bSprintStopShouldTurnaround = false;
-	bool bTurnaroundQueuedAfterSprintStop = false;
-	bool bCanBeginTurnaroundAfterSprintStop = false;
-	bool bTurnaroundRequested = false;
-	bool bCanRequestSprintStopFromRecentExit = false;
-	float SprintEntryElapsedTime = 0.f;
-	float SprintStopRequestRemainingTime = 0.f;
-	float SprintStopRequestWindowRemainingTime = 0.f;
-	float TurnaroundElapsedTime = 0.f;
-	float TurnaroundAnimationAngle = 0.f;
-	
-protected:
-	UPROPERTY(VisibleAnywhere, Category = Camera)
-	TObjectPtr<class USpringArmComponent> SpringArm;
-
-	UPROPERTY(VisibleAnywhere, Category = Camera)
-	TObjectPtr<class UCameraComponent> Camera;
+	FBAPlayerMovementRuntimeState MovementRuntime;
+	FBAPlayerSprintRuntimeState SprintRuntime;
+	FBAPlayerTurnaroundRuntimeState TurnaroundRuntime;
 
 protected:
 	// virtual	void SetupHUDWidget(class UHUDWidget* InHUDWidget) override;
