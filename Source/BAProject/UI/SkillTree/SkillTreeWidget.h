@@ -29,6 +29,12 @@ protected:
 	UFUNCTION()
 	void HandleSkillNodeStateChanged(int32 SkillId, ESkillNodeState NewState);
 	
+// 블루프린트에서 사용할 함수
+	// 스킬 노드 상태값 갱신
+	UFUNCTION(BlueprintCallable, Category=SkillTree)
+	void RefreshAllSkillNodeState();
+	
+	
 // 데이터
 	// Table Manager에서 스킬 id 목록을 가져오는 함수
 	UFUNCTION(BlueprintCallable, Category=SkillTree)

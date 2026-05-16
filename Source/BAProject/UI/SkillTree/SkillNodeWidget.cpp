@@ -6,6 +6,18 @@
 #include "Components/Button.h"
 #include "Instance/SkillTreeSubsystem.h"
 
+void USkillNodeWidget::SetSkillNodeState(const ESkillNodeState InSkillNodeState)
+{
+	SkillNodeState = InSkillNodeState;
+	
+	// UI 갱신
+	OnSkillNodeStateChanged();
+	
+	// TODO: 디버그용 임시 코드 
+	FString StateString = StaticEnum<ESkillNodeState>()->GetNameStringByValue(static_cast<int64>(SkillNodeState));
+	UE_LOG(LogTemp, Log, TEXT("Skill node %d state changed to %s"), SkillId, *StateString);
+}
+
 void USkillNodeWidget::NativePreConstruct()
 {
 	Super::NativePreConstruct();

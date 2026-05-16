@@ -7,6 +7,7 @@
 
 class UInputAction;
 class UInputMappingContext;
+class UInteractorComponent;
 
 UENUM(BlueprintType)
 enum class EMovementState : uint8
@@ -48,6 +49,9 @@ public:
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<class UStatComponent> StatComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly ,Category = "Components")
+	TObjectPtr<UInteractorComponent> InteractorComponent;
 	
 public:
 	void SetMovementState(EMovementState NewState);
@@ -98,6 +102,36 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
 	float GetSprintTurnDeltaAngle() const;
+	
+	UFUNCTION(BlueprintPure, Category="Interaction")
+	UInteractorComponent* GetInteractorComponent() const {return InteractorComponent;}
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	float GetTurnaroundToControlRotationAngle() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	float GetTurnaroundPlayRate() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	bool IsSprintStopRequested() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
+	void ClearSprintStopRequest();
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
+	void CompleteSprintStopAnimation();
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	bool IsTurnaroundRequested() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	bool IsTurnaroundQueuedAfterSprintStop() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
+	void BeginTurnaroundAnimation();
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
+	void CompleteTurnaroundAnimation();
 
 private:
 	bool CanSprint() const;
@@ -109,6 +143,13 @@ private:
 	void ApplyLocomotionMovementPolicy();
 	void UpdateSprintEntryRotation(float DeltaTime);
 	bool ShouldUseSprintEntryRotationLock() const;
+	void RequestSprintStop();
+	void UpdateSprintStopRequest(float DeltaTime);
+	void StartSprintStopRequestWindow();
+	void UpdateSprintStopRequestWindow(float DeltaTime);
+	bool CanRequestSprintStop() const;
+	bool ShouldUseSprintMovementPolicy() const;
+	void UpdateTurnaroundRotation(float DeltaTime);
 
 	EMovementState CurrentMovementState = EMovementState::Run;
 	EPlayerLocomotionMode CurrentLocomotionMode = EPlayerLocomotionMode::Free;
@@ -144,6 +185,30 @@ private:
 
 	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
 	float SprintStrafeEntryOrientationSpeedRatio = 0.85f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
+	float SprintStopRequestHoldTime = 0.35f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
+	float SprintStopMinSpeed = 150.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
+	float SprintStopRequestWindowTime = 0.2f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
+	float TurnaroundMaxDuration = 3.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
+	float TurnaroundPlayRateReferenceAngle = 90.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
+	float TurnaroundPlayRateMinAngle = 30.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
+	float TurnaroundMinPlayRate = 1.f;
+
+	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
+	float TurnaroundMaxPlayRate = 2.5f;
 	
 	UPROPERTY(EditAnywhere, Category="Movement")
 	float WalkSpeed = 100.0f;
@@ -162,7 +227,19 @@ private:
 	bool bHasMoveInput = false;
 	bool bSprintLockedAfterExhausted = false;
 	bool bSprintEntryRotationLocked = false;
+	bool bSprintStopRequested = false;
+	bool bSprintStopMovementLocked = false;
+	bool bSprintStopStartedFromStrafe = false;
+	bool bSprintStopShouldTurnaround = false;
+	bool bTurnaroundQueuedAfterSprintStop = false;
+	bool bCanBeginTurnaroundAfterSprintStop = false;
+	bool bTurnaroundRequested = false;
+	bool bCanRequestSprintStopFromRecentExit = false;
 	float SprintEntryElapsedTime = 0.f;
+	float SprintStopRequestRemainingTime = 0.f;
+	float SprintStopRequestWindowRemainingTime = 0.f;
+	float TurnaroundElapsedTime = 0.f;
+	float TurnaroundAnimationAngle = 0.f;
 	
 protected:
 	UPROPERTY(VisibleAnywhere, Category = Camera)

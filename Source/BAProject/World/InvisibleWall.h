@@ -1,4 +1,4 @@
-// Copyright TeamBA. All Rights Reserved.
+ï»¿// Copyright TeamBA. All Rights Reserved.
 
 #pragma once
 
@@ -18,7 +18,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 
-	UFUNCTION() // Â÷´Ü ¿µ¿ª ±ÙÁ¢½Ã ÀÌº¥Æ® Ã³¸® ÇÔ¼ö
+	UFUNCTION() // ì°¨ë‹¨ ì˜ì—­ ê·¼ì ‘ì‹œ ì´ë²¤íŠ¸ ì²˜ë¦¬ í•¨ìˆ˜
 	void HandleProximityBegin(UPrimitiveComponent* OverlappedComponent,
 		AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, 
@@ -36,11 +36,11 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<class USphereComponent> ProximitySphere;
 
-	// ÀÌ °Å¸®ºÎÅÍ MaterialÀÌ Á¡Á¡ º¸ÀÌ°Ô µÊ
+	// ì´ ê±°ë¦¬ë¶€í„° Materialì´ ì ì  ë³´ì´ê²Œ ë¨
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "InvisibleWall|Visual")
 	float FadeStartDistance = 100.f;
 
-	// ÀÌ °Å¸® ÀÌÇÏ¿¡¼­ MaterialÀÌ ¿ÏÀüÈ÷ º¸ÀÓ
+	// ì´ ê±°ë¦¬ ì´í•˜ì—ì„œ Materialì´ ì™„ì „íˆ ë³´ì„
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "InvisibleWall|Visual")
 	float FadeEndDistance = 20.f;
 

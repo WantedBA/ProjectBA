@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -15,18 +15,18 @@ class BAPROJECT_API UPlayerStatus : public UUserWidget
 	GENERATED_BODY()
 
 protected:
-	// À§Á¬ÀÌ »ı¼ºµÉ ¶§ ÃÊ±âÈ­ ´ã´ç ÇÔ¼ö
+	// ìœ„ì ¯ì´ ìƒì„±ë  ë•Œ ì´ˆê¸°í™” ë‹´ë‹¹ í•¨ìˆ˜
 	virtual void NativeConstruct() override;
 
-	// HP¹Ù ¿¬°á
+	// HPë°” ì—°ê²°
 	UPROPERTY(meta = (BindWidget))
 	class UStatusBar* HPBar; 
-	// ½ºÅ×¹Ì³Ê¹Ù ¿¬°á
+	// ìŠ¤í…Œë¯¸ë„ˆë°” ì—°ê²°
 	UPROPERTY(meta = (BindWidget))
 	class UStatusBar* StaminaBar; 
 
 public:
-	// µ¨¸®°ÔÀÌÆ®¿¡¼­ ¼ö½ÅÇÑ °ªÀ» ½ÇÁ¦ UI ÄÄÆ÷³ÍÆ®¿¡ ¹İ¿µ
+	// ë¸ë¦¬ê²Œì´íŠ¸ì—ì„œ ìˆ˜ì‹ í•œ ê°’ì„ ì‹¤ì œ UI ì»´í¬ë„ŒíŠ¸ì— ë°˜ì˜
 	UFUNCTION()
 	void UpdateHP(float Current, float Max);
 	UFUNCTION()

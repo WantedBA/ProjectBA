@@ -10,5 +10,4 @@ AMapInfoActor::AMapInfoActor()
 	PrimaryActorTick.bCanEverTick = true;
 
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
-
 }
