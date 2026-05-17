@@ -37,7 +37,6 @@ class BAPROJECT_API AEnemyBase : public ACharacterBase
 public:
 	AEnemyBase();
 
-	UFUNCTION(BlueprintCallable, Category = "Enemy")
 	virtual void InitializeFromTable(int32 InTid);
 
 	virtual void Attack();
@@ -61,6 +60,7 @@ public:
 
 	virtual void UpdateMoveSpeed(EEnemyState NewState);
 	virtual void UpdateBlackBoardState();
+	virtual void ApplyKnockback(AActor* DamageCauser, float Force);
 
 protected:
 	virtual void PostInitializeComponents() override;
@@ -68,7 +68,6 @@ protected:
 
 	virtual void OnDamaged(float FinalDamage, AActor* DamageCauser) override;
 
-	UFUNCTION(BlueprintCallable, Category = "State")
 	void SetState(EEnemyState NewState);
 
 	// 시각 연출 이벤트
@@ -108,4 +107,4 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UAnimMontage> AttackMontage;
-	};
+};

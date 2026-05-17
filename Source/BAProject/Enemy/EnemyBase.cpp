@@ -56,7 +56,6 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 	UBATableManager* TableManager = UBATableManager::Get(this);
 	if (TableManager == nullptr)
 	{
-		UE_LOG(LogTemp, Log, TEXT("[AEnemyBase] Monster data not found for Tid: %d"), MonsterTid);
 		return;
 	}
 
@@ -64,32 +63,33 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 	{
 		EnemyGrade = static_cast<EEnemyGrade>(MonsterRow->GradeType);
 
-		StatComponent->InitializeStats(
-			static_cast<float>(MonsterRow->MaxHp),
-			static_cast<float>(MonsterRow->Attack),
-			static_cast<float>(MonsterRow->Defence)
-		);
+		if (StatComponent)
+		{
+			StatComponent->InitializeStats(
+				static_cast<float>(MonsterRow->MaxHp),
+				static_cast<float>(MonsterRow->Attack),
+				static_cast<float>(MonsterRow->Defence)
+			);
+		}
 
-		DetectRange = MonsterRow->DetectRange;
+		DetectRange = static_cast<float>(MonsterRow->DetectRange);
 
 		if (GetCharacterMovement())
 		{
-			GetCharacterMovement()->MaxWalkSpeed = static_cast<float>(MonsterRow->MoveSpeed);
 			GetCharacterMovement()->bOrientRotationToMovement = true;
 			GetCharacterMovement()->RotationRate = FRotator(0.0f, 360.0f, 0.0f);
-		}
-
-		if (!MonsterRow->MeshPath.IsEmpty())
-		{
-			if (USkeletalMesh* LoadedMesh = Cast<USkeletalMesh>(StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, *MonsterRow->MeshPath)))
-			{
-				GetMesh()->SetSkeletalMesh(LoadedMesh);
-			}
+			GetCharacterMovement()->MaxWalkSpeed = static_cast<float>(MonsterRow->MoveSpeed);
 		}
 
 		if (AEnemyAIController* AIController = Cast<AEnemyAIController>(GetController()))
 		{
 			AIController->InitializeAI(MonsterTid, this);
+		}
+
+		USkeletalMesh* LoadedMesh = Cast<USkeletalMesh>(StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, *MonsterRow->MeshPath));
+		if (LoadedMesh)
+		{
+			GetMesh()->SetSkeletalMesh(LoadedMesh);
 		}
 	}
 }
@@ -199,6 +199,21 @@ void AEnemyBase::SetState(EEnemyState NewState)
 	UpdateMoveSpeed(CurrentState);
 
 	OnStateChanged.Broadcast(OldState, NewState);
+}
+
+void AEnemyBase::ApplyKnockback(AActor* DamageCauser, float Force)
+{
+	if (DamageCauser == nullptr || bIsSuperArmor || IsDead())
+	{
+		return;
+	}
+
+	FVector KnockbackDir = (GetActorLocation() - DamageCauser->GetActorLocation()).GetSafeNormal();
+	KnockbackDir.Z = 0.0f; // 수평 넉백
+
+	FVector FinalForce = (KnockbackDir * Force);
+	
+	LaunchCharacter(FinalForce, true, true);
 }
 
 void AEnemyBase::Attack()
