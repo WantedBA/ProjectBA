@@ -11,7 +11,8 @@ class BAPROJECT_API UANS_RotateTracking : public UAnimNotifyState
 
 public:
 	virtual void NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime, const FAnimNotifyEventReference& EventReference) override;
-	virtual void NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation) override;
+	virtual void NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference) override;
+
 public:
 	UPROPERTY(EditAnywhere, Category = "AI|Notify")
 	float RotationSpeed = 5.0f;

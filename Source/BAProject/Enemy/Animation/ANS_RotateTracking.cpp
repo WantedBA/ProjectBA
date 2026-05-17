@@ -53,8 +53,10 @@ void UANS_RotateTracking::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequ
 	Enemy->SetActorRotation(NewRotation);
 }
 
-void UANS_RotateTracking::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
+void UANS_RotateTracking::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
 {
+	Super::NotifyEnd(MeshComp, Animation, EventReference);
+
 	AEnemyBase* Enemy = Cast<AEnemyBase>(MeshComp->GetOwner());
 	if (Enemy)
 	{
