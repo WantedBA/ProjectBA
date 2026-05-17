@@ -259,7 +259,7 @@ void UActionComponent::ConsumeInstantCost(const FActionDataRow& ActionData) cons
 		return;
 	}
 
-	CachedStatComponent->SetCurrentStamina(CachedStatComponent->GetCurrentStamina() - ActionData.StaminaCost);
+	CachedStatComponent->ConsumeStamina(ActionData.StaminaCost);
 }
 
 void UActionComponent::RefreshTickEnabled()
