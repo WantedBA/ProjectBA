@@ -13,6 +13,12 @@ void ABAPlayerCharacter::SyncFreeStrafeFacingMode()
 
 	MovementComponent->MaxWalkSpeed = GetSpeedForGait(MovementRuntime.ActiveGait);
 
+	if (MovementRuntime.ActiveGait == EMovementState::Sprint)
+	{
+		UseMovementDirectionFacing(*MovementComponent);
+		return;
+	}
+
 	switch (MovementRuntime.LocomotionMode)
 	{
 	case EPlayerLocomotionMode::Strafe:
