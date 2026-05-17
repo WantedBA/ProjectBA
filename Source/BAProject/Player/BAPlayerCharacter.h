@@ -128,6 +128,8 @@ private:
 
 	void ApplyBufferedMoveInput();
 	void SyncFreeStrafeFacingMode();
+	void UpdateInterpolatedFacingRotation();
+	bool ShouldUseInterpolatedFacingRotation() const;
 	void UseMovementDirectionFacing(UCharacterMovementComponent& MovementComponent);
 	void UseControllerYawFacing(UCharacterMovementComponent& MovementComponent);
 	void UpdateInterpolatedMoveInputDirection(float DeltaTime);
