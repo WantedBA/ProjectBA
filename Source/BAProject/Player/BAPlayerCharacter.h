@@ -7,6 +7,7 @@
 
 class UCameraComponent;
 class UCharacterMovementComponent;
+class UActionComponent;
 class UInteractorComponent;
 class AMapLadder;
 class USpringArmComponent;
@@ -89,6 +90,9 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Interaction")
 	UInteractorComponent* GetInteractorComponent() const { return InteractorComponent; }
+
+	UFUNCTION(BlueprintPure, Category = "Action")
+	UActionComponent* GetActionComponent() const { return ActionComponent; }
 
 	// 사다리 관련 상호작용
 	UFUNCTION(BlueprintCallable, Category = "Interaction|Ladder")
@@ -175,6 +179,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UInteractorComponent> InteractorComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UActionComponent> ActionComponent;
 
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	TObjectPtr<USpringArmComponent> SpringArm;
