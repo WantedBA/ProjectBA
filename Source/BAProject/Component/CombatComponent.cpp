@@ -42,6 +42,11 @@ void UCombatComponent::ExecuteAttack(UAnimMontage* AttackMontage, float PlayRate
 	}
 }
 
+void UCombatComponent::CheckHitStartDefault()
+{
+	CheckHitStart(CurrentRadius, CurrentDamage, CurrentSocketName);
+}
+
 void UCombatComponent::CheckHitStart(float InRadius, float InDamage, FName InSocketName)
 {
 	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());

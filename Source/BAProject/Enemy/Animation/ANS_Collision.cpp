@@ -20,7 +20,7 @@ void UANS_Collision::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequence
 	UCombatComponent* CombatComp = Enemy->GetComponentByClass<UCombatComponent>();
 	if (CombatComp)
 	{
-		CombatComp->CheckHitStart();
+		CombatComp->CheckHitStartDefault();
 	}
 }
 

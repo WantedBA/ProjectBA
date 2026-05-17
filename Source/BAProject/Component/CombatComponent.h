@@ -32,6 +32,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat|VFX")
 	void SpawnShockwave(FVector Location, float Scale = 1.0f);
 
+	void CheckHitStartDefault();
+
 protected:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
