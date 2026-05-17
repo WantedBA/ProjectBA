@@ -8,6 +8,7 @@
 class UCameraComponent;
 class UCharacterMovementComponent;
 class UInteractorComponent;
+class AMapLadder;
 class USpringArmComponent;
 class UStatComponent;
 
@@ -89,19 +90,28 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Interaction")
 	UInteractorComponent* GetInteractorComponent() const { return InteractorComponent; }
 
-protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStatComponent> StatComponent;
+	// 사다리 관련 상호작용
+	UFUNCTION(BlueprintCallable, Category = "Interaction|Ladder")
+	void EnterLadder(AMapLadder* Ladder, const FVector& EntryLocation, const FRotator& FaceRotation);
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UInteractorComponent> InteractorComponent;
+	UFUNCTION(BlueprintCallable, Category = "Interaction|Ladder")
+	void ExitLadder(const FVector& ExitLocation);
 
-	UPROPERTY(VisibleAnywhere, Category = Camera)
-	TObjectPtr<USpringArmComponent> SpringArm;
+	UFUNCTION(BlueprintPure, Category = "Interaction|Ladder")
+	bool IsOnLadder() const;
 
-	UPROPERTY(VisibleAnywhere, Category = Camera)
-	TObjectPtr<UCameraComponent> Camera;
+	UFUNCTION(BlueprintPure, Category = "Interaction|Ladder")
+	AMapLadder* GetCurrentLadder() const;
 
+	UFUNCTION(BlueprintPure, Category = "Interaction|Ladder")
+	float GetLadderClimbVelocity() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Control|Cutscene")
+	void LockMovementForCutscene();
+
+	UFUNCTION(BlueprintCallable, Category = "Control|Cutscene")
+	void UnlockMovementForCutscene();
+	
 private:
 	void TickMovementRuntime(float DeltaTime);
 	void UpdatePhaseFromInputAndGait(float DeltaTime);
@@ -132,6 +142,12 @@ private:
 	void LockSprintUntilRecovered();
 	void UnlockSprintAfterRecovery();
 
+	void TickLadderClimb(float DeltaTime);
+	float CalculateLadderClimbSpeed(float VerticalInput) const;
+	bool IsLadderSprintRequested() const;
+	void DrainLadderSprintStamina(float DeltaTime);
+	void ResetMovementRuntimeForLadder();
+
 	UPROPERTY(EditAnywhere, Category = "Movement", meta = (ShowOnlyInnerProperties))
 	FBAPlayerMovementSpeedSettings SpeedSettings;
 
@@ -144,9 +160,26 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Movement|Sprint", meta = (ShowOnlyInnerProperties))
 	FBAPlayerSprintCostSettings SprintCostSettings;
 
+	UPROPERTY(EditAnywhere, Category = "Interaction|Ladder", meta = (ShowOnlyInnerProperties))
+	FBAPlayerLadderSettings LadderSettings;
+
 	FBAPlayerMovementRuntimeState MovementRuntime;
 	FBAPlayerSprintRuntimeState SprintRuntime;
+	FBAPlayerLadderRuntimeState LadderRuntime;
 
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UStatComponent> StatComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UInteractorComponent> InteractorComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = Camera)
+	TObjectPtr<USpringArmComponent> SpringArm;
+
+	UPROPERTY(VisibleAnywhere, Category = Camera)
+	TObjectPtr<UCameraComponent> Camera;
+	
 protected:
 	UFUNCTION()
 	void OnHealthChanged(float CurrentHP, float MaxHP);

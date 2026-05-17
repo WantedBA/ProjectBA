@@ -32,6 +32,14 @@ struct FPlayerBaseStat
 	float BaseAttackSpeed = 0.f; // BaseAttackSpeed
 	UPROPERTY(BlueprintReadWrite)
 	float BaseDefence = 0.f; // BaseDefence
+	UPROPERTY(BlueprintReadWrite)
+	float LadderClimbSpeedSlow = 0.f; // LadderClimbSpeedSlow
+	UPROPERTY(BlueprintReadWrite)
+	float LadderClimbSpeedFast = 0.f; // LadderClimbSpeedFast
+	UPROPERTY(BlueprintReadWrite)
+	float LadderSlideDownSpeed = 0.f; // LadderSlideDownSpeed
+	UPROPERTY(BlueprintReadWrite)
+	float LadderExitClearance = 0.f; // LadderExitClearance
 };
 
 USTRUCT(BlueprintType)

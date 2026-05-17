@@ -10,7 +10,7 @@
  * Monster.xlsx 의 "Monster" 시트 한 행.
  * 필드 이름은 JSON 키와 정확히 일치해야 한다 (Monster.json 참고).
  */
-USTRUCT(BlueprintType)
+USTRUCT(BlueprintType, meta = (BASheet = "Monster"))
 struct BAPROJECT_API FMonsterRows : public FBARowBase
 {
 	GENERATED_BODY()

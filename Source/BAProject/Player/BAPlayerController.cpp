@@ -223,6 +223,13 @@ void ABAPlayerController::OnInteract()
 	{
 		return;
 	}
+
+	// 사다리 매달린 상태: 카메라 방향과 무관하게 즉시 이탈
+	if (PC->IsOnLadder())
+	{
+		PC->ExitLadder(PC->GetActorLocation());
+		return;
+	}
 	
 	UInteractorComponent* Interactor = PC->GetInteractorComponent();
 	if (Interactor)

@@ -73,6 +73,12 @@ void UUserDataSubsystem::SetBaseStat()
 	BaseStat.BaseAttack = BaseStatRow->BaseAttack;
 	BaseStat.BaseAttackSpeed = BaseStatRow->BaseAttackSpeed;
 	BaseStat.BaseDefence = BaseStatRow->BaseDefence;
+
+	// 사다리 관련 스탯도 함께 초기화
+	BaseStat.LadderClimbSpeedSlow = BaseStatRow->LadderClimbSpeedSlow;
+	BaseStat.LadderClimbSpeedFast = BaseStatRow->LadderClimbSpeedFast;
+	BaseStat.LadderSlideDownSpeed = BaseStatRow->LadderSlideDownSpeed;
+	BaseStat.LadderExitClearance = BaseStatRow->LadderExitClearance;
 	
 	UE_LOG(LogTemp, Log, TEXT("[UserDataSubsystem] BaseStat loaded."));
 }

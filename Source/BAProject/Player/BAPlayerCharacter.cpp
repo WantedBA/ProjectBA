@@ -10,6 +10,7 @@
 
 namespace
 {
+	// TODO: id 하드코딩
 	constexpr int32 SprintActionTid = 10020;
 	constexpr float DefaultSprintRestartStaminaPercent = 70.f;
 }
@@ -29,9 +30,13 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	}
 	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
 
+	// 스탯 컴포넌트 생성
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));
+	
+	// 상호작용 컴포넌트 생성
 	InteractorComponent = CreateDefaultSubobject<UInteractorComponent>(TEXT("InteractorComponent"));
 
+	// C++ 동적 생성이라 BP 슬롯이 없으므로 외곽선용 PostProcess 머티리얼을 코드에서 주입
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> OutlinePPMat(
 		TEXT("/Game/UI/Interaction/M_PP_Outline.M_PP_Outline"));
 	if (OutlinePPMat.Succeeded() && InteractorComponent)
@@ -44,6 +49,7 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 		FRotator(0.f, -90.f, 0.f)
 	);
 
+	// back view, 3인칭 설정
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);
 	SpringArm->TargetArmLength = 330.f;
@@ -53,13 +59,17 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	SpringArm->bInheritYaw = true;
 	SpringArm->bInheritRoll = false;
 	SpringArm->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
-	SpringArm->bDoCollisionTest = true;
+	
+	// camera spring arm 충돌 활성화
+	SpringArm->bDoCollisionTest = true; 
 
+	// camera 설정
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
 	Camera->SetRelativeRotation(FRotator(-17.f, 0.f, 0.f));
 	Camera->bUsePawnControlRotation = false;
-
+	
+	// 마우스 카메라 제어 Yaw축만 허용
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
@@ -91,10 +101,16 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (IsOnLadder())
+	{
+		TickLadderClimb(DeltaTime);
+		return;
+	}
+	
 	TickMovementRuntime(DeltaTime);
 }
 
-// 기본 공격 입력 진입점이며, 실제 공격 로직은 아직 연결되지 않았다.
+// 기본 공격 입력 진입점
 void ABAPlayerCharacter::Attack()
 {
 }
@@ -112,6 +128,12 @@ void ABAPlayerCharacter::InitializeFromTable()
 	SpeedSettings.WalkSpeed = BaseStat.WalkSpeed;
 	SpeedSettings.RunSpeed = BaseStat.RunSpeed;
 	SpeedSettings.SprintSpeed = BaseStat.SprintSpeed;
+
+	// 사다리 관련 스탯 초기화
+	LadderSettings.ClimbSpeedSlow = BaseStat.LadderClimbSpeedSlow;
+	LadderSettings.ClimbSpeedFast = BaseStat.LadderClimbSpeedFast;
+	LadderSettings.SlideDownSpeed = BaseStat.LadderSlideDownSpeed;
+	LadderSettings.ExitClearance = BaseStat.LadderExitClearance;
 
 	StatComponent->InitializeStats(
 		BaseStat.MaxHp,

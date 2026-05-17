@@ -4,6 +4,8 @@
 #include "Tables/PlayerEnums.h"
 #include "BAPlayerCharacterTypes.generated.h"
 
+class AMapLadder;
+
 UENUM(BlueprintType)
 enum class EMovementState : uint8
 {
@@ -157,6 +159,24 @@ struct FBAPlayerSprintCostSettings
 	bool bHasActionData = false;
 };
 
+USTRUCT(BlueprintType)
+struct FBAPlayerLadderSettings
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, Category = "Interaction|Ladder", meta = (ClampMin = "0.0"))
+	float ClimbSpeedSlow = 120.f;
+
+	UPROPERTY(EditAnywhere, Category = "Interaction|Ladder", meta = (ClampMin = "0.0"))
+	float ClimbSpeedFast = 280.f;
+
+	UPROPERTY(EditAnywhere, Category = "Interaction|Ladder", meta = (ClampMin = "0.0"))
+	float SlideDownSpeed = 600.f; // 빠른 하강
+
+	UPROPERTY(EditAnywhere, Category = "Interaction|Ladder", meta = (ClampMin = "0.0"))
+	float ExitClearance = 80.f; // 이탈 시 사다리 너머로 밀어낼 거리
+};
+
 struct FBAPlayerMovementRuntimeState
 {
 	EMovementState DesiredGait = EMovementState::Run;
@@ -179,4 +199,10 @@ struct FBAPlayerMovementRuntimeState
 struct FBAPlayerSprintRuntimeState
 {
 	bool bLockedAfterExhausted = false;
+};
+
+struct FBAPlayerLadderRuntimeState
+{
+	bool bIsOnLadder = false;
+	TWeakObjectPtr<AMapLadder> CurrentLadder;
 };
