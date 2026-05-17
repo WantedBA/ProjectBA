@@ -83,9 +83,7 @@ void ABAPlayerController::SetupInputComponent()
 
 	if (ensureMsgf(WalkAction, TEXT("WalkAction is not configured on %s"), *GetName()))
 	{
-		EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Started, this, &ABAPlayerController::OnWalkStarted);
-		EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Completed, this, &ABAPlayerController::OnWalkCompleted);
-		EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Canceled, this, &ABAPlayerController::OnWalkCompleted);
+		EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Started, this, &ABAPlayerController::ToggleWalk);
 	}
 
 	if (ensureMsgf(SprintAction, TEXT("SprintAction is not configured on %s"), *GetName()))
@@ -162,15 +160,9 @@ void ABAPlayerController::LightAttack()
 	}
 }
 
-void ABAPlayerController::OnWalkStarted()
+void ABAPlayerController::ToggleWalk()
 {
-	bWalkModifierHeld = true;
-	ApplyMovementStateByModifier();
-}
-
-void ABAPlayerController::OnWalkCompleted()
-{
-	bWalkModifierHeld = false;
+	bWalkToggleEnabled = !bWalkToggleEnabled;
 	ApplyMovementStateByModifier();
 }
 
@@ -214,7 +206,7 @@ void ABAPlayerController::ApplyMovementStateByModifier() const
 	{
 		PC->SetMovementState(EMovementState::Sprint);
 	}
-	else if (bWalkModifierHeld)
+	else if (bWalkToggleEnabled)
 	{
 		PC->SetMovementState(EMovementState::Walk);
 	}

@@ -55,8 +55,7 @@ private:
 	void OnMoveCompleted();
 	void Look(const FInputActionValue& Value);
 	void LightAttack();
-	void OnWalkStarted();
-	void OnWalkCompleted();
+	void ToggleWalk();
 	void OnSprintStarted();
 	void OnSprintCompleted();
 	void ApplyMovementStateByModifier() const;
@@ -66,7 +65,7 @@ private:
 	// 임시 기능
 	void ToggleStrafe();
 
-	bool bWalkModifierHeld = false;
+	bool bWalkToggleEnabled = false;
 	bool bSprintModifierHeld = false;
 	bool bHasMoveInput = false;
 	double SprintDodgePressedTime = 0.0;
