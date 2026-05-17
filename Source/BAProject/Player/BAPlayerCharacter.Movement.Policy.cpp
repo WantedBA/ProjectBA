@@ -31,15 +31,45 @@ void ABAPlayerCharacter::SyncFreeStrafeFacingMode()
 	}
 }
 
-// Free는 캐릭터가 이동 방향을 바라보게 한다.
+// 실제 이동 입력과 별개로 가속방향 바라보게 하기
 void ABAPlayerCharacter::UseMovementDirectionFacing(UCharacterMovementComponent& MovementComponent)
 {
 	bUseControllerRotationYaw = false;
-	MovementComponent.bOrientRotationToMovement = true;
+	MovementComponent.bOrientRotationToMovement = false;
 	MovementComponent.RotationRate = FRotator(0.f, LocomotionSettings.FreeRotationRateYaw, 0.f);
 	MovementComponent.MaxAcceleration = LocomotionSettings.FreeMaxAcceleration;
 	MovementComponent.BrakingDecelerationWalking = LocomotionSettings.FreeBrakingDecelerationWalking;
 	MovementComponent.GroundFriction = LocomotionSettings.FreeGroundFriction;
+}
+
+// 이동 시 캐릭터 가속방향 회전 보간 처리
+void ABAPlayerCharacter::UpdateInterpolatedFacingRotation()
+{
+	if (!ShouldUseInterpolatedFacingRotation())
+	{
+		return;
+	}
+
+	const FVector FacingDirection = ConvertMoveInputToWorldDirection(GetInterpolatedMoveInputVector());
+	if (FacingDirection.IsNearlyZero())
+	{
+		return;
+	}
+
+	const FRotator CurrentRotation = GetActorRotation();
+	SetActorRotation(FRotator(CurrentRotation.Pitch, FacingDirection.Rotation().Yaw, CurrentRotation.Roll));
+}
+
+// 캐릭터 가속방향 회전 보간 처리 적용 판단
+bool ABAPlayerCharacter::ShouldUseInterpolatedFacingRotation() const
+{
+	if (MovementRuntime.Phase != EPlayerMovementPhase::Loop && IsMovementPhaseUsingRootMotion())
+	{
+		return false;
+	}
+
+	return MovementRuntime.ActiveGait == EMovementState::Sprint
+		|| MovementRuntime.LocomotionMode == EPlayerLocomotionMode::Free;
 }
 
 // Strafe는 컨트롤러 yaw를 기준으로 캐릭터 방향을 유지한다.

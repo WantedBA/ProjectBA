@@ -182,6 +182,7 @@ void ABAPlayerCharacter::TickMovementRuntime(const float DeltaTime)
 	UpdateInterpolatedMoveInputDirection(DeltaTime);
 	UpdatePhaseFromInputAndGait(DeltaTime);
 	SyncFreeStrafeFacingMode();
+	UpdateInterpolatedFacingRotation();
 	ApplyBufferedMoveInput();
 	DrainSprintStaminaDuringLoop(DeltaTime);
 }
