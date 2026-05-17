@@ -7,6 +7,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Instance/UserDataSubsystem.h"
 #include "Materials/MaterialInterface.h"
+#include "Tables/BATableManager.h"
 
 namespace
 {
@@ -115,7 +116,7 @@ void ABAPlayerCharacter::Attack()
 {
 }
 
-// UserDataSubsystem의 기본 스탯과 Action 데이터를 플레이어 런타임 설정에 반영한다.
+// UserDataSubsystem의 기본 스탯과 공용 Action 데이터를 플레이어 런타임 설정에 반영한다.
 void ABAPlayerCharacter::InitializeFromTable()
 {
 	const UUserDataSubsystem* UserDataSubsystem = UUserDataSubsystem::Get(this);
@@ -148,7 +149,8 @@ void ABAPlayerCharacter::InitializeFromTable()
 		BaseStat.BaseDefence
 	);
 
-	if (const FPlayerActionData* SprintActionData = UserDataSubsystem->FindActionData(SprintActionTid))
+	const UBATableManager* TableManager = UBATableManager::Get(this);
+	if (const FActionDataRow* SprintActionData = TableManager ? TableManager->FindActionData(SprintActionTid) : nullptr)
 	{
 		SprintCostSettings.StaminaCost = FMath::Max(0.f, SprintActionData->StaminaCost);
 		SprintCostSettings.StaminaCostType = SprintActionData->StaminaCostType;
@@ -161,7 +163,7 @@ void ABAPlayerCharacter::InitializeFromTable()
 	else
 	{
 		SprintCostSettings.StaminaCost = 0.f;
-		SprintCostSettings.StaminaCostType = EPlayerStaminaCostType::Instant;
+		SprintCostSettings.StaminaCostType = EActionStaminaCostType::Instant;
 		SprintCostSettings.MinRequiredStamina = 0.f;
 		SprintCostSettings.RestartStaminaPercent = DefaultSprintRestartStaminaPercent;
 		SprintCostSettings.bHasActionData = false;
