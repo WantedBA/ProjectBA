@@ -71,6 +71,7 @@ void FBATableGenerator::Generate()
 	UE_LOG(LogTemp, Log, TEXT("[BATableGenerator] Converter output:\n%s"), *ConverterLog);
 
 	SlowTask.EnterProgressFrame(1.0f, LOCTEXT("ImportingJson", "JSON -> DataTable"));
+	FBASheetSpecs::Invalidate();
 	ImportAllJson();
 
 	SlowTask.EnterProgressFrame(1.0f, LOCTEXT("Done", "Done"));
@@ -118,6 +119,11 @@ void FBATableGenerator::ImportAllJson()
 
 	for (const FString& Filename : JsonFiles)
 	{
+		// SheetRecipe.json 은 데이터 파일이 아니라 spec 사이드카임 — 임포트 대상에서 제외
+		if (Filename.Equals(TEXT("SheetRecipe.json"), ESearchCase::IgnoreCase))
+		{
+			continue;
+		}
 		ImportJsonFile(JsonDir / Filename);
 	}
 }

@@ -10,7 +10,7 @@
  * Item.xlsx 의 "Consume" 시트 한 행.
  * 필드 이름은 JSON 키와 정확히 일치해야 한다 (Item.json 참고).
  */
-USTRUCT(BlueprintType)
+USTRUCT(BlueprintType, meta = (BASheet = "Skill"))
 struct BAPROJECT_API FSkillRow : public FBARowBase
 {
 	GENERATED_BODY()

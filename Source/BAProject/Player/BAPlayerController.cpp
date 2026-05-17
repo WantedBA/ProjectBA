@@ -132,15 +132,6 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 	bHasMoveInput = !Movement.IsNearlyZero();
 	ControlledCharacter->SetMoveInputVector(Movement);
 	ApplyMovementStateByModifier();
-	
-	const FRotator ControlRot = GetControlRotation();
-	const FRotator YawRot(0.f, ControlRot.Yaw, 0.f);
-
-	const FVector Forward = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
-	const FVector Right = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
-
-	ControlledCharacter->AddMovementInput(Forward, Movement.Y);
-	ControlledCharacter->AddMovementInput(Right, Movement.X);
 }
 
 void ABAPlayerController::OnMoveCompleted()
@@ -230,6 +221,13 @@ void ABAPlayerController::OnInteract()
 		Cast<ABAPlayerCharacter>(GetPawn());
 	if (!PC)
 	{
+		return;
+	}
+
+	// 사다리 매달린 상태: 카메라 방향과 무관하게 즉시 이탈
+	if (PC->IsOnLadder())
+	{
+		PC->ExitLadder(PC->GetActorLocation());
 		return;
 	}
 	

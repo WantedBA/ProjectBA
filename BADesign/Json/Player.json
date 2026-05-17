@@ -11,7 +11,11 @@
             "SprintSpeed": 700,
             "BaseAttack": 40,
             "BaseAttackSpeed": 1,
-            "BaseDefence": 10
+            "BaseDefence": 10,
+            "LadderClimbSpeedSlow": 120,
+            "LadderClimbSpeedFast": 280,
+            "LadderSlideDownSpeed": 600,
+            "LadderExitClearance": 80
         }
     ],
     "ActionData": [
