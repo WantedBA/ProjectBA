@@ -1,7 +1,5 @@
 #include "Player/BAPlayerCharacter.h"
 
-#include "GameFramework/CharacterMovementComponent.h"
-
 // Phase가 루트모션 소유가 아닐 때만 저장된 이동 입력을 실제 이동에 사용한다.
 void ABAPlayerCharacter::ApplyBufferedMoveInput()
 {
@@ -10,7 +8,7 @@ void ABAPlayerCharacter::ApplyBufferedMoveInput()
 		return;
 	}
 
-	const FVector MoveDirection = GetMoveInputWorldDirection();
+	const FVector MoveDirection = ConvertMoveInputToWorldDirection(MovementRuntime.MoveInputVector);
 	if (!MoveDirection.IsNearlyZero())
 	{
 		AddMovementInput(MoveDirection, MovementRuntime.MoveInputVector.Size());
