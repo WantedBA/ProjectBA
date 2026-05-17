@@ -60,10 +60,15 @@ bool UActionComponent::TryStartAction(const EActionCommand Command, const EActio
 		return false;
 	}
 
-	return TryStartActionByTid(Moveset->ActionTid);
+	return TryStartActionByTid(Moveset->ActionTid, Direction);
 }
 
 bool UActionComponent::TryStartActionByTid(const int32 ActionTid)
+{
+	return TryStartActionByTid(ActionTid, EActionDirection::Any);
+}
+
+bool UActionComponent::TryStartActionByTid(const int32 ActionTid, const EActionDirection Direction)
 {
 	const UBATableManager* TableManager = UBATableManager::Get(this);
 	if (!TableManager)
@@ -84,7 +89,7 @@ bool UActionComponent::TryStartActionByTid(const int32 ActionTid)
 		return false;
 	}
 
-	BeginAction(*ActionData);
+	BeginAction(*ActionData, Direction);
 	return true;
 }
 
@@ -101,6 +106,7 @@ void UActionComponent::CompleteCurrentAction()
 	ActiveActionTid = InvalidActionTid;
 	ActiveActionType = EActionType::None;
 	RuntimeState = EActionRuntimeState::None;
+	ActiveActionDirection = EActionDirection::Any;
 
 	OnActionCompleted.Broadcast(CompletedActionTid, CompletedActionType);
 	RefreshTickEnabled();
@@ -219,13 +225,14 @@ bool UActionComponent::CanStartAction(const FActionDataRow& ActionData)
 	return true;
 }
 
-void UActionComponent::BeginAction(const FActionDataRow& ActionData)
+void UActionComponent::BeginAction(const FActionDataRow& ActionData, const EActionDirection Direction)
 {
 	CompleteCurrentAction();
 
 	ActiveActionTid = ActionData.Tid;
 	ActiveActionType = ActionData.ActionType;
 	RuntimeState = GetRuntimeStateForAction(ActionData);
+	ActiveActionDirection = Direction;
 	LastStartResult = EActionStartResult::Success;
 
 	ConsumeInstantCost(ActionData);

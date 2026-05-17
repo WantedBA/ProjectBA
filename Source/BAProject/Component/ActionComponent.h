@@ -41,8 +41,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionCompleted, int32, ActionTi
  *   3) BeginAction             -> 런타임 상태 갱신, 즉시형 비용 소비, 시작 이벤트 발행.
  *   4) CompleteCurrentAction   -> 애니메이션/노티파이/상위 로직에서 액션 종료를 통지.
  *
- * 애니메이션 재생, 공격 판정, 무적 iframe 적용은 ActionAnimationData 와
- * ActionWindowData 를 읽는 후속 단계에서 붙인다.
+ * 애니메이션 재생은 ActionAnimationComponent 가 ActionAnimationData 를 읽어 처리한다.
+ * 공격 판정, 무적 iframe 적용은 ActionWindowData 를 읽는 후속 단계에서 붙인다.
  */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class BAPROJECT_API UActionComponent : public UActorComponent
@@ -80,6 +80,9 @@ public:
 	EActionRuntimeState GetActionRuntimeState() const { return RuntimeState; }
 
 	UFUNCTION(BlueprintPure, Category = "Action")
+	EActionDirection GetActiveActionDirection() const { return ActiveActionDirection; }
+
+	UFUNCTION(BlueprintPure, Category = "Action")
 	EActionStartResult GetLastStartResult() const { return LastStartResult; }
 
 	UFUNCTION(BlueprintCallable, Category = "Action|Context")
@@ -115,7 +118,8 @@ protected:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
-	void BeginAction(const FActionDataRow& ActionData);
+	bool TryStartActionByTid(int32 ActionTid, EActionDirection Direction);
+	void BeginAction(const FActionDataRow& ActionData, EActionDirection Direction);
 	void StartCooldown(const FActionDataRow& ActionData);
 	void ConsumeInstantCost(const FActionDataRow& ActionData) const;
 	void RefreshTickEnabled();
@@ -142,6 +146,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
 	EActionRuntimeState RuntimeState = EActionRuntimeState::None;
+
+	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
+	EActionDirection ActiveActionDirection = EActionDirection::Any;
 
 	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
 	EActionStartResult LastStartResult = EActionStartResult::Success;
