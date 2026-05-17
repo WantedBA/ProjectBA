@@ -25,4 +25,7 @@ public:
 
 	/** 등록된 모든 시트명 반환. */
 	static TArray<FString> GetAllSheetNames();
+
+	/** 캐시 무효화. 다음 Find / GetAllSheetNames 호출 시 Recipe + meta 를 다시 스캔. */
+	static void Invalidate();
 };
