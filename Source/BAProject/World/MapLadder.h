@@ -7,9 +7,9 @@
 #include "Interactable/Interactable.h"
 #include "MapLadder.generated.h"
 
-class UStaticMeshComponent;
 class USceneComponent;
-class ABAPlayerCharacter;
+class UInstancedStaticMeshComponent;
+class UStaticMesh;
 
 UCLASS()
 class BAPROJECT_API AMapLadder : public AActor, public IInteractable
@@ -25,16 +25,16 @@ public:
     virtual FText GetInteractionPrompt_Implementation() const override;
     virtual FVector GetInteractionLocation_Implementation() const override;
 
-    UFUNCTION(BlueprintPure, Category = "Ladder")
+    UFUNCTION(BlueprintPure, Category = "Interaction|Ladder")
     FVector GetBottomEntryLocation() const;
 
-    UFUNCTION(BlueprintPure, Category = "Ladder")
+    UFUNCTION(BlueprintPure, Category = "Interaction|Ladder")
     FVector GetTopEntryLocation() const;
 
-    UFUNCTION(BlueprintPure, Category = "Ladder")
+    UFUNCTION(BlueprintPure, Category = "Interaction|Ladder")
     FRotator GetClimbFaceRotation() const;
 
-    UFUNCTION(BlueprintPure, Category = "Ladder")
+    UFUNCTION(BlueprintPure, Category = "Interaction|Ladder")
     float GetTotalHeight() const { return SegmentCount * SegmentHeight; }
 
 protected:
@@ -53,20 +53,20 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     TObjectPtr<USceneComponent> InteractionPivot;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ladder|Visual")
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction|Ladder|Visual")
     TObjectPtr<UStaticMesh> SegmentMeshAsset;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ladder|Visual",
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction|Ladder|Visual",
         meta = (ClampMin = "1"))
     int32 SegmentCount = 3;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ladder|Visual",
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction|Ladder|Visual",
         meta = (ClampMin = "1.0"))
     float SegmentHeight = 100.f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ladder|UI")
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction|Ladder|UI")
     FText PromptEnter = NSLOCTEXT("Ladder", "Enter", "E - 사다리 타기");
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ladder|UI")
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction|Ladder|UI")
     FText PromptExit = NSLOCTEXT("Ladder", "Exit", "E - 내리기");
 };

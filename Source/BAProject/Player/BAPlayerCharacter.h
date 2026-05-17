@@ -2,294 +2,185 @@
 
 #include "CoreMinimal.h"
 #include "Character/CharacterBase.h"
-#include "Tables/PlayerEnums.h"
+#include "Player/BAPlayerCharacterTypes.h"
 #include "BAPlayerCharacter.generated.h"
 
-class UInputAction;
-class UInputMappingContext;
+class UCameraComponent;
+class UCharacterMovementComponent;
 class UInteractorComponent;
 class AMapLadder;
-
-UENUM(BlueprintType)
-enum class EMovementState : uint8
-{
-	Walk,
-	Run,
-	Sprint
-};
-
-UENUM(BlueprintType)
-enum class EPlayerLocomotionMode : uint8
-{
-	Free,
-	Strafe
-};
-
-UENUM(BlueprintType)
-enum class EPlayerCombatMode : uint8
-{
-	None,
-	Combat,
-	Block
-};
+class USpringArmComponent;
+class UStatComponent;
 
 UCLASS()
 class BAPROJECT_API ABAPlayerCharacter : public ACharacterBase
 {
 	GENERATED_BODY()
-	
+
 public:
 	ABAPlayerCharacter();
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void Attack() override;
-	
+
 	UFUNCTION(BlueprintCallable, Category = Initialization)
 	virtual void InitializeFromTable();
-	
-protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<class UStatComponent> StatComponent;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly ,Category = "Components")
-	TObjectPtr<UInteractorComponent> InteractorComponent;
-	
-public:
+
 	void SetMovementState(EMovementState NewState);
 	void SetMoveInputVector(const FVector2D& NewMoveInput);
 	void SetHasMoveInput(bool bNewHasMoveInput);
 
-	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
+	UFUNCTION(BlueprintCallable, Category = "Animation|Movement")
 	void SetLocomotionMode(EPlayerLocomotionMode NewMode);
 
 	UFUNCTION(BlueprintCallable, Category = "Animation|Combat")
 	void SetCombatMode(EPlayerCombatMode NewMode);
 
-	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	EMovementState GetMovementState() const;
 
-	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
+	EMovementState GetDesiredMovementState() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	EPlayerLocomotionMode GetLocomotionMode() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
+	EPlayerMovementPhase GetMovementPhase() const;
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Combat")
 	EPlayerCombatMode GetCombatMode() const;
 
-	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	bool HasMoveInput() const;
 
-	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	FVector2D GetMoveInputVector() const;
 
-	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	FVector GetMoveInputWorldDirection() const;
 
-	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	FVector GetMoveInputLocalDirection() const;
 
-	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	float GetMoveInputDirectionAngle() const;
 
-	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	float GetVelocityDirectionAngle() const;
 
-	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	float GetGroundSpeed() const;
 
-	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
+	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
+	float GetMovementPhaseDirectionAngle() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
+	bool IsMovementPhase(EPlayerMovementPhase Phase) const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
+	bool IsMovementPhaseUsingRootMotion() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Movement")
+	void CompleteMovementPhaseAnimation(EPlayerMovementPhase CompletedPhase);
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Sprint")
 	bool IsSprintLockedAfterExhausted() const;
 
-	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
-	bool IsSprintEntryRotationLocked() const;
+	UFUNCTION(BlueprintPure, Category = "Interaction")
+	UInteractorComponent* GetInteractorComponent() const { return InteractorComponent; }
 
-	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
-	float GetSprintTurnDeltaAngle() const;
-	
-	UFUNCTION(BlueprintPure, Category="Interaction")
-	UInteractorComponent* GetInteractorComponent() const {return InteractorComponent;}
-
-	UFUNCTION(BlueprintPure, Category="Ladder")
-	float GetLadderClimbVelocity() const;
-
-	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
-	float GetTurnaroundToControlRotationAngle() const;
-
-	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
-	float GetTurnaroundPlayRate() const;
-
-	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
-	bool IsSprintStopRequested() const;
-
-	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
-	void ClearSprintStopRequest();
-
-	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
-	void CompleteSprintStopAnimation();
-
-	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
-	bool IsTurnaroundRequested() const;
-
-	UFUNCTION(BlueprintPure, Category = "Animation|Locomotion")
-	bool IsTurnaroundQueuedAfterSprintStop() const;
-
-	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
-	void BeginTurnaroundAnimation();
-
-	UFUNCTION(BlueprintCallable, Category = "Animation|Locomotion")
-	void CompleteTurnaroundAnimation();
-
-	//사다리 관련
-	UFUNCTION(BlueprintCallable, Category = "Ladder")
+	// 사다리 관련 상호작용
+	UFUNCTION(BlueprintCallable, Category = "Interaction|Ladder")
 	void EnterLadder(AMapLadder* Ladder, const FVector& EntryLocation, const FRotator& FaceRotation);
 
-	UFUNCTION(BlueprintCallable, Category = "Ladder")
+	UFUNCTION(BlueprintCallable, Category = "Interaction|Ladder")
 	void ExitLadder(const FVector& ExitLocation);
 
-	UFUNCTION(BlueprintPure, Category = "Ladder")
-	bool IsOnLadder() const { return bIsOnLadder; }
+	UFUNCTION(BlueprintPure, Category = "Interaction|Ladder")
+	bool IsOnLadder() const;
 
-	UFUNCTION(BlueprintPure, Category = "Ladder")
-	AMapLadder* GetCurrentLadder() const { return CurrentLadder.Get(); }
+	UFUNCTION(BlueprintPure, Category = "Interaction|Ladder")
+	AMapLadder* GetCurrentLadder() const;
 
-	//컷씬 이동 관련
-	UFUNCTION(BlueprintCallable, Category = "Movement")
+	UFUNCTION(BlueprintPure, Category = "Interaction|Ladder")
+	float GetLadderClimbVelocity() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Control|Cutscene")
 	void LockMovementForCutscene();
 
-	UFUNCTION(BlueprintCallable, Category = "Movement")
+	UFUNCTION(BlueprintCallable, Category = "Control|Cutscene")
 	void UnlockMovementForCutscene();
-
+	
 private:
-	bool CanSprint() const;
-	bool IsSprintMovementActive() const;
-	void ConsumeSprintStamina(float DeltaTime);
-	float CalculateSprintStaminaCost(float DeltaTime) const;
-	void LockSprintIfExhausted();
-	void UpdateSprintExhaustionLock();
-	void ApplyLocomotionMovementPolicy();
-	void UpdateSprintEntryRotation(float DeltaTime);
-	bool ShouldUseSprintEntryRotationLock() const;
-	void RequestSprintStop();
-	void UpdateSprintStopRequest(float DeltaTime);
-	void StartSprintStopRequestWindow();
-	void UpdateSprintStopRequestWindow(float DeltaTime);
-	bool CanRequestSprintStop() const;
-	bool ShouldUseSprintMovementPolicy() const;
-	void UpdateTurnaroundRotation(float DeltaTime);
+	void TickMovementRuntime(float DeltaTime);
+	void UpdatePhaseFromInputAndGait(float DeltaTime);
+	void BeginMovementPhase(EPlayerMovementPhase NewPhase);
+	void FinishCurrentMovementPhase();
+	void SetActiveGaitAndSpeed(EMovementState NewGait);
+	EMovementState GetStaminaAllowedGait(EMovementState RequestedGait) const;
+	const FBAPlayerMovementPhaseSettings& GetPhaseSettings(EMovementState Gait) const;
+	float GetSpeedForGait(EMovementState Gait) const;
+	bool IsPhaseEnabledForGait(EPlayerMovementPhase Phase, EMovementState Gait) const;
+	bool DoesGaitPhaseUseRootMotion(EPlayerMovementPhase Phase, EMovementState Gait) const;
+	bool ShouldEnterTurnPhase() const;
+	float CalculateInputYawDeltaFromActor() const;
+
+	void ApplyBufferedMoveInput();
+	void SyncFreeStrafeFacingMode();
+	void UseMovementDirectionFacing(UCharacterMovementComponent& MovementComponent);
+	void UseControllerYawFacing(UCharacterMovementComponent& MovementComponent);
+	void UpdateInterpolatedMoveInputDirection(float DeltaTime);
+	void SnapInterpolatedMoveInputTo(const FVector2D& MoveInput);
+	FVector2D GetInterpolatedMoveInputVector() const;
+	FVector2D ConvertWorldDirectionToMoveInput(const FVector& WorldDirection) const;
+	FVector ConvertMoveInputToWorldDirection(const FVector2D& MoveInput) const;
+
+	bool IsSprintAllowedByStamina() const;
+	void DrainSprintStaminaDuringLoop(float DeltaTime);
+	float CalculateSprintStaminaDrain(float DeltaTime) const;
+	void LockSprintUntilRecovered();
+	void UnlockSprintAfterRecovery();
+
 	void TickLadderClimb(float DeltaTime);
+	float CalculateLadderClimbSpeed(float VerticalInput) const;
+	bool IsLadderSprintRequested() const;
+	void DrainLadderSprintStamina(float DeltaTime);
+	void ResetMovementRuntimeForLadder();
 
-	EMovementState CurrentMovementState = EMovementState::Run;
-	EPlayerLocomotionMode CurrentLocomotionMode = EPlayerLocomotionMode::Free;
-	EPlayerCombatMode CurrentCombatMode = EPlayerCombatMode::None;
-	FVector2D MoveInputVector = FVector2D::ZeroVector;
+	UPROPERTY(EditAnywhere, Category = "Movement", meta = (ShowOnlyInnerProperties))
+	FBAPlayerMovementSpeedSettings SpeedSettings;
 
-	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
-	float FreeRotationRateYaw = 1440.f;
+	UPROPERTY(EditAnywhere, Category = "Movement|Locomotion", meta = (ShowOnlyInnerProperties))
+	FBAPlayerLocomotionSettings LocomotionSettings;
 
-	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
-	float FreeMaxAcceleration = 8192.f;
+	UPROPERTY(EditAnywhere, Category = "Movement|Gait", meta = (ShowOnlyInnerProperties))
+	FBAPlayerMovementGaitSettings GaitSettings;
 
-	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
-	float FreeBrakingDecelerationWalking = 8192.f;
+	UPROPERTY(EditAnywhere, Category = "Movement|Sprint", meta = (ShowOnlyInnerProperties))
+	FBAPlayerSprintCostSettings SprintCostSettings;
 
-	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
-	float FreeGroundFriction = 12.f;
+	UPROPERTY(EditAnywhere, Category = "Interaction|Ladder", meta = (ShowOnlyInnerProperties))
+	FBAPlayerLadderSettings LadderSettings;
 
-	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
-	float StrafeRotationRateYaw = 720.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
-	float StrafeMaxAcceleration = 2048.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
-	float StrafeBrakingDecelerationWalking = 2048.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Locomotion")
-	float StrafeGroundFriction = 8.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
-	float SprintStrafeEntryBlendTime = 0.25f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
-	float SprintStrafeEntryOrientationSpeedRatio = 0.85f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
-	float SprintStopRequestHoldTime = 0.35f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
-	float SprintStopMinSpeed = 150.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Sprint")
-	float SprintStopRequestWindowTime = 0.2f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
-	float TurnaroundMaxDuration = 3.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
-	float TurnaroundPlayRateReferenceAngle = 90.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
-	float TurnaroundPlayRateMinAngle = 30.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
-	float TurnaroundMinPlayRate = 1.f;
-
-	UPROPERTY(EditAnywhere, Category="Movement|Turnaround")
-	float TurnaroundMaxPlayRate = 2.5f;
-	
-	UPROPERTY(EditAnywhere, Category="Movement")
-	float WalkSpeed = 100.0f;
-	
-	UPROPERTY(EditAnywhere, Category="Movement")
-	float RunSpeed = 400.0f;
-	
-	UPROPERTY(EditAnywhere, Category="Movement")
-	float SprintSpeed = 700.0f;
-
-	UPROPERTY(EditAnywhere, Category = "Movement|Ladder", meta = (ClampMin = "0.0"))
-	float LadderClimbSpeedSlow = 120.f;
-
-	UPROPERTY(EditAnywhere, Category = "Movement|Ladder", meta = (ClampMin = "0.0"))
-	float LadderClimbSpeedFast = 280.f;
-
-	UPROPERTY(EditAnywhere, Category = "Movement|Ladder", meta = (ClampMin = "0.0"))
-	float LadderSlideDownSpeed = 600.f;  //빠른 하강
-
-	UPROPERTY(EditAnywhere, Category = "Movement|Ladder", meta = (ClampMin = "0.0"))
-	float LadderExitClearance = 80.f;    //이탈 시 사다리 너머로 밀어낼 거리
-
-	float SprintStaminaCost = 0.f;
-	EPlayerStaminaCostType SprintStaminaCostType = EPlayerStaminaCostType::Instant;
-	float SprintMinRequiredStamina = 0.f;
-	float SprintRestartStaminaPercent = 0.f;
-	bool bHasSprintActionData = false;
-	bool bHasMoveInput = false;
-	bool bSprintLockedAfterExhausted = false;
-	bool bSprintEntryRotationLocked = false;
-	bool bSprintStopRequested = false;
-	bool bSprintStopMovementLocked = false;
-	bool bSprintStopStartedFromStrafe = false;
-	bool bSprintStopShouldTurnaround = false;
-	bool bTurnaroundQueuedAfterSprintStop = false;
-	bool bCanBeginTurnaroundAfterSprintStop = false;
-	bool bTurnaroundRequested = false;
-	bool bCanRequestSprintStopFromRecentExit = false;
-	float SprintEntryElapsedTime = 0.f;
-	float SprintStopRequestRemainingTime = 0.f;
-	float SprintStopRequestWindowRemainingTime = 0.f;
-	float TurnaroundElapsedTime = 0.f;
-	float TurnaroundAnimationAngle = 0.f;
-	bool bIsOnLadder = false;
-	TWeakObjectPtr<AMapLadder> CurrentLadder;
-	
-protected:
-	UPROPERTY(VisibleAnywhere, Category = Camera)
-	TObjectPtr<class USpringArmComponent> SpringArm;
-
-	UPROPERTY(VisibleAnywhere, Category = Camera)
-	TObjectPtr<class UCameraComponent> Camera;
+	FBAPlayerMovementRuntimeState MovementRuntime;
+	FBAPlayerSprintRuntimeState SprintRuntime;
+	FBAPlayerLadderRuntimeState LadderRuntime;
 
 protected:
-	// virtual	void SetupHUDWidget(class UHUDWidget* InHUDWidget) override;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UStatComponent> StatComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UInteractorComponent> InteractorComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = Camera)
+	TObjectPtr<USpringArmComponent> SpringArm;
+
+	UPROPERTY(VisibleAnywhere, Category = Camera)
+	TObjectPtr<UCameraComponent> Camera;
+	
+protected:
 	UFUNCTION()
 	void OnHealthChanged(float CurrentHP, float MaxHP);
 	UFUNCTION()

@@ -132,21 +132,6 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 	bHasMoveInput = !Movement.IsNearlyZero();
 	ControlledCharacter->SetMoveInputVector(Movement);
 	ApplyMovementStateByModifier();
-
-	// 사다리 모드: 일반 이동 입력 무시 (캐릭터 Tick이 등반 처리)
-	if (ControlledCharacter->IsOnLadder())
-	{
-		return;
-	}
-	
-	const FRotator ControlRot = GetControlRotation();
-	const FRotator YawRot(0.f, ControlRot.Yaw, 0.f);
-
-	const FVector Forward = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
-	const FVector Right = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
-
-	ControlledCharacter->AddMovementInput(Forward, Movement.Y);
-	ControlledCharacter->AddMovementInput(Right, Movement.X);
 }
 
 void ABAPlayerController::OnMoveCompleted()
