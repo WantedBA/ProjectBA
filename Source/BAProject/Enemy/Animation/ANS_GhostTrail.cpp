@@ -79,7 +79,7 @@ void UANS_GhostTrail::SpawnGhost(USkeletalMeshComponent* SourceMesh)
 
 	GhostMesh->RegisterComponent();
 	// 현재 스켈레탈 메쉬 복사
-	GhostMesh->SetSkeletalMesh(SourceMesh->SkeletalMesh);
+	GhostMesh->SetSkeletalMesh(SourceMesh->GetSkeletalMeshAsset());
 
 	// 2. Transform 동기화
 	GhostMesh->SetWorldTransform(SourceMesh->GetComponentTransform());
