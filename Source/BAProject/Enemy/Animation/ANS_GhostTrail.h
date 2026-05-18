@@ -27,9 +27,14 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Ghost")
 	float GhostLifeTime = 0.5f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ghost")
+	float GhostOpacity = 0.2f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Ghost")
+	FLinearColor GhostColor = FLinearColor(1.0f, 1.0f, 1.0f, 1.0f);
+
 	UPROPERTY(EditAnywhere, Category = "Ghost")
 	TObjectPtr<UMaterialInterface> GhostMaterial;
-
 
 private:
 	float LastSpawnTime = 0.0f;

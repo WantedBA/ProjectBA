@@ -92,15 +92,26 @@ void UANS_GhostTrail::SpawnGhost(USkeletalMeshComponent* SourceMesh)
 
 	for (int32 i = 0; i < MaterialCount; i++)
 	{
-		UMaterialInterface* BaseMat = GhostMesh->GetMaterial(i);
-		if (BaseMat)
+		UMaterialInterface* MaterialToUse = nullptr;
+
+		if (GhostMaterial)
 		{
-			UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(BaseMat, GhostMesh);
+			MaterialToUse = GhostMaterial;
+		}
+		else
+		{
+			MaterialToUse = SourceMesh->GetMaterial(i);
+		}
+
+		// 투명 + 색감 조정
+		if (MaterialToUse)
+		{
+			UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(MaterialToUse, GhostMesh);
 			if (MID)
 			{
-				// 투명 + 색감 조정
-				MID->SetScalarParameterValue(TEXT("Opacity"), 0.3f);
-				MID->SetVectorParameterValue(TEXT("ColorTint"), FLinearColor(0.2f, 0.6f, 1.0f));
+				MID->SetScalarParameterValue(TEXT("Opacity"), GhostOpacity);
+				MID->SetVectorParameterValue(TEXT("ColorTint"), GhostColor);
+
 				GhostMesh->SetMaterial(i, MID);
 			}
 		}
