@@ -10,6 +10,7 @@
 #include "SkillTreeSubsystem.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSkillNodeStateChange, int32, SkillTid, ESkillNodeState, NewState);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSkillTreeChanged);
 
 /**
  * 
@@ -75,5 +76,8 @@ public:
 // Delegate
 	UPROPERTY(BlueprintAssignable)
 	FOnSkillNodeStateChange OnSkillNodeStateChange;
+
+	UPROPERTY(BlueprintAssignable)
+	FOnSkillTreeChanged OnSkillTreeChanged;
 	
 };
