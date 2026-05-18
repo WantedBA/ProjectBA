@@ -127,7 +127,7 @@ private:
 	UFUNCTION()
 	void HandleActionCompleted(int32 ActionTid, EActionType ActionType);
 
-	void HandleMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	void HandleMontageEnded(UAnimMontage* Montage, bool bInterrupted, int32 PlaybackInstanceId);
 	void CompleteActionIfStillActive(int32 ActionTid);
 	USkeletalMeshComponent* ResolveMeshComponent() const;
 	UAnimInstance* ResolveAnimInstance() const;
@@ -173,6 +173,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Action|Animation|Runtime")
 	TObjectPtr<UAnimMontage> ActiveMontage;
+
+	int32 ActivePlaybackInstanceId = 0;
+	int32 NextPlaybackInstanceId = 1;
 
 	UPROPERTY(VisibleAnywhere, Category = "Action|Animation|Runtime")
 	EActionAnimationPlaybackResult LastPlaybackResult = EActionAnimationPlaybackResult::Success;

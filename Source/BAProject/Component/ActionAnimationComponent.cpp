@@ -14,6 +14,7 @@ namespace
 {
 	constexpr int32 ActionAnimationInvalidActionTid = 0;
 	constexpr int32 ActionAnimationInvalidActionAnimationTid = 0;
+	constexpr int32 ActionAnimationInvalidPlaybackInstanceId = 0;
 
 	const TCHAR* LexToString(const EActionAnimationPlaybackResult Result)
 	{
@@ -183,14 +184,16 @@ bool UActionAnimationComponent::PlayActionAnimation(const int32 ActionTid, const
 		AnimInstance->Montage_JumpToSection(AnimationData->StartSection, Montage);
 	}
 
+	const int32 PlaybackInstanceId = NextPlaybackInstanceId++;
 	FOnMontageEnded EndDelegate;
-	EndDelegate.BindUObject(this, &UActionAnimationComponent::HandleMontageEnded);
+	EndDelegate.BindUObject(this, &UActionAnimationComponent::HandleMontageEnded, PlaybackInstanceId);
 	AnimInstance->Montage_SetEndDelegate(EndDelegate, Montage);
 
 	ActiveActionTid = ActionTid;
 	ActiveActionAnimationTid = AnimationData->Tid;
 	ActiveActionType = ActionType;
 	ActiveMontage = Montage;
+	ActivePlaybackInstanceId = PlaybackInstanceId;
 	LastPlaybackResult = EActionAnimationPlaybackResult::Success;
 
 	InitializeActionWindows();
@@ -214,6 +217,7 @@ void UActionAnimationComponent::StopActiveMontage(const bool bInterrupted)
 	UAnimMontage* MontageToStop = ActiveMontage;
 	const int32 StoppedActionTid = ActiveActionTid;
 	const EActionType StoppedActionType = ActiveActionType;
+	ActivePlaybackInstanceId = ActionAnimationInvalidPlaybackInstanceId;
 
 	if (UAnimInstance* AnimInstance = ResolveAnimInstance())
 	{
@@ -311,9 +315,14 @@ void UActionAnimationComponent::HandleActionCompleted(const int32 ActionTid, con
 	ClearActivePlayback();
 }
 
-void UActionAnimationComponent::HandleMontageEnded(UAnimMontage* Montage, const bool bInterrupted)
+void UActionAnimationComponent::HandleMontageEnded(
+	UAnimMontage* Montage,
+	const bool bInterrupted,
+	const int32 PlaybackInstanceId)
 {
-	if (!ActiveMontage || Montage != ActiveMontage)
+	if (!ActiveMontage
+		|| Montage != ActiveMontage
+		|| PlaybackInstanceId != ActivePlaybackInstanceId)
 	{
 		return;
 	}
@@ -600,5 +609,6 @@ void UActionAnimationComponent::ClearActivePlayback()
 	ActiveActionAnimationTid = ActionAnimationInvalidActionAnimationTid;
 	ActiveActionType = EActionType::None;
 	ActiveMontage = nullptr;
+	ActivePlaybackInstanceId = ActionAnimationInvalidPlaybackInstanceId;
 	RefreshActionWindowTick();
 }
