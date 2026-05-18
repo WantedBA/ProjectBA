@@ -16,9 +16,17 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 		if (Enemy)
 		{
 			Enemy->Attack();
-			return EBTNodeResult::Succeeded;
+			return EBTNodeResult::InProgress;
 		}
 	}
 
 	return EBTNodeResult::Failed;
+}
+
+void UBTTask_Attack::OnAttackFinishedCallback(EEnemyState NewState)
+{
+	if (CachedOwnerComp)
+	{
+		FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
+	}
 }

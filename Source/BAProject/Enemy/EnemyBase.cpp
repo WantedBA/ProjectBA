@@ -22,6 +22,10 @@ AEnemyBase::AEnemyBase()
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
+
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	GetCharacterMovement()->bUseControllerDesiredRotation = true;
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 0.f, 360.f);
 }
 
 void AEnemyBase::PostInitializeComponents()
