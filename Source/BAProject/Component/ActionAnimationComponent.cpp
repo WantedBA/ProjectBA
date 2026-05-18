@@ -4,8 +4,10 @@
 
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
+#include "Character/CharacterBase.h"
 #include "Component/ActionComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "GameFramework/Pawn.h"
 #include "Tables/ActionRows.h"
 #include "Tables/BATableManager.h"
 
@@ -13,11 +15,51 @@ namespace
 {
 	constexpr int32 ActionAnimationInvalidActionTid = 0;
 	constexpr int32 ActionAnimationInvalidActionAnimationTid = 0;
+	constexpr int32 ActionAnimationInvalidPlaybackInstanceId = 0;
+
+	const TCHAR* LexToString(const EActionAnimationPlaybackResult Result)
+	{
+		switch (Result)
+		{
+		case EActionAnimationPlaybackResult::Success:
+			return TEXT("Success");
+		case EActionAnimationPlaybackResult::ActionComponentUnavailable:
+			return TEXT("ActionComponentUnavailable");
+		case EActionAnimationPlaybackResult::TableManagerUnavailable:
+			return TEXT("TableManagerUnavailable");
+		case EActionAnimationPlaybackResult::AnimationDataNotFound:
+			return TEXT("AnimationDataNotFound");
+		case EActionAnimationPlaybackResult::MontageUnavailable:
+			return TEXT("MontageUnavailable");
+		case EActionAnimationPlaybackResult::AnimInstanceUnavailable:
+			return TEXT("AnimInstanceUnavailable");
+		case EActionAnimationPlaybackResult::MontagePlayFailed:
+			return TEXT("MontagePlayFailed");
+		default:
+			return TEXT("Unknown");
+		}
+	}
+
+	void LogPlaybackFailure(
+		const int32 ActionTid,
+		const EActionAnimationPlaybackResult Result,
+		const FString& Detail = FString())
+	{
+		UE_LOG(
+			LogTemp,
+			Warning,
+			TEXT("[ActionAnimation] Failed to play action %d: %s%s%s"),
+			ActionTid,
+			LexToString(Result),
+			Detail.IsEmpty() ? TEXT("") : TEXT(" - "),
+			*Detail);
+	}
 }
 
 UActionAnimationComponent::UActionAnimationComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bStartWithTickEnabled = false;
 }
 
 void UActionAnimationComponent::BeginPlay()
@@ -50,11 +92,31 @@ void UActionAnimationComponent::EndPlay(const EEndPlayReason::Type EndPlayReason
 	Super::EndPlay(EndPlayReason);
 }
 
+void UActionAnimationComponent::TickComponent(
+	const float DeltaTime,
+	const ELevelTick TickType,
+	FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	UAnimInstance* AnimInstance = ResolveAnimInstance();
+	if (!AnimInstance || !ActiveMontage)
+	{
+		CloseAllActionWindows();
+		RefreshActionWindowTick();
+		return;
+	}
+
+	TickActionWindows(AnimInstance->Montage_GetPosition(ActiveMontage));
+	RefreshActionWindowTick();
+}
+
 bool UActionAnimationComponent::PlayActionAnimation(const int32 ActionTid, const EActionType ActionType)
 {
 	if (!CachedActionComponent)
 	{
 		LastPlaybackResult = EActionAnimationPlaybackResult::ActionComponentUnavailable;
+		LogPlaybackFailure(ActionTid, LastPlaybackResult);
 		return false;
 	}
 
@@ -62,6 +124,7 @@ bool UActionAnimationComponent::PlayActionAnimation(const int32 ActionTid, const
 	if (!TableManager)
 	{
 		LastPlaybackResult = EActionAnimationPlaybackResult::TableManagerUnavailable;
+		LogPlaybackFailure(ActionTid, LastPlaybackResult);
 		CompleteActionIfStillActive(ActionTid);
 		return false;
 	}
@@ -70,6 +133,7 @@ bool UActionAnimationComponent::PlayActionAnimation(const int32 ActionTid, const
 	if (!AnimationData)
 	{
 		LastPlaybackResult = EActionAnimationPlaybackResult::AnimationDataNotFound;
+		LogPlaybackFailure(ActionTid, LastPlaybackResult);
 		CompleteActionIfStillActive(ActionTid);
 		return false;
 	}
@@ -82,6 +146,7 @@ bool UActionAnimationComponent::PlayActionAnimation(const int32 ActionTid, const
 	if (!Montage)
 	{
 		LastPlaybackResult = EActionAnimationPlaybackResult::MontageUnavailable;
+		LogPlaybackFailure(ActionTid, LastPlaybackResult, AnimationData->Montage.ToSoftObjectPath().ToString());
 		CompleteActionIfStillActive(ActionTid);
 		return false;
 	}
@@ -90,11 +155,13 @@ bool UActionAnimationComponent::PlayActionAnimation(const int32 ActionTid, const
 	if (!AnimInstance)
 	{
 		LastPlaybackResult = EActionAnimationPlaybackResult::AnimInstanceUnavailable;
+		LogPlaybackFailure(ActionTid, LastPlaybackResult, GetNameSafe(CachedMeshComponent.Get()));
 		CompleteActionIfStillActive(ActionTid);
 		return false;
 	}
 
 	StopActiveMontage(true);
+	OrientOwnerToActionDirection(CachedActionComponent->GetActiveActionDirection());
 
 	const float PlayRate = AnimationData->PlayRate > 0.f ? AnimationData->PlayRate : 1.f;
 	const FMontageBlendSettings BlendInSettings(FMath::Max(0.f, AnimationData->BlendIn));
@@ -107,24 +174,36 @@ bool UActionAnimationComponent::PlayActionAnimation(const int32 ActionTid, const
 	if (PlayDuration <= 0.f)
 	{
 		LastPlaybackResult = EActionAnimationPlaybackResult::MontagePlayFailed;
+		LogPlaybackFailure(ActionTid, LastPlaybackResult, GetNameSafe(Montage));
 		CompleteActionIfStillActive(ActionTid);
 		return false;
 	}
+
+	ApplyRootMotionModeForAnimation(*AnimInstance, *AnimationData);
 
 	if (!AnimationData->StartSection.IsNone())
 	{
 		AnimInstance->Montage_JumpToSection(AnimationData->StartSection, Montage);
 	}
 
+	const int32 PlaybackInstanceId = NextPlaybackInstanceId++;
 	FOnMontageEnded EndDelegate;
-	EndDelegate.BindUObject(this, &UActionAnimationComponent::HandleMontageEnded);
+	EndDelegate.BindUObject(this, &UActionAnimationComponent::HandleMontageEnded, PlaybackInstanceId);
 	AnimInstance->Montage_SetEndDelegate(EndDelegate, Montage);
 
 	ActiveActionTid = ActionTid;
 	ActiveActionAnimationTid = AnimationData->Tid;
 	ActiveActionType = ActionType;
 	ActiveMontage = Montage;
+	ActivePlaybackInstanceId = PlaybackInstanceId;
 	LastPlaybackResult = EActionAnimationPlaybackResult::Success;
+
+	InitializeActionWindows();
+	if (UAnimInstance* CurrentAnimInstance = ResolveAnimInstance())
+	{
+		TickActionWindows(CurrentAnimInstance->Montage_GetPosition(ActiveMontage));
+		RefreshActionWindowTick();
+	}
 
 	OnActionMontageStarted.Broadcast(ActiveActionTid, ActiveActionType, ActiveMontage);
 	return true;
@@ -140,6 +219,7 @@ void UActionAnimationComponent::StopActiveMontage(const bool bInterrupted)
 	UAnimMontage* MontageToStop = ActiveMontage;
 	const int32 StoppedActionTid = ActiveActionTid;
 	const EActionType StoppedActionType = ActiveActionType;
+	ActivePlaybackInstanceId = ActionAnimationInvalidPlaybackInstanceId;
 
 	if (UAnimInstance* AnimInstance = ResolveAnimInstance())
 	{
@@ -156,6 +236,7 @@ void UActionAnimationComponent::StopActiveMontage(const bool bInterrupted)
 		AnimInstance->Montage_Stop(BlendOut, MontageToStop);
 	}
 
+	CloseAllActionWindows();
 	ClearActivePlayback();
 	OnActionMontageEnded.Broadcast(StoppedActionTid, StoppedActionType, MontageToStop, bInterrupted);
 }
@@ -232,12 +313,18 @@ void UActionAnimationComponent::HandleActionCompleted(const int32 ActionTid, con
 		return;
 	}
 
+	CloseAllActionWindows();
 	ClearActivePlayback();
 }
 
-void UActionAnimationComponent::HandleMontageEnded(UAnimMontage* Montage, const bool bInterrupted)
+void UActionAnimationComponent::HandleMontageEnded(
+	UAnimMontage* Montage,
+	const bool bInterrupted,
+	const int32 PlaybackInstanceId)
 {
-	if (!ActiveMontage || Montage != ActiveMontage)
+	if (!ActiveMontage
+		|| Montage != ActiveMontage
+		|| PlaybackInstanceId != ActivePlaybackInstanceId)
 	{
 		return;
 	}
@@ -246,6 +333,7 @@ void UActionAnimationComponent::HandleMontageEnded(UAnimMontage* Montage, const 
 	const EActionType CompletedActionType = ActiveActionType;
 	UAnimMontage* CompletedMontage = ActiveMontage;
 
+	CloseAllActionWindows();
 	ClearActivePlayback();
 	OnActionMontageEnded.Broadcast(CompletedActionTid, CompletedActionType, CompletedMontage, bInterrupted);
 
@@ -277,10 +365,315 @@ UAnimInstance* UActionAnimationComponent::ResolveAnimInstance() const
 	return MeshComponent ? MeshComponent->GetAnimInstance() : nullptr;
 }
 
+void UActionAnimationComponent::OrientOwnerToActionDirection(const EActionDirection Direction) const
+{
+	if (Direction == EActionDirection::Any)
+	{
+		return;
+	}
+
+	FVector2D LocalDirection = FVector2D::ZeroVector;
+	switch (Direction)
+	{
+	case EActionDirection::Forward:
+		LocalDirection = FVector2D(0.f, 1.f);
+		break;
+	case EActionDirection::Backward:
+		LocalDirection = FVector2D(0.f, -1.f);
+		break;
+	case EActionDirection::Left:
+		LocalDirection = FVector2D(-1.f, 0.f);
+		break;
+	case EActionDirection::Right:
+		LocalDirection = FVector2D(1.f, 0.f);
+		break;
+	case EActionDirection::ForwardLeft:
+		LocalDirection = FVector2D(-1.f, 1.f).GetSafeNormal();
+		break;
+	case EActionDirection::ForwardRight:
+		LocalDirection = FVector2D(1.f, 1.f).GetSafeNormal();
+		break;
+	case EActionDirection::BackwardLeft:
+		LocalDirection = FVector2D(-1.f, -1.f).GetSafeNormal();
+		break;
+	case EActionDirection::BackwardRight:
+		LocalDirection = FVector2D(1.f, -1.f).GetSafeNormal();
+		break;
+	case EActionDirection::Any:
+	default:
+		return;
+	}
+
+	const AActor* Owner = GetOwner();
+	if (!Owner)
+	{
+		return;
+	}
+
+	FRotator ReferenceRotation = Owner->GetActorRotation();
+	if (const APawn* OwnerPawn = Cast<APawn>(Owner))
+	{
+		ReferenceRotation = OwnerPawn->GetControlRotation();
+	}
+
+	const FRotator YawRotation(0.f, ReferenceRotation.Yaw, 0.f);
+	const FVector Forward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+	const FVector Right = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+	const FVector WorldDirection = (Forward * LocalDirection.Y + Right * LocalDirection.X).GetSafeNormal();
+	if (WorldDirection.IsNearlyZero())
+	{
+		return;
+	}
+
+	GetOwner()->SetActorRotation(FRotator(0.f, WorldDirection.Rotation().Yaw, 0.f));
+}
+
+void UActionAnimationComponent::ApplyRootMotionModeForAnimation(
+	UAnimInstance& AnimInstance,
+	const FActionAnimationDataRow& AnimationData)
+{
+	if (!AnimationData.bUseRootMotion)
+	{
+		return;
+	}
+
+	if (!bRootMotionModeOverridden)
+	{
+		PreviousRootMotionMode = AnimInstance.RootMotionMode;
+		RootMotionModeAnimInstance = &AnimInstance;
+		bRootMotionModeOverridden = true;
+	}
+
+	AnimInstance.SetRootMotionMode(ERootMotionMode::RootMotionFromMontagesOnly);
+}
+
+void UActionAnimationComponent::RestoreRootMotionMode()
+{
+	if (!bRootMotionModeOverridden)
+	{
+		return;
+	}
+
+	if (UAnimInstance* AnimInstance = RootMotionModeAnimInstance.Get())
+	{
+		AnimInstance->SetRootMotionMode(PreviousRootMotionMode);
+	}
+
+	RootMotionModeAnimInstance = nullptr;
+	bRootMotionModeOverridden = false;
+}
+
+void UActionAnimationComponent::InitializeActionWindows()
+{
+	PendingActionWindows.Reset();
+	OpenActionWindows.Reset();
+	OpenInvincibleWindowCount = 0;
+	OpenInterruptLockWindowCount = 0;
+	OpenInputBufferWindowCount = 0;
+
+	const UBATableManager* TableManager = UBATableManager::Get(this);
+	if (!TableManager || ActiveActionAnimationTid == ActionAnimationInvalidActionAnimationTid)
+	{
+		RefreshActionWindowTick();
+		return;
+	}
+
+	for (const TPair<int32, FActionWindowDataRow*>& Pair : TableManager->GetActionWindowDataTable())
+	{
+		const FActionWindowDataRow* Row = Pair.Value;
+		if (!Row || Row->ActionAnimationTid != ActiveActionAnimationTid || Row->EndTime <= Row->StartTime)
+		{
+			continue;
+		}
+
+		PendingActionWindows.Add(Row);
+	}
+
+	PendingActionWindows.Sort([](const FActionWindowDataRow& Left, const FActionWindowDataRow& Right)
+	{
+		if (!FMath::IsNearlyEqual(Left.StartTime, Right.StartTime))
+		{
+			return Left.StartTime < Right.StartTime;
+		}
+		return Left.Tid < Right.Tid;
+	});
+
+	RefreshActionWindowTick();
+}
+
+void UActionAnimationComponent::TickActionWindows(const float MontagePosition)
+{
+	while (!PendingActionWindows.IsEmpty())
+	{
+		const FActionWindowDataRow* WindowData = PendingActionWindows[0];
+		if (!WindowData)
+		{
+			PendingActionWindows.RemoveAt(0, 1, EAllowShrinking::No);
+			continue;
+		}
+		if (WindowData->StartTime > MontagePosition)
+		{
+			break;
+		}
+
+		PendingActionWindows.RemoveAt(0, 1, EAllowShrinking::No);
+		OpenActionWindow(*WindowData);
+	}
+
+	for (int32 Index = OpenActionWindows.Num() - 1; Index >= 0; --Index)
+	{
+		const FActionWindowDataRow* WindowData = OpenActionWindows[Index];
+		if (!WindowData || WindowData->EndTime <= MontagePosition)
+		{
+			if (WindowData)
+			{
+				CloseActionWindow(*WindowData);
+			}
+			else
+			{
+				OpenActionWindows.RemoveAtSwap(Index, 1, EAllowShrinking::No);
+			}
+		}
+	}
+}
+
+void UActionAnimationComponent::OpenActionWindow(const FActionWindowDataRow& WindowData)
+{
+	OpenActionWindows.Add(&WindowData);
+
+	if (WindowData.WindowType == EActionWindowType::Invincible)
+	{
+		ApplyInvincibleWindowDelta(1);
+	}
+	else if (WindowData.WindowType == EActionWindowType::InterruptLock)
+	{
+		ApplyInterruptLockWindowDelta(1);
+	}
+	else if (WindowData.WindowType == EActionWindowType::InputBuffer)
+	{
+		ApplyInputBufferWindowDelta(1);
+	}
+
+	OnActionWindowOpened.Broadcast(
+		ActiveActionTid,
+		ActiveActionAnimationTid,
+		WindowData.Tid,
+		WindowData.WindowType,
+		WindowData.Payload);
+}
+
+void UActionAnimationComponent::CloseActionWindow(const FActionWindowDataRow& WindowData)
+{
+	OpenActionWindows.RemoveSingleSwap(&WindowData, EAllowShrinking::No);
+
+	if (WindowData.WindowType == EActionWindowType::Invincible)
+	{
+		ApplyInvincibleWindowDelta(-1);
+	}
+	else if (WindowData.WindowType == EActionWindowType::InterruptLock)
+	{
+		ApplyInterruptLockWindowDelta(-1);
+	}
+	else if (WindowData.WindowType == EActionWindowType::InputBuffer)
+	{
+		ApplyInputBufferWindowDelta(-1);
+	}
+
+	OnActionWindowClosed.Broadcast(
+		ActiveActionTid,
+		ActiveActionAnimationTid,
+		WindowData.Tid,
+		WindowData.WindowType,
+		WindowData.Payload);
+}
+
+void UActionAnimationComponent::CloseAllActionWindows()
+{
+	while (!OpenActionWindows.IsEmpty())
+	{
+		const FActionWindowDataRow* WindowData = OpenActionWindows.Last();
+		if (!WindowData)
+		{
+			OpenActionWindows.Pop(EAllowShrinking::No);
+			continue;
+		}
+
+		CloseActionWindow(*WindowData);
+	}
+
+	PendingActionWindows.Reset();
+	OpenInvincibleWindowCount = 0;
+	OpenInterruptLockWindowCount = 0;
+	OpenInputBufferWindowCount = 0;
+	if (CachedActionComponent && CachedActionComponent->GetActiveActionTid() == ActiveActionTid)
+	{
+		CachedActionComponent->SetActiveActionInterruptLocked(false);
+		CachedActionComponent->SetActiveActionInputBufferOpen(false);
+	}
+}
+
+void UActionAnimationComponent::ApplyInvincibleWindowDelta(const int32 Delta)
+{
+	const int32 PreviousCount = OpenInvincibleWindowCount;
+	OpenInvincibleWindowCount = FMath::Max(0, OpenInvincibleWindowCount + Delta);
+	if ((PreviousCount > 0) == (OpenInvincibleWindowCount > 0))
+	{
+		return;
+	}
+
+	if (ACharacterBase* CharacterOwner = Cast<ACharacterBase>(GetOwner()))
+	{
+		CharacterOwner->SetInvincible(OpenInvincibleWindowCount > 0);
+	}
+}
+
+void UActionAnimationComponent::ApplyInterruptLockWindowDelta(const int32 Delta)
+{
+	const int32 PreviousCount = OpenInterruptLockWindowCount;
+	OpenInterruptLockWindowCount = FMath::Max(0, OpenInterruptLockWindowCount + Delta);
+	if ((PreviousCount > 0) == (OpenInterruptLockWindowCount > 0))
+	{
+		return;
+	}
+
+	if (CachedActionComponent && CachedActionComponent->GetActiveActionTid() == ActiveActionTid)
+	{
+		CachedActionComponent->SetActiveActionInterruptLocked(OpenInterruptLockWindowCount > 0);
+	}
+}
+
+void UActionAnimationComponent::ApplyInputBufferWindowDelta(const int32 Delta)
+{
+	const int32 PreviousCount = OpenInputBufferWindowCount;
+	OpenInputBufferWindowCount = FMath::Max(0, OpenInputBufferWindowCount + Delta);
+	if ((PreviousCount > 0) == (OpenInputBufferWindowCount > 0))
+	{
+		return;
+	}
+
+	if (CachedActionComponent && CachedActionComponent->GetActiveActionTid() == ActiveActionTid)
+	{
+		CachedActionComponent->SetActiveActionInputBufferOpen(OpenInputBufferWindowCount > 0);
+	}
+}
+
+void UActionAnimationComponent::RefreshActionWindowTick()
+{
+	SetComponentTickEnabled(ActiveMontage && (!PendingActionWindows.IsEmpty() || !OpenActionWindows.IsEmpty()));
+}
+
 void UActionAnimationComponent::ClearActivePlayback()
 {
+	RestoreRootMotionMode();
+	PendingActionWindows.Reset();
+	OpenActionWindows.Reset();
+	OpenInvincibleWindowCount = 0;
+	OpenInterruptLockWindowCount = 0;
+	OpenInputBufferWindowCount = 0;
 	ActiveActionTid = ActionAnimationInvalidActionTid;
 	ActiveActionAnimationTid = ActionAnimationInvalidActionAnimationTid;
 	ActiveActionType = EActionType::None;
 	ActiveMontage = nullptr;
+	ActivePlaybackInstanceId = ActionAnimationInvalidPlaybackInstanceId;
+	RefreshActionWindowTick();
 }

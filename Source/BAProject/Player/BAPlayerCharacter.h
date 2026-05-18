@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Character/CharacterBase.h"
 #include "Player/BAPlayerCharacterTypes.h"
+#include "Tables/ActionEnums.h"
 #include "BAPlayerCharacter.generated.h"
 
 class UCameraComponent;
@@ -135,6 +136,7 @@ private:
 	float CalculateInputYawDeltaFromActor() const;
 
 	void ApplyBufferedMoveInput();
+	bool IsActionMovementLocked() const;
 	void SyncFreeStrafeFacingMode();
 	void UpdateInterpolatedFacingRotation();
 	bool ShouldUseInterpolatedFacingRotation() const;
@@ -149,6 +151,8 @@ private:
 	bool IsSprintAllowedByStamina() const;
 	void DrainSprintStaminaDuringLoop(float DeltaTime);
 	float CalculateSprintStaminaDrain(float DeltaTime) const;
+	void PauseSprintStaminaRecovery();
+	void ResumeSprintStaminaRecovery(bool bApplyDelay);
 	void LockSprintUntilRecovered();
 	void UnlockSprintAfterRecovery();
 
@@ -201,4 +205,6 @@ protected:
 	void OnHealthChanged(float CurrentHP, float MaxHP);
 	UFUNCTION()
 	void OnStaminaChanged(float CurrentStamina, float MaxStamina);
+	UFUNCTION()
+	void HandleActionStarted(int32 ActionTid, EActionType ActionType);
 };

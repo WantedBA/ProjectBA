@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Animation/AnimEnums.h"
 #include "Components/ActorComponent.h"
 #include "Tables/ActionEnums.h"
 #include "ActionAnimationComponent.generated.h"
@@ -12,6 +13,7 @@ class UAnimInstance;
 class UAnimMontage;
 class USkeletalMeshComponent;
 struct FActionAnimationDataRow;
+struct FActionWindowDataRow;
 
 UENUM(BlueprintType)
 enum class EActionAnimationPlaybackResult : uint8
@@ -45,6 +47,19 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(
 	bool,
 	bInterrupted);
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(
+	FOnActionWindowEvent,
+	int32,
+	ActionTid,
+	int32,
+	ActionAnimationTid,
+	int32,
+	ActionWindowTid,
+	EActionWindowType,
+	WindowType,
+	const FString&,
+	Payload);
+
 /**
  * 공용 Action 애니메이션 재생 컴포넌트.
  *
@@ -57,8 +72,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(
  *   - 몽타주 재생, 섹션 이동, 종료 콜백을 처리한다.
  *   - 몽타주가 끝나면 ActionComponent 에 액션 종료를 통지한다.
  *
- * 무적 iframe, 히트 프레임, 캔슬 구간 같은 시간축 판정은
- * ActionWindowData 를 읽는 후속 단계에서 이 컴포넌트에 연결한다.
+ * ActionWindowData 기반 시간축 판정을 몽타주 재생 위치에 맞춰 열고 닫는다.
+ * 현재는 무적 iframe 과 인터럽트 잠금 윈도우를 적용하고, 다른 윈도우 타입은 이벤트로 노출한다.
  */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class BAPROJECT_API UActionAnimationComponent : public UActorComponent
@@ -73,6 +88,12 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Action|Animation|Event")
 	FOnActionMontageEnded OnActionMontageEnded;
+
+	UPROPERTY(BlueprintAssignable, Category = "Action|Animation|Event")
+	FOnActionWindowEvent OnActionWindowOpened;
+
+	UPROPERTY(BlueprintAssignable, Category = "Action|Animation|Event")
+	FOnActionWindowEvent OnActionWindowClosed;
 
 	UFUNCTION(BlueprintCallable, Category = "Action|Animation")
 	bool PlayActionAnimation(int32 ActionTid, EActionType ActionType);
@@ -97,6 +118,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
 	UFUNCTION()
@@ -105,10 +127,22 @@ private:
 	UFUNCTION()
 	void HandleActionCompleted(int32 ActionTid, EActionType ActionType);
 
-	void HandleMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	void HandleMontageEnded(UAnimMontage* Montage, bool bInterrupted, int32 PlaybackInstanceId);
 	void CompleteActionIfStillActive(int32 ActionTid);
 	USkeletalMeshComponent* ResolveMeshComponent() const;
 	UAnimInstance* ResolveAnimInstance() const;
+	void OrientOwnerToActionDirection(EActionDirection Direction) const;
+	void ApplyRootMotionModeForAnimation(UAnimInstance& AnimInstance, const FActionAnimationDataRow& AnimationData);
+	void RestoreRootMotionMode();
+	void InitializeActionWindows();
+	void TickActionWindows(float MontagePosition);
+	void OpenActionWindow(const FActionWindowDataRow& WindowData);
+	void CloseActionWindow(const FActionWindowDataRow& WindowData);
+	void CloseAllActionWindows();
+	void ApplyInvincibleWindowDelta(int32 Delta);
+	void ApplyInterruptLockWindowDelta(int32 Delta);
+	void ApplyInputBufferWindowDelta(int32 Delta);
+	void RefreshActionWindowTick();
 	void ClearActivePlayback();
 
 	UPROPERTY(EditAnywhere, Category = "Action|Animation")
@@ -141,8 +175,19 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Action|Animation|Runtime")
 	TObjectPtr<UAnimMontage> ActiveMontage;
 
+	int32 ActivePlaybackInstanceId = 0;
+	int32 NextPlaybackInstanceId = 1;
+
 	UPROPERTY(VisibleAnywhere, Category = "Action|Animation|Runtime")
 	EActionAnimationPlaybackResult LastPlaybackResult = EActionAnimationPlaybackResult::Success;
 
+	TArray<const FActionWindowDataRow*> PendingActionWindows;
+	TArray<const FActionWindowDataRow*> OpenActionWindows;
+	int32 OpenInvincibleWindowCount = 0;
+	int32 OpenInterruptLockWindowCount = 0;
+	int32 OpenInputBufferWindowCount = 0;
+	TWeakObjectPtr<UAnimInstance> RootMotionModeAnimInstance;
+	TEnumAsByte<ERootMotionMode::Type> PreviousRootMotionMode = ERootMotionMode::NoRootMotionExtraction;
+	bool bRootMotionModeOverridden = false;
 	bool bHandlingMontageEnd = false;
 };
