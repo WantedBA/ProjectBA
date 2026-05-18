@@ -106,7 +106,7 @@ void UBTService_UpdateTargetContext::TickNode(UBehaviorTreeComponent& OwnerComp,
 	{
 		FVector TargetLoc = NewTarget->GetActorLocation();
 		float Distance = FVector::Dist(Center, TargetLoc);
-		BBComp->SetValueAsFloat(TEXT("TargetDistance_Value"), Distance);
+		BBComp->SetValueAsFloat(BBKey::TargetDistance, Distance);
 
 		// 각도 계산
 		FVector Forward = ControllingPawn->GetActorForwardVector();

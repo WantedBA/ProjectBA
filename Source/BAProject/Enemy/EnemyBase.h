@@ -59,6 +59,10 @@ public:
 
 	int32 GetMonsterTid() const { return MonsterTid; }
 
+	void SetState(EEnemyState NewState);
+
+	UAnimMontage* GetEnemyAttackMontage() const { return AttackMontage; }
+
 	virtual void UpdateMoveSpeed(EEnemyState NewState);
 	virtual void UpdateBlackBoardState();
 	virtual void ApplyKnockback(AActor* DamageCauser, float Force);
@@ -68,8 +72,6 @@ protected:
 	virtual void PossessedBy(AController* NewController) override;
 
 	virtual void OnDamaged(float FinalDamage, AActor* DamageCauser) override;
-
-	void SetState(EEnemyState NewState);
 
 	// 시각 연출 이벤트
 	UFUNCTION(BlueprintImplementableEvent, Category = "Enemy|Visuals", meta = (DisplayName = "OnHitVisuals"))
@@ -109,4 +111,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UAnimMontage> AttackMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	UAnimMontage* HitMontage;
+
+	float MaxMoveSpeed;
 };

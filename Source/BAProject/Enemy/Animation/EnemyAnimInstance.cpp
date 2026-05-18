@@ -32,17 +32,19 @@ void UEnemyAnimInstance::NativeInitializeAnimation()
 void UEnemyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
     Super::NativeUpdateAnimation(DeltaSeconds);
-
     if (Owner == nullptr)
     {
         Owner = Cast<AEnemyBase>(TryGetPawnOwner());
     }
-
-    if (Owner)
+    if (Owner == nullptr)
     {
-        MoveSpeed = Owner->GetVelocity().Size();
-        CurrentState = Owner->GetCurrentState();
+        return;
     }
+
+    bIsDead = Owner->GetCurrentState() == EEnemyState::Dead;
+
+    MoveSpeed = Owner->GetVelocity().Size();
+    CurrentState = Owner->GetCurrentState();
 
     ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
     if (PlayerCharacter == nullptr)
