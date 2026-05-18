@@ -11,6 +11,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
+#include "Instance/BATimeSubsystem.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -233,24 +234,30 @@ void UCombatComponent::ApplyDamage(AActor* Victim, const FHitResult& HitResult)
 	if (bIsPerfectWindowActive)
 	{
 		UActionComponent* VictimAction = Victim->FindComponentByClass<UActionComponent>();
-		if (VictimAction && VictimAction->GetGuardState() != EGuardState::None)
+		if (VictimAction)
 		{
-			// 슬로우 모션 발동
-			if (UWorld* World = GetWorld())
+			bool bPerfectGuarded = VictimAction->GetGuardState() != EGuardState::None;
+			bool bPerfectDodged = VictimAction->GetActionRuntimeState() == EActionRuntimeState::Dodging;
+
+			if (bPerfectGuarded || bPerfectDodged)
 			{
-				if (UBATimeSubsystem* TimeSubsystem = World->GetSubsystem<UBATimeSubsystem>())
+				// 슬로우 모션 발동
+				if (UWorld* World = GetWorld())
 				{
-					TimeSubsystem->ApplySlowMotion(0.1f, 0.5f);
+					if (UBATimeSubsystem* TimeSubsystem = World->GetSubsystem<UBATimeSubsystem>())
+					{
+						TimeSubsystem->ApplySlowMotion(0.1f, 0.5f);
+					}
 				}
-			}
 
-			// 몬스터 리액션 실행
-			if (OwnerEnemy)
-			{
-				OwnerEnemy->HandlePerfectGuarded();
-			}
+				// 몬스터 리액션 및 피드백 실행 (VFX, SFX, CameraShake 포함)
+				if (OwnerEnemy)
+				{
+					OwnerEnemy->HandlePerfectGuarded(HitResult.ImpactPoint);
+				}
 
-			return; // 데미지 적용 취소
+				return; // 데미지 적용 취소
+			}
 		}
 	}
 

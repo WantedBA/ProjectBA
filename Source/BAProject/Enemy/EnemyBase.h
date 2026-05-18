@@ -73,7 +73,7 @@ public:
 	virtual void ApplyKnockback(AActor* DamageCauser, float Force);
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	virtual void HandlePerfectGuarded();
+	virtual void HandlePerfectGuarded(FVector ImpactLocation);
 
 protected:
 	virtual void PostInitializeComponents() override;
@@ -89,7 +89,7 @@ protected:
 	void K2_OnDeadVisuals();
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Combat", meta = (DisplayName = "OnPerfectGuarded"))
-	void K2_OnPerfectGuarded();
+	void K2_OnPerfectGuarded(FVector ImpactLocation);
 
 public:
 	FOnAttackAnimationFinishedDelegate OnAttackAnimationFinished;
@@ -128,6 +128,15 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UAnimMontage> AttackMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Effects")
+	TObjectPtr<class UNiagaraSystem> PerfectDefenseVFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Effects")
+	TObjectPtr<USoundBase> PerfectDefenseSFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Effects")
+	TSubclassOf<class UCameraShakeBase> PerfectDefenseCameraShake;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UAnimMontage> PerfectGuardedMontage;

@@ -260,7 +260,10 @@ void AEnemyBase::ApplyKnockback(AActor* DamageCauser, float Force)
 	LaunchCharacter(FinalForce, true, true);
 }
 
-void AEnemyBase::HandlePerfectGuarded()
+#include "NiagaraFunctionLibrary.h"
+#include "Kismet/GameplayStatics.h"
+
+void AEnemyBase::HandlePerfectGuarded(FVector ImpactLocation)
 {
 	if (IsDead())
 	{
@@ -275,14 +278,33 @@ void AEnemyBase::HandlePerfectGuarded()
 	}
 
 	// 상태 변경 및 리액션 애니메이션 재생
-	SetState(EEnemyState::Idle); // 또는 Stagger 상태가 있다면 해당 상태로
+	SetState(EEnemyState::Idle);
 
 	if (PerfectGuardedMontage)
 	{
 		PlayAnimMontage(PerfectGuardedMontage);
 	}
 
-	K2_OnPerfectGuarded();
+	// 이펙트 재생
+	if (PerfectDefenseVFX)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), PerfectDefenseVFX, ImpactLocation);
+	}
+
+	if (PerfectDefenseSFX)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, PerfectDefenseSFX, ImpactLocation);
+	}
+
+	if (PerfectDefenseCameraShake)
+	{
+		if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+		{
+			PC->ClientStartCameraShake(PerfectDefenseCameraShake);
+		}
+	}
+
+	K2_OnPerfectGuarded(ImpactLocation);
 }
 
 void AEnemyBase::Attack()
