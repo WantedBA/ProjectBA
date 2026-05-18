@@ -100,6 +100,7 @@
             "Direction": "Any",
             "CombatStance": "Relaxed",
             "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/AM_DodgeRoll_Relaxed_Any.AM_DodgeRoll_Relaxed_Any",
             "PlayRate": 1,
             "BlendIn": 0.1,
             "BlendOut": 0.1,
