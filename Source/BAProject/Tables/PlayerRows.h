@@ -8,56 +8,60 @@
 
 /**
  * Player.xlsx 의 "BaseStat" 시트 한 행.
- * 필드 이름은 JSON 키와 정확히 일치해야 한다 (BaseStat.json 참고).
+ * 필드 이름은 JSON 키와 정확히 일치해야 한다 (Player.json 참고).
  */
-USTRUCT(BlueprintType)
-struct BAPROJECT_API FBaseStatRows : public FBARowBase
+USTRUCT(BlueprintType, meta = (BASheet = "BaseStat"))
+struct BAPROJECT_API FPlayerBaseStatRow : public FBARowBase
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseStat")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
 	int32 Tid = 0;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseStat")
-	int32 BaseHp = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float MaxHp = 0.f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseStat")
-	int32 BaseStamina = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float MaxStamina = 0.f;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseStat")
-	int32 BaseMoveSpeed = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float StaminaRecoveryPerSecond = 0.f;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseStat")
-	int32 BaseAttack = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float StaminaRecoveryDelay = 0.f;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseStat")
-	int32 BaseDefence = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float WalkSpeed = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float RunSpeed = 0.f;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BaseStat")
-	int32 BaseAttackSpeed = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float SprintSpeed = 0.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float BaseAttack = 0.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float BaseAttackSpeed = 0.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float BaseDefence = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float LadderClimbSpeedSlow = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float LadderClimbSpeedFast = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float LadderSlideDownSpeed = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float LadderExitClearance = 0.f;
 
 	virtual void PostRead() override
 	{
-		Tid = this->Tid;
-	}
-};
-
-USTRUCT(BlueprintType)
-struct BAPROJECT_API FActionData : public FBARowBase
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionData")
-	int32 Tid = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionData")
-	int32 ActionType = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ActionData")
-	int32 ConsumeStamina = 0;
-
-	virtual void PostRead() override
-	{
-		Tid = this->Tid;
+		bTid = Tid;
 	}
 };

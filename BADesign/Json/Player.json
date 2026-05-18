@@ -2,32 +2,20 @@
     "BaseStat": [
         {
             "Tid": 1,
-            "BaseHp": 200,
-            "BaseStamina": 200,
-            "BaseMoveSpeed": 100,
-            "BaseAttack": 50,
+            "MaxHp": 200,
+            "MaxStamina": 100,
+            "StaminaRecoveryPerSecond": 33.3333333333,
+            "StaminaRecoveryDelay": 0.15,
+            "WalkSpeed": 180,
+            "RunSpeed": 500,
+            "SprintSpeed": 700,
+            "BaseAttack": 40,
+            "BaseAttackSpeed": 1,
             "BaseDefence": 10,
-            "BaseAttackSpeed": 1
-        }
-    ],
-    "ActionData": [
-        {
-            "Tid": 10001,
-            "ActionType": 0,
-            "CoolTime": 0,
-            "ConsumeStamina": 5
-        },
-        {
-            "Tid": 10011,
-            "ActionType": 1,
-            "CoolTime": 0,
-            "ConsumeStamina": 5
-        },
-        {
-            "Tid": 10021,
-            "ActionType": 2,
-            "CoolTime": 0,
-            "ConsumeStamina": 10
+            "LadderClimbSpeedSlow": 120,
+            "LadderClimbSpeedFast": 280,
+            "LadderSlideDownSpeed": 600,
+            "LadderExitClearance": 80
         }
     ]
 }

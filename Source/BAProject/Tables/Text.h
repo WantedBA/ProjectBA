@@ -10,7 +10,7 @@
  * Text.xlsx 의 "Text" 시트 한 행.
  * 필드 이름은 JSON 키와 정확히 일치해야 한다 (Text.json 참고).
  */
-USTRUCT(BlueprintType)
+USTRUCT(BlueprintType, meta = (BASheet = "Text"))
 struct BAPROJECT_API FTextRows : public FBARowBase
 {
 	GENERATED_BODY()

@@ -1,5 +1,5 @@
 {
-    "시트1": [
+    "Monster": [
         {
             "MonsterTid": 10001,
             "StageType": 1,
@@ -10,10 +10,11 @@
             "Defence": 5,
             "DetectRange": 500,
             "AttackRange": 300,
-			"MoveSpeed": 300,
-            "MeshPath": "/Game/1stBoss/Mesh/SKM_MidPoly.SKM_MidPoly",
-            "BBPath": "/Game/AI/BB_Enemy.BB_Enemy",
-            "BTPath": "/Game/AI/BT_Monster.BT_Monster"
+            "MoveSpeed": 300,
+            "PatrolPathTid": 123,
+            "MeshPath": "/Game/Assets/Enemy/Monster/Mesh/SKM_MidPoly.SKM_MidPoly",
+            "BBPath": "/Game/Assets/Enemy/AI/BB_Enemy.BB_Enemy",
+            "BTPath": "/Game/Assets/Enemy/AI/BT_Monster.BT_Monster"
         },
         {
             "MonsterTid": 10002,
@@ -25,10 +26,10 @@
             "Defence": 7,
             "DetectRange": 500,
             "AttackRange": 300,
-			"MoveSpeed": 300,
-            "MeshPath": "/Game/1stBoss/Mesh/SKM_MidPoly.SKM_MidPoly",
-            "BBPath": "/Game/AI/BB_Enemy.BB_Enemy",
-            "BTPath": "/Game/AI/BT_Monster.BT_Monster"
+            "MoveSpeed": 300,
+            "MeshPath": "/Game/Assets/Enemy/Monster/Mesh/SKM_MidPoly.SKM_MidPoly",
+            "BBPath": "/Game/Assets/Enemy/AI/BB_Enemy.BB_Enemy",
+            "BTPath": "/Game/Assets/Enemy/AI/BT_Monster.BT_Monster"
         },
         {
             "MonsterTid": 10000,
@@ -40,10 +41,10 @@
             "Defence": 7,
             "DetectRange": 0,
             "AttackRange": 0,
-			"MoveSpeed": 300,
-            "MeshPath": "/Game/1stBoss/Mesh/SKM_MidPoly.SKM_MidPoly",
-            "BBPath": "/Game/AI/BB_Enemy.BB_Enemy",
-            "BTPath": "/Game/AI/BT_1stBoss.BT_1stBoss"
+            "MoveSpeed": 300,
+            "MeshPath": "/Game/Assets/Enemy/1stBoss/Mesh/SK_DarkKnight_02_Var_01.SK_DarkKnight_02_Var_01",
+            "BBPath": "/Game/Assets/Enemy/AI/BB_Enemy.BB_Enemy",
+            "BTPath": "/Game/Assets/Enemy/AI/BT_1stBoss.BT_1stBoss"
         },
         {
             "MonsterTid": 20000,
@@ -55,8 +56,7 @@
             "Defence": 7,
             "DetectRange": 0,
             "AttackRange": 0,
-			"MoveSpeed": 300,
-            "BBPath": "/Game/AI/BB_Enemy.BB_Enemy"
+            "MoveSpeed": 300
         },
         {
             "MonsterTid": 30000,
@@ -68,8 +68,7 @@
             "Defence": 7,
             "DetectRange": 0,
             "AttackRange": 0,
-			"MoveSpeed": 300,
-            "BBPath": "/Game/AI/BB_Enemy.BB_Enemy"
+            "MoveSpeed": 300
         }
     ]
 }

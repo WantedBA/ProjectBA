@@ -5,6 +5,7 @@
 #include "BATableGenerator.h"
 #include "Framework/Commands/UIAction.h"
 #include "ToolMenus.h"
+#include "Tables/BATableManager.h"
 #include "Textures/SlateIcon.h"
 
 #define LOCTEXT_NAMESPACE "BAProjectEditor"
@@ -42,13 +43,41 @@ void FBAProjectEditorModule::RegisterMenus()
 			FToolMenuSection& DataSection = InSubMenu->AddSection(
 				"Data", LOCTEXT("DataSection", "Data"));
 
-			DataSection.AddMenuEntry(
+			// GenerateTableData
+			/*DataSection.AddMenuEntry(
 				"GenerateTableData",
 				LOCTEXT("GenerateTableDataLabel", "GenerateTableData"),
 				LOCTEXT("GenerateTableDataTooltip",
 					"Run the Excel -> JSON converter and rebuild every DataTable under /Game/Table."),
 				FSlateIcon(),
-				FUIAction(FExecuteAction::CreateStatic(&FBATableGenerator::Generate)));
+				FUIAction(FExecuteAction::CreateStatic(&FBATableGenerator::Generate)));*/
+			
+			// Reload
+			DataSection.AddMenuEntry(
+				"GenerateAndReloadTableData",
+				LOCTEXT("ReloadTableDataLabel", "Generate & Reload Table Data"),
+				LOCTEXT("ReloadTableDataTooltip",
+					"Reload every DataTable under /Game/Table."),
+				FSlateIcon(),
+				FUIAction(FExecuteAction::CreateLambda([]()
+				{
+					// Generate
+					FBATableGenerator::Generate();
+					// Reload
+					if (!GEngine)
+					{
+						UE_LOG(LogTemp, Warning, TEXT("GEngine is null, cannot reload table data."));
+						return;
+					}
+					UBATableManager* TableManager = GEngine->GetEngineSubsystem<UBATableManager>();
+					if (!TableManager)
+					{
+						UE_LOG(LogTemp, Warning, TEXT("UBATableManager is null, cannot reload table data."));
+						return;
+					}
+					TableManager->ReloadAllTables();
+					UE_LOG(LogTemp, Log, TEXT("Table data reloaded successfully."));
+				})));
 		}));
 
 	SubMenuEntry.InsertPosition = FToolMenuInsert("Tools", EToolMenuInsertType::After);

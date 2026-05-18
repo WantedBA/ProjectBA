@@ -1,0 +1,18 @@
+{
+    "Reward": [
+        {
+            "RewardDetailTid": 1,
+            "RewardTid": 501,
+            "RewardType": 0,
+            "TargetTid": 0,
+            "Count": 2
+        },
+        {
+            "RewardDetailTid": 2,
+            "RewardTid": 501,
+            "RewardType": 1,
+            "TargetTid": 0,
+            "Count": 3
+        }
+    ]
+}

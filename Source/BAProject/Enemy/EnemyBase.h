@@ -4,7 +4,6 @@
 #include "Character/CharacterBase.h"
 #include "EnemyBase.generated.h"
 
-class UStateComponent;
 class UStatComponent;
 class UCombatComponent;
 
@@ -13,12 +12,23 @@ enum class EEnemyState : uint8
 {
 	Idle,
 	Move,
+	Chase,
 	Attack,
 	Hit,
 	Dead
 };
 
+UENUM(BlueprintType)
+enum class EEnemyGrade : uint8
+{
+	None,
+	Elite,
+	Boss
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStateChanged, EEnemyState, OldState, EEnemyState, NewState);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnAnimationFinishedDelegate, EEnemyState);
+DECLARE_MULTICAST_DELEGATE(FOnEnemyDeathDelegate);
 
 UCLASS(Abstract)
 class BAPROJECT_API AEnemyBase : public ACharacterBase
@@ -31,15 +41,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Enemy")
 	virtual void InitializeFromTable(int32 InTid);
 
-protected:
-	virtual void PostInitializeComponents() override;
-	virtual void PossessedBy(AController* NewController) override;
+	virtual void Attack();
 
-	virtual void OnDamaged(float FinalDamage, AActor* DamageCauser) override;
+	UFUNCTION()
 	virtual void OnDeath() override;
 
-	UFUNCTION(BlueprintCallable, Category = "State")
-	void SetState(EEnemyState NewState);
+	virtual void OnEnemyAttackAniFinished(EEnemyState NewState);
 
 	UFUNCTION(BlueprintPure, Category = "State")
 	bool IsDead() const { return CurrentState == EEnemyState::Dead; }
@@ -47,12 +54,30 @@ protected:
 	UFUNCTION(BlueprintPure, Category = "State")
 	EEnemyState GetCurrentState() const { return CurrentState; }
 
+	UFUNCTION(BlueprintPure, Category = "State")
+	EEnemyGrade GetEnemyGrade() const { return EnemyGrade; }
+
+	virtual void UpdateMoveSpeed(EEnemyState NewState);
+
+protected:
+	virtual void PostInitializeComponents() override;
+	virtual void PossessedBy(AController* NewController) override;
+
+	virtual void OnDamaged(float FinalDamage, AActor* DamageCauser) override;
+
+	UFUNCTION(BlueprintCallable, Category = "State")
+	void SetState(EEnemyState NewState);
+
 	// 시각 연출 이벤트
 	UFUNCTION(BlueprintImplementableEvent, Category = "Enemy|Visuals", meta = (DisplayName = "OnHitVisuals"))
 	void K2_OnHitVisuals(FVector HitLocation);
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Enemy|Visuals", meta = (DisplayName = "OnDeadVisuals"))
 	void K2_OnDeadVisuals();
+
+public:
+	FOnAnimationFinishedDelegate OnAnimationFinished;
+	FOnEnemyDeathDelegate OnDeathEvent;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -72,4 +97,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	EEnemyState CurrentState;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	EEnemyGrade EnemyGrade;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	TObjectPtr<UAnimMontage> AttackMontage;
 };

@@ -10,7 +10,7 @@ AEnemyAIController::AEnemyAIController()
 {
 }
 
-void AEnemyAIController::InitializeAI(int32 InTid)
+void AEnemyAIController::InitializeAI(int32 InTid, APawn* InPawn)
 {
 	Tid = InTid;
 
@@ -42,13 +42,43 @@ void AEnemyAIController::InitializeAI(int32 InTid)
 		UBlackboardComponent* BBComp = Blackboard;
 		if (UseBlackboard(BBAsset, BBComp))
 		{
-			// 초기 데이터 설정
-			Blackboard->SetValueAsVector(BBKey::HomePos, GetPawn()->GetActorLocation());
-			Blackboard->SetValueAsFloat(BBKey::DetectRange, static_cast<float>(MonsterRow->DetectRange));
-			Blackboard->SetValueAsFloat(BBKey::AttackRange, static_cast<float>(MonsterRow->AttackRange));
+			UE_LOG(LogTemp, Log, TEXT("[AEnemyAIController] Blackboard initialized for Tid: %d"), InTid);
+			if (Blackboard)
+			{
+				Blackboard->SetValueAsInt(TEXT("MonsterTid"), InTid);
+				
+				APawn* ControlledPawn = InPawn ? InPawn : (APawn*)GetPawn();
+				if (ControlledPawn)
+				{
+					Blackboard->SetValueAsVector(BBKey::HomePos, ControlledPawn->GetActorLocation());
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("[AEnemyAIController] Pawn is null in InitializeAI (InPawn and GetPawn() are both null)"));
+				}
 
-			RunBehaviorTree(BTAsset);
+				Blackboard->SetValueAsFloat(BBKey::DetectRange, static_cast<float>(MonsterRow->DetectRange));
+				Blackboard->SetValueAsFloat(BBKey::AttackRange, static_cast<float>(MonsterRow->AttackRange));
+				Blackboard->SetValueAsFloat(BBKey::ReturnRange, static_cast<float>(MonsterRow->DetectRange) * 2.5f);
+				Blackboard->SetValueAsBool(BBKey::IsReturning, false);
+				Blackboard->SetValueAsBool(BBKey::IsActionLocked, false);
+			}
+
+			bool bStarted = RunBehaviorTree(BTAsset);
+			UE_LOG(LogTemp, Log, TEXT("[AEnemyAIController] RunBehaviorTree result: %s"), bStarted ? TEXT("True") : TEXT("False"));
+
+			if (bStarted && Blackboard)
+			{
+				int32 CheckTid = Blackboard->GetValueAsInt(TEXT("MonsterTid"));
+				UE_LOG(LogTemp, Log, TEXT("[AEnemyAIController] Blackboard Verified MonsterTid: %d"), CheckTid);
+			}
 		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[AEnemyAIController] Failed to load assets. BBAsset: %s, BTAsset: %s"), 
+			BBAsset ? *BBAsset->GetName() : TEXT("Null"), 
+			BTAsset ? *BTAsset->GetName() : TEXT("Null"));
 	}
 }
 

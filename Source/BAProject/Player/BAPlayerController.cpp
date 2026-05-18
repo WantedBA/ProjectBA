@@ -3,6 +3,9 @@
 #include "BAPlayerCharacter.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
+#include "Component/ActionComponent.h"
+#include "Component/InteractorComponent.h"
 
 ABAPlayerController::ABAPlayerController()
 {
@@ -61,9 +64,11 @@ void ABAPlayerController::SetupInputComponent()
 		return;
 	}
 
-	if (ensureMsgf(MoveAction, TEXT("MoveAction is not configured on %s"), *GetName()))
+	if (ensureMsgf(RunAction, TEXT("RunAction is not configured on %s"), *GetName()))
 	{
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABAPlayerController::Move);
+		EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Triggered, this, &ABAPlayerController::Move);
+		EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &ABAPlayerController::OnMoveCompleted);
+		EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Canceled, this, &ABAPlayerController::OnMoveCompleted);
 	}
 
 	if (ensureMsgf(LookAction, TEXT("LookAction is not configured on %s"), *GetName()))
@@ -75,23 +80,69 @@ void ABAPlayerController::SetupInputComponent()
 	{
 		EnhancedInputComponent->BindAction(LightAttackAction, ETriggerEvent::Triggered, this, &ABAPlayerController::LightAttack);
 	}
+
+	if (ensureMsgf(WalkAction, TEXT("WalkAction is not configured on %s"), *GetName()))
+	{
+		EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Started, this, &ABAPlayerController::ToggleWalk);
+	}
+
+	if (ensureMsgf(SprintAction, TEXT("SprintAction is not configured on %s"), *GetName()))
+	{
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ABAPlayerController::OnSprintStarted);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABAPlayerController::OnSprintCompleted);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Canceled, this, &ABAPlayerController::OnSprintCompleted);
+	}
+	
+	if (ensureMsgf(InteractAction, TEXT("InteractAction is not configured on %s"), *GetName()))
+	{
+		EnhancedInputComponent->BindAction(
+			InteractAction,
+			ETriggerEvent::Started,
+			this,
+			&ABAPlayerController::OnInteract);
+	}
+	
+	// 임시 기능
+	if (ensureMsgf(ToggleStrafeAction, TEXT("ToggleStrafeAction is not configured on %s"), *GetName()))
+	{
+		EnhancedInputComponent->BindAction(
+			ToggleStrafeAction,
+			ETriggerEvent::Started,
+			this,
+			&ABAPlayerController::ToggleStrafe
+		);
+	}
 }
 
 void ABAPlayerController::Move(const FInputActionValue& Value)
 {
-	const FVector2D Movement = Value.Get<FVector2D>();
+	FVector2D Movement = Value.Get<FVector2D>();
+	if (Movement.SizeSquared() > 1.f)
+	{
+		Movement.Normalize();
+	}
 
-	ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
-	if (!PC) return;
-	
-	const FRotator ControlRot = GetControlRotation();
-	const FRotator YawRot(0.f, ControlRot.Yaw, 0.f);
+	ABAPlayerCharacter* ControlledCharacter = Cast<ABAPlayerCharacter>(GetPawn());
+	if (!ControlledCharacter)
+	{
+		return;
+	}
 
-	const FVector Forward = FRotationMatrix(YawRot).GetUnitAxis(EAxis::X);
-	const FVector Right = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
+	bHasMoveInput = !Movement.IsNearlyZero();
+	ControlledCharacter->SetMoveInputVector(Movement);
+	ApplyMovementStateByModifier();
+}
 
-	PC->AddMovementInput(Forward, Movement.Y);
-	PC->AddMovementInput(Right, Movement.X);
+void ABAPlayerController::OnMoveCompleted()
+{
+	bHasMoveInput = false;
+
+	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
+	{
+		PC->SetMoveInputVector(FVector2D::ZeroVector);
+	}
+
+	ApplyMovementStateByModifier();
 }
 
 void ABAPlayerController::Look(const FInputActionValue& Value)
@@ -107,4 +158,127 @@ void ABAPlayerController::LightAttack()
 	{
 		PC->Attack();
 	}
+}
+
+void ABAPlayerController::ToggleWalk()
+{
+	bWalkToggleEnabled = !bWalkToggleEnabled;
+	ApplyMovementStateByModifier();
+}
+
+void ABAPlayerController::OnSprintStarted()
+{
+	bSprintModifierHeld = true;
+	SprintDodgePressedTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
+	ApplyMovementStateByModifier();
+}
+
+void ABAPlayerController::OnSprintCompleted()
+{
+	const bool bShouldDodge = IsSprintDodgeTap();
+
+	bSprintModifierHeld = false;
+	ApplyMovementStateByModifier();
+
+	if (bShouldDodge)
+	{
+		TryStartDodgeAction();
+	}
+}
+
+void ABAPlayerController::ApplyMovementStateByModifier() const
+{
+	ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
+	if (!PC)
+	{
+		return;
+	}
+
+	PC->SetHasMoveInput(bHasMoveInput);
+
+	if (!bHasMoveInput)
+	{
+		PC->SetMovementState(EMovementState::Run);
+		return;
+	}
+
+	if (bSprintModifierHeld)
+	{
+		PC->SetMovementState(EMovementState::Sprint);
+	}
+	else if (bWalkToggleEnabled)
+	{
+		PC->SetMovementState(EMovementState::Walk);
+	}
+	else
+	{
+		PC->SetMovementState(EMovementState::Run);
+	}
+}
+
+bool ABAPlayerController::IsSprintDodgeTap() const
+{
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	return World->GetTimeSeconds() - SprintDodgePressedTime <= SprintDodgeTapMaxTime;
+}
+
+void ABAPlayerController::TryStartDodgeAction() const
+{
+	ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
+	if (!PC || PC->IsOnLadder())
+	{
+		return;
+	}
+
+	UActionComponent* ActionComponent = PC->GetActionComponent();
+	if (!ActionComponent)
+	{
+		return;
+	}
+
+	ActionComponent->TryStartAction(EActionCommand::Dodge);
+}
+
+void ABAPlayerController::OnInteract()
+{
+	ABAPlayerCharacter* PC = 
+		Cast<ABAPlayerCharacter>(GetPawn());
+	if (!PC)
+	{
+		return;
+	}
+
+	// 사다리 매달린 상태: 카메라 방향과 무관하게 즉시 이탈
+	if (PC->IsOnLadder())
+	{
+		PC->ExitLadder(PC->GetActorLocation());
+		return;
+	}
+	
+	UInteractorComponent* Interactor = PC->GetInteractorComponent();
+	if (Interactor)
+	{
+		Interactor->TryInteract();
+	}
+}
+
+void ABAPlayerController::ToggleStrafe()
+{
+	ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
+	if (!PC)
+	{
+		return;
+	}
+
+	const EPlayerLocomotionMode NextMode =
+		PC->GetLocomotionMode() == EPlayerLocomotionMode::Strafe
+			? EPlayerLocomotionMode::Free
+			: EPlayerLocomotionMode::Strafe;
+
+	PC->SetLocomotionMode(NextMode);
 }

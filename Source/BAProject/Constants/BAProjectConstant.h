@@ -12,7 +12,15 @@ namespace BBKey
 {
 	const FName TargetActor = TEXT("TargetActor");
 	const FName HomePos = TEXT("HomePos");
+	const FName PatrolPos = TEXT("PatrolPos");
+	const FName SplineIndex = TEXT("SplineIndex");
+	const FName SplineDistance = TEXT("SplineDistance");
 	const FName DetectRange = TEXT("DetectRange");
 	const FName AttackRange = TEXT("AttackRange");
-	const FName State = TEXT("State");
+	const FName ReturnRange = TEXT("ReturnRange");
+	const FName IsReturning = TEXT("IsReturning");
+	const FName SelectedPatternIndex = TEXT("SelectedPatternIndex");
+	const FName TargetDistance = TEXT("TargetDistance");
+	const FName IsActionLocked = TEXT("IsActionLocked");
+	const FName TargetAngle = TEXT("TargetAngle");
 }

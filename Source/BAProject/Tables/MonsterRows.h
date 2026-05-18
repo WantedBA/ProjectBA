@@ -10,7 +10,7 @@
  * Monster.xlsx 의 "Monster" 시트 한 행.
  * 필드 이름은 JSON 키와 정확히 일치해야 한다 (Monster.json 참고).
  */
-USTRUCT(BlueprintType)
+USTRUCT(BlueprintType, meta = (BASheet = "Monster"))
 struct BAPROJECT_API FMonsterRows : public FBARowBase
 {
 	GENERATED_BODY()
@@ -35,7 +35,7 @@ struct BAPROJECT_API FMonsterRows : public FBARowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster")
 	int32 MaxHp = 0;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster")
 	int32 Defence = 0;
 
@@ -47,6 +47,9 @@ struct BAPROJECT_API FMonsterRows : public FBARowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster")
 	int32 MoveSpeed = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster")
+	int32 PatrolPathTid = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Monster")
 	FString MeshPath;
