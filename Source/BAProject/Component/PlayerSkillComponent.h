@@ -7,6 +7,7 @@
 #include "PlayerSkillComponent.generated.h"
 
 
+class UBATableManager;
 class USkillTreeSubsystem;
 /*
  * 
@@ -29,10 +30,22 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 protected:
+	// 전체 스킬 새로고침
 	UFUNCTION(BlueprintCallable, Category="Skill")
 	void RefreshAllSkills();
 	
+	// 스킬 모두 삭제
+	UFUNCTION(BlueprintCallable, Category="Skill")
+	void ClearAllSkills();
+	
+	// 스킬 적용 구현 종류에 따라 분기
+	UFUNCTION(BlueprintCallable, Category="Skill")
+	void ApplySkill(int32 SkillId);
+	
 private:
+// 서브시스템 포인터
 	UPROPERTY(Transient)
 	TObjectPtr<USkillTreeSubsystem> SkillTreeSubsystem = nullptr;
+	UPROPERTY(Transient)
+	TObjectPtr<UBATableManager> TableManager = nullptr;
 };

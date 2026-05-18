@@ -10,7 +10,7 @@
 #include "SkillTreeSubsystem.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSkillNodeStateChange, int32, SkillTid, ESkillNodeState, NewState);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSkillTreeChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSkillTreeChangeCompleted);
 
 /**
  * 
@@ -77,7 +77,8 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FOnSkillNodeStateChange OnSkillNodeStateChange;
 
+	// 스킬트리 창 닫힐 때 변경사항 저장 후 브로드캐스팅
 	UPROPERTY(BlueprintAssignable)
-	FOnSkillTreeChanged OnSkillTreeChanged;
+	FOnSkillTreeChangeCompleted OnSkillTreeChangeCompleted;
 	
 };
