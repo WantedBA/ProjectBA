@@ -104,6 +104,7 @@ enum class EActionWindowType : uint8
 	Hit,
 	Guard,
 	Cancel,
+	InterruptLock,
 	MovementLock,
 	InputBuffer
 };

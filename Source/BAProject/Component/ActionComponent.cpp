@@ -8,6 +8,7 @@
 namespace
 {
 	constexpr int32 ActionComponentInvalidActionTid = 0;
+	const FName ActionStaminaRecoveryPauseSource(TEXT("Action"));
 }
 
 UActionComponent::UActionComponent()
@@ -84,7 +85,7 @@ bool UActionComponent::TryStartActionByTid(const int32 ActionTid, const EActionD
 		return false;
 	}
 
-	if (!CanStartAction(*ActionData))
+	if (!CanStartAction(*ActionData, Direction))
 	{
 		return false;
 	}
@@ -107,9 +108,60 @@ void UActionComponent::CompleteCurrentAction()
 	ActiveActionType = EActionType::None;
 	RuntimeState = EActionRuntimeState::None;
 	ActiveActionDirection = EActionDirection::Any;
+	bActiveActionInterruptLocked = false;
+	bActiveActionInputBufferOpen = false;
+	const bool bShouldResumeStaminaRecovery = bActiveActionPausedStaminaRecovery;
+	bActiveActionPausedStaminaRecovery = false;
+	ClearBufferedAction();
+
+	if (bShouldResumeStaminaRecovery && CachedStatComponent)
+	{
+		CachedStatComponent->ResumeStaminaRecovery(ActionStaminaRecoveryPauseSource, true);
+	}
 
 	OnActionCompleted.Broadcast(CompletedActionTid, CompletedActionType);
 	RefreshTickEnabled();
+}
+
+void UActionComponent::SetActiveActionInterruptLocked(const bool bNewInterruptLocked)
+{
+	if (ActiveActionTid == ActionComponentInvalidActionTid)
+	{
+		bActiveActionInterruptLocked = false;
+		return;
+	}
+
+	bActiveActionInterruptLocked = bNewInterruptLocked;
+	if (!bActiveActionInterruptLocked)
+	{
+		TryStartBufferedAction();
+	}
+}
+
+void UActionComponent::SetActiveActionInputBufferOpen(const bool bNewInputBufferOpen)
+{
+	if (ActiveActionTid == ActionComponentInvalidActionTid)
+	{
+		bActiveActionInputBufferOpen = false;
+		ClearBufferedAction();
+		return;
+	}
+
+	bActiveActionInputBufferOpen = bNewInputBufferOpen;
+	if (!bActiveActionInputBufferOpen)
+	{
+		TryStartBufferedAction();
+	}
+}
+
+void UActionComponent::UpdateBufferedActionDirection(const EActionDirection Direction)
+{
+	if (BufferedActionTid == ActionComponentInvalidActionTid)
+	{
+		return;
+	}
+
+	BufferedActionDirection = Direction;
 }
 
 void UActionComponent::SetMovesetKey(const FName NewMovesetKey)
@@ -141,6 +193,18 @@ const FActionDataRow* UActionComponent::GetActiveActionData() const
 
 	const UBATableManager* TableManager = UBATableManager::Get(this);
 	return TableManager ? TableManager->FindActionData(ActiveActionTid) : nullptr;
+}
+
+bool UActionComponent::IsMovementLockedByAction() const
+{
+	const FActionDataRow* ActionData = GetActiveActionData();
+	return ActionData && ActionData->bLocksMovement && bActiveActionInterruptLocked;
+}
+
+bool UActionComponent::IsActiveActionUsingRootMotion() const
+{
+	const FActionDataRow* ActionData = GetActiveActionData();
+	return ActionData && ActionData->bUsesRootMotion;
 }
 
 const FMovesetRow* UActionComponent::FindBestMoveset(
@@ -194,19 +258,28 @@ const FMovesetRow* UActionComponent::FindBestMoveset(
 	return BestRow;
 }
 
-bool UActionComponent::CanStartAction(const FActionDataRow& ActionData)
+bool UActionComponent::CanStartAction(const FActionDataRow& ActionData, const EActionDirection Direction)
 {
 	if (ActiveActionTid != ActionComponentInvalidActionTid)
 	{
+		if (bActiveActionInputBufferOpen && !bConsumingBufferedAction)
+		{
+			BufferAction(ActionData.Tid, Direction);
+			LastStartResult = EActionStartResult::Buffered;
+			return false;
+		}
+
 		const FActionDataRow* ActiveActionData = GetActiveActionData();
-		if (ActiveActionData && !ActiveActionData->bCanBeInterrupted)
+		const bool bCanInterruptActiveAction =
+			ActiveActionData && ActiveActionData->bCanBeInterrupted && !bActiveActionInterruptLocked;
+		if (!bCanInterruptActiveAction)
 		{
 			LastStartResult = EActionStartResult::AlreadyRunning;
 			return false;
 		}
 	}
 
-	if (IsActionOnCooldown(ActionData.Tid))
+	if (ActiveActionTid != ActionData.Tid && IsActionOnCooldown(ActionData.Tid))
 	{
 		LastStartResult = EActionStartResult::Cooldown;
 		return false;
@@ -233,6 +306,9 @@ void UActionComponent::BeginAction(const FActionDataRow& ActionData, const EActi
 	ActiveActionType = ActionData.ActionType;
 	RuntimeState = GetRuntimeStateForAction(ActionData);
 	ActiveActionDirection = Direction;
+	bActiveActionInterruptLocked = false;
+	bActiveActionInputBufferOpen = false;
+	bActiveActionPausedStaminaRecovery = false;
 	LastStartResult = EActionStartResult::Success;
 
 	ConsumeInstantCost(ActionData);
@@ -250,7 +326,7 @@ void UActionComponent::StartCooldown(const FActionDataRow& ActionData)
 	}
 }
 
-void UActionComponent::ConsumeInstantCost(const FActionDataRow& ActionData) const
+void UActionComponent::ConsumeInstantCost(const FActionDataRow& ActionData)
 {
 	if (!CachedStatComponent
 		|| ActionData.StaminaCost <= 0.f
@@ -259,7 +335,40 @@ void UActionComponent::ConsumeInstantCost(const FActionDataRow& ActionData) cons
 		return;
 	}
 
+	CachedStatComponent->PauseStaminaRecovery(ActionStaminaRecoveryPauseSource);
 	CachedStatComponent->ConsumeStamina(ActionData.StaminaCost);
+	bActiveActionPausedStaminaRecovery = true;
+}
+
+void UActionComponent::BufferAction(const int32 ActionTid, const EActionDirection Direction)
+{
+	BufferedActionTid = ActionTid;
+	BufferedActionDirection = Direction;
+}
+
+void UActionComponent::ClearBufferedAction()
+{
+	BufferedActionTid = ActionComponentInvalidActionTid;
+	BufferedActionDirection = EActionDirection::Any;
+}
+
+void UActionComponent::TryStartBufferedAction()
+{
+	if (bConsumingBufferedAction
+		|| BufferedActionTid == ActionComponentInvalidActionTid
+		|| ActiveActionTid == ActionComponentInvalidActionTid
+		|| bActiveActionInterruptLocked
+		|| bActiveActionInputBufferOpen)
+	{
+		return;
+	}
+
+	const int32 ActionTidToStart = BufferedActionTid;
+	const EActionDirection DirectionToStart = BufferedActionDirection;
+	ClearBufferedAction();
+
+	TGuardValue<bool> ConsumingGuard(bConsumingBufferedAction, true);
+	TryStartActionByTid(ActionTidToStart, DirectionToStart);
 }
 
 void UActionComponent::RefreshTickEnabled()
