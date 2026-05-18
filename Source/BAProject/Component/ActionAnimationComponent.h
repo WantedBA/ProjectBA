@@ -131,6 +131,7 @@ private:
 	void CompleteActionIfStillActive(int32 ActionTid);
 	USkeletalMeshComponent* ResolveMeshComponent() const;
 	UAnimInstance* ResolveAnimInstance() const;
+	void OrientOwnerToActionDirection(EActionDirection Direction) const;
 	void ApplyRootMotionModeForAnimation(UAnimInstance& AnimInstance, const FActionAnimationDataRow& AnimationData);
 	void RestoreRootMotionMode();
 	void InitializeActionWindows();

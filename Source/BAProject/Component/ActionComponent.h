@@ -74,6 +74,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	void SetActiveActionInputBufferOpen(bool bNewInputBufferOpen);
 
+	UFUNCTION(BlueprintCallable, Category = "Action")
+	void UpdateBufferedActionDirection(EActionDirection Direction);
+
 	UFUNCTION(BlueprintPure, Category = "Action")
 	bool IsActionRunning() const { return ActiveActionTid != 0; }
 

@@ -154,6 +154,16 @@ void UActionComponent::SetActiveActionInputBufferOpen(const bool bNewInputBuffer
 	}
 }
 
+void UActionComponent::UpdateBufferedActionDirection(const EActionDirection Direction)
+{
+	if (BufferedActionTid == ActionComponentInvalidActionTid)
+	{
+		return;
+	}
+
+	BufferedActionDirection = Direction;
+}
+
 void UActionComponent::SetMovesetKey(const FName NewMovesetKey)
 {
 	MovesetKey = NewMovesetKey.IsNone() ? FName(TEXT("Default")) : NewMovesetKey;

@@ -7,6 +7,7 @@
 #include "Character/CharacterBase.h"
 #include "Component/ActionComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "GameFramework/Pawn.h"
 #include "Tables/ActionRows.h"
 #include "Tables/BATableManager.h"
 
@@ -160,6 +161,7 @@ bool UActionAnimationComponent::PlayActionAnimation(const int32 ActionTid, const
 	}
 
 	StopActiveMontage(true);
+	OrientOwnerToActionDirection(CachedActionComponent->GetActiveActionDirection());
 
 	const float PlayRate = AnimationData->PlayRate > 0.f ? AnimationData->PlayRate : 1.f;
 	const FMontageBlendSettings BlendInSettings(FMath::Max(0.f, AnimationData->BlendIn));
@@ -361,6 +363,69 @@ UAnimInstance* UActionAnimationComponent::ResolveAnimInstance() const
 {
 	USkeletalMeshComponent* MeshComponent = CachedMeshComponent ? CachedMeshComponent.Get() : ResolveMeshComponent();
 	return MeshComponent ? MeshComponent->GetAnimInstance() : nullptr;
+}
+
+void UActionAnimationComponent::OrientOwnerToActionDirection(const EActionDirection Direction) const
+{
+	if (Direction == EActionDirection::Any)
+	{
+		return;
+	}
+
+	FVector2D LocalDirection = FVector2D::ZeroVector;
+	switch (Direction)
+	{
+	case EActionDirection::Forward:
+		LocalDirection = FVector2D(0.f, 1.f);
+		break;
+	case EActionDirection::Backward:
+		LocalDirection = FVector2D(0.f, -1.f);
+		break;
+	case EActionDirection::Left:
+		LocalDirection = FVector2D(-1.f, 0.f);
+		break;
+	case EActionDirection::Right:
+		LocalDirection = FVector2D(1.f, 0.f);
+		break;
+	case EActionDirection::ForwardLeft:
+		LocalDirection = FVector2D(-1.f, 1.f).GetSafeNormal();
+		break;
+	case EActionDirection::ForwardRight:
+		LocalDirection = FVector2D(1.f, 1.f).GetSafeNormal();
+		break;
+	case EActionDirection::BackwardLeft:
+		LocalDirection = FVector2D(-1.f, -1.f).GetSafeNormal();
+		break;
+	case EActionDirection::BackwardRight:
+		LocalDirection = FVector2D(1.f, -1.f).GetSafeNormal();
+		break;
+	case EActionDirection::Any:
+	default:
+		return;
+	}
+
+	const AActor* Owner = GetOwner();
+	if (!Owner)
+	{
+		return;
+	}
+
+	FRotator ReferenceRotation = Owner->GetActorRotation();
+	if (const APawn* OwnerPawn = Cast<APawn>(Owner))
+	{
+		ReferenceRotation = OwnerPawn->GetControlRotation();
+	}
+
+	const FRotator YawRotation(0.f, ReferenceRotation.Yaw, 0.f);
+	const FVector Forward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+	const FVector Right = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+	const FVector WorldDirection = (Forward * LocalDirection.Y + Right * LocalDirection.X).GetSafeNormal();
+	if (WorldDirection.IsNearlyZero())
+	{
+		return;
+	}
+
+	GetOwner()->SetActorRotation(FRotator(0.f, WorldDirection.Rotation().Yaw, 0.f));
 }
 
 void UActionAnimationComponent::ApplyRootMotionModeForAnimation(
