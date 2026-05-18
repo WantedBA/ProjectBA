@@ -38,7 +38,10 @@ void UBTService_UpdateTargetContext::TickNode(UBehaviorTreeComponent& OwnerComp,
 	float DetectRange = BBComp->GetValueAsFloat(BBKey::DetectRange);
 	if (Enemy->GetEnemyGrade() == EEnemyGrade::Boss)
 	{
-		DetectRange = 1000.0f;
+		if (DetectRange <= 0.0f)
+		{
+			DetectRange = 100000.0f; // 사실상 무한대
+		}
 	}
 	
 	FVector Center = ControllingPawn->GetActorLocation();

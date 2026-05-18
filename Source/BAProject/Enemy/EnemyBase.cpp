@@ -83,6 +83,13 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 		DetectRange = static_cast<float>(MonsterRow->DetectRange);
 		AttackRange = static_cast<float>(MonsterRow->AttackRange);
 
+		// 0인 경우 '무한' 또는 '항상 인지'로 처리 (매직넘버 방지)
+		if (EnemyGrade == EEnemyGrade::Boss)
+		{
+			if (DetectRange <= 0.0f) DetectRange = 99999.0f;
+			if (AttackRange <= 0.0f) AttackRange = 99999.0f; // 실제 공격 패턴 범위는 별도 계산되므로 추적용
+		}
+
 		if (GetCharacterMovement())
 		{
 			GetCharacterMovement()->bOrientRotationToMovement = true;
