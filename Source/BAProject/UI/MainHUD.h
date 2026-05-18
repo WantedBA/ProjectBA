@@ -31,8 +31,16 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "BA|UI")
 	class UQuickSlotBase* StaminaSlot;
 
+	// 보스 체력바 위젯(WBP 이름 맞출 것)
+	UPROPERTY(meta = (BindWidget), BlueprintReadOnly, Category = "BA|UI")
+	class UBossHPBar* BossHPBar;
+
 public:
 	// 값 업데이트
 	void UpdatePlayerHP(float Current, float Max);
+
+	// 보스 데이터 업데이트 및 표시
+	UFUNCTION(BlueprintCallable, Category = "BA|UI|Boss")
+	void UpdateBossStatus(FText Name, float Current, float Max);
 	
 };

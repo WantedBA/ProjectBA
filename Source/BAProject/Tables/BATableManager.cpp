@@ -58,6 +58,9 @@ void UBATableManager::LoadAllTables()
 	LoadTable(BossAttackTable2, *(TablePath + TEXT("DT_BossMonster_2StageBossAttack.DT_BossMonster_2StageBossAttack")));
 	LoadTable(BossAttackTable3, *(TablePath + TEXT("DT_BossMonster_3StageBossAttack.DT_BossMonster_3StageBossAttack")));
 
+	// Text
+	LoadTable(TextTable, *(TablePath + TEXT("DT_Text_Text.DT_Text_Text")));
+
 	for (IBAPostRead* Table : PostReadList)
 	{
 		Table->PostRead();

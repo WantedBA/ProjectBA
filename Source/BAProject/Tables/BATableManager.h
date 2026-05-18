@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "PlayerRows.h"
 #include "SkillRows.h"
+#include "Text.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Tables/BAPropTable.h"
 #include "Tables/ItemRows.h"
@@ -73,6 +74,9 @@ public:
 	const TMap<int32, F2StageBossAttackRows*>& GetBossAttackMap2() const { return BossAttackTable2.GetMap(); }
 	const TMap<int32, F3StageBossAttackRows*>& GetBossAttackMap3() const { return BossAttackTable3.GetMap(); }
 
+	// Text
+	const FTextRows* FindText(const int32 InTid) const { return TextTable.Find(InTid); }
+
 private:
 	template<typename RowType, typename KeyType>
 	void LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const FString AssetPath);
@@ -92,6 +96,8 @@ private:
 	TBAPropTable<F3StageBossAttackRows, int32> BossAttackTable3;
 
 	TArray<IBAPostRead*> PostReadList;
+
+	TBAPropTable<FTextRows, int32> TextTable;
 
 	UPROPERTY()
 	TArray<TObjectPtr<UDataTable>> LoadedTables;
