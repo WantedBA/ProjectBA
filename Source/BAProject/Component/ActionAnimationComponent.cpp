@@ -11,8 +11,8 @@
 
 namespace
 {
-	constexpr int32 InvalidActionTid = 0;
-	constexpr int32 InvalidActionAnimationTid = 0;
+	constexpr int32 ActionAnimationInvalidActionTid = 0;
+	constexpr int32 ActionAnimationInvalidActionAnimationTid = 0;
 }
 
 UActionAnimationComponent::UActionAnimationComponent()
@@ -279,8 +279,8 @@ UAnimInstance* UActionAnimationComponent::ResolveAnimInstance() const
 
 void UActionAnimationComponent::ClearActivePlayback()
 {
-	ActiveActionTid = InvalidActionTid;
-	ActiveActionAnimationTid = InvalidActionAnimationTid;
+	ActiveActionTid = ActionAnimationInvalidActionTid;
+	ActiveActionAnimationTid = ActionAnimationInvalidActionAnimationTid;
 	ActiveActionType = EActionType::None;
 	ActiveMontage = nullptr;
 }

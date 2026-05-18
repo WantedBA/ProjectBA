@@ -7,7 +7,7 @@
 
 namespace
 {
-	constexpr int32 InvalidActionTid = 0;
+	constexpr int32 ActionComponentInvalidActionTid = 0;
 }
 
 UActionComponent::UActionComponent()
@@ -95,7 +95,7 @@ bool UActionComponent::TryStartActionByTid(const int32 ActionTid, const EActionD
 
 void UActionComponent::CompleteCurrentAction()
 {
-	if (ActiveActionTid == InvalidActionTid)
+	if (ActiveActionTid == ActionComponentInvalidActionTid)
 	{
 		return;
 	}
@@ -103,7 +103,7 @@ void UActionComponent::CompleteCurrentAction()
 	const int32 CompletedActionTid = ActiveActionTid;
 	const EActionType CompletedActionType = ActiveActionType;
 
-	ActiveActionTid = InvalidActionTid;
+	ActiveActionTid = ActionComponentInvalidActionTid;
 	ActiveActionType = EActionType::None;
 	RuntimeState = EActionRuntimeState::None;
 	ActiveActionDirection = EActionDirection::Any;
@@ -134,7 +134,7 @@ void UActionComponent::SetWeaponType(const EActionWeaponType NewWeaponType)
 
 const FActionDataRow* UActionComponent::GetActiveActionData() const
 {
-	if (ActiveActionTid == InvalidActionTid)
+	if (ActiveActionTid == ActionComponentInvalidActionTid)
 	{
 		return nullptr;
 	}
@@ -196,7 +196,7 @@ const FMovesetRow* UActionComponent::FindBestMoveset(
 
 bool UActionComponent::CanStartAction(const FActionDataRow& ActionData)
 {
-	if (ActiveActionTid != InvalidActionTid)
+	if (ActiveActionTid != ActionComponentInvalidActionTid)
 	{
 		const FActionDataRow* ActiveActionData = GetActiveActionData();
 		if (ActiveActionData && !ActiveActionData->bCanBeInterrupted)
