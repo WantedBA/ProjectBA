@@ -90,7 +90,11 @@
             "StaminaCostType": "Instant",
             "MinRequiredStamina": 1,
             "SprintRestartStaminaPercent": 0,
-            "ActionType": "DodgeRoll"
+            "ActionType": "DodgeRoll",
+            "Cooldown": 0.8,
+            "bLocksMovement": 1,
+            "bUsesRootMotion": 1,
+            "bCanBeInterrupted": 1
         }
     ],
     "ActionAnimationData": [
@@ -104,7 +108,7 @@
             "PlayRate": 1,
             "BlendIn": 0.1,
             "BlendOut": 0.1,
-            "bUseRootMotion": false
+            "bUseRootMotion": 1
         }
     ],
     "ActionWindowData": [
@@ -112,8 +116,22 @@
             "Tid": 40021,
             "ActionAnimationTid": 30021,
             "WindowType": "Invincible",
+            "StartTime": 0.1,
+            "EndTime": 0.55
+        },
+        {
+            "Tid": 40022,
+            "ActionAnimationTid": 30021,
+            "WindowType": "InterruptLock",
             "StartTime": 0,
-            "EndTime": 0
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40023,
+            "ActionAnimationTid": 30021,
+            "WindowType": "InputBuffer",
+            "StartTime": 0.55,
+            "EndTime": 0.8
         }
     ]
 }

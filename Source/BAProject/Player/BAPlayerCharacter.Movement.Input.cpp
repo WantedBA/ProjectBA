@@ -1,9 +1,11 @@
 #include "Player/BAPlayerCharacter.h"
 
+#include "Component/ActionComponent.h"
+
 // Phase가 루트모션 소유가 아닐 때만 저장된 이동 입력을 실제 이동에 사용한다.
 void ABAPlayerCharacter::ApplyBufferedMoveInput()
 {
-	if (!MovementRuntime.bHasMoveInput || IsMovementPhaseUsingRootMotion())
+	if (!MovementRuntime.bHasMoveInput || IsMovementPhaseUsingRootMotion() || IsActionMovementLocked())
 	{
 		return;
 	}
@@ -92,6 +94,11 @@ FVector2D ABAPlayerCharacter::GetInterpolatedMoveInputVector() const
 	}
 
 	return MovementRuntime.MoveInputVector;
+}
+
+bool ABAPlayerCharacter::IsActionMovementLocked() const
+{
+	return ActionComponent && ActionComponent->IsMovementLockedByAction();
 }
 
 // 전달받은 2D 입력을 컨트롤 yaw 기준 월드 방향으로 변환한다.

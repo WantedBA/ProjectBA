@@ -103,6 +103,11 @@ void ABAPlayerCharacter::BeginPlay()
 		OnHealthChanged(StatComponent->GetCurrentHP(), StatComponent->GetMaxHP());
 		OnStaminaChanged(StatComponent->GetCurrentStamina(), StatComponent->GetMaxStamina());
 	}
+
+	if (ActionComponent)
+	{
+		ActionComponent->OnActionStarted.AddDynamic(this, &ABAPlayerCharacter::HandleActionStarted);
+	}
 }
 
 // 공통 Movement 상태를 매 프레임 갱신하고, 가능한 경우 이동 입력을 소비한다.
@@ -178,4 +183,21 @@ void ABAPlayerCharacter::InitializeFromTable()
 	}
 
 	GetCharacterMovement()->MaxWalkSpeed = SpeedSettings.RunSpeed;
+}
+
+void ABAPlayerCharacter::HandleActionStarted(const int32 ActionTid, const EActionType ActionType)
+{
+	if (!ActionComponent || !ActionComponent->IsMovementLockedByAction())
+	{
+		return;
+	}
+
+	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
+	{
+		MovementComponent->StopMovementImmediately();
+	}
+
+	MovementRuntime.Phase = EPlayerMovementPhase::None;
+	MovementRuntime.PhaseElapsedTime = 0.f;
+	MovementRuntime.bWaitingForPhaseAnimation = false;
 }

@@ -145,7 +145,7 @@ void ABAPlayerCharacter::DrainLadderSprintStamina(const float DeltaTime)
 		return;
 	}
 
-	StatComponent->SetCurrentStamina(StatComponent->GetCurrentStamina() - CalculateSprintStaminaDrain(DeltaTime));
+	StatComponent->ConsumeStamina(CalculateSprintStaminaDrain(DeltaTime));
 	LockSprintUntilRecovered();
 
 	if (!IsSprintAllowedByStamina())

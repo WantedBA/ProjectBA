@@ -19,6 +19,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
+	virtual void PlayerTick(float DeltaTime) override;
 	
 private:
 	// TODO: KM/Gamepad IMC 나누기
@@ -42,6 +43,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	float SprintDodgeTapMaxTime = 0.25f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input", meta = (ClampMin = "0.0"))
+	float SprintHoldRequiredTime = 0.5f;
 	
 	UPROPERTY(EditDefaultsOnly, Category="Input")
 	TObjectPtr<UInputAction> InteractAction;
@@ -58,6 +62,7 @@ private:
 	void ToggleWalk();
 	void OnSprintStarted();
 	void OnSprintCompleted();
+	void UpdateSprintHoldState();
 	void ApplyMovementStateByModifier() const;
 	bool IsSprintDodgeTap() const;
 	void TryStartDodgeAction() const;
@@ -66,6 +71,7 @@ private:
 	void ToggleStrafe();
 
 	bool bWalkToggleEnabled = false;
+	bool bSprintInputHeld = false;
 	bool bSprintModifierHeld = false;
 	bool bHasMoveInput = false;
 	double SprintDodgePressedTime = 0.0;

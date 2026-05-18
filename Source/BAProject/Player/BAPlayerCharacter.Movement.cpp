@@ -93,7 +93,7 @@ FVector2D ABAPlayerCharacter::GetMoveInputVector() const
 // 현재 이동 입력을 컨트롤 yaw 기준 월드 방향으로 변환한다.
 FVector ABAPlayerCharacter::GetMoveInputWorldDirection() const
 {
-	if (!MovementRuntime.bHasMoveInput)
+	if (!MovementRuntime.bHasMoveInput || IsActionMovementLocked())
 	{
 		return FVector::ZeroVector;
 	}
@@ -299,10 +299,25 @@ void ABAPlayerCharacter::FinishCurrentMovementPhase()
 // 실제 적용 중인 Gait를 바꾸고 MovementComponent 속도를 갱신한다.
 void ABAPlayerCharacter::SetActiveGaitAndSpeed(const EMovementState NewGait)
 {
+	const EMovementState PreviousGait = MovementRuntime.ActiveGait;
 	MovementRuntime.ActiveGait = NewGait;
 	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
 	{
 		MovementComponent->MaxWalkSpeed = GetSpeedForGait(NewGait);
+	}
+
+	if (PreviousGait == NewGait)
+	{
+		return;
+	}
+
+	if (NewGait == EMovementState::Sprint)
+	{
+		PauseSprintStaminaRecovery();
+	}
+	else if (PreviousGait == EMovementState::Sprint)
+	{
+		ResumeSprintStaminaRecovery(true);
 	}
 }
 
