@@ -182,6 +182,8 @@ void AEnemyBase::OnDeath()
 
 	SetActorEnableCollision(false);
 
+	OnDeathEvent.Broadcast();
+
 	K2_OnDeadVisuals();
 }
 

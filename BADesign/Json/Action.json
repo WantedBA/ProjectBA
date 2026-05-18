@@ -1,0 +1,119 @@
+{
+    "Moveset": [
+        {
+            "Tid": 20001,
+            "MovesetKey": "Default",
+            "Command": "LightAttack",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Direction": "Any",
+            "ActionTid": 10001,
+            "Priority": 0
+        },
+        {
+            "Tid": 20002,
+            "MovesetKey": "Default",
+            "Command": "HeavyAttack",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Direction": "Any",
+            "ActionTid": 10002,
+            "Priority": 0
+        },
+        {
+            "Tid": 20011,
+            "MovesetKey": "Default",
+            "Command": "Guard",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Direction": "Any",
+            "ActionTid": 10011,
+            "Priority": 0
+        },
+        {
+            "Tid": 20021,
+            "MovesetKey": "Default",
+            "Command": "Dodge",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Direction": "Any",
+            "ActionTid": 10021,
+            "Priority": 0
+        }
+    ],
+    "ActionData": [
+        {
+            "Tid": 10001,
+            "Name": "LightAttack",
+            "Category": "Attack",
+            "StaminaCost": 15,
+            "StaminaCostType": "Instant",
+            "MinRequiredStamina": 1,
+            "SprintRestartStaminaPercent": 0,
+            "ActionType": "LightAttack"
+        },
+        {
+            "Tid": 10002,
+            "Name": "HeavyAttack",
+            "Category": "Attack",
+            "StaminaCost": 30,
+            "StaminaCostType": "Instant",
+            "MinRequiredStamina": 1,
+            "SprintRestartStaminaPercent": 0,
+            "ActionType": "HeavyAttack"
+        },
+        {
+            "Tid": 10011,
+            "Name": "Guard",
+            "Category": "Defence",
+            "StaminaCost": 20,
+            "StaminaCostType": "Instant",
+            "MinRequiredStamina": 1,
+            "SprintRestartStaminaPercent": 0,
+            "ActionType": "Guard"
+        },
+        {
+            "Tid": 10020,
+            "Name": "Sprint",
+            "Category": "Movement",
+            "StaminaCost": 20,
+            "StaminaCostType": "PerSecond",
+            "MinRequiredStamina": 0,
+            "SprintRestartStaminaPercent": 70,
+            "ActionType": "Sprint"
+        },
+        {
+            "Tid": 10021,
+            "Name": "DodgeRoll",
+            "Category": "Movement",
+            "StaminaCost": 12,
+            "StaminaCostType": "Instant",
+            "MinRequiredStamina": 1,
+            "SprintRestartStaminaPercent": 0,
+            "ActionType": "DodgeRoll"
+        }
+    ],
+    "ActionAnimationData": [
+        {
+            "Tid": 30021,
+            "ActionTid": 10021,
+            "Direction": "Any",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/AM_DodgeRoll_Relaxed_Any.AM_DodgeRoll_Relaxed_Any",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": false
+        }
+    ],
+    "ActionWindowData": [
+        {
+            "Tid": 40021,
+            "ActionAnimationTid": 30021,
+            "WindowType": "Invincible",
+            "StartTime": 0,
+            "EndTime": 0
+        }
+    ]
+}

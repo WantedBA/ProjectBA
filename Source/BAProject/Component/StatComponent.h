@@ -60,6 +60,8 @@ public:
 	FORCEINLINE float GetMaxStamina() const { return MaxStamina; }
 	FORCEINLINE void SetMaxStamina(const float NewMaxStamina) { MaxStamina = NewMaxStamina; }
 	FORCEINLINE float GetCurrentStamina() const { return CurrentStamina; }
+	UFUNCTION(BlueprintCallable, Category = "Stat")
+	void ConsumeStamina(float ConsumeAmount);
 	void SetCurrentStamina(const float NewCurrentStamina);
 
 	FORCEINLINE float GetWalkSpeed() const { return WalkSpeed; }

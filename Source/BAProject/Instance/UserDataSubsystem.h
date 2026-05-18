@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "SubSystems/GameInstanceSubsystem.h"
-#include "Tables/PlayerEnums.h"
 #include "UserDataSubsystem.generated.h"
 
 USTRUCT(BlueprintType)
@@ -42,27 +41,6 @@ struct FPlayerBaseStat
 	float LadderExitClearance = 0.f; // LadderExitClearance
 };
 
-USTRUCT(BlueprintType)
-struct FPlayerActionData
-{
-	GENERATED_BODY()
-	
-	UPROPERTY(BlueprintReadWrite)
-	int32 Tid = 0;
-	UPROPERTY(BlueprintReadWrite)
-	FName Name;
-	UPROPERTY(BlueprintReadWrite)
-	EPlayerActionCategory Category = EPlayerActionCategory::Movement;
-	UPROPERTY(BlueprintReadWrite)
-	float StaminaCost = 0.f;
-	UPROPERTY(BlueprintReadWrite)
-	EPlayerStaminaCostType StaminaCostType = EPlayerStaminaCostType::Instant;
-	UPROPERTY(BlueprintReadWrite)
-	float MinRequiredStamina = 0.f;
-	UPROPERTY(BlueprintReadWrite)
-	float SprintRestartStaminaPercent = 0.f;
-};
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPlayerHpChanged, float, CurrentHP, float, MaxHp);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPlayerStaminaChanged, float, CurrentStamina, float, MaxStamina);
 
@@ -80,8 +58,6 @@ public:
 	static UUserDataSubsystem* Get(const UObject* WorldContext);
 	
 	FORCEINLINE FPlayerBaseStat GetBaseStat() const { return BaseStat; }
-	FORCEINLINE TMap<int32, FPlayerActionData> GetActionDataMap() const { return ActionDataMap;}
-	const FPlayerActionData* FindActionData(const int32 Tid) const { return ActionDataMap.Find(Tid); }
 
 	// UI
 	UPROPERTY(BlueprintAssignable, BlueprintCallable, Category = "User|Event")
@@ -95,11 +71,7 @@ public:
 protected:
 	UPROPERTY(BlueprintReadOnly)
 	FPlayerBaseStat BaseStat;
-	
-	UPROPERTY(BlueprintReadOnly)
-	TMap<int32, FPlayerActionData> ActionDataMap;
 private:
 	void SetBaseStat();
-	void SetActionData();
 
 };

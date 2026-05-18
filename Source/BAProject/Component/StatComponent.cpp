@@ -104,6 +104,16 @@ void UStatComponent::InitializeStats
 	OnHPChanged.Broadcast(CurrentHP, MaxHP);
 }
 
+void UStatComponent::ConsumeStamina(const float ConsumeAmount)
+{
+	if (ConsumeAmount <= 0.f)
+	{
+		return;
+	}
+
+	SetCurrentStamina(CurrentStamina - ConsumeAmount);
+}
+
 void UStatComponent::SetCurrentStamina(const float NewCurrentStamina)
 {
 	const float OldStamina = CurrentStamina;

@@ -1,0 +1,25 @@
+{
+    "Quest": [
+        {
+            "QuestTid": 1001,
+            "QuestType": 0,
+            "NameTextTid": 20001,
+            "DescTextTid": 20002,
+            "RewardTid": 501
+        }
+    ],
+    "ZoneMonster": [
+        {
+            "ZoneMonsterTid": 1,
+            "QuestTid": 1001,
+            "MonsterTid": 10001,
+            "SpawnCount": 2
+        },
+        {
+            "ZoneMonsterTid": 2,
+            "QuestTid": 1001,
+            "MonsterTid": 10002,
+            "SpawnCount": 3
+        }
+    ]
+}

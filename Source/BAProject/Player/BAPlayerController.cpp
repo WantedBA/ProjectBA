@@ -4,6 +4,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
+#include "Component/ActionComponent.h"
 #include "Component/InteractorComponent.h"
 
 ABAPlayerController::ABAPlayerController()
@@ -82,9 +83,7 @@ void ABAPlayerController::SetupInputComponent()
 
 	if (ensureMsgf(WalkAction, TEXT("WalkAction is not configured on %s"), *GetName()))
 	{
-		EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Started, this, &ABAPlayerController::OnWalkStarted);
-		EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Completed, this, &ABAPlayerController::OnWalkCompleted);
-		EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Canceled, this, &ABAPlayerController::OnWalkCompleted);
+		EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Started, this, &ABAPlayerController::ToggleWalk);
 	}
 
 	if (ensureMsgf(SprintAction, TEXT("SprintAction is not configured on %s"), *GetName()))
@@ -161,28 +160,30 @@ void ABAPlayerController::LightAttack()
 	}
 }
 
-void ABAPlayerController::OnWalkStarted()
+void ABAPlayerController::ToggleWalk()
 {
-	bWalkModifierHeld = true;
-	ApplyMovementStateByModifier();
-}
-
-void ABAPlayerController::OnWalkCompleted()
-{
-	bWalkModifierHeld = false;
+	bWalkToggleEnabled = !bWalkToggleEnabled;
 	ApplyMovementStateByModifier();
 }
 
 void ABAPlayerController::OnSprintStarted()
 {
 	bSprintModifierHeld = true;
+	SprintDodgePressedTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
 	ApplyMovementStateByModifier();
 }
 
 void ABAPlayerController::OnSprintCompleted()
 {
+	const bool bShouldDodge = IsSprintDodgeTap();
+
 	bSprintModifierHeld = false;
 	ApplyMovementStateByModifier();
+
+	if (bShouldDodge)
+	{
+		TryStartDodgeAction();
+	}
 }
 
 void ABAPlayerController::ApplyMovementStateByModifier() const
@@ -205,7 +206,7 @@ void ABAPlayerController::ApplyMovementStateByModifier() const
 	{
 		PC->SetMovementState(EMovementState::Sprint);
 	}
-	else if (bWalkModifierHeld)
+	else if (bWalkToggleEnabled)
 	{
 		PC->SetMovementState(EMovementState::Walk);
 	}
@@ -213,6 +214,34 @@ void ABAPlayerController::ApplyMovementStateByModifier() const
 	{
 		PC->SetMovementState(EMovementState::Run);
 	}
+}
+
+bool ABAPlayerController::IsSprintDodgeTap() const
+{
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	return World->GetTimeSeconds() - SprintDodgePressedTime <= SprintDodgeTapMaxTime;
+}
+
+void ABAPlayerController::TryStartDodgeAction() const
+{
+	ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
+	if (!PC || PC->IsOnLadder())
+	{
+		return;
+	}
+
+	UActionComponent* ActionComponent = PC->GetActionComponent();
+	if (!ActionComponent)
+	{
+		return;
+	}
+
+	ActionComponent->TryStartAction(EActionCommand::Dodge);
 }
 
 void ABAPlayerController::OnInteract()
