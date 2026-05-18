@@ -43,6 +43,10 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Quest")
 	TSubclassOf<AMonster> MonsterClass;
+	
+	UPROPERTY(EditInstanceOnly, Category = "Quest", 
+		meta = (MustImplement = "/Script/BAProject.QuestActivatable"))
+	TArray<TObjectPtr<AActor>> LinkedActivatables;
 
 	UPROPERTY(Transient)
 	TArray<FTransform> CachedSpawnTransforms;

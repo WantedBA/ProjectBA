@@ -6,7 +6,9 @@
 #include "Tables/RewardRows.h"
 #include "Enemy/Monster.h"
 #include "Enemy/EnemyBase.h"
+#include "Quest/QuestActivatable.h"
 #include "Quest/QuestTriggerActor.h"
+#include "Tables/QuestEnums.h"
 
 UQuestManageSubsystem* UQuestManageSubsystem::Get(const UObject* WorldContext)
 {
@@ -16,8 +18,39 @@ UQuestManageSubsystem* UQuestManageSubsystem::Get(const UObject* WorldContext)
     return GI ? GI->GetSubsystem<UQuestManageSubsystem>() : nullptr;
 }
 
+void UQuestManageSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+    Super::Initialize(Collection);
+    
+    // 테스트 로그 코드
+#if !UE_BUILD_SHIPPING
+    OnQuestCompleted.AddWeakLambda(this, [](int32 Tid)
+    {
+        UE_LOG(LogTemp, Display, TEXT("[Quest] Quest %d Cleared!"), Tid);
+        
+        if (GEngine)
+        {
+            GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, 
+                FString::Printf(TEXT("Quest %d Cleared!"), Tid));
+        }
+    });
+    
+    OnRewardGranted.AddWeakLambda(this, [](int32 RewardType, int32 Count)
+    {
+        UE_LOG(LogTemp, Display, TEXT("[Quest] Reward type=%d count=%d"),
+            RewardType, Count);
+        
+        if (GEngine)
+        {
+            GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, 
+                FString::Printf(TEXT("REward Type=%d Count=%d!"), RewardType, Count));
+        }
+    });
+#endif
+}
+
 void UQuestManageSubsystem::StartQuest(int32 QuestTid, const TArray<FTransform>& SpawnTransforms,
-    TSubclassOf<AMonster> MonsterClass)
+                                       TSubclassOf<AMonster> MonsterClass)
 {
     if (ActiveQuests.Contains(QuestTid)) return;
 
@@ -49,10 +82,10 @@ void UQuestManageSubsystem::StartQuest(int32 QuestTid, const TArray<FTransform>&
         PendingMonsters.Remove(QuestTid);
     }
 
-    if (TArray<TWeakObjectPtr<AActor>>* PendingW = PendingWalls.Find(QuestTid))
+    if (TArray<TWeakObjectPtr<AActor>>* PendingA = PendingActivatables.Find(QuestTid))
     {
-        State.Walls = MoveTemp(*PendingW);
-        PendingWalls.Remove(QuestTid);
+        State.Activatables = MoveTemp(*PendingA);
+        PendingActivatables.Remove(QuestTid);
     }
 
     for (const FZoneMonsterRows* Row : TM->GetZoneMonstersByQuest(QuestTid))
@@ -61,7 +94,7 @@ void UQuestManageSubsystem::StartQuest(int32 QuestTid, const TArray<FTransform>&
     }
 
     ActiveQuests.Add(QuestTid, MoveTemp(State));
-    SetWallsActive(QuestTid, true);
+    SetActivatablesActive(QuestTid, true);
     SpawnQuestMonsters(QuestTid, SpawnTransforms, MonsterClass);
 
     if (ActiveQuests.Contains(QuestTid) && ActiveQuests[QuestTid].RemainingMonsters <= 0)
@@ -76,10 +109,19 @@ void UQuestManageSubsystem::RegisterPrePlacedMonster(int32 QuestTid, AActor* Mon
     PendingMonsters.FindOrAdd(QuestTid).Add(MonsterActor);
 }
 
-void UQuestManageSubsystem::RegisterWall(int32 QuestTid, AActor* WallActor)
+void UQuestManageSubsystem::RegisterActivatable(int32 QuestTid, AActor* Activatable)
 {
-    if (!IsValid(WallActor)) return;
-    PendingWalls.FindOrAdd(QuestTid).Add(WallActor);
+    if (!IsValid(Activatable)) return;
+    
+    if (!Activatable->Implements<<UQuestActivatable>())
+    {
+        UE_LOG(LogTemp, Warning,
+             TEXT("[QuestManageSubsystem] Actor %s does not implement IQuestActivatable, ignored."),
+             *Activatable->GetName());
+        return;
+    }
+    
+    PendingActivatables.FindOrAdd(QuestTid).Add(Activatable);
 }
 
 void UQuestManageSubsystem::NotifyMonsterKilled(int32 QuestTid)
@@ -113,7 +155,7 @@ void UQuestManageSubsystem::AbortQuest(int32 QuestTid)
         }
     }
     
-    SetWallsActive(QuestTid, false);
+    SetActivatablesActive(QuestTid, false);
     ActiveQuests.Remove(QuestTid);
     
     if (TArray<TWeakObjectPtr<AQuestTriggerActor>>* Triggers = RegisteredTriggers.Find(QuestTid))
@@ -172,7 +214,7 @@ void UQuestManageSubsystem::CompleteQuest(int32 QuestTid)
 {
     if (!ActiveQuests.Contains(QuestTid)) return;
 
-    SetWallsActive(QuestTid, false);
+    SetActivatablesActive(QuestTid, false);
 
     UBATableManager* TM = UBATableManager::Get(GetGameInstance());
     if (TM)
@@ -199,17 +241,25 @@ void UQuestManageSubsystem::ApplyRewards(int32 RewardTid)
     }
 }
 
-void UQuestManageSubsystem::SetWallsActive(int32 QuestTid, bool bActive)
+void UQuestManageSubsystem::SetActivatablesActive(int32 QuestTid, bool bActive)
 {
     FQuestRuntimeState* State = ActiveQuests.Find(QuestTid);
     if (!State) return;
 
-    for (const TWeakObjectPtr<AActor>& Weak : State->Walls)
+    for (const TWeakObjectPtr<AActor>& Weak : State->Activatables)
     {
-        if (AActor* Wall = Weak.Get())
+        AActor* Actor = Weak.Get();
+        
+        if (!Actor || !Actor->Implements<UQuestActivatable>())
+            continue;
+        
+        if (bActive)
         {
-            Wall->SetActorHiddenInGame(!bActive);
-            Wall->SetActorEnableCollision(bActive);
+            IQuestActivatable::Execute_OnQuestActivated(Actor, QuestTid);
+        }
+        else
+        {
+            IQuestActivatable::Execute_OnQuestDeactivated(Actor, QuestTid);
         }
     }
 }

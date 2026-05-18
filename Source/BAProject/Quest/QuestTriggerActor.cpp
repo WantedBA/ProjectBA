@@ -1,7 +1,6 @@
 // Copyright TeamBA. All Rights Reserved.
 
 #include "Quest/QuestTriggerActor.h"
-
 #include "Components/BoxComponent.h"
 #include "Instance/QuestManageSubsystem.h"
 #include "Player/BAPlayerCharacter.h"
@@ -57,6 +56,13 @@ void AQuestTriggerActor::BeginPlay()
 	{
 		if (UQuestManageSubsystem* QM = UQuestManageSubsystem::Get(this))
 		{
+			for (AActor* Actor : LinkedActivatables)
+			{
+				if (Actor)
+				{
+					QM->RegisterActivatable(QuestTid, Actor);
+				}
+			}
 			QM->RegisterTrigger(QuestTid, this);
 		}
 	}
