@@ -27,7 +27,7 @@ enum class EEnemyGrade : uint8
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStateChanged, EEnemyState, OldState, EEnemyState, NewState);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnAnimationFinishedDelegate, EEnemyState);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnAttackAnimationFinishedDelegate, EEnemyState);
 DECLARE_MULTICAST_DELEGATE(FOnEnemyDeathDelegate);
 
 UCLASS(Abstract)
@@ -38,7 +38,6 @@ class BAPROJECT_API AEnemyBase : public ACharacterBase
 public:
 	AEnemyBase();
 
-	UFUNCTION(BlueprintCallable, Category = "Enemy")
 	virtual void InitializeFromTable(int32 InTid);
 
 	virtual void Attack();
@@ -50,6 +49,7 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "State")
 	bool IsDead() const { return CurrentState == EEnemyState::Dead; }
+	void SetSuperArmor(bool NewBool) { bIsSuperArmor = NewBool; }
 
 	UFUNCTION(BlueprintPure, Category = "State")
 	EEnemyState GetCurrentState() const { return CurrentState; }
@@ -57,7 +57,11 @@ public:
 	UFUNCTION(BlueprintPure, Category = "State")
 	EEnemyGrade GetEnemyGrade() const { return EnemyGrade; }
 
+	int32 GetMonsterTid() const { return MonsterTid; }
+
 	virtual void UpdateMoveSpeed(EEnemyState NewState);
+	virtual void UpdateBlackBoardState();
+	virtual void ApplyKnockback(AActor* DamageCauser, float Force);
 
 protected:
 	virtual void PostInitializeComponents() override;
@@ -65,7 +69,6 @@ protected:
 
 	virtual void OnDamaged(float FinalDamage, AActor* DamageCauser) override;
 
-	UFUNCTION(BlueprintCallable, Category = "State")
 	void SetState(EEnemyState NewState);
 
 	// 시각 연출 이벤트
@@ -76,7 +79,7 @@ protected:
 	void K2_OnDeadVisuals();
 
 public:
-	FOnAnimationFinishedDelegate OnAnimationFinished;
+	FOnAttackAnimationFinishedDelegate OnAttackAnimationFinished;
 	FOnEnemyDeathDelegate OnDeathEvent;
 
 protected:
@@ -102,5 +105,8 @@ protected:
 	EEnemyGrade EnemyGrade;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	bool bIsSuperArmor;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UAnimMontage> AttackMontage;
 };
