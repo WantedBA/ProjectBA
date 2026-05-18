@@ -18,7 +18,8 @@ enum class EActionStartResult : uint8
 	ActionDataNotFound,
 	AlreadyRunning,
 	NotEnoughStamina,
-	Cooldown
+	Cooldown,
+	Buffered
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionStarted, int32, ActionTid, EActionType, ActionType);
@@ -42,7 +43,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionCompleted, int32, ActionTi
  *   4) CompleteCurrentAction   -> 애니메이션/노티파이/상위 로직에서 액션 종료를 통지.
  *
  * 애니메이션 재생은 ActionAnimationComponent 가 ActionAnimationData 를 읽어 처리한다.
- * 공격 판정, 무적 iframe 적용은 ActionWindowData 를 읽는 후속 단계에서 붙인다.
+ * 무적 iframe 등 애니메이션 시간축 판정은 ActionAnimationComponent 가 ActionWindowData 를 읽어 처리한다.
  */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class BAPROJECT_API UActionComponent : public UActorComponent
@@ -67,6 +68,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	void CompleteCurrentAction();
 
+	UFUNCTION(BlueprintCallable, Category = "Action")
+	void SetActiveActionInterruptLocked(bool bNewInterruptLocked);
+
+	UFUNCTION(BlueprintCallable, Category = "Action")
+	void SetActiveActionInputBufferOpen(bool bNewInputBufferOpen);
+
 	UFUNCTION(BlueprintPure, Category = "Action")
 	bool IsActionRunning() const { return ActiveActionTid != 0; }
 
@@ -78,6 +85,12 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Action")
 	EActionRuntimeState GetActionRuntimeState() const { return RuntimeState; }
+
+	UFUNCTION(BlueprintPure, Category = "Action")
+	bool IsMovementLockedByAction() const;
+
+	UFUNCTION(BlueprintPure, Category = "Action")
+	bool IsActiveActionUsingRootMotion() const;
 
 	UFUNCTION(BlueprintPure, Category = "Action")
 	EActionDirection GetActiveActionDirection() const { return ActiveActionDirection; }
@@ -111,7 +124,7 @@ public:
 
 	const FActionDataRow* GetActiveActionData() const;
 	const FMovesetRow* FindBestMoveset(EActionCommand Command, EActionDirection Direction) const;
-	bool CanStartAction(const FActionDataRow& ActionData);
+	bool CanStartAction(const FActionDataRow& ActionData, EActionDirection Direction);
 
 protected:
 	virtual void BeginPlay() override;
@@ -121,7 +134,10 @@ private:
 	bool TryStartActionByTid(int32 ActionTid, EActionDirection Direction);
 	void BeginAction(const FActionDataRow& ActionData, EActionDirection Direction);
 	void StartCooldown(const FActionDataRow& ActionData);
-	void ConsumeInstantCost(const FActionDataRow& ActionData) const;
+	void ConsumeInstantCost(const FActionDataRow& ActionData);
+	void BufferAction(int32 ActionTid, EActionDirection Direction);
+	void ClearBufferedAction();
+	void TryStartBufferedAction();
 	void RefreshTickEnabled();
 	bool IsActionOnCooldown(int32 ActionTid) const;
 	EActionRuntimeState GetRuntimeStateForAction(const FActionDataRow& ActionData) const;
@@ -151,10 +167,26 @@ private:
 	EActionDirection ActiveActionDirection = EActionDirection::Any;
 
 	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
+	bool bActiveActionInterruptLocked = false;
+
+	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
+	bool bActiveActionInputBufferOpen = false;
+
+	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
+	bool bActiveActionPausedStaminaRecovery = false;
+
+	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
+	int32 BufferedActionTid = 0;
+
+	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
+	EActionDirection BufferedActionDirection = EActionDirection::Any;
+
+	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
 	EActionStartResult LastStartResult = EActionStartResult::Success;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UStatComponent> CachedStatComponent;
 
 	TMap<int32, float> CooldownRemainingByActionTid;
+	bool bConsumingBufferedAction = false;
 };

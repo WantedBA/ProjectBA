@@ -114,6 +114,13 @@ void ABAPlayerController::SetupInputComponent()
 	}
 }
 
+void ABAPlayerController::PlayerTick(const float DeltaTime)
+{
+	Super::PlayerTick(DeltaTime);
+
+	UpdateSprintHoldState();
+}
+
 void ABAPlayerController::Move(const FInputActionValue& Value)
 {
 	FVector2D Movement = Value.Get<FVector2D>();
@@ -168,7 +175,8 @@ void ABAPlayerController::ToggleWalk()
 
 void ABAPlayerController::OnSprintStarted()
 {
-	bSprintModifierHeld = true;
+	bSprintInputHeld = true;
+	bSprintModifierHeld = false;
 	SprintDodgePressedTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
 	ApplyMovementStateByModifier();
 }
@@ -177,6 +185,7 @@ void ABAPlayerController::OnSprintCompleted()
 {
 	const bool bShouldDodge = IsSprintDodgeTap();
 
+	bSprintInputHeld = false;
 	bSprintModifierHeld = false;
 	ApplyMovementStateByModifier();
 
@@ -184,6 +193,28 @@ void ABAPlayerController::OnSprintCompleted()
 	{
 		TryStartDodgeAction();
 	}
+}
+
+void ABAPlayerController::UpdateSprintHoldState()
+{
+	if (!bSprintInputHeld || bSprintModifierHeld)
+	{
+		return;
+	}
+
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	if (World->GetTimeSeconds() - SprintDodgePressedTime < SprintHoldRequiredTime)
+	{
+		return;
+	}
+
+	bSprintModifierHeld = true;
+	ApplyMovementStateByModifier();
 }
 
 void ABAPlayerController::ApplyMovementStateByModifier() const
