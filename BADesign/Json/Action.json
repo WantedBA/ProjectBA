@@ -92,5 +92,27 @@
             "SprintRestartStaminaPercent": 0,
             "ActionType": "DodgeRoll"
         }
+    ],
+    "ActionAnimationData": [
+        {
+            "Tid": 30021,
+            "ActionTid": 10021,
+            "Direction": "Any",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": false
+        }
+    ],
+    "ActionWindowData": [
+        {
+            "Tid": 40021,
+            "ActionAnimationTid": 30021,
+            "WindowType": "Invincible",
+            "StartTime": 0,
+            "EndTime": 0
+        }
     ]
 }
