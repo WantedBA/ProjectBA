@@ -7,7 +7,7 @@
 #include "QuestManageSubsystem.generated.h"
 
 class AMonster;
-class AQuestTriggerActor;
+class AQuestZoneActor;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnQuestCompleted, int32 /*QuestTid*/);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnQuestRewardGranted, int32 /*RewardType*/, int32 /*Count*/);
@@ -36,7 +36,7 @@ public:
 
     bool IsQuestActive(int32 QuestTid) const { return ActiveQuests.Contains(QuestTid); }
 
-    void RegisterTrigger(int32 QuestTid, AQuestTriggerActor* Trigger);
+    void RegisterTrigger(int32 QuestTid, AQuestZoneActor* Trigger);
     void AbortQuest(int32 QuestTid);
     
     FOnQuestCompleted OnQuestCompleted;
@@ -53,5 +53,5 @@ private:
     TMap<int32, TArray<TWeakObjectPtr<AActor>>> PendingMonsters;
     TMap<int32, TArray<TWeakObjectPtr<AActor>>> PendingActivatables;
     
-    TMap<int32, TArray<TWeakObjectPtr<AQuestTriggerActor>>> RegisteredTriggers;
+    TMap<int32, TArray<TWeakObjectPtr<AQuestZoneActor>>> RegisteredTriggers;
 };

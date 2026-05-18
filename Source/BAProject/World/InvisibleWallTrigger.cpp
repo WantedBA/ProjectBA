@@ -1,4 +1,4 @@
-﻿// Copyright TeamBA. All Rights Reserved.
+// Copyright TeamBA. All Rights Reserved.
 
 
 #include "World/InvisibleWallTrigger.h"
@@ -40,5 +40,18 @@ void AInvisibleWallTrigger::OpenWall()
 {
     SetWallActive(false);
     SetWallOpacity(0.f);
+}
+
+void AInvisibleWallTrigger::OnQuestActivated_Implementation(int32 QuestTid)
+{
+    bConsumed = true;
+    SetWallActive(true);
+    SetWallOpacity(1.f);
+    OnWallClosed.Broadcast(this);
+}
+
+void AInvisibleWallTrigger::OnQuestDeactivated_Implementation(int32 QuestTid)
+{
+    OpenWall();
 }
 

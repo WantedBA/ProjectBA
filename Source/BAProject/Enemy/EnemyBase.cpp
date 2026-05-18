@@ -220,7 +220,7 @@ void AEnemyBase::OnDeath()
 
 	OnDeathEvent.Broadcast();
 	AAIController* AIController = Cast<AAIController>(GetController());
-	if (AIController)
+	if (AIController && AIController->BrainComponent)
 	{
 		AIController->BrainComponent->StopLogic(TEXT("Dead"));
 	}

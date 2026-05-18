@@ -7,7 +7,7 @@
 #include "Enemy/Monster.h"
 #include "Enemy/EnemyBase.h"
 #include "Quest/QuestActivatable.h"
-#include "Quest/QuestTriggerActor.h"
+#include "Quest/QuestZoneActor.h"
 #include "Tables/QuestEnums.h"
 
 UQuestManageSubsystem* UQuestManageSubsystem::Get(const UObject* WorldContext)
@@ -113,7 +113,7 @@ void UQuestManageSubsystem::RegisterActivatable(int32 QuestTid, AActor* Activata
 {
     if (!IsValid(Activatable)) return;
     
-    if (!Activatable->Implements<<UQuestActivatable>())
+    if (!Activatable->Implements<UQuestActivatable>())
     {
         UE_LOG(LogTemp, Warning,
              TEXT("[QuestManageSubsystem] Actor %s does not implement IQuestActivatable, ignored."),
@@ -136,7 +136,7 @@ void UQuestManageSubsystem::NotifyMonsterKilled(int32 QuestTid)
     }
 }
 
-void UQuestManageSubsystem::RegisterTrigger(int32 QuestTid, AQuestTriggerActor* Trigger)
+void UQuestManageSubsystem::RegisterTrigger(int32 QuestTid, AQuestZoneActor* Trigger)
 {
     if (QuestTid <= 0 || !IsValid(Trigger)) return;
     RegisteredTriggers.FindOrAdd(QuestTid).AddUnique(Trigger);
@@ -158,11 +158,11 @@ void UQuestManageSubsystem::AbortQuest(int32 QuestTid)
     SetActivatablesActive(QuestTid, false);
     ActiveQuests.Remove(QuestTid);
     
-    if (TArray<TWeakObjectPtr<AQuestTriggerActor>>* Triggers = RegisteredTriggers.Find(QuestTid))
+    if (TArray<TWeakObjectPtr<AQuestZoneActor>>* Triggers = RegisteredTriggers.Find(QuestTid))
     {
-        for (const TWeakObjectPtr<AQuestTriggerActor>& Weak : *Triggers)
+        for (const TWeakObjectPtr<AQuestZoneActor>& Weak : *Triggers)
         {
-            if (AQuestTriggerActor* T = Weak.Get())
+            if (AQuestZoneActor* T = Weak.Get())
             {
                 T->ReArm();
             }
