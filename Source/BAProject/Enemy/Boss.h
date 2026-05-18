@@ -64,9 +64,6 @@ public:
 	UFUNCTION()
 	virtual void HandleHPChanged(float CurrentHP, float MaxHP);
 
-	UFUNCTION(BlueprintImplementableEvent, Category = "Boss|State")
-	void OnBossPhaseChanged(int32 NewPhase);
-
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;

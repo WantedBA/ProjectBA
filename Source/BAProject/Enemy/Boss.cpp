@@ -256,8 +256,6 @@ void ABoss::HandleHPChanged(float CurrentHP, float MaxHP)
 		
 		// 페이즈 전환 시 로직 (예: 광폭화, 패턴 추가 등)
 		UE_LOG(LogTemp, Warning, TEXT("Boss Phase Changed: %d"), CurrentPhase);
-		
-		OnBossPhaseChanged(CurrentPhase);
 	}
 }
 
