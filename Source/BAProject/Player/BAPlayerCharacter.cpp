@@ -1,6 +1,11 @@
 #include "Player/BAPlayerCharacter.h"
 
 #include "Camera/CameraComponent.h"
+#if !UE_BUILD_SHIPPING
+#include "Enemy/EnemyBase.h"
+#include "Component/StatComponent.h"
+#include "EngineUtils.h"
+#endif
 #include "Component/ActionAnimationComponent.h"
 #include "Component/ActionComponent.h"
 #include "Component/InteractorComponent.h"
@@ -122,6 +127,36 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 	}
 	
 	TickMovementRuntime(DeltaTime);
+
+#if !UE_BUILD_SHIPPING
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (PC->IsInputKeyDown(EKeys::LeftControl) && PC->WasInputKeyJustPressed(EKeys::Zero))
+		{
+			AEnemyBase* NearestEnemy = nullptr;
+			float MinDistSq = FMath::Square(1500.f);
+
+			for (TActorIterator<AEnemyBase> It(GetWorld()); It; ++It)
+			{
+				if (It->IsDead()) continue;
+				float DistSq = FVector::DistSquared(GetActorLocation(), It->GetActorLocation());
+				if (DistSq < MinDistSq)
+				{
+					MinDistSq = DistSq;
+					NearestEnemy = *It;
+				}
+			}
+
+			if (NearestEnemy)
+			{
+				if (UStatComponent* SC = NearestEnemy->FindComponentByClass<UStatComponent>())
+				{
+					SC->ApplyDamage(SC->GetMaxHP() + SC->GetDefence() + 1.f);
+				}
+			}
+		}
+	}
+#endif
 }
 
 // 기본 공격 입력 진입점

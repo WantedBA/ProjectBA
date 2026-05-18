@@ -1,9 +1,10 @@
-﻿// Copyright TeamBA. All Rights Reserved.
+// Copyright TeamBA. All Rights Reserved.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "World/InvisibleWallBase.h"
+#include "Quest/QuestActivatable.h"
 #include "InvisibleWallTrigger.generated.h"
 
 class ATriggerEventVolume;
@@ -12,7 +13,7 @@ class AInvisibleWallTrigger;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWallClosed, AInvisibleWallTrigger*, ClosedWall);
 
 UCLASS()
-class BAPROJECT_API AInvisibleWallTrigger : public AInvisibleWallBase
+class BAPROJECT_API AInvisibleWallTrigger : public AInvisibleWallBase, public IQuestActivatable
 {
     GENERATED_BODY()
 
@@ -22,6 +23,9 @@ public:
     // 외부 시스템이 호출 — 벽을 열고 비주얼을 끔. bConsumed는 유지 → 재진입해도 다시 안 닫힘
     UFUNCTION(BlueprintCallable, Category = "InvisibleWall")
     void OpenWall();
+
+    virtual void OnQuestActivated_Implementation(int32 QuestTid) override;
+    virtual void OnQuestDeactivated_Implementation(int32 QuestTid) override;
 
     // 벽이 닫힐 때 브로드캐스트 — 외부(전투/룸 매니저 등)가 구독
     UPROPERTY(BlueprintAssignable, Category = "InvisibleWall")
