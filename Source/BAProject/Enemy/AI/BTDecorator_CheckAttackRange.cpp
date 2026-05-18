@@ -27,10 +27,10 @@ bool UBTDecorator_CheckAttackRange::CalculateRawConditionValue(UBehaviorTreeComp
 
     if (Condition == EDistanceCondition::Distance_Greater)
     {
-        return Distance > AttackRange;
+        return Distance > AttackRange; // Chase
     }
     else
     {
-        return Distance <= AttackRange;
+        return Distance <= AttackRange; // Attack
     }
 }

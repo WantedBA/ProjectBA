@@ -63,6 +63,11 @@ public:
 
 	UAnimMontage* GetEnemyAttackMontage() const { return AttackMontage; }
 
+	virtual void Tick(float DeltaTime) override;
+
+#if WITH_EDITOR
+	virtual bool ShouldTickIfViewportsOnly() const override { return true; }
+#endif
 	virtual void UpdateMoveSpeed(EEnemyState NewState);
 	virtual void UpdateBlackBoardState();
 	virtual void ApplyKnockback(AActor* DamageCauser, float Force);
@@ -91,11 +96,17 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UCombatComponent> CombatComponent;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 	int32 MonsterTid;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 	float DetectRange;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	float AttackRange;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
+	bool bShowDebugRanges = true;
 
 	UPROPERTY(BlueprintAssignable, Category = "State")
 	FOnStateChanged OnStateChanged;

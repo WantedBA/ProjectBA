@@ -19,6 +19,7 @@ void AMonster::BeginPlay()
 
 void AMonster::Tick(float DeltaTime)
 {
+	Super::Tick(DeltaTime);
 	// AI 디버그 정보 시각화
 	AAIController* AIController = Cast<AAIController>(GetController());
 	if (AIController)
