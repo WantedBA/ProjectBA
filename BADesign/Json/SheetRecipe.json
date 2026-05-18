@@ -10,6 +10,10 @@
     "Monster": "MonsterTid",
     "PatrolPath": "Tid",
     "BaseStat": "Tid",
+    "ActionData": "Tid",
+    "Quest": "QuestTid",
+    "ZoneMonster": "ZoneMonsterTid",
+    "Reward": "RewardDetailTid",
     "Skill": "SkillTid",
     "Text": "TextTid"
 }

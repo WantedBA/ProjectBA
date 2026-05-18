@@ -12,6 +12,8 @@
 #include "Tables/MonsterRows.h"
 #include "Tables/BossMonster.h"
 #include "Tables/PatrolPathRow.h"
+#include "Tables/QuestRows.h"
+#include "Tables/RewardRows.h"
 #include "BATableManager.generated.h"
 
 /**
@@ -82,6 +84,13 @@ public:
 	const TMap<int32, F2StageBossAttackRows*>& GetBossAttackMap2() const { return BossAttackTable2.GetMap(); }
 	const TMap<int32, F3StageBossAttackRows*>& GetBossAttackMap3() const { return BossAttackTable3.GetMap(); }
 
+	// Quest
+	const FQuestRows* FindQuest(int32 InTid) const { return QuestTable.Find(InTid); }
+	TArray<const FZoneMonsterRows*> GetZoneMonstersByQuest(int32 InQuestTid) const;
+
+	// Reward
+	TArray<const FRewardRows*> GetRewardsByTid(int32 InRewardTid) const;
+
 private:
 	template<typename RowType, typename KeyType>
 	bool LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const FString AssetPath);
@@ -103,6 +112,10 @@ private:
 	TBAPropTable<F1StageBossAttackRows, int32> BossAttackTable1;
 	TBAPropTable<F2StageBossAttackRows, int32> BossAttackTable2;
 	TBAPropTable<F3StageBossAttackRows, int32> BossAttackTable3;
+
+	TBAPropTable<FQuestRows, int32> QuestTable;
+	TBAPropTable<FZoneMonsterRows, int32> ZoneMonsterTable;
+	TBAPropTable<FRewardRows, int32> RewardTable;
 
 	TArray<IBAPostRead*> PostReadList;
 

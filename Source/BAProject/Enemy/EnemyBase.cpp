@@ -148,7 +148,7 @@ void AEnemyBase::OnDeath()
 {
 	Super::OnDeath();
 	SetState(EEnemyState::Dead);
-
+	OnDeathEvent.Broadcast();
 	K2_OnDeadVisuals();
 }
 

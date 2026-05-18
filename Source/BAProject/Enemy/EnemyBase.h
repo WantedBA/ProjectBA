@@ -28,6 +28,7 @@ enum class EEnemyGrade : uint8
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStateChanged, EEnemyState, OldState, EEnemyState, NewState);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAnimationFinishedDelegate, EEnemyState);
+DECLARE_MULTICAST_DELEGATE(FOnEnemyDeathDelegate);
 
 UCLASS(Abstract)
 class BAPROJECT_API AEnemyBase : public ACharacterBase
@@ -76,6 +77,7 @@ protected:
 
 public:
 	FOnAnimationFinishedDelegate OnAnimationFinished;
+	FOnEnemyDeathDelegate OnDeathEvent;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright TeamBA. All Rights Reserved.
 
 
 #include "World/MapElevator.h"
@@ -155,10 +155,10 @@ void AMapElevator::StartAlign(ABAPlayerCharacter* Player)
 	AlignEndLoc = CenterPoint->GetComponentLocation();
 	AlignEndLoc.Z = Player->GetActorLocation().Z;  // 높이는 유지
 
-	// 입력만 차단 (캐릭터 무브먼트는 Walking 유지)
+	// 이동 입력만 차단 (카메라 조작은 유지)
 	if (APlayerController* PC = Cast<APlayerController>(Player->GetController()))
 	{
-		PC->DisableInput(PC);
+		PC->SetIgnoreMoveInput(true);
 	}
 	// 걷기 속도로 자동 이동
 	Player->SetMovementState(EMovementState::Walk);
@@ -179,19 +179,25 @@ void AMapElevator::TickAlign(float DeltaTime)
 
 	if (Dist <= ArrivalThreshold)
 	{
-		// 도착 — 정지 후 문 닫힘 단계로
+		// 도착 — 물리 이동 정지 + Idle Phase 전환 + 입력 반환
 		if (UCharacterMovementComponent* Move = Player->GetCharacterMovement())
 		{
 			Move->StopMovementImmediately();
+		}
+		Player->SetHasMoveInput(false);
+		Player->SetMovementState(EMovementState::Run);
+		if (APlayerController* PC = Cast<APlayerController>(Player->GetController()))
+		{
+			PC->ResetIgnoreMoveInput();
 		}
 		Alpha = 0.f;
 		SetState(EElevatorState::ClosingDoor);
 		return;
 	}
 
-	// 캐릭터를 목적지 방향으로 걷게
+	// 캐릭터를 목적지 방향으로 걷게 (SetIgnoreMoveInput 우회)
 	const FVector Dir = ToTarget / Dist;
-	Player->AddMovementInput(Dir, 1.0f);
+	Player->AddMovementInput(Dir, 1.0f, true);
 }
 
 void AMapElevator::TickMoving(float DeltaTime)
@@ -243,15 +249,7 @@ void AMapElevator::TickDoor(float DeltaTime, bool bClosing)
 		Alpha = 0.f;
 		if (bClosing)
 		{
-			// 문 닫힘 끝 -> 이동 시작
-			if (ABAPlayerCharacter* Player = RidingPlayer.Get())
-			{
-				Player->UnlockMovementForCutscene();
-				if (APlayerController* PC = Cast<APlayerController>(Player->GetController()))
-				{
-					PC->EnableInput(PC);
-				}
-			}
+			// 문 닫힘 끝 -> 이동 시작 (입력은 CenterPoint 도착 시 이미 반환됨)
 			StartElevateToOther();  // State = Moving
 		}
 		else

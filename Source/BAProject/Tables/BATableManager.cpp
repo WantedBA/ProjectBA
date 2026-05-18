@@ -66,6 +66,13 @@ void UBATableManager::LoadAllTables()
 	LoadTable(BossAttackTable2, *(TablePath + TEXT("DT_BossMonster_2StageBossAttack.DT_BossMonster_2StageBossAttack")));
 	LoadTable(BossAttackTable3, *(TablePath + TEXT("DT_BossMonster_3StageBossAttack.DT_BossMonster_3StageBossAttack")));
 
+	// Quest
+	LoadTable(QuestTable,      *(TablePath + TEXT("DT_Quest_Quest.DT_Quest_Quest")));
+	LoadTable(ZoneMonsterTable, *(TablePath + TEXT("DT_Quest_ZoneMonster.DT_Quest_ZoneMonster")));
+
+	// Reward
+	LoadTable(RewardTable, *(TablePath + TEXT("DT_Reward_Reward.DT_Reward_Reward")));
+
 	for (IBAPostRead* Table : PostReadList)
 	{
 		Table->PostRead();
@@ -123,6 +130,32 @@ bool UBATableManager::LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const 
 	OutTable.Build(DataTable);
 	PostReadList.Add(&OutTable);
 	return true;
+}
+
+TArray<const FZoneMonsterRows*> UBATableManager::GetZoneMonstersByQuest(int32 InQuestTid) const
+{
+	TArray<const FZoneMonsterRows*> Result;
+	for (const TPair<int32, FZoneMonsterRows*>& Pair : ZoneMonsterTable.GetMap())
+	{
+		if (Pair.Value && Pair.Value->QuestTid == InQuestTid)
+		{
+			Result.Add(Pair.Value);
+		}
+	}
+	return Result;
+}
+
+TArray<const FRewardRows*> UBATableManager::GetRewardsByTid(int32 InRewardTid) const
+{
+	TArray<const FRewardRows*> Result;
+	for (const TPair<int32, FRewardRows*>& Pair : RewardTable.GetMap())
+	{
+		if (Pair.Value && Pair.Value->RewardTid == InRewardTid)
+		{
+			Result.Add(Pair.Value);
+		}
+	}
+	return Result;
 }
 
 void UBATableManager::BuildChildSkillLists()
