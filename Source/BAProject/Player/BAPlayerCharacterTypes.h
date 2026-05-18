@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Tables/PlayerEnums.h"
+#include "Tables/ActionEnums.h"
 #include "BAPlayerCharacterTypes.generated.h"
 
 class AMapLadder;
@@ -147,7 +147,7 @@ struct FBAPlayerSprintCostSettings
 	float StaminaCost = 0.f;
 
 	UPROPERTY(VisibleAnywhere, Category = "Movement|Sprint")
-	EPlayerStaminaCostType StaminaCostType = EPlayerStaminaCostType::Instant;
+	EActionStaminaCostType StaminaCostType = EActionStaminaCostType::Instant;
 
 	UPROPERTY(VisibleAnywhere, Category = "Movement|Sprint")
 	float MinRequiredStamina = 0.f;

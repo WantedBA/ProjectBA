@@ -19,8 +19,10 @@ class FBATableGenerator
 {
 public:
 	static void Generate();
+	static bool GenerateHeadless();
 
 private:
+	static bool GenerateInternal(bool bShowUi);
 	static bool RunConverterExe(FString& OutLog);
 	static void ImportAllJson();
 	static void ImportJsonFile(const FString& JsonPath);

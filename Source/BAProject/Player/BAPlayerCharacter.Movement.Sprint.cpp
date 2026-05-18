@@ -57,9 +57,9 @@ float ABAPlayerCharacter::CalculateSprintStaminaDrain(const float DeltaTime) con
 
 	switch (SprintCostSettings.StaminaCostType)
 	{
-	case EPlayerStaminaCostType::PerSecond:
+	case EActionStaminaCostType::PerSecond:
 		return StatComponent->GetMaxStamina() * SprintCostSettings.StaminaCost / 100.f * DeltaTime;
-	case EPlayerStaminaCostType::Instant:
+	case EActionStaminaCostType::Instant:
 	default:
 		return SprintCostSettings.StaminaCost;
 	}

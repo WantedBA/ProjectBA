@@ -1,4 +1,6 @@
 {
+    "Moveset": "Tid",
+    "ActionData": "Tid",
     "1StageBossAttack": "Tid",
     "2StageBossAttack": "Tid",
     "3StageBossAttack": "Tid",
