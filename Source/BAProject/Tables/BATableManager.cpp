@@ -39,9 +39,17 @@ void UBATableManager::LoadAllTables()
 {
 	const FString TablePath = FString(TablePath::LoadTablePath);
 	
+	// Action
+	if (!LoadTable(ActionDataTable, *(TablePath + TEXT("DT_Action_ActionData.DT_Action_ActionData"))))
+	{
+		LoadTable(ActionDataTable, *(TablePath + TEXT("DT_Player_ActionData.DT_Player_ActionData")));
+	}
+	LoadTable(MovesetTable, *(TablePath + TEXT("DT_Action_Moveset.DT_Action_Moveset")));
+	LoadTable(ActionAnimationDataTable, *(TablePath + TEXT("DT_Action_ActionAnimationData.DT_Action_ActionAnimationData")));
+	LoadTable(ActionWindowDataTable, *(TablePath + TEXT("DT_Action_ActionWindowData.DT_Action_ActionWindowData")));
+
 	// Player
 	LoadTable(PlayerBaseStatTable, *(TablePath + TEXT("DT_Player_BaseStat.DT_Player_BaseStat")));
-	LoadTable(PlayerActionDataTable, *(TablePath + TEXT("DT_Player_ActionData.DT_Player_ActionData")));
 	
 	// Skills
 	LoadTable(SkillTable, *(TablePath + TEXT("DT_SkillTree_Skill.DT_SkillTree_Skill")));
@@ -90,18 +98,31 @@ bool UBATableManager::BP_FindSkill(int32 InTid, FSkillRow& OutRow) const
 }
 
 template<typename RowType, typename KeyType>
-void UBATableManager::LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const FString AssetPath)
+bool UBATableManager::LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const FString AssetPath)
 {
 	UDataTable* DataTable = LoadObject<UDataTable>(nullptr, *AssetPath);
 	if (!DataTable)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[BATableManager] DataTable not found: %s"), *AssetPath);
-		return;
+		return false;
+	}
+	if (!DataTable->GetRowStruct() || !DataTable->GetRowStruct()->IsChildOf(RowType::StaticStruct()))
+	{
+		UE_LOG(
+			LogTemp,
+			Error,
+			TEXT("[BATableManager] RowStruct mismatch: %s (expected %s, actual %s)"),
+			*AssetPath,
+			*RowType::StaticStruct()->GetName(),
+			DataTable->GetRowStruct() ? *DataTable->GetRowStruct()->GetName() : TEXT("None")
+		);
+		return false;
 	}
 
 	LoadedTables.Add(DataTable);
 	OutTable.Build(DataTable);
 	PostReadList.Add(&OutTable);
+	return true;
 }
 
 void UBATableManager::BuildChildSkillLists()

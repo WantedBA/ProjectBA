@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ActionRows.h"
 #include "PlayerRows.h"
 #include "SkillRows.h"
 #include "Subsystems/GameInstanceSubsystem.h"
@@ -36,11 +37,19 @@ private:
 	void LoadAllTables();
 
 public:
+	// Action
+	FORCEINLINE const FActionDataRow* FindActionData(const int32 InTid) const { return ActionDataTable.Find(InTid); }
+	FORCEINLINE const TMap<int32, FActionDataRow*>& GetActionDataTable() const { return ActionDataTable.GetMap(); }
+	FORCEINLINE const FMovesetRow* FindMoveset(const int32 InTid) const { return MovesetTable.Find(InTid); }
+	FORCEINLINE const TMap<int32, FMovesetRow*>& GetMovesetTable() const { return MovesetTable.GetMap(); }
+	FORCEINLINE const FActionAnimationDataRow* FindActionAnimationData(const int32 InTid) const { return ActionAnimationDataTable.Find(InTid); }
+	FORCEINLINE const TMap<int32, FActionAnimationDataRow*>& GetActionAnimationDataTable() const { return ActionAnimationDataTable.GetMap(); }
+	FORCEINLINE const FActionWindowDataRow* FindActionWindowData(const int32 InTid) const { return ActionWindowDataTable.Find(InTid); }
+	FORCEINLINE const TMap<int32, FActionWindowDataRow*>& GetActionWindowDataTable() const { return ActionWindowDataTable.GetMap(); }
+
 	// Player
 	FORCEINLINE const FPlayerBaseStatRow* FindPlayerBaseStat() const { return PlayerBaseStatTable.Find(1); } // 플레이어는 1명이므로 매직넘버 고정
-	FORCEINLINE const FPlayerActionDataRow* FindPlayerActionData(const int32 InTid) const { return PlayerActionDataTable.Find(InTid); }
-	FORCEINLINE const TMap<int32, FPlayerActionDataRow*>& GetPlayerActionDataTable() const { return PlayerActionDataTable.GetMap(); }
-	
+
 	// Consume
 	UFUNCTION(BlueprintCallable, Category = "BA|Table")
 	bool HasConsume(const int32 InTid) const { return ConsumeTable.Has(InTid); }
@@ -75,11 +84,15 @@ public:
 
 private:
 	template<typename RowType, typename KeyType>
-	void LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const FString AssetPath);
+	bool LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const FString AssetPath);
+
+	TBAPropTable<FActionDataRow, int32> ActionDataTable;
+	TBAPropTable<FMovesetRow, int32> MovesetTable;
+	TBAPropTable<FActionAnimationDataRow, int32> ActionAnimationDataTable;
+	TBAPropTable<FActionWindowDataRow, int32> ActionWindowDataTable;
 
 	TBAPropTable<FPlayerBaseStatRow, int32> PlayerBaseStatTable;
-	TBAPropTable<FPlayerActionDataRow, int32> PlayerActionDataTable;
-	
+
 	TBAPropTable<FConsumeItemRow, int32> ConsumeTable;
 	
 	TBAPropTable<FSkillRow, int32> SkillTable;

@@ -12,7 +12,6 @@ void UUserDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	Super::Initialize(Collection);
 	
 	SetBaseStat();
-	SetActionData();
 }
 
 void UUserDataSubsystem::Deinitialize()
@@ -79,42 +78,6 @@ void UUserDataSubsystem::SetBaseStat()
 	BaseStat.LadderClimbSpeedFast = BaseStatRow->LadderClimbSpeedFast;
 	BaseStat.LadderSlideDownSpeed = BaseStatRow->LadderSlideDownSpeed;
 	BaseStat.LadderExitClearance = BaseStatRow->LadderExitClearance;
-	
+
 	UE_LOG(LogTemp, Log, TEXT("[UserDataSubsystem] BaseStat loaded."));
-}
-
-void UUserDataSubsystem::SetActionData()
-{
-	const UBATableManager* TableManager = UBATableManager::Get(this);
-	if (!TableManager)
-	{
-		UE_LOG(LogTemp, Error, TEXT("[UserDataSubsystem] TableManager subsystem is null."));
-		return;
-	}
-
-	const TMap<int32, FPlayerActionDataRow*>& RowMap = TableManager->GetPlayerActionDataTable();
-	if (RowMap.IsEmpty())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[UserDataSubsystem] Player ActionData table is empty."));
-		return;
-	}
-
-	ActionDataMap.Reset();
-	for (const TPair<int32, FPlayerActionDataRow*>& Pair : RowMap)
-	{
-		const FPlayerActionDataRow* Row = Pair.Value;
-		if (!Row) continue;
-
-		FPlayerActionData Data;
-		Data.Tid                = Row->Tid;
-		Data.Name               = Row->Name;
-		Data.Category           = Row->Category;
-		Data.StaminaCost        = Row->StaminaCost;
-		Data.StaminaCostType    = Row->StaminaCostType;
-		Data.MinRequiredStamina = Row->MinRequiredStamina;
-		Data.SprintRestartStaminaPercent = Row->SprintRestartStaminaPercent;
-		ActionDataMap.Add(Row->Tid, Data);
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("[UserDataSubsystem] ActionData loaded. Count=%d"), ActionDataMap.Num());
 }

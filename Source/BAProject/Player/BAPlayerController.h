@@ -39,6 +39,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> SprintAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	float SprintDodgeTapMaxTime = 0.25f;
 	
 	UPROPERTY(EditDefaultsOnly, Category="Input")
 	TObjectPtr<UInputAction> InteractAction;
@@ -52,18 +55,20 @@ private:
 	void OnMoveCompleted();
 	void Look(const FInputActionValue& Value);
 	void LightAttack();
-	void OnWalkStarted();
-	void OnWalkCompleted();
+	void ToggleWalk();
 	void OnSprintStarted();
 	void OnSprintCompleted();
 	void ApplyMovementStateByModifier() const;
+	bool IsSprintDodgeTap() const;
+	void TryStartDodgeAction() const;
 	void OnInteract();
 	// 임시 기능
 	void ToggleStrafe();
 
-	bool bWalkModifierHeld = false;
+	bool bWalkToggleEnabled = false;
 	bool bSprintModifierHeld = false;
 	bool bHasMoveInput = false;
+	double SprintDodgePressedTime = 0.0;
 	
 // protected: TODO: 은성님 HUD 작업
 // 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
