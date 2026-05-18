@@ -1,11 +1,17 @@
 #include "Enemy/Animation/EnemyAnimInstance.h"
 #include "Tables/BATableManager.h"
 #include "Tables/MonsterRows.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "Kismet/GameplayStatics.h"
 
 void UEnemyAnimInstance::NativeInitializeAnimation()
 {
     Super::NativeInitializeAnimation();
     Owner = Cast<AEnemyBase>(TryGetPawnOwner());
+    if (Owner == nullptr)
+    {
+        return;
+    }
 
 	UBATableManager* TableManager = UBATableManager::Get(this);
 	if (TableManager == nullptr)
@@ -37,4 +43,16 @@ void UEnemyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
         MoveSpeed = Owner->GetVelocity().Size();
         CurrentState = Owner->GetCurrentState();
     }
+
+    ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(GetWorld(), 0);
+    if (PlayerCharacter == nullptr)
+    {
+        return;
+    }
+
+    FVector ToPlayer =PlayerCharacter->GetActorLocation()- Owner->GetActorLocation();
+    FRotator TargetRot = ToPlayer.Rotation();
+    FRotator DeltaRot = UKismetMathLibrary::NormalizedDeltaRotator(TargetRot,Owner->GetActorRotation());
+
+    TargetToAngle = DeltaRot.Yaw;
 }
