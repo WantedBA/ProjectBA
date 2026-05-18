@@ -260,6 +260,31 @@ void AEnemyBase::ApplyKnockback(AActor* DamageCauser, float Force)
 	LaunchCharacter(FinalForce, true, true);
 }
 
+void AEnemyBase::HandlePerfectGuarded()
+{
+	if (IsDead())
+	{
+		return;
+	}
+
+	// 현재 애니메이션 중단
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->Montage_Stop(0.1f);
+	}
+
+	// 상태 변경 및 리액션 애니메이션 재생
+	SetState(EEnemyState::Idle); // 또는 Stagger 상태가 있다면 해당 상태로
+
+	if (PerfectGuardedMontage)
+	{
+		PlayAnimMontage(PerfectGuardedMontage);
+	}
+
+	K2_OnPerfectGuarded();
+}
+
 void AEnemyBase::Attack()
 {
 	if (IsDead())
@@ -275,6 +300,14 @@ void AEnemyBase::Attack()
 	SetState(EEnemyState::Attack);
 	if (CombatComponent && AttackMontage)
 	{
+		float AttackDamage = 10.0f;
+		if (StatComponent)
+		{
+			AttackDamage = StatComponent->GetAttack();
+		}
+
+		// 기본 타격 반경 20.0f (박스 두께), 소켓은 BP 기본값 사용
+		CombatComponent->SetAttackData(20.0f, AttackDamage);
 		CombatComponent->ExecuteAttack(AttackMontage);
 	}
 }
