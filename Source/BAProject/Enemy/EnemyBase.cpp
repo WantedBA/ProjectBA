@@ -7,6 +7,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Constants/BAProjectConstant.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "BrainComponent.h"
 
 AEnemyBase::AEnemyBase()
 {
@@ -82,12 +83,9 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 		{
 			GetCharacterMovement()->bOrientRotationToMovement = true;
 			GetCharacterMovement()->RotationRate = FRotator(0.0f, 360.0f, 0.0f);
-			GetCharacterMovement()->MaxWalkSpeed = static_cast<float>(MonsterRow->MoveSpeed);
-		}
 
-		if (AEnemyAIController* AIController = Cast<AEnemyAIController>(GetController()))
-		{
-			AIController->InitializeAI(MonsterTid, this);
+			MaxMoveSpeed = static_cast<float>(MonsterRow->MoveSpeed);
+			GetCharacterMovement()->MaxWalkSpeed =MaxMoveSpeed;
 		}
 
 		USkeletalMesh* LoadedMesh = Cast<USkeletalMesh>(StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, *MonsterRow->MeshPath));
@@ -108,6 +106,12 @@ void AEnemyBase::OnDamaged(float FinalDamage, AActor* DamageCauser)
 		if (IsDead() == false)
 		{
 			SetState(EEnemyState::Hit);
+			ApplyKnockback(DamageCauser, 600.f);
+			AAIController* AICon = Cast<AAIController>(GetController());
+			if (AICon)
+			{
+				AICon->StopMovement();
+			}
 		}
 	}
 
@@ -118,7 +122,6 @@ void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
 {
 	if (GetCharacterMovement() == nullptr)
 	{
-
 		return;
 	}
 
@@ -126,13 +129,21 @@ void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
 	switch (NewState)
 	{
 	case EEnemyState::Chase:
-		TargetSpeed = GetCharacterMovement()->MaxWalkSpeed; // 보스 데이터 테이블 혹은 상수로 정의된 값
+		TargetSpeed = MaxMoveSpeed;
 		break;
+
 	case EEnemyState::Move:
-		TargetSpeed = GetCharacterMovement()->MaxWalkSpeed * 0.8f;
+		TargetSpeed = MaxMoveSpeed * 0.8f;
 		break;
+
+	case EEnemyState::Attack:
+	case EEnemyState::Hit:
+	case EEnemyState::Dead:
+		TargetSpeed = 0.f;
+		break;
+
 	default:
-		TargetSpeed = 0.0f;
+		TargetSpeed = MaxMoveSpeed;
 		break;
 	}
 
@@ -158,19 +169,18 @@ void AEnemyBase::UpdateBlackBoardState()
 	bool bIsActionLocked = (CurrentState == EEnemyState::Attack ||
 		CurrentState == EEnemyState::Hit ||	CurrentState == EEnemyState::Dead);
 	BBComp->SetValueAsBool(BBKey::IsActionLocked, bIsActionLocked);
+	UE_LOG(LogTemp, Warning, TEXT("IsActionLocked : %s"), bIsActionLocked ? TEXT("True") : TEXT("False"));
 }
 
 void AEnemyBase::OnEnemyAttackAniFinished(EEnemyState NewState)
 {
 	if (IsValid(this) && CurrentState != EEnemyState::Dead)
 	{
-		SetState(NewState);
+		SetState(EEnemyState::Idle);
 	}
 
-	if (OnAttackAnimationFinished.IsBound())
-	{
-		OnAttackAnimationFinished.Broadcast(NewState);
-	}
+	UE_LOG(LogTemp, Warning, TEXT("Attack Finished -> %d"),(uint8)NewState);
+	OnAttackAnimationFinished.Broadcast(NewState);
 }
 
 void AEnemyBase::OnDeath()
@@ -187,6 +197,11 @@ void AEnemyBase::OnDeath()
 	SetActorEnableCollision(false);
 
 	OnDeathEvent.Broadcast();
+	AAIController* AIController = Cast<AAIController>(GetController());
+	if (AIController)
+	{
+		AIController->BrainComponent->StopLogic(TEXT("Dead"));
+	}
 
 	K2_OnDeadVisuals();
 }
@@ -199,6 +214,7 @@ void AEnemyBase::SetState(EEnemyState NewState)
 	}
 
 	EEnemyState OldState = CurrentState;
+	UE_LOG(LogTemp, Warning, TEXT("State Change %d -> %d"),(uint8)CurrentState,(uint8)NewState);
 	CurrentState = NewState;
 
 	UpdateBlackBoardState();
@@ -224,7 +240,15 @@ void AEnemyBase::ApplyKnockback(AActor* DamageCauser, float Force)
 
 void AEnemyBase::Attack()
 {
-	if (IsDead()) return;
+	if (IsDead())
+	{
+		return;
+	}
+
+	if (CurrentState == EEnemyState::Attack)
+	{
+		return;
+	}
 
 	SetState(EEnemyState::Attack);
 	if (CombatComponent && AttackMontage)
