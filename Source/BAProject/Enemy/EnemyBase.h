@@ -68,7 +68,6 @@ public:
 #if WITH_EDITOR
 	virtual bool ShouldTickIfViewportsOnly() const override { return true; }
 #endif
-
 	virtual void UpdateMoveSpeed(EEnemyState NewState);
 	virtual void UpdateBlackBoardState();
 	virtual void ApplyKnockback(AActor* DamageCauser, float Force);
