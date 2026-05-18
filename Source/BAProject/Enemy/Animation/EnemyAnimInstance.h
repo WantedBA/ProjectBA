@@ -18,10 +18,10 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	bool bIsDead;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float MoveSpeed;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float TargetToAngle;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State")

@@ -38,7 +38,10 @@ void UBTService_UpdateTargetContext::TickNode(UBehaviorTreeComponent& OwnerComp,
 	float DetectRange = BBComp->GetValueAsFloat(BBKey::DetectRange);
 	if (Enemy->GetEnemyGrade() == EEnemyGrade::Boss)
 	{
-		DetectRange = 1000.0f;
+		if (DetectRange <= 0.0f)
+		{
+			DetectRange = 100000.0f; // 사실상 무한대
+		}
 	}
 	
 	FVector Center = ControllingPawn->GetActorLocation();
@@ -52,16 +55,6 @@ void UBTService_UpdateTargetContext::TickNode(UBehaviorTreeComponent& OwnerComp,
 		ECollisionChannel::ECC_Pawn,
 		FCollisionShape::MakeSphere(DetectRange),
 		Params
-	);
-
-	DrawDebugSphere(
-		ControllingPawn->GetWorld(),
-		Center,
-		DetectRange,
-		16,
-		bResult ? FColor::Green : FColor::Red,
-		false,
-		0.5f
 	);
 
 	AActor* CurrentTarget = Cast<AActor>(BBComp->GetValueAsObject(BBKey::TargetActor));
@@ -119,27 +112,28 @@ void UBTService_UpdateTargetContext::TickNode(UBehaviorTreeComponent& OwnerComp,
 #if WITH_EDITOR
 
 		// 방향 Debug
-		DrawDebugLine(
-			ControllingPawn->GetWorld(),
-			Center,
-			Center + Forward * 200.f,
-			FColor::Blue,
-			false,
-			0.5f,
-			0,
-			3.f
-		);
+		//DrawDebugLine(
+		//	ControllingPawn->GetWorld(),
+		//	Center,
+		//	Center + Forward * 200.f,
+		//	FColor::magenta,
+		//	false,
+		//	0.5f,
+		//	0,
+		//	3.f
+		//);
 
-		DrawDebugLine(
-			ControllingPawn->GetWorld(),
-			Center,
-			TargetLoc,
-			FColor::Yellow,
-			false,
-			0.5f,
-			0,
-			2.f
-		);
+		// 위치
+		//DrawDebugLine(
+		//	ControllingPawn->GetWorld(),
+		//	Center,
+		//	TargetLoc,
+		//	FColor::Yellow,
+		//	false,
+		//	0.5f,
+		//	0,
+		//	2.f
+		//);
 
 #endif
 	}
