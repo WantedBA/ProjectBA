@@ -6,6 +6,7 @@
 #include "Tables/RewardRows.h"
 #include "Enemy/Monster.h"
 #include "Enemy/EnemyBase.h"
+#include "Quest/QuestTriggerActor.h"
 
 UQuestManageSubsystem* UQuestManageSubsystem::Get(const UObject* WorldContext)
 {
@@ -33,7 +34,17 @@ void UQuestManageSubsystem::StartQuest(int32 QuestTid, const TArray<FTransform>&
     {
         for (const TWeakObjectPtr<AActor>& Weak : *Pending)
         {
-            if (Weak.IsValid()) State.RemainingMonsters++;
+            AEnemyBase* Enemy = Cast<AEnemyBase>(Weak.Get());
+            if (!Enemy) continue;
+            
+            State.RemainingMonsters++;
+            State.SpawnedMonsters.Add(Enemy);
+            
+            Enemy->OnDeathEvent.AddWeakLambda(this,
+                [this, QuestTid]()
+                {
+                   NotifyMonsterKilled(QuestTid); 
+                });
         }
         PendingMonsters.Remove(QuestTid);
     }
@@ -83,8 +94,42 @@ void UQuestManageSubsystem::NotifyMonsterKilled(int32 QuestTid)
     }
 }
 
+void UQuestManageSubsystem::RegisterTrigger(int32 QuestTid, AQuestTriggerActor* Trigger)
+{
+    if (QuestTid <= 0 || !IsValid(Trigger)) return;
+    RegisteredTriggers.FindOrAdd(QuestTid).AddUnique(Trigger);
+}
+
+void UQuestManageSubsystem::AbortQuest(int32 QuestTid)
+{
+    FQuestRuntimeState* State = ActiveQuests.Find(QuestTid);
+    if (!State) return;
+    
+    for (const TWeakObjectPtr<AActor>& Weak : State->SpawnedMonsters)
+    {
+        if (AActor* M = Weak.Get())
+        {
+            M->Destroy();
+        }
+    }
+    
+    SetWallsActive(QuestTid, false);
+    ActiveQuests.Remove(QuestTid);
+    
+    if (TArray<TWeakObjectPtr<AQuestTriggerActor>>* Triggers = RegisteredTriggers.Find(QuestTid))
+    {
+        for (const TWeakObjectPtr<AQuestTriggerActor>& Weak : *Triggers)
+        {
+            if (AQuestTriggerActor* T = Weak.Get())
+            {
+                T->ReArm();
+            }
+        }
+    }
+}
+
 void UQuestManageSubsystem::SpawnQuestMonsters(int32 QuestTid, const TArray<FTransform>& SpawnTransforms,
-    TSubclassOf<AMonster> MonsterClass)
+                                               TSubclassOf<AMonster> MonsterClass)
 {
     if (SpawnTransforms.IsEmpty()) return;
     if (!MonsterClass) MonsterClass = AMonster::StaticClass();
@@ -107,7 +152,12 @@ void UQuestManageSubsystem::SpawnQuestMonsters(int32 QuestTid, const TArray<FTra
 
             AMonster* Spawned = World->SpawnActor<AMonster>(MonsterClass, T, Params);
             if (!Spawned) continue;
-
+            
+            if (FQuestRuntimeState* RunningState = ActiveQuests.Find(QuestTid))
+            {
+                RunningState->SpawnedMonsters.Add(Spawned);
+            }
+            
             Spawned->OnDeathEvent.AddWeakLambda(this, [this, QuestTid]()
                 {
                     NotifyMonsterKilled(QuestTid);
