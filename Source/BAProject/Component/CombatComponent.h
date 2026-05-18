@@ -19,13 +19,13 @@ public:
 	void ExecuteAttack(UAnimMontage* AttackMontage, float PlayRate = 1.0f);
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void CheckHitStart(float InRadius, float InDamage, FName InSocketName = TEXT("Muzzle"));
+	void CheckHitStart(float InRadius, float InDamage, FName InStartSocket = NAME_None, FName InEndSocket = NAME_None);
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void CheckHitEnd();
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void SetAttackData(float InRadius, float InDamage, FName InSocketName);
+	void SetAttackData(float InRadius, float InDamage, FName InStartSocket = NAME_None, FName InEndSocket = NAME_None);
 
 	void TriggerHitStop(float Duration);
 
@@ -34,10 +34,16 @@ public:
 
 	void CheckHitStartDefault();
 
+	UFUNCTION(BlueprintPure, Category = "Combat")
+	bool IsPerfectWindowActive() const { return bIsPerfectWindowActive; }
+
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void SetPerfectWindowActive(bool bActive) { bIsPerfectWindowActive = bActive; }
+
 protected:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	void ProcessHitCheck(); // 이전 프레임 소켓 위치와 현재 위치 사이를 스윕
+	void ProcessHitCheck(); // 이전 프레임과 현재 프레임의 무기 선분 사이를 박스 스윕
 
 	void ApplyDamage(AActor* Victim, const FHitResult& HitResult);
 
@@ -59,16 +65,25 @@ protected:
 	bool bIsHitChecking = false;
 
 	UPROPERTY()
+	bool bIsPerfectWindowActive = false;
+
+	UPROPERTY()
 	float CurrentRadius;
 
 	UPROPERTY()
 	float CurrentDamage;
 
-	UPROPERTY()
-	FName CurrentSocketName;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Socket")
+	FName StartSocketName = TEXT("Sword_Start");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Socket")
+	FName EndSocketName = TEXT("Sword_End");
 
 	UPROPERTY()
-	FVector PrevSocketLocation;
+	FVector PrevStartLocation;
+
+	UPROPERTY()
+	FVector PrevEndLocation;
 
 	UPROPERTY()
 	TArray<TObjectPtr<AActor>> HitActors;
