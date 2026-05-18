@@ -54,16 +54,6 @@ void UBTService_UpdateTargetContext::TickNode(UBehaviorTreeComponent& OwnerComp,
 		Params
 	);
 
-	DrawDebugSphere(
-		ControllingPawn->GetWorld(),
-		Center,
-		DetectRange,
-		16,
-		bResult ? FColor::Green : FColor::Red,
-		false,
-		0.5f
-	);
-
 	AActor* CurrentTarget = Cast<AActor>(BBComp->GetValueAsObject(BBKey::TargetActor));
 	AActor* NewTarget = nullptr;
 
@@ -119,27 +109,28 @@ void UBTService_UpdateTargetContext::TickNode(UBehaviorTreeComponent& OwnerComp,
 #if WITH_EDITOR
 
 		// 방향 Debug
-		DrawDebugLine(
-			ControllingPawn->GetWorld(),
-			Center,
-			Center + Forward * 200.f,
-			FColor::Blue,
-			false,
-			0.5f,
-			0,
-			3.f
-		);
+		//DrawDebugLine(
+		//	ControllingPawn->GetWorld(),
+		//	Center,
+		//	Center + Forward * 200.f,
+		//	FColor::magenta,
+		//	false,
+		//	0.5f,
+		//	0,
+		//	3.f
+		//);
 
-		DrawDebugLine(
-			ControllingPawn->GetWorld(),
-			Center,
-			TargetLoc,
-			FColor::Yellow,
-			false,
-			0.5f,
-			0,
-			2.f
-		);
+		// 위치
+		//DrawDebugLine(
+		//	ControllingPawn->GetWorld(),
+		//	Center,
+		//	TargetLoc,
+		//	FColor::Yellow,
+		//	false,
+		//	0.5f,
+		//	0,
+		//	2.f
+		//);
 
 #endif
 	}

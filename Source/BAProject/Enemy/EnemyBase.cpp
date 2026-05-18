@@ -8,10 +8,11 @@
 #include "Constants/BAProjectConstant.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "BrainComponent.h"
+#include "DrawDebugHelpers.h"
 
 AEnemyBase::AEnemyBase()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	CurrentState = EEnemyState::Idle;
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));
@@ -27,6 +28,8 @@ AEnemyBase::AEnemyBase()
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->bUseControllerDesiredRotation = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 0.f, 360.f);
+
+	bShowDebugRanges = true;
 }
 
 void AEnemyBase::PostInitializeComponents()
@@ -78,6 +81,7 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 		}
 
 		DetectRange = static_cast<float>(MonsterRow->DetectRange);
+		AttackRange = static_cast<float>(MonsterRow->AttackRange);
 
 		if (GetCharacterMovement())
 		{
@@ -116,6 +120,17 @@ void AEnemyBase::OnDamaged(float FinalDamage, AActor* DamageCauser)
 	}
 
 	K2_OnHitVisuals(GetActorLocation());
+}
+
+void AEnemyBase::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (bShowDebugRanges)
+	{
+		DrawDebugSphere(GetWorld(), GetActorLocation(), DetectRange, 32, FColor::Green, false, -0.1f, 0, 2.0f);
+		DrawDebugSphere(GetWorld(), GetActorLocation(), AttackRange, 32, FColor::Red, false, -0.1f, 0, 2.0f);
+	}
 }
 
 void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
