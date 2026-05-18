@@ -29,7 +29,7 @@ public:
 
 	// 지정한 반경/피해량/소켓 기준으로 매 프레임 히트 스윕을 시작한다.
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void CheckHitStart(float InRadius, float InDamage, FName InSocketName = TEXT("Muzzle"));
+	void CheckHitStart(float InRadius, float InDamage, FName InStartSocket = NAME_None, FName InEndSocket = NAME_None);
 
 	// 현재 진행 중인 히트 스윕을 종료하고 컴포넌트 Tick을 끈다.
 	UFUNCTION(BlueprintCallable, Category = "Combat")
@@ -37,7 +37,7 @@ public:
 
 	// 노티파이 등에서 기본값으로 사용할 공격 판정 데이터를 저장한다.
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void SetAttackData(float InRadius, float InDamage, FName InSocketName);
+	void SetAttackData(float InRadius, float InDamage, FName InStartSocket = NAME_None, FName InEndSocket = NAME_None);
 
 	// 전역 시간 배율을 짧게 낮춰 타격감을 만든다.
 	void TriggerHitStop(float Duration);
@@ -49,10 +49,16 @@ public:
 	// SetAttackData로 저장된 기본 판정값으로 히트 체크를 시작한다.
 	void CheckHitStartDefault();
 
+	UFUNCTION(BlueprintPure, Category = "Combat")
+	bool IsPerfectWindowActive() const { return bIsPerfectWindowActive; }
+
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void SetPerfectWindowActive(bool bActive) { bIsPerfectWindowActive = bActive; }
+
 protected:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	void ProcessHitCheck(); // 이전 프레임 소켓 위치와 현재 위치 사이를 스윕
+	void ProcessHitCheck(); // 이전 프레임과 현재 프레임의 무기 선분 사이를 박스 스윕
 
 	void ApplyDamage(AActor* Victim, const FHitResult& HitResult);
 
@@ -75,16 +81,25 @@ protected:
 	bool bIsHitChecking = false;
 
 	UPROPERTY()
+	bool bIsPerfectWindowActive = false;
+
+	UPROPERTY()
 	float CurrentRadius;
 
 	UPROPERTY()
 	float CurrentDamage;
 
-	UPROPERTY()
-	FName CurrentSocketName;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Socket")
+	FName StartSocketName = TEXT("Sword_Start");
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Socket")
+	FName EndSocketName = TEXT("Sword_End");
 
 	UPROPERTY()
-	FVector PrevSocketLocation;
+	FVector PrevStartLocation;
+
+	UPROPERTY()
+	FVector PrevEndLocation;
 
 	UPROPERTY()
 	TArray<TObjectPtr<AActor>> HitActors;

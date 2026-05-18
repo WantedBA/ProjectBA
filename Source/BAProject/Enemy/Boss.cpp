@@ -373,7 +373,9 @@ void ABoss::ExecuteBossPattern(int32 PatternTid)
 			{
 				if (Data.Tid == PatternTid)
 				{
-					CombatComponent->SetAttackData(Data.IdealRange, Data.Attack, TEXT("Muzzle"));
+					// IdealRange가 0인 경우(무한 인지용) 실제 타격 반경으로 150.0f 사용
+					float HitRadius = (Data.IdealRange <= 0.0f) ? 150.0f : Data.IdealRange;
+					CombatComponent->SetAttackData(HitRadius, Data.Attack);
 					break;
 				}
 			}
