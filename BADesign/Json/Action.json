@@ -135,12 +135,180 @@
             "bUseRootMotion": 1
         },
         {
+            "Tid": 30022,
+            "ActionTid": 10021,
+            "Direction": "Backward",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Roll_Relaxed_Backward.AM_Roll_Relaxed_Backward",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": 1
+        },
+        {
+            "Tid": 30023,
+            "ActionTid": 10021,
+            "Direction": "Left",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Roll_Relaxed_Left.AM_Roll_Relaxed_Left",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": 1
+        },
+        {
+            "Tid": 30024,
+            "ActionTid": 10021,
+            "Direction": "Right",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Roll_Relaxed_Right.AM_Roll_Relaxed_Right",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": 1
+        },
+        {
+            "Tid": 30025,
+            "ActionTid": 10021,
+            "Direction": "ForwardLeft",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Roll_Relaxed_ForwardLeft.AM_Roll_Relaxed_ForwardLeft",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": 1
+        },
+        {
+            "Tid": 30026,
+            "ActionTid": 10021,
+            "Direction": "ForwardRight",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Roll_Relaxed_ForwardRight.AM_Roll_Relaxed_ForwardRight",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": 1
+        },
+        {
+            "Tid": 30027,
+            "ActionTid": 10021,
+            "Direction": "BackwardLeft",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Roll_Relaxed_BackwardLeft.AM_Roll_Relaxed_BackwardLeft",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": 1
+        },
+        {
+            "Tid": 30028,
+            "ActionTid": 10021,
+            "Direction": "BackwardRight",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Roll_Relaxed_BackwardRight.AM_Roll_Relaxed_BackwardRight",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": 1
+        },
+        {
             "Tid": 30029,
             "ActionTid": 10022,
             "Direction": "Any",
             "CombatStance": "Relaxed",
             "WeaponType": "Any",
             "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Dodge_Relaxed_Forward.AM_Dodge_Relaxed_Forward",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": 1
+        },
+        {
+            "Tid": 30030,
+            "ActionTid": 10022,
+            "Direction": "Backward",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Dodge_Relaxed_Backward.AM_Dodge_Relaxed_Backward",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": 1
+        },
+        {
+            "Tid": 30031,
+            "ActionTid": 10022,
+            "Direction": "Left",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Dodge_Relaxed_Left.AM_Dodge_Relaxed_Left",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": 1
+        },
+        {
+            "Tid": 30032,
+            "ActionTid": 10022,
+            "Direction": "Right",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Dodge_Relaxed_Right.AM_Dodge_Relaxed_Right",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": 1
+        },
+        {
+            "Tid": 30033,
+            "ActionTid": 10022,
+            "Direction": "ForwardLeft",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Dodge_Relaxed_FordwardLeft.AM_Dodge_Relaxed_FordwardLeft",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": 1
+        },
+        {
+            "Tid": 30034,
+            "ActionTid": 10022,
+            "Direction": "ForwardRight",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Dodge_Relaxed_ForwardRight.AM_Dodge_Relaxed_ForwardRight",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": 1
+        },
+        {
+            "Tid": 30035,
+            "ActionTid": 10022,
+            "Direction": "BackwardLeft",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Dodge_Relaxed_BackwardLeft.AM_Dodge_Relaxed_BackwardLeft",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": 1
+        },
+        {
+            "Tid": 30036,
+            "ActionTid": 10022,
+            "Direction": "BackwardRight",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Dodge_Relaxed_BackwardRight.AM_Dodge_Relaxed_BackwardRight",
             "PlayRate": 1,
             "BlendIn": 0.1,
             "BlendOut": 0.1,
@@ -207,6 +375,279 @@
         {
             "Tid": 40029,
             "ActionAnimationTid": 30023,
+            "WindowType": "InputBuffer",
+            "StartTime": 0.55,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40030,
+            "ActionAnimationTid": 30024,
+            "WindowType": "Invincible",
+            "StartTime": 0.1,
+            "EndTime": 0.55
+        },
+        {
+            "Tid": 40031,
+            "ActionAnimationTid": 30024,
+            "WindowType": "InterruptLock",
+            "StartTime": 0,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40032,
+            "ActionAnimationTid": 30024,
+            "WindowType": "InputBuffer",
+            "StartTime": 0.55,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40033,
+            "ActionAnimationTid": 30025,
+            "WindowType": "Invincible",
+            "StartTime": 0.1,
+            "EndTime": 0.55
+        },
+        {
+            "Tid": 40034,
+            "ActionAnimationTid": 30025,
+            "WindowType": "InterruptLock",
+            "StartTime": 0,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40035,
+            "ActionAnimationTid": 30025,
+            "WindowType": "InputBuffer",
+            "StartTime": 0.55,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40036,
+            "ActionAnimationTid": 30026,
+            "WindowType": "Invincible",
+            "StartTime": 0.1,
+            "EndTime": 0.55
+        },
+        {
+            "Tid": 40037,
+            "ActionAnimationTid": 30026,
+            "WindowType": "InterruptLock",
+            "StartTime": 0,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40038,
+            "ActionAnimationTid": 30026,
+            "WindowType": "InputBuffer",
+            "StartTime": 0.55,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40039,
+            "ActionAnimationTid": 30027,
+            "WindowType": "Invincible",
+            "StartTime": 0.1,
+            "EndTime": 0.55
+        },
+        {
+            "Tid": 40040,
+            "ActionAnimationTid": 30027,
+            "WindowType": "InterruptLock",
+            "StartTime": 0,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40041,
+            "ActionAnimationTid": 30027,
+            "WindowType": "InputBuffer",
+            "StartTime": 0.55,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40042,
+            "ActionAnimationTid": 30028,
+            "WindowType": "Invincible",
+            "StartTime": 0.1,
+            "EndTime": 0.55
+        },
+        {
+            "Tid": 40043,
+            "ActionAnimationTid": 30028,
+            "WindowType": "InterruptLock",
+            "StartTime": 0,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40044,
+            "ActionAnimationTid": 30028,
+            "WindowType": "InputBuffer",
+            "StartTime": 0.55,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40045,
+            "ActionAnimationTid": 30029,
+            "WindowType": "Invincible",
+            "StartTime": 0.1,
+            "EndTime": 0.55
+        },
+        {
+            "Tid": 40046,
+            "ActionAnimationTid": 30029,
+            "WindowType": "InterruptLock",
+            "StartTime": 0,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40047,
+            "ActionAnimationTid": 30029,
+            "WindowType": "InputBuffer",
+            "StartTime": 0.55,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40048,
+            "ActionAnimationTid": 30030,
+            "WindowType": "Invincible",
+            "StartTime": 0.1,
+            "EndTime": 0.55
+        },
+        {
+            "Tid": 40049,
+            "ActionAnimationTid": 30030,
+            "WindowType": "InterruptLock",
+            "StartTime": 0,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40050,
+            "ActionAnimationTid": 30030,
+            "WindowType": "InputBuffer",
+            "StartTime": 0.55,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40051,
+            "ActionAnimationTid": 30031,
+            "WindowType": "Invincible",
+            "StartTime": 0.1,
+            "EndTime": 0.55
+        },
+        {
+            "Tid": 40052,
+            "ActionAnimationTid": 30031,
+            "WindowType": "InterruptLock",
+            "StartTime": 0,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40053,
+            "ActionAnimationTid": 30031,
+            "WindowType": "InputBuffer",
+            "StartTime": 0.55,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40054,
+            "ActionAnimationTid": 30032,
+            "WindowType": "Invincible",
+            "StartTime": 0.1,
+            "EndTime": 0.55
+        },
+        {
+            "Tid": 40055,
+            "ActionAnimationTid": 30032,
+            "WindowType": "InterruptLock",
+            "StartTime": 0,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40056,
+            "ActionAnimationTid": 30032,
+            "WindowType": "InputBuffer",
+            "StartTime": 0.55,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40057,
+            "ActionAnimationTid": 30033,
+            "WindowType": "Invincible",
+            "StartTime": 0.1,
+            "EndTime": 0.55
+        },
+        {
+            "Tid": 40058,
+            "ActionAnimationTid": 30033,
+            "WindowType": "InterruptLock",
+            "StartTime": 0,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40059,
+            "ActionAnimationTid": 30033,
+            "WindowType": "InputBuffer",
+            "StartTime": 0.55,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40060,
+            "ActionAnimationTid": 30034,
+            "WindowType": "Invincible",
+            "StartTime": 0.1,
+            "EndTime": 0.55
+        },
+        {
+            "Tid": 40061,
+            "ActionAnimationTid": 30034,
+            "WindowType": "InterruptLock",
+            "StartTime": 0,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40062,
+            "ActionAnimationTid": 30034,
+            "WindowType": "InputBuffer",
+            "StartTime": 0.55,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40063,
+            "ActionAnimationTid": 30035,
+            "WindowType": "Invincible",
+            "StartTime": 0.1,
+            "EndTime": 0.55
+        },
+        {
+            "Tid": 40064,
+            "ActionAnimationTid": 30035,
+            "WindowType": "InterruptLock",
+            "StartTime": 0,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40065,
+            "ActionAnimationTid": 30035,
+            "WindowType": "InputBuffer",
+            "StartTime": 0.55,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40066,
+            "ActionAnimationTid": 30036,
+            "WindowType": "Invincible",
+            "StartTime": 0.1,
+            "EndTime": 0.55
+        },
+        {
+            "Tid": 40067,
+            "ActionAnimationTid": 30036,
+            "WindowType": "InterruptLock",
+            "StartTime": 0,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40068,
+            "ActionAnimationTid": 30036,
             "WindowType": "InputBuffer",
             "StartTime": 0.55,
             "EndTime": 0.8

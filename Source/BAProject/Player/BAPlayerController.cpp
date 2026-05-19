@@ -12,15 +12,15 @@
 
 namespace
 {
-	EActionDirection GetActionDirectionFromRelativeInput(const FVector2D& RelativeInput)
+	EActionDirection GetActionDirectionFromMoveInput(const FVector2D& MoveInput)
 	{
 		constexpr float DirectionThreshold = 0.35f;
-		if (RelativeInput.IsNearlyZero())
+		if (MoveInput.IsNearlyZero())
 		{
 			return EActionDirection::Any;
 		}
 
-		const FVector2D SafeInput = RelativeInput.SizeSquared() > 1.f ? RelativeInput.GetSafeNormal() : RelativeInput;
+		const FVector2D SafeInput = MoveInput.SizeSquared() > 1.f ? MoveInput.GetSafeNormal() : MoveInput;
 		const bool bForward = SafeInput.Y > DirectionThreshold;
 		const bool bBackward = SafeInput.Y < -DirectionThreshold;
 		const bool bRight = SafeInput.X > DirectionThreshold;
@@ -56,33 +56,6 @@ namespace
 		}
 
 		return EActionDirection::Forward;
-	}
-
-	EActionDirection GetActionDirectionFromMoveInput(const ABAPlayerCharacter& Character, const FVector2D& MoveInput)
-	{
-		if (MoveInput.IsNearlyZero())
-		{
-			return EActionDirection::Any;
-		}
-
-		const FVector2D SafeInput = MoveInput.SizeSquared() > 1.f ? MoveInput.GetSafeNormal() : MoveInput;
-		const FRotator ControlYawRotation(0.f, Character.GetControlRotation().Yaw, 0.f);
-		const FVector ControlForward = FRotationMatrix(ControlYawRotation).GetUnitAxis(EAxis::X);
-		const FVector ControlRight = FRotationMatrix(ControlYawRotation).GetUnitAxis(EAxis::Y);
-		const FVector WorldDirection = (ControlForward * SafeInput.Y + ControlRight * SafeInput.X).GetSafeNormal();
-		if (WorldDirection.IsNearlyZero())
-		{
-			return EActionDirection::Any;
-		}
-
-		const FRotator ActorYawRotation(0.f, Character.GetActorRotation().Yaw, 0.f);
-		const FVector ActorForward = FRotationMatrix(ActorYawRotation).GetUnitAxis(EAxis::X);
-		const FVector ActorRight = FRotationMatrix(ActorYawRotation).GetUnitAxis(EAxis::Y);
-		const FVector2D ActorRelativeInput(
-			FVector::DotProduct(WorldDirection, ActorRight),
-			FVector::DotProduct(WorldDirection, ActorForward));
-
-		return GetActionDirectionFromRelativeInput(ActorRelativeInput);
 	}
 }
 
@@ -235,7 +208,7 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 	ControlledCharacter->SetMoveInputVector(Movement);
 	if (UActionComponent* ActionComponent = ControlledCharacter->GetActionComponent())
 	{
-		ActionComponent->UpdateBufferedActionDirection(GetActionDirectionFromMoveInput(*ControlledCharacter, Movement));
+		ActionComponent->UpdateBufferedActionDirection(GetActionDirectionFromMoveInput(Movement));
 	}
 	ApplyMovementStateByModifier();
 }
@@ -376,7 +349,7 @@ void ABAPlayerController::TryStartDodgeAction() const
 		return;
 	}
 
-	const EActionDirection DodgeDirection = GetActionDirectionFromMoveInput(*PC, PC->GetMoveInputVector());
+	const EActionDirection DodgeDirection = GetActionDirectionFromMoveInput(PC->GetMoveInputVector());
 	ActionComponent->TryStartAction(EActionCommand::Dodge, DodgeDirection);
 }
 
