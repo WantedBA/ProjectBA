@@ -167,6 +167,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Control|Cutscene")
 	void UnlockMovementForCutscene();
 	
+protected:
+	virtual void OnDamaged(float FinalDamage, AActor* DamageCauser) override;
+	
 private:
 	void TickMovementRuntime(float DeltaTime);
 	void UpdatePhaseFromInputAndGait(float DeltaTime);
