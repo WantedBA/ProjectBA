@@ -13,8 +13,10 @@ enum class EEnemyState : uint8
 	Idle,
 	Move,
 	Chase,
+	Alert,
 	Attack,
 	Hit,
+	Stagger,
 	Dead
 };
 
@@ -63,6 +65,8 @@ public:
 
 	UAnimMontage* GetEnemyAttackMontage() const { return AttackMontage; }
 
+	float GetMaxChaseDistance() { return MaxChaseDistance; }
+
 	virtual void Tick(float DeltaTime) override;
 
 #if WITH_EDITOR
@@ -74,6 +78,13 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	virtual void HandlePerfectGuarded(FVector ImpactLocation);
+
+	// 공격 횟수 및 쿨다운 관리
+	bool CanAttack() const;
+	void ResetAttackCount() { CurrentAttackCount = 0; }
+
+	// 상태 복구 관리
+	void ResetStateToIdle();
 
 protected:
 	virtual void PostInitializeComponents() override;
@@ -111,6 +122,20 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 	float AttackRange;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	float MaxChaseDistance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	int32 MaxAttackCount = 3;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	int32 CurrentAttackCount = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	float AlertDuration = 3.0f;
+
+	FTimerHandle StateTimerHandle;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
 	bool bShowDebugRanges = true;
 
@@ -142,7 +167,10 @@ protected:
 	TObjectPtr<UAnimMontage> PerfectGuardedMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	UAnimMontage* HitMontage;
+	TObjectPtr<UAnimMontage> HitMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	TObjectPtr<UAnimMontage> DeadMontage;
 
 	float MaxMoveSpeed;
 };
