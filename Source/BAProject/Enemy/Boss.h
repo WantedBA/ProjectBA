@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Enemy/EnemyBase.h"
 #include "Tables/BossMonster.h"
+#include "Quest/QuestActivatable.h"
 #include "Boss.generated.h"
 
 USTRUCT(BlueprintType)
@@ -48,7 +49,7 @@ struct BAPROJECT_API FBossAttackData
 };
 
 UCLASS()
-class BAPROJECT_API ABoss : public AEnemyBase
+class BAPROJECT_API ABoss : public AEnemyBase, public IQuestActivatable
 {
 	GENERATED_BODY()
 
@@ -63,11 +64,17 @@ public:
 	UFUNCTION()
 	virtual void HandleHPChanged(float CurrentHP, float MaxHP);
 
+	//Quest 인터페이스
+	virtual void OnQuestActivated_Implementation(int32 tid) override;
+	virtual void OnQuestDeactivated_Implementation(int32 tid) override;
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void PossessedBy(AController* NewController) override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void PostInitializeComponents() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual bool IsPersistentAggro() const override { return true; }
 
 private:
 	void LoadBossPatterns(int32 StageType);
@@ -77,6 +84,10 @@ private:
 
 protected:
 	bool bIsEnding = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Quest")
+	bool bStartPausedForQuest = true;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|State")
 	int32 CurrentPhase = 1;
 
