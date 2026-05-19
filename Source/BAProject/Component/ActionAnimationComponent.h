@@ -15,6 +15,7 @@ class USkeletalMeshComponent;
 struct FActionAnimationDataRow;
 struct FActionWindowDataRow;
 
+// 액션 애니메이션 재생 요청이 실패했을 때의 세부 원인.
 UENUM(BlueprintType)
 enum class EActionAnimationPlaybackResult : uint8
 {
@@ -27,6 +28,7 @@ enum class EActionAnimationPlaybackResult : uint8
 	MontagePlayFailed
 };
 
+// 액션 몽타주 재생이 시작될 때 선택된 액션 정보와 몽타주를 알린다.
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(
 	FOnActionMontageStarted,
 	int32,
@@ -36,6 +38,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(
 	UAnimMontage*,
 	Montage);
 
+// 액션 몽타주가 종료될 때 중단 여부와 함께 알린다.
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(
 	FOnActionMontageEnded,
 	int32,
@@ -47,6 +50,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(
 	bool,
 	bInterrupted);
 
+// ActionWindowData의 윈도우가 열리거나 닫힐 때 호출되는 공용 이벤트.
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(
 	FOnActionWindowEvent,
 	int32,
@@ -83,36 +87,47 @@ class BAPROJECT_API UActionAnimationComponent : public UActorComponent
 public:
 	UActionAnimationComponent();
 
+	// 몽타주 재생이 성공적으로 시작된 직후 브로드캐스트된다.
 	UPROPERTY(BlueprintAssignable, Category = "Action|Animation|Event")
 	FOnActionMontageStarted OnActionMontageStarted;
 
+	// 몽타주 종료 콜백에서 브로드캐스트된다.
 	UPROPERTY(BlueprintAssignable, Category = "Action|Animation|Event")
 	FOnActionMontageEnded OnActionMontageEnded;
 
+	// 액션 윈도우가 활성화되는 순간 브로드캐스트된다.
 	UPROPERTY(BlueprintAssignable, Category = "Action|Animation|Event")
 	FOnActionWindowEvent OnActionWindowOpened;
 
+	// 액션 윈도우가 비활성화되는 순간 브로드캐스트된다.
 	UPROPERTY(BlueprintAssignable, Category = "Action|Animation|Event")
 	FOnActionWindowEvent OnActionWindowClosed;
 
+	// ActionTid에 가장 적합한 ActionAnimationData를 찾아 몽타주를 재생한다.
 	UFUNCTION(BlueprintCallable, Category = "Action|Animation")
 	bool PlayActionAnimation(int32 ActionTid, EActionType ActionType);
 
+	// 현재 액션 몽타주를 정지하고 필요하면 중단 종료로 처리한다.
 	UFUNCTION(BlueprintCallable, Category = "Action|Animation")
 	void StopActiveMontage(bool bInterrupted = true);
 
+	// 액션 몽타주가 활성 상태인지 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action|Animation")
 	bool IsPlayingActionMontage() const { return ActiveMontage != nullptr; }
 
+	// 현재 재생 중인 ActionAnimationData Tid를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action|Animation")
 	int32 GetActiveActionAnimationTid() const { return ActiveActionAnimationTid; }
 
+	// 현재 재생 중인 몽타주를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action|Animation")
 	UAnimMontage* GetActiveMontage() const { return ActiveMontage; }
 
+	// 가장 최근 재생 요청 결과를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action|Animation")
 	EActionAnimationPlaybackResult GetLastPlaybackResult() const { return LastPlaybackResult; }
 
+	// 현재 방향/전투 태세/무기 문맥에 맞는 애니메이션 행을 찾는다.
 	const FActionAnimationDataRow* FindBestAnimationData(int32 ActionTid) const;
 
 protected:
