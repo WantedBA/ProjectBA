@@ -42,7 +42,7 @@
         },
         {
             "Tid": 10021,
-            "Name": "DodgeRoll",
+            "Name": "Roll",
             "Category": "Movement",
             "StaminaCost": 12,
             "StaminaCostType": "Instant",
@@ -50,6 +50,20 @@
             "SprintRestartStaminaPercent": 0,
             "ActionType": "DodgeRoll",
             "Cooldown": 0.8,
+            "bLocksMovement": 1,
+            "bUsesRootMotion": 1,
+            "bCanBeInterrupted": 1
+        },
+        {
+            "Tid": 10022,
+            "Name": "Dodge",
+            "Category": "Movement",
+            "StaminaCost": 10,
+            "StaminaCostType": "Instant",
+            "MinRequiredStamina": 1,
+            "SprintRestartStaminaPercent": 0,
+            "ActionType": "DodgeRoll",
+            "Cooldown": 0.5,
             "bLocksMovement": 1,
             "bUsesRootMotion": 1,
             "bCanBeInterrupted": 1
@@ -103,7 +117,7 @@
             "CombatStance": "Relaxed",
             "WeaponType": "Any",
             "Direction": "Any",
-            "ActionTid": 10021,
+            "ActionTid": 10022,
             "Priority": 1
         }
     ],
@@ -115,7 +129,6 @@
             "CombatStance": "Relaxed",
             "WeaponType": "Any",
             "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Roll_Relaxed_Forward.AM_Roll_Relaxed_Forward",
-            "StartSection": " ",
             "PlayRate": 1,
             "BlendIn": 0.1,
             "BlendOut": 0.1,
@@ -135,7 +148,7 @@
         },
         {
             "Tid": 30023,
-            "ActionTid": 10021,
+            "ActionTid": 10022,
             "Direction": "Any",
             "CombatStance": "Relaxed",
             "WeaponType": "Any",
@@ -185,6 +198,27 @@
         {
             "Tid": 40026,
             "ActionAnimationTid": 30022,
+            "WindowType": "InputBuffer",
+            "StartTime": 0.55,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40027,
+            "ActionAnimationTid": 30023,
+            "WindowType": "Invincible",
+            "StartTime": 0.1,
+            "EndTime": 0.55
+        },
+        {
+            "Tid": 40028,
+            "ActionAnimationTid": 30023,
+            "WindowType": "InterruptLock",
+            "StartTime": 0,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40029,
+            "ActionAnimationTid": 30023,
             "WindowType": "InputBuffer",
             "StartTime": 0.55,
             "EndTime": 0.8
