@@ -105,6 +105,19 @@
             "CombatStance": "Relaxed",
             "WeaponType": "Any",
             "Montage": "/Game/Character/Player/Animation/Montages/AM_DodgeRoll_Relaxed_Any.AM_DodgeRoll_Relaxed_Any",
+            "StartSection": " ",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": 1
+        },
+        {
+            "Tid": 30022,
+            "ActionTid": 10021,
+            "Direction": "Backward",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/AM_Roll_B_180.AM_Roll_B_180",
             "PlayRate": 1,
             "BlendIn": 0.1,
             "BlendOut": 0.1,
@@ -129,6 +142,27 @@
         {
             "Tid": 40023,
             "ActionAnimationTid": 30021,
+            "WindowType": "InputBuffer",
+            "StartTime": 0.55,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40024,
+            "ActionAnimationTid": 30022,
+            "WindowType": "Invincible",
+            "StartTime": 0.1,
+            "EndTime": 0.55
+        },
+        {
+            "Tid": 40025,
+            "ActionAnimationTid": 30022,
+            "WindowType": "InterruptLock",
+            "StartTime": 0,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40026,
+            "ActionAnimationTid": 30022,
             "WindowType": "InputBuffer",
             "StartTime": 0.55,
             "EndTime": 0.8
