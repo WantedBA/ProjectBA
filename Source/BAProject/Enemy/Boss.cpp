@@ -23,6 +23,9 @@ void ABoss::BeginPlay()
 {
 	Super::BeginPlay();
 
+	bIsEnding = false;
+
+
 	if (MonsterTid != 0)
 	{
 		InitializeFromTable(MonsterTid);
@@ -49,41 +52,55 @@ void ABoss::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	for (auto It = PatternCooldownMap.CreateIterator(); It; ++It)
+	if (bIsEnding)
 	{
-		It.Value() -= DeltaTime;
-		if (It.Value() <= 0.0f)
+		return;
+	}
+
+	PendingCooldownRemove.Reset();
+	for (auto& Pair : PatternCooldownMap)
+	{
+		Pair.Value -= DeltaTime;
+
+		if (Pair.Value <= 0.f)
 		{
-			It.RemoveCurrent();
+			PendingCooldownRemove.Add(Pair.Key);
 		}
+	}
+
+	for (int32 Key : PendingCooldownRemove)
+	{
+		PatternCooldownMap.Remove(Key);
 	}
 
 	// AI 디버그 정보 시각화
 	if (bShowAIDebug)
 	{
-		AAIController* AIC = Cast<AAIController>(GetController());
-		if (AIC)
+		AAIController* AIController = Cast<AAIController>(GetController());
+		if (AIController == nullptr)
 		{
-			UBlackboardComponent* BB = AIC->GetBlackboardComponent();
-			AActor* Target = BB ? Cast<AActor>(BB->GetValueAsObject(BBKey::TargetActor)) : nullptr;
-			
-			FString DebugInfo = FString::Printf(TEXT("Phase: %d\n"), CurrentPhase);
-			if (Target)
-			{
-				float Dist = FVector::Dist(GetActorLocation(), Target->GetActorLocation());
-				DebugInfo += FString::Printf(TEXT("Target: %s (Dist: %.1f)\n"), *Target->GetName(), Dist);
-				
-				DebugInfo += TEXT("--- Pattern Scores ---\n");
-				for (const FBossAttackData& Pattern : BossPatterns)
-				{
-					float Score = CalculatePatternScore(Pattern, Target);
-					FString CooldownStr = IsPatternAvailable(Pattern.Tid) ? TEXT("Ready") : TEXT("CD");
-					DebugInfo += FString::Printf(TEXT("Tid[%d]: %.2f (%s)\n"), Pattern.Tid, Score, *CooldownStr);
-				}
-			}
-
-			DrawDebugString(GetWorld(), FVector(0, 0, 150), DebugInfo, this, FColor::Yellow, DeltaTime);
+			return;
 		}
+
+		UBlackboardComponent* BBComponent = AIController->GetBlackboardComponent();
+		AActor* Target = BBComponent ? Cast<AActor>(BBComponent->GetValueAsObject(BBKey::TargetActor)) : nullptr;
+			
+		FString DebugInfo = FString::Printf(TEXT("Phase: %d\n"), CurrentPhase);
+		if (Target == nullptr)
+		{
+			return;
+		}
+
+		float Dist = FVector::Dist(GetActorLocation(), Target->GetActorLocation());
+		DebugInfo += FString::Printf(TEXT("Target: %s (Dist: %.1f)\n"), *Target->GetName(), Dist);
+		DebugInfo += TEXT("--- Pattern Scores ---\n");
+		for (const FBossAttackData& Pattern : BossPatterns)
+		{
+			float Score = CalculatePatternScore(Pattern, Target);
+			FString CooldownStr = IsPatternAvailable(Pattern.Tid) ? TEXT("Ready") : TEXT("CD");
+			DebugInfo += FString::Printf(TEXT("Tid[%d]: %.2f (%s)\n"), Pattern.Tid, Score, *CooldownStr);
+		}
+		DrawDebugString(GetWorld(), FVector(0, 0, 150), DebugInfo, this, FColor::Yellow, DeltaTime);
 	}
 }
 
@@ -255,6 +272,18 @@ void ABoss::PostInitializeComponents()
 	}
 }
 
+void ABoss::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	bIsEnding = true;
+
+	PatternCooldownMap.Empty();
+	PendingCooldownRemove.Empty();
+	BossPatterns.Empty();
+	LoadedMontageMap.Empty();
+
+	Super::EndPlay(EndPlayReason);
+}
+
 void ABoss::HandleHPChanged(float CurrentHP, float MaxHP)
 {
 	float HPRatio = CurrentHP / MaxHP;
@@ -387,7 +416,7 @@ void ABoss::StartPatternCooldown(int32 PatternTid, float CoolTime)
 
 void ABoss::ExecuteBossPattern(int32 PatternTid)
 {
-	if (IsDead())
+	if (bIsEnding || IsDead())
 	{
 		return;
 	}
@@ -404,7 +433,11 @@ void ABoss::ExecuteBossPattern(int32 PatternTid)
 		{
 			if (Data.Tid == PatternTid)
 			{
-				MontageToPlay = Data.PatternMontage.LoadSynchronous();
+				if (bIsEnding == false)
+				{
+					MontageToPlay = Data.PatternMontage.LoadSynchronous();
+				}
+
 				if (MontageToPlay)
 				{
 					LoadedMontageMap.Add(PatternTid, MontageToPlay);
@@ -417,23 +450,29 @@ void ABoss::ExecuteBossPattern(int32 PatternTid)
 		}
 	}
 
-	if (MontageToPlay)
+	if (MontageToPlay == nullptr)
 	{
-		SetState(EEnemyState::Attack);
-		if (CombatComponent)
+		return;
+	}
+
+	SetState(EEnemyState::Attack);
+
+	if (CombatComponent == nullptr)
+	{
+		return;
+	}
+
+	// 패턴 데이터를 기반으로 CombatComponent 데이터 설정
+	for (const FBossAttackData& Data : BossPatterns)
+	{
+		if (Data.Tid == PatternTid)
 		{
-			// 패턴 데이터를 기반으로 CombatComponent 데이터 설정
-			for (const FBossAttackData& Data : BossPatterns)
-			{
-				if (Data.Tid == PatternTid)
-				{
-					// IdealRange가 0인 경우(무한 인지용) 실제 타격 반경으로 150.0f 사용
-					float HitRadius = (Data.IdealRange <= 0.0f) ? 150.0f : Data.IdealRange;
-					CombatComponent->SetAttackData(HitRadius, Data.Attack);
-					break;
-				}
-			}
-			CombatComponent->ExecuteAttack(MontageToPlay);
+			// IdealRange가 0인 경우(무한 인지용) 실제 타격 반경으로 150.0f 사용
+			float HitRadius = (Data.IdealRange <= 0.0f) ? 150.0f : Data.IdealRange;
+			CombatComponent->SetAttackData(HitRadius, Data.Attack);
+			break;
 		}
 	}
+
+	CombatComponent->ExecuteAttack(MontageToPlay);
 }

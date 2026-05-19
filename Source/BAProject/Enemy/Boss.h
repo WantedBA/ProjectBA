@@ -3,7 +3,6 @@
 #include "CoreMinimal.h"
 #include "Enemy/EnemyBase.h"
 #include "Tables/BossMonster.h"
-#include "Quest/QuestActivatable.h"
 #include "Boss.generated.h"
 
 USTRUCT(BlueprintType)
@@ -49,7 +48,7 @@ struct BAPROJECT_API FBossAttackData
 };
 
 UCLASS()
-class BAPROJECT_API ABoss : public AEnemyBase, public IQuestActivatable
+class BAPROJECT_API ABoss : public AEnemyBase
 {
 	GENERATED_BODY()
 
@@ -59,22 +58,16 @@ public:
 	virtual void InitializeFromTable(int32 InTid) override;
 
 	int32 ChooseBestPattern();
-
 	virtual void ExecuteBossPattern(int32 PatternTid);
 
 	UFUNCTION()
 	virtual void HandleHPChanged(float CurrentHP, float MaxHP);
 
-	//Quest 인터페이스 
-	virtual void OnQuestActivated_Implementation(int32 tid) override;
-	virtual void OnQuestDeactivated_Implementation(int32 tid) override;
-	
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void PostInitializeComponents() override;
-	virtual void PossessedBy(AController* NewController) override;
-	virtual bool IsPersistentAggro() const override {return true;};
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
 	void LoadBossPatterns(int32 StageType);
@@ -83,9 +76,7 @@ private:
 	bool IsPatternAvailable(int32 PatternTid) const;
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Quest")
-	bool bStartPausedForQuest = true;
-	
+	bool bIsEnding = false;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|State")
 	int32 CurrentPhase = 1;
 
@@ -100,4 +91,6 @@ protected:
 
 	UPROPERTY()
 	TMap<int32, float> PatternCooldownMap;
+
+	TArray<int32> PendingCooldownRemove;
 };
