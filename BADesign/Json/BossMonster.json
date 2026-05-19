@@ -10,7 +10,10 @@
             "IdealRange": 150,
             "AttackAngle": 45,
             "ScoreMultiplier": 1,
-            "Attack": 30
+            "Attack": 30,
+            "NextComboTid": 101,
+            "ComboTransitionTime": 0.2,
+            "MaxTrackingAngle": 90
         },
         {
             "Tid": 101,
@@ -23,7 +26,10 @@
             "IdealRange": 200,
             "AttackAngle": 30,
             "ScoreMultiplier": 1.5,
-            "Attack": 100
+            "Attack": 100,
+            "NextComboTid": 102,
+            "ComboTransitionTime": 0.25,
+            "MaxTrackingAngle": 60
         },
         {
             "Tid": 102,
@@ -36,7 +42,10 @@
             "IdealRange": 300,
             "AttackAngle": 15,
             "ScoreMultiplier": 1.2,
-            "Attack": 150
+            "Attack": 150,
+            "NextComboTid": 0,
+            "ComboTransitionTime": 0.2,
+            "MaxTrackingAngle": 45
         },
         {
             "Tid": 103,
@@ -49,7 +58,10 @@
             "IdealRange": 280,
             "AttackAngle": 15,
             "ScoreMultiplier": 1.2,
-            "Attack": 150
+            "Attack": 150,
+            "NextComboTid": 0,
+            "ComboTransitionTime": 0.2,
+            "MaxTrackingAngle": 45
         },
         {
             "Tid": 104,
@@ -61,7 +73,10 @@
             "Weight": 2,
             "IdealRange": 1000,
             "AttackAngle": 180,
-            "ScoreMultiplier": 1
+            "ScoreMultiplier": 1,
+            "NextComboTid": 0,
+            "ComboTransitionTime": 0.2,
+            "MaxTrackingAngle": 90
         }
     ],
     "2StageBossAttack": [
@@ -74,7 +89,10 @@
             "IdealRange": 150,
             "AttackAngle": 45,
             "ScoreMultiplier": 1,
-            "Attack": 30
+            "Attack": 30,
+            "NextComboTid": 201,
+            "ComboTransitionTime": 0.2,
+            "MaxTrackingAngle": 90
         },
         {
             "Tid": 201,
@@ -86,7 +104,10 @@
             "IdealRange": 200,
             "AttackAngle": 30,
             "ScoreMultiplier": 1.5,
-            "Attack": 100
+            "Attack": 100,
+            "NextComboTid": 202,
+            "ComboTransitionTime": 0.2,
+            "MaxTrackingAngle": 60
         },
         {
             "Tid": 202,
@@ -98,7 +119,10 @@
             "IdealRange": 800,
             "AttackAngle": 15,
             "ScoreMultiplier": 1.2,
-            "Attack": 150
+            "Attack": 150,
+            "NextComboTid": 0,
+            "ComboTransitionTime": 0.2,
+            "MaxTrackingAngle": 45
         },
         {
             "Tid": 203,
@@ -110,7 +134,10 @@
             "Weight": 2,
             "IdealRange": 1200,
             "AttackAngle": 180,
-            "ScoreMultiplier": 1
+            "ScoreMultiplier": 1,
+            "NextComboTid": 0,
+            "ComboTransitionTime": 0.2,
+            "MaxTrackingAngle": 90
         }
     ],
     "3StageBossAttack": [
@@ -123,7 +150,10 @@
             "IdealRange": 150,
             "AttackAngle": 45,
             "ScoreMultiplier": 1,
-            "Attack": 30
+            "Attack": 30,
+            "NextComboTid": 301,
+            "ComboTransitionTime": 0.15,
+            "MaxTrackingAngle": 90
         },
         {
             "Tid": 301,
@@ -135,7 +165,10 @@
             "IdealRange": 200,
             "AttackAngle": 30,
             "ScoreMultiplier": 1.5,
-            "Attack": 100
+            "Attack": 100,
+            "NextComboTid": 302,
+            "ComboTransitionTime": 0.15,
+            "MaxTrackingAngle": 60
         },
         {
             "Tid": 302,
@@ -147,7 +180,10 @@
             "IdealRange": 800,
             "AttackAngle": 15,
             "ScoreMultiplier": 1.2,
-            "Attack": 150
+            "Attack": 150,
+            "NextComboTid": 0,
+            "ComboTransitionTime": 0.15,
+            "MaxTrackingAngle": 45
         },
         {
             "Tid": 303,
@@ -159,7 +195,10 @@
             "Weight": 2,
             "IdealRange": 1200,
             "AttackAngle": 180,
-            "ScoreMultiplier": 1
+            "ScoreMultiplier": 1,
+            "NextComboTid": 0,
+            "ComboTransitionTime": 0.15,
+            "MaxTrackingAngle": 90
         }
     ]
 }

@@ -12,8 +12,10 @@
 #include "BrainComponent.h"
 #include "AI/EnemyAIController.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 ABoss::ABoss()
 {
@@ -73,6 +75,12 @@ void ABoss::Tick(float DeltaTime)
 	for (int32 Key : PendingCooldownRemove)
 	{
 		PatternCooldownMap.Remove(Key);
+	}
+
+	// 콤보 전환 중 플레이어 방향 추적
+	if (bIsComboTransitioning)
+	{
+		TrackPlayerDuringComboTransition(DeltaTime);
 	}
 
 	// AI 디버그 정보 시각화
@@ -316,6 +324,10 @@ void ABoss::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	bIsEnding = true;
 
+	GetWorldTimerManager().ClearTimer(ComboTransitionHandle);
+	bIsComboTransitioning = false;
+	PendingComboTid = 0;
+
 	PatternCooldownMap.Empty();
 	PendingCooldownRemove.Empty();
 	BossPatterns.Empty();
@@ -427,6 +439,9 @@ void ABoss::LoadBossPatterns(int32 StageType)
 			NewData.AttackAngle = static_cast<float>(Pair.Value->AttackAngle);
 			NewData.ScoreMultiplier = Pair.Value->ScoreMultiplier;
 			NewData.Attack = static_cast<float>(Pair.Value->Attack);
+			NewData.NextComboTid = Pair.Value->NextComboTid;
+			NewData.ComboTransitionTime = Pair.Value->ComboTransitionTime;
+			NewData.MaxTrackingAngle = Pair.Value->MaxTrackingAngle;
 
 			// ConditionType 4 = 회피. ChooseBestPattern에 포함시키지 않고 별도 트리거에서 사용
 			if (NewData.ConditionType == 4)
@@ -540,7 +555,7 @@ void ABoss::ExecuteBossPattern(int32 PatternTid)
 		{
 			// IdealRange가 0인 경우(무한 인지용) 실제 타격 반경으로 150.0f 사용
 			float HitRadius = (Data.IdealRange <= 0.0f) ? 150.0f : Data.IdealRange;
-			CombatComponent->SetAttackData(HitRadius, Data.Attack);
+			CombatComponent->SetAttackData(HitRadius, Data.Attack, FName("Weapon"), FName("Weapon"));
 			break;
 		}
 	}
@@ -565,11 +580,82 @@ void ABoss::OnPatternMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 	UE_LOG(LogTemp, Warning, TEXT("[ABoss::OnPatternMontageEnded] Montage=%s, bInterrupted=%d, CurrentState=%d"),
 		Montage ? *Montage->GetName() : TEXT("NULL"), (int32)bInterrupted, (int32)GetCurrentState());
 
-	// 이미 Notify로 처리됐다면 (Attack 상태가 아님) 무시
 	if (GetCurrentState() != EEnemyState::Attack)
 	{
 		return;
 	}
 
+	// 인터럽트되지 않은 경우에만 콤보 연결 시도
+	if (!bInterrupted)
+	{
+		int32 NextTid = 0;
+		float TransitionTime = 0.2f;
+
+		for (const FBossAttackData& Data : BossPatterns)
+		{
+			if (Data.Tid == LastUsedPatternTid)
+			{
+				NextTid = Data.NextComboTid;
+				TransitionTime = Data.ComboTransitionTime;
+				ComboMaxTrackingAngle = Data.MaxTrackingAngle;
+				break;
+			}
+		}
+
+		if (NextTid > 0)
+		{
+			PendingComboTid = NextTid;
+			bIsComboTransitioning = true;
+
+			GetWorldTimerManager().SetTimer(
+				ComboTransitionHandle,
+				this, &ABoss::ExecutePendingCombo,
+				TransitionTime, false
+			);
+			return;
+		}
+	}
+
+	bIsComboTransitioning = false;
+	GetWorldTimerManager().ClearTimer(ComboTransitionHandle);
 	OnEnemyAttackAniFinished(EEnemyState::Idle);
+}
+
+void ABoss::ExecutePendingCombo()
+{
+	bIsComboTransitioning = false;
+
+	if (PendingComboTid > 0 && !bIsEnding && !IsDead())
+	{
+		int32 Tid = PendingComboTid;
+		PendingComboTid = 0;
+		ExecuteBossPattern(Tid);
+	}
+}
+
+void ABoss::TrackPlayerDuringComboTransition(float DeltaTime)
+{
+	AAIController* AIC = Cast<AAIController>(GetController());
+	if (!AIC) return;
+
+	UBlackboardComponent* BB = AIC->GetBlackboardComponent();
+	if (!BB) return;
+
+	AActor* Target = Cast<AActor>(BB->GetValueAsObject(BBKey::TargetActor));
+	if (!Target) return;
+
+	FVector ToTarget = (Target->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
+	FRotator TargetRot = ToTarget.Rotation();
+	FRotator CurrentRot = GetActorRotation();
+
+	// 현재 방향에서 타겟 방향까지의 각도 차이
+	float AngleDiff = FMath::FindDeltaAngleDegrees(CurrentRot.Yaw, TargetRot.Yaw);
+
+	// 최대 회전 각도만큼만 허용 (너무 많이 돌지 않게)
+	float Clamped = FMath::Clamp(AngleDiff, -ComboMaxTrackingAngle, ComboMaxTrackingAngle);
+
+	FRotator Desired = CurrentRot;
+	Desired.Yaw += Clamped;
+
+	SetActorRotation(FMath::RInterpTo(CurrentRot, Desired, DeltaTime, 8.0f));
 }

@@ -47,6 +47,15 @@ struct BAPROJECT_API FBossAttackData
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TSoftObjectPtr<UAnimMontage> PatternMontage;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	int32 NextComboTid = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	float ComboTransitionTime = 0.2f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	float MaxTrackingAngle = 90.0f;
 };
 
 UCLASS()
@@ -72,6 +81,9 @@ public:
 	UFUNCTION()
 	void OnPatternMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
+	UFUNCTION()
+	void ExecutePendingCombo();
+
 	//Quest 인터페이스
 	virtual void OnQuestActivated_Implementation(int32 tid) override;
 	virtual void OnQuestDeactivated_Implementation(int32 tid) override;
@@ -86,9 +98,10 @@ protected:
 
 private:
 	void LoadBossPatterns(int32 StageType);
-	float CalculatePatternScore(const FBossAttackData& PatternData, AActor* Target);	
+	float CalculatePatternScore(const FBossAttackData& PatternData, AActor* Target);
 	void StartPatternCooldown(int32 PatternTid, float CoolTime);
 	bool IsPatternAvailable(int32 PatternTid) const;
+	void TrackPlayerDuringComboTransition(float DeltaTime);
 
 protected:
 	bool bIsEnding = false;
@@ -120,4 +133,10 @@ protected:
 	int32 LastUsedPatternTid = 0;
 
 	TArray<int32> PendingCooldownRemove;
+
+	bool bIsComboTransitioning = false;
+	int32 PendingComboTid = 0;
+	float ComboMaxTrackingAngle = 90.0f;
+
+	FTimerHandle ComboTransitionHandle;
 };

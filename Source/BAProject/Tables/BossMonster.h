@@ -50,6 +50,15 @@ struct BAPROJECT_API F1StageBossAttackRows : public FBARowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
 	int32 Attack = 0;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
+	int32 NextComboTid = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
+	float ComboTransitionTime = 0.2f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
+	float MaxTrackingAngle = 90.0f;
+
 	virtual void PostRead() override
 	{
 		bTid = Tid;
@@ -97,6 +106,15 @@ struct BAPROJECT_API F2StageBossAttackRows : public FBARowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
 	int32 Attack = 0;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
+	int32 NextComboTid = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
+	float ComboTransitionTime = 0.2f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
+	float MaxTrackingAngle = 90.0f;
+
 	virtual void PostRead() override
 	{
 		bTid = Tid;
@@ -143,6 +161,15 @@ struct BAPROJECT_API F3StageBossAttackRows : public FBARowBase
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
 	int32 Attack = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
+	int32 NextComboTid = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
+	float ComboTransitionTime = 0.2f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
+	float MaxTrackingAngle = 90.0f;
 
 	virtual void PostRead() override
 	{
