@@ -9,6 +9,8 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Tables/ActionRows.h"
 #include "Tables/BATableManager.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 namespace
 {
@@ -69,6 +71,14 @@ void UActionAnimationComponent::BeginPlay()
 	{
 		CachedActionComponent = Owner->FindComponentByClass<UActionComponent>();
 		CachedMeshComponent = ResolveMeshComponent();
+
+		if (const ACharacter* CharacterOwner = Cast<ACharacter>(Owner))
+		{
+			if (UCharacterMovementComponent* MovementComponent = CharacterOwner->GetCharacterMovement())
+			{
+				AddTickPrerequisiteComponent(MovementComponent);
+			}
+		}
 	}
 
 	if (bAutoBindToOwnerActionComponent && CachedActionComponent)
@@ -107,6 +117,7 @@ void UActionAnimationComponent::TickComponent(
 	}
 
 	TickActionWindows(AnimInstance->Montage_GetPosition(ActiveMontage));
+	MaintainRootMotionRotationLock();
 	RefreshActionWindowTick();
 }
 
@@ -438,6 +449,15 @@ void UActionAnimationComponent::ApplyRootMotionModeForAnimation(
 	}
 
 	AnimInstance.SetRootMotionMode(ERootMotionMode::RootMotionFromMontagesOnly);
+
+	if (bIgnoreRootMotionRotation)
+	{
+		if (const AActor* Owner = GetOwner())
+		{
+			LockedRootMotionRotation = Owner->GetActorRotation();
+			bRootMotionRotationLocked = true;
+		}
+	}
 }
 
 void UActionAnimationComponent::RestoreRootMotionMode()
@@ -454,6 +474,29 @@ void UActionAnimationComponent::RestoreRootMotionMode()
 
 	RootMotionModeAnimInstance = nullptr;
 	bRootMotionModeOverridden = false;
+}
+
+void UActionAnimationComponent::RestoreRootMotionRotation()
+{
+	bRootMotionRotationLocked = false;
+	LockedRootMotionRotation = FRotator::ZeroRotator;
+}
+
+void UActionAnimationComponent::MaintainRootMotionRotationLock()
+{
+	if (!bRootMotionRotationLocked)
+	{
+		return;
+	}
+
+	AActor* Owner = GetOwner();
+	if (!Owner)
+	{
+		RestoreRootMotionRotation();
+		return;
+	}
+
+	Owner->SetActorRotation(LockedRootMotionRotation);
 }
 
 void UActionAnimationComponent::InitializeActionWindows()
@@ -652,7 +695,7 @@ void UActionAnimationComponent::ApplyInputBufferWindowDelta(const int32 Delta)
 
 void UActionAnimationComponent::RefreshActionWindowTick()
 {
-	SetComponentTickEnabled(ActiveMontage && (!PendingActionWindows.IsEmpty() || !OpenActionWindows.IsEmpty()));
+	SetComponentTickEnabled(ActiveMontage && (bRootMotionRotationLocked || !PendingActionWindows.IsEmpty() || !OpenActionWindows.IsEmpty()));
 }
 
 void UActionAnimationComponent::ClearActivePlayback()
@@ -668,5 +711,6 @@ void UActionAnimationComponent::ClearActivePlayback()
 	ActiveActionType = EActionType::None;
 	ActiveMontage = nullptr;
 	ActivePlaybackInstanceId = ActionAnimationInvalidPlaybackInstanceId;
+	RestoreRootMotionRotation();
 	RefreshActionWindowTick();
 }
