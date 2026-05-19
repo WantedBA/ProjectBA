@@ -6,6 +6,7 @@
 #include "Tables/ActionEnums.h"
 #include "BAPlayerCharacter.generated.h"
 
+class UPlayerSkillComponent;
 class UCameraComponent;
 class UCharacterMovementComponent;
 class UActionComponent;
@@ -238,6 +239,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UActionAnimationComponent> ActionAnimationComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UPlayerSkillComponent> PlayerSkillComponent;
 
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	TObjectPtr<USpringArmComponent> SpringArm;

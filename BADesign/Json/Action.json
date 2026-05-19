@@ -1,46 +1,4 @@
 {
-    "Moveset": [
-        {
-            "Tid": 20001,
-            "MovesetKey": "Default",
-            "Command": "LightAttack",
-            "CombatStance": "Relaxed",
-            "WeaponType": "Any",
-            "Direction": "Any",
-            "ActionTid": 10001,
-            "Priority": 0
-        },
-        {
-            "Tid": 20002,
-            "MovesetKey": "Default",
-            "Command": "HeavyAttack",
-            "CombatStance": "Relaxed",
-            "WeaponType": "Any",
-            "Direction": "Any",
-            "ActionTid": 10002,
-            "Priority": 0
-        },
-        {
-            "Tid": 20011,
-            "MovesetKey": "Default",
-            "Command": "Guard",
-            "CombatStance": "Relaxed",
-            "WeaponType": "Any",
-            "Direction": "Any",
-            "ActionTid": 10011,
-            "Priority": 0
-        },
-        {
-            "Tid": 20021,
-            "MovesetKey": "Default",
-            "Command": "Dodge",
-            "CombatStance": "Relaxed",
-            "WeaponType": "Any",
-            "Direction": "Any",
-            "ActionTid": 10021,
-            "Priority": 0
-        }
-    ],
     "ActionData": [
         {
             "Tid": 10001,
@@ -97,6 +55,58 @@
             "bCanBeInterrupted": 1
         }
     ],
+    "Moveset": [
+        {
+            "Tid": 20001,
+            "MovesetKey": "Default",
+            "Command": "LightAttack",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Direction": "Any",
+            "ActionTid": 10001,
+            "Priority": 0
+        },
+        {
+            "Tid": 20002,
+            "MovesetKey": "Default",
+            "Command": "HeavyAttack",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Direction": "Any",
+            "ActionTid": 10002,
+            "Priority": 0
+        },
+        {
+            "Tid": 20011,
+            "MovesetKey": "Default",
+            "Command": "Guard",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Direction": "Any",
+            "ActionTid": 10011,
+            "Priority": 0
+        },
+        {
+            "Tid": 20021,
+            "MovesetKey": "Default",
+            "Command": "Dodge",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Direction": "Any",
+            "ActionTid": 10021,
+            "Priority": 0
+        },
+        {
+            "Tid": 20022,
+            "MovesetKey": "Dash",
+            "Command": "Dodge",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Direction": "Any",
+            "ActionTid": 10021,
+            "Priority": 1
+        }
+    ],
     "ActionAnimationData": [
         {
             "Tid": 30021,
@@ -104,7 +114,7 @@
             "Direction": "Any",
             "CombatStance": "Relaxed",
             "WeaponType": "Any",
-            "Montage": "/Game/Character/Player/Animation/Montages/AM_DodgeRoll_Relaxed_Any.AM_DodgeRoll_Relaxed_Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Roll_Relaxed_Forward.AM_Roll_Relaxed_Forward",
             "StartSection": " ",
             "PlayRate": 1,
             "BlendIn": 0.1,
@@ -117,7 +127,19 @@
             "Direction": "Backward",
             "CombatStance": "Relaxed",
             "WeaponType": "Any",
-            "Montage": "/Game/Character/Player/Animation/Montages/AM_Roll_B_180.AM_Roll_B_180",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Roll_Relaxed_Backward.AM_Roll_Relaxed_Backward",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": 1
+        },
+        {
+            "Tid": 30023,
+            "ActionTid": 10021,
+            "Direction": "Any",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Dodge_Relaxed_Forward.AM_Dodge_Relaxed_Forward",
             "PlayRate": 1,
             "BlendIn": 0.1,
             "BlendOut": 0.1,

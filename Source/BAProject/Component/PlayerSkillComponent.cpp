@@ -3,6 +3,7 @@
 
 #include "Component/PlayerSkillComponent.h"
 
+#include "ActionComponent.h"
 #include "Instance/SkillTreeSubsystem.h"
 
 // Sets default values for this component's properties
@@ -36,8 +37,16 @@ void UPlayerSkillComponent::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("PlayerSkillComponent: World not found."));
 		return;
 	}
+
+	// 액터컴포넌트 포인터 설정
+	ActionComponent = Cast<UActionComponent>(GetOwner()->GetComponentByClass(UActionComponent::StaticClass()));
+	if (!ActionComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PlayerSkillComponent: ActionComponent not found."));
+		return;
+	}
 	
-	// 스킬트리 창이 닫힐 때(TODO) 스킬 새로고침 바인딩 추가
+	// 스킬트리 창이 닫힐 때 스킬 새로고침 바인딩
 	SkillTreeSubsystem->OnSkillTreeChangeCompleted.AddUniqueDynamic(this, &UPlayerSkillComponent::RefreshAllSkills);
 }
 
@@ -68,5 +77,16 @@ void UPlayerSkillComponent::ClearAllSkills()
 
 void UPlayerSkillComponent::ApplySkill(int32 SkillId)
 {
+	// 기본값으로 항상 적용되어 있는 스킬
+	if (TableManager->FindSkill(SkillId)->bIsDefaultSkill)
+	{
+		return;
+	}
+	
+	// TODO: 임시 코드
+	if (SkillId == 13)
+	{
+		ActionComponent->AddMovesetKey(FName("Dash"));
+	}
 }
 

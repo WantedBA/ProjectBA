@@ -121,10 +121,17 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Action")
 	EActionStartResult GetLastStartResult() const { return LastStartResult; }
 
-	// 액션 선택에 사용할 Moveset 키를 설정한다.
+// Moveset 키 
 	UFUNCTION(BlueprintCallable, Category = "Action|Context")
-	void SetMovesetKey(FName NewMovesetKey);
+	void AddMovesetKey(FName NewMovesetKey) { MovesetKeys.Add(NewMovesetKey); }
 
+	UFUNCTION(BlueprintCallable, Category = "Action|Context")
+	void ResetMovesetKeys() { MovesetKeys = { FName(TEXT("Default")) }; }
+
+	UFUNCTION(BlueprintPure, Category = "Action|Context")
+	bool HasMovesetKey(FName InMovesetKey) const { return MovesetKeys.Contains(InMovesetKey); }
+	
+//
 	// 액션 선택에 사용할 전투 태세를 설정한다.
 	UFUNCTION(BlueprintCallable, Category = "Action|Context")
 	void SetCombatStance(ECombatStance NewCombatStance);
@@ -136,10 +143,6 @@ public:
 	// 액션 선택에 사용할 무기 타입을 설정한다.
 	UFUNCTION(BlueprintCallable, Category = "Action|Context")
 	void SetWeaponType(EActionWeaponType NewWeaponType);
-
-	// 현재 Moveset 키를 반환한다.
-	UFUNCTION(BlueprintPure, Category = "Action|Context")
-	FName GetMovesetKey() const { return MovesetKey; }
 
 	// 현재 전투 태세를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action|Context")
@@ -179,7 +182,7 @@ private:
 	EActionRuntimeState GetRuntimeStateForAction(const FActionDataRow& ActionData) const;
 
 	UPROPERTY(EditAnywhere, Category = "Action|Context")
-	FName MovesetKey = FName(TEXT("Default"));
+	TSet<FName> MovesetKeys = { FName(TEXT("Default")) };
 
 	UPROPERTY(EditAnywhere, Category = "Action|Context")
 	ECombatStance CombatStance = ECombatStance::Relaxed;

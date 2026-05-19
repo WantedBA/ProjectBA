@@ -7,6 +7,7 @@
 #include "PlayerSkillComponent.generated.h"
 
 
+class UActionComponent;
 class UBATableManager;
 class USkillTreeSubsystem;
 /*
@@ -45,4 +46,8 @@ private:
 	TObjectPtr<USkillTreeSubsystem> SkillTreeSubsystem = nullptr;
 	UPROPERTY(Transient)
 	TObjectPtr<UBATableManager> TableManager = nullptr;
+	
+// 액터컴포넌트 포인터
+	UPROPERTY(Transient)
+	TObjectPtr<UActionComponent> ActionComponent = nullptr;
 };
