@@ -164,11 +164,6 @@ void UActionComponent::UpdateBufferedActionDirection(const EActionDirection Dire
 	BufferedActionDirection = Direction;
 }
 
-void UActionComponent::SetMovesetKey(const FName NewMovesetKey)
-{
-	MovesetKey = NewMovesetKey.IsNone() ? FName(TEXT("Default")) : NewMovesetKey;
-}
-
 void UActionComponent::SetCombatStance(const ECombatStance NewCombatStance)
 {
 	CombatStance = NewCombatStance;
@@ -227,7 +222,8 @@ const FMovesetRow* UActionComponent::FindBestMoveset(
 		{
 			continue;
 		}
-		if (!Row->MovesetKey.IsNone() && Row->MovesetKey != MovesetKey)
+		// Moveset 테이블의 MovesetKey를 현재 ActionComponent가 갖고 있어야 함
+		if (!Row->MovesetKey.IsNone() && !MovesetKeys.Contains(Row->MovesetKey))
 		{
 			continue;
 		}
@@ -245,7 +241,7 @@ const FMovesetRow* UActionComponent::FindBestMoveset(
 		}
 
 		int32 Score = Row->Priority * 100;
-		Score += Row->MovesetKey == MovesetKey ? 16 : 0;
+		Score += MovesetKeys.Contains(Row->MovesetKey) ? 16 : 0;
 		Score += Row->WeaponType == WeaponType ? 8 : 0;
 		Score += Row->Direction == Direction ? 4 : 0;
 		if (Score > BestScore)

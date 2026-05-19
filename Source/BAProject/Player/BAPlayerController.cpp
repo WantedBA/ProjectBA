@@ -3,9 +3,12 @@
 #include "BAPlayerCharacter.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Engine/GameInstance.h"
 #include "InputMappingContext.h"
 #include "Component/ActionComponent.h"
 #include "Component/InteractorComponent.h"
+#include "UI/SkillTree/SkillTreeWidget.h"
+#include "UI/System/SubSystemUI.h"
 
 namespace
 {
@@ -85,6 +88,12 @@ void ABAPlayerController::BeginPlay()
 			{
 				InputSystem->AddMappingContext(InputMappingContext, 0);
 			}
+			
+			// TODO: 체크포인트 제작 후 이동
+			if (CheckpointInputMappingContext)
+			{
+				InputSystem->AddMappingContext(CheckpointInputMappingContext, 1);
+			}
 		}
 	}
 	
@@ -159,6 +168,17 @@ void ABAPlayerController::SetupInputComponent()
 			ETriggerEvent::Started,
 			this,
 			&ABAPlayerController::ToggleStrafe
+		);
+	}
+	
+	// 체크포인트(스킬트리 열기)
+	if (ensureMsgf(SkillTreeToggleAction, TEXT("SkillTreeToggleAction is not configured on %s"), *GetName()))
+	{
+		EnhancedInputComponent->BindAction(
+			SkillTreeToggleAction,
+			ETriggerEvent::Started,
+			this,
+			&ABAPlayerController::ToggleSkillTree
 		);
 	}
 }
@@ -370,4 +390,33 @@ void ABAPlayerController::ToggleStrafe()
 			: EPlayerLocomotionMode::Strafe;
 
 	PC->SetLocomotionMode(NextMode);
+}
+
+void ABAPlayerController::ToggleSkillTree()
+{
+	if (SkillTreeWidget && SkillTreeWidget->IsInViewport())
+	{
+		SkillTreeWidget->ClosePopup();
+		SkillTreeWidget = nullptr;
+		return;
+	}
+
+	if (!ensureMsgf(SkillTreeWidgetClass, TEXT("SkillTreeWidgetClass is not configured on %s"), *GetName()))
+	{
+		return;
+	}
+
+	UGameInstance* GameInstance = GetGameInstance();
+	if (!GameInstance)
+	{
+		return;
+	}
+
+	USubSystemUI* UISubsystem = GameInstance->GetSubsystem<USubSystemUI>();
+	if (!ensureMsgf(UISubsystem, TEXT("USubSystemUI is not available.")))
+	{
+		return;
+	}
+
+	SkillTreeWidget = Cast<USkillTreeWidget>(UISubsystem->PushUIByClass(SkillTreeWidgetClass));
 }

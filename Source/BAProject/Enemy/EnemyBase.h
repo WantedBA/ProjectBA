@@ -31,6 +31,7 @@ enum class EEnemyGrade : uint8
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStateChanged, EEnemyState, OldState, EEnemyState, NewState);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAttackAnimationFinishedDelegate, EEnemyState);
 DECLARE_MULTICAST_DELEGATE(FOnEnemyDeathDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDissolveStarted);
 
 UCLASS(Abstract)
 class BAPROJECT_API AEnemyBase : public ACharacterBase
@@ -80,9 +81,11 @@ public:
 	virtual void UpdateBlackBoardState();
 	virtual void ApplyKnockback(AActor* DamageCauser, float Force);
 
-	UFUNCTION(BlueprintCallable, Category = "Combat")
+	UFUNCTION(BlueprintCallable, Category = "Enemy|Combat")
 	virtual void HandlePerfectGuarded(FVector ImpactLocation);
 
+	UFUNCTION(BlueprintCallable, Category = "Enemy|Effects")
+	void OnStartDissolve();
 	// 공격 횟수 및 쿨다운 관리
 	bool CanAttack() const;
 	void ResetAttackCount() { CurrentAttackCount = 0; }
@@ -175,6 +178,15 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UAnimMontage> DeadMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effects")
+	TArray<UMaterialInterface*> DissolveMaterialsInput;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Effects")
+	TArray<UMaterialInstanceDynamic*> DynamicDissolveMaterials;
+
+	UPROPERTY(BlueprintAssignable, Category = "Effects")
+	FOnDissolveStarted OnDissolveStarted;
 
 	float MaxMoveSpeed;
 };
