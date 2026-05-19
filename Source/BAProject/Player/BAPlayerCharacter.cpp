@@ -229,6 +229,10 @@ void ABAPlayerCharacter::OnDamaged(float FinalDamage, AActor* DamageCauser)
 	Super::OnDamaged(FinalDamage, DamageCauser);
 	
 	// TODO
+	if (StatComponent)
+	{
+		StatComponent->ApplyDamage(FinalDamage);
+	}
 }
 
 void ABAPlayerCharacter::HandleActionStarted(const int32 ActionTid, const EActionType ActionType)
