@@ -67,6 +67,10 @@ void AInvisibleWallBase::SetWallActive(bool isActive)
 
 void AInvisibleWallBase::SetWallOpacity(float Opacity)
 {
+    if (WallMesh)
+    {
+        WallMesh->SetVisibility(Opacity > 0.f);
+    }
     if (WallMID)
     {
         WallMID->SetScalarParameterValue(OpacityParameterName, Opacity);
