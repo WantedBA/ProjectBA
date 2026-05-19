@@ -33,6 +33,11 @@ EBTNodeResult::Type UBTTask_SelectPattern_Utility::ExecuteTask(UBehaviorTreeComp
 	if (SelectedPatternTid != 0)
 	{
 		BBComp->SetValueAsInt(BBKey::SelectedPatternTid, SelectedPatternTid);
+
+		// 선택된 패턴의 IdealRange도 BB에 박아서 MoveToRange/CheckPatternRange가 사용
+		const float PatternIdealRange = Boss->GetPatternIdealRange(SelectedPatternTid);
+		BBComp->SetValueAsFloat(BBKey::SelectedPatternIdealRange, PatternIdealRange);
+
 		return EBTNodeResult::Succeeded;
 	}
 

@@ -10,6 +10,7 @@ USTRUCT(BlueprintType)
 struct BAPROJECT_API FBossAttackData
 {
 	GENERATED_BODY()
+	
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int32 Tid = 0;
@@ -61,6 +62,9 @@ public:
 	int32 ChooseBestPattern();
 	virtual void ExecuteBossPattern(int32 PatternTid);
 
+	// 패턴 Tid로 해당 패턴의 IdealRange를 조회 (없으면 0)
+	float GetPatternIdealRange(int32 PatternTid) const;
+
 	UFUNCTION()
 	virtual void HandleHPChanged(float CurrentHP, float MaxHP);
 
@@ -99,6 +103,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Data")
 	TArray<FBossAttackData> BossPatterns;
+
+	// 회피 패턴 (ConditionType=4). ChooseBestPattern에서 제외, 별도 트리거 시스템에서 사용
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Data")
+	TArray<FBossAttackData> EvasionPatterns;
 
 	UPROPERTY()
 	TMap<int32, float> PatternCooldownMap;

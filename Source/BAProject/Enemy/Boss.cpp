@@ -213,7 +213,7 @@ float ABoss::CalculatePatternScore(const FBossAttackData& PatternData, AActor* T
 			break;
 		}
 
-		if (Distance > PatternData.Var2)
+		if (Distance < PatternData.Var2)
 		{
 			bConditionMet = false;
 		}
@@ -342,6 +342,18 @@ void ABoss::OnQuestDeactivated_Implementation(int32 tid)
 	}
 }
 
+float ABoss::GetPatternIdealRange(int32 PatternTid) const
+{
+	for (const FBossAttackData& Data : BossPatterns)
+	{
+		if (Data.Tid == PatternTid)
+		{
+			return Data.IdealRange;
+		}
+	}
+	return 0.0f;
+}
+
 void ABoss::LoadBossPatterns(int32 StageType)
 {
 	UBATableManager* TableManager = UBATableManager::Get(this);
@@ -351,8 +363,9 @@ void ABoss::LoadBossPatterns(int32 StageType)
 	}
 
 	BossPatterns.Empty();
+	EvasionPatterns.Empty();
 
-	auto MapToBossData = [&](const auto& Rows) 
+	auto MapToBossData = [&](const auto& Rows)
 	{
 		for (const auto& Pair : Rows)
 		{
@@ -375,7 +388,15 @@ void ABoss::LoadBossPatterns(int32 StageType)
 			NewData.ScoreMultiplier = Pair.Value->ScoreMultiplier;
 			NewData.Attack = static_cast<float>(Pair.Value->Attack);
 
-			BossPatterns.Add(NewData);
+			// ConditionType 4 = 회피. ChooseBestPattern에 포함시키지 않고 별도 트리거에서 사용
+			if (NewData.ConditionType == 4)
+			{
+				EvasionPatterns.Add(NewData);
+			}
+			else
+			{
+				BossPatterns.Add(NewData);
+			}
 		}
 	};
 

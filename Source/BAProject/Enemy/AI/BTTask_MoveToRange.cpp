@@ -3,7 +3,6 @@
 #include "Constants/BAProjectConstant.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Navigation/PathFollowingComponent.h"
-#include "Blueprint/AIBlueprintHelperLibrary.h"
 
 UBTTask_MoveToRange::UBTTask_MoveToRange()
 {
@@ -31,7 +30,12 @@ EBTNodeResult::Type UBTTask_MoveToRange::ExecuteTask(UBehaviorTreeComponent& Own
         return EBTNodeResult::Failed;
     }
 
-    float IdealRange = BBComp->GetValueAsFloat(BBKey::AttackRange);
+    // 패턴별 사거리 우선. 비어있으면(=비-패턴 컨텍스트) 공용 AttackRange로 fallback
+    float IdealRange = BBComp->GetValueAsFloat(BBKey::SelectedPatternIdealRange);
+    if (IdealRange <= 0.0f)
+    {
+        IdealRange = BBComp->GetValueAsFloat(BBKey::AttackRange);
+    }
 
     FAIMoveRequest Request;
     Request.SetGoalActor(TargetActor);
@@ -64,7 +68,12 @@ void UBTTask_MoveToRange::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 
     APawn* BossPawn = AIController->GetPawn();
     AActor* TargetActor = Cast<AActor>(BBComp->GetValueAsObject(BBKey::TargetActor));
-    float IdealRange = BBComp->GetValueAsFloat(BBKey::AttackRange);
+
+    float IdealRange = BBComp->GetValueAsFloat(BBKey::SelectedPatternIdealRange);
+    if (IdealRange <= 0.0f)
+    {
+        IdealRange = BBComp->GetValueAsFloat(BBKey::AttackRange);
+    }
 
     if (BossPawn == nullptr || TargetActor == nullptr)
     {
@@ -72,10 +81,25 @@ void UBTTask_MoveToRange::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
         return;
     }
 
-    float Distance = FVector::Dist(BossPawn->GetActorLocation(), TargetActor->GetActorLocation());
+    const float Distance = FVector::Dist(BossPawn->GetActorLocation(), TargetActor->GetActorLocation());
     if (Distance <= IdealRange)
     {
         AIController->StopMovement();
         FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+        return;
+    }
+
+    // 안전망: path follow가 끝났는데(=path 종료) 아직 IdealRange 밖이면 path 재요청
+    // 타겟이 도망갔거나, AlreadyAtGoal로 시작했거나, NavMesh path 끝점이 IdealRange보다 멀어서 stuck일 때 복구
+    UPathFollowingComponent* PathFollow = AIController->GetPathFollowingComponent();
+    if (PathFollow && PathFollow->GetStatus() == EPathFollowingStatus::Idle)
+    {
+        FAIMoveRequest Request;
+        Request.SetGoalActor(TargetActor);
+        Request.SetAcceptanceRadius(IdealRange);
+        Request.SetUsePathfinding(true);
+        Request.SetProjectGoalLocation(true);
+
+        AIController->MoveTo(Request);
     }
 }
