@@ -8,8 +8,10 @@ APatrolPath::APatrolPath()
 	SplineComponent->SetClosedLoop(true);
 	SetRootComponent(SplineComponent);
 
+#if WITH_EDITORONLY_DATA
 	SplineComponent->EditorUnselectedSplineSegmentColor = FLinearColor::Red;
 	SplineComponent->EditorSelectedSplineSegmentColor = FLinearColor::White;
+#endif
 }
 
 void APatrolPath::PrintPathCoordinates()

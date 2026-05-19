@@ -5,6 +5,7 @@
 #include "Components/SceneComponent.h"
 #include "Player/BAPlayerCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Instance/QuestManageSubsystem.h"
 
 // Sets default values
 AMapLadder::AMapLadder()
@@ -49,6 +50,7 @@ void AMapLadder::OnConstruction(const FTransform& Transform)
 
 bool AMapLadder::CanInteract_Implementation(AActor* Interactor) const
 {
+	if (!bQuestUnlocked) return false;
 	if (!Interactor) return false;
 	if (const ABAPlayerCharacter* Player = Cast<ABAPlayerCharacter>(Interactor))
 	{
@@ -98,6 +100,27 @@ FVector AMapLadder::GetInteractionLocation_Implementation() const
 	// 사다리 본체 중간 높이를 후보 좌표로 사용 — 캐릭터가 가까이 가도 forward cone 유지
 	const float Mid = SegmentCount * SegmentHeight * 0.5f;
 	return LadderRoot->GetComponentLocation() + FVector(0.f, 0.f, Mid);
+}
+
+void AMapLadder::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (LockQuestTid <= 0)
+	{
+		bQuestUnlocked = true;
+		return;
+	}
+
+	// 퀘스트 완료 시에만 잠금 해제 (Abort는 해제 안 함)
+	if (UQuestManageSubsystem* QM = UQuestManageSubsystem::Get(this))
+	{
+		QM->OnQuestCompleted.AddWeakLambda(this, [this](int32 Tid)
+			{
+				if (Tid == LockQuestTid)
+					bQuestUnlocked = true;
+			});
+	}
 }
 
 FVector AMapLadder::GetBottomEntryLocation() const

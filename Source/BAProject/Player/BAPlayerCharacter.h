@@ -3,10 +3,13 @@
 #include "CoreMinimal.h"
 #include "Character/CharacterBase.h"
 #include "Player/BAPlayerCharacterTypes.h"
+#include "Tables/ActionEnums.h"
 #include "BAPlayerCharacter.generated.h"
 
 class UCameraComponent;
 class UCharacterMovementComponent;
+class UActionComponent;
+class UActionAnimationComponent;
 class UInteractorComponent;
 class AMapLadder;
 class USpringArmComponent;
@@ -90,6 +93,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Interaction")
 	UInteractorComponent* GetInteractorComponent() const { return InteractorComponent; }
 
+	UFUNCTION(BlueprintPure, Category = "Action")
+	UActionComponent* GetActionComponent() const { return ActionComponent; }
+
+	UFUNCTION(BlueprintPure, Category = "Action")
+	UActionAnimationComponent* GetActionAnimationComponent() const { return ActionAnimationComponent; }
+
 	// 사다리 관련 상호작용
 	UFUNCTION(BlueprintCallable, Category = "Interaction|Ladder")
 	void EnterLadder(AMapLadder* Ladder, const FVector& EntryLocation, const FRotator& FaceRotation);
@@ -127,6 +136,7 @@ private:
 	float CalculateInputYawDeltaFromActor() const;
 
 	void ApplyBufferedMoveInput();
+	bool IsActionMovementLocked() const;
 	void SyncFreeStrafeFacingMode();
 	void UpdateInterpolatedFacingRotation();
 	bool ShouldUseInterpolatedFacingRotation() const;
@@ -141,6 +151,8 @@ private:
 	bool IsSprintAllowedByStamina() const;
 	void DrainSprintStaminaDuringLoop(float DeltaTime);
 	float CalculateSprintStaminaDrain(float DeltaTime) const;
+	void PauseSprintStaminaRecovery();
+	void ResumeSprintStaminaRecovery(bool bApplyDelay);
 	void LockSprintUntilRecovered();
 	void UnlockSprintAfterRecovery();
 
@@ -176,6 +188,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UInteractorComponent> InteractorComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UActionComponent> ActionComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UActionAnimationComponent> ActionAnimationComponent;
+
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	TObjectPtr<USpringArmComponent> SpringArm;
 
@@ -187,4 +205,6 @@ protected:
 	void OnHealthChanged(float CurrentHP, float MaxHP);
 	UFUNCTION()
 	void OnStaminaChanged(float CurrentStamina, float MaxStamina);
+	UFUNCTION()
+	void HandleActionStarted(int32 ActionTid, EActionType ActionType);
 };

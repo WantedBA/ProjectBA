@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTTaskNode.h"
+#include "Enemy/Boss.h"
 #include "BTTask_ExecuteBossPattern.generated.h"
 
 /**
@@ -16,4 +17,8 @@ public:
 	UBTTask_ExecuteBossPattern();
 
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+	void OnAttackFinishedCallback(EEnemyState NewState);
+
+private:
+	TObjectPtr<UBehaviorTreeComponent> CachedOwnerComp;
 };

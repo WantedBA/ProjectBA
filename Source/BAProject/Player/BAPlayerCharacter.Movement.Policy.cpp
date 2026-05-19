@@ -63,6 +63,11 @@ void ABAPlayerCharacter::UpdateInterpolatedFacingRotation()
 // 캐릭터 가속방향 회전 보간 처리 적용 판단
 bool ABAPlayerCharacter::ShouldUseInterpolatedFacingRotation() const
 {
+	if (IsActionMovementLocked())
+	{
+		return false;
+	}
+
 	if (MovementRuntime.Phase != EPlayerMovementPhase::Loop && IsMovementPhaseUsingRootMotion())
 	{
 		return false;

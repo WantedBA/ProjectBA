@@ -4,7 +4,57 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
+#include "Component/ActionComponent.h"
 #include "Component/InteractorComponent.h"
+
+namespace
+{
+	EActionDirection GetActionDirectionFromMoveInput(const FVector2D& MoveInput)
+	{
+		constexpr float DirectionThreshold = 0.35f;
+		if (MoveInput.IsNearlyZero())
+		{
+			return EActionDirection::Any;
+		}
+
+		const FVector2D SafeInput = MoveInput.SizeSquared() > 1.f ? MoveInput.GetSafeNormal() : MoveInput;
+		const bool bForward = SafeInput.Y > DirectionThreshold;
+		const bool bBackward = SafeInput.Y < -DirectionThreshold;
+		const bool bRight = SafeInput.X > DirectionThreshold;
+		const bool bLeft = SafeInput.X < -DirectionThreshold;
+
+		if (bForward && bRight)
+		{
+			return EActionDirection::ForwardRight;
+		}
+		if (bForward && bLeft)
+		{
+			return EActionDirection::ForwardLeft;
+		}
+		if (bBackward && bRight)
+		{
+			return EActionDirection::BackwardRight;
+		}
+		if (bBackward && bLeft)
+		{
+			return EActionDirection::BackwardLeft;
+		}
+		if (bRight)
+		{
+			return EActionDirection::Right;
+		}
+		if (bLeft)
+		{
+			return EActionDirection::Left;
+		}
+		if (bBackward)
+		{
+			return EActionDirection::Backward;
+		}
+
+		return EActionDirection::Forward;
+	}
+}
 
 ABAPlayerController::ABAPlayerController()
 {
@@ -82,9 +132,7 @@ void ABAPlayerController::SetupInputComponent()
 
 	if (ensureMsgf(WalkAction, TEXT("WalkAction is not configured on %s"), *GetName()))
 	{
-		EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Started, this, &ABAPlayerController::OnWalkStarted);
-		EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Completed, this, &ABAPlayerController::OnWalkCompleted);
-		EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Canceled, this, &ABAPlayerController::OnWalkCompleted);
+		EnhancedInputComponent->BindAction(WalkAction, ETriggerEvent::Started, this, &ABAPlayerController::ToggleWalk);
 	}
 
 	if (ensureMsgf(SprintAction, TEXT("SprintAction is not configured on %s"), *GetName()))
@@ -115,6 +163,13 @@ void ABAPlayerController::SetupInputComponent()
 	}
 }
 
+void ABAPlayerController::PlayerTick(const float DeltaTime)
+{
+	Super::PlayerTick(DeltaTime);
+
+	UpdateSprintHoldState();
+}
+
 void ABAPlayerController::Move(const FInputActionValue& Value)
 {
 	FVector2D Movement = Value.Get<FVector2D>();
@@ -131,6 +186,10 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 
 	bHasMoveInput = !Movement.IsNearlyZero();
 	ControlledCharacter->SetMoveInputVector(Movement);
+	if (UActionComponent* ActionComponent = ControlledCharacter->GetActionComponent())
+	{
+		ActionComponent->UpdateBufferedActionDirection(GetActionDirectionFromMoveInput(Movement));
+	}
 	ApplyMovementStateByModifier();
 }
 
@@ -141,6 +200,10 @@ void ABAPlayerController::OnMoveCompleted()
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
 	{
 		PC->SetMoveInputVector(FVector2D::ZeroVector);
+		if (UActionComponent* ActionComponent = PC->GetActionComponent())
+		{
+			ActionComponent->UpdateBufferedActionDirection(EActionDirection::Any);
+		}
 	}
 
 	ApplyMovementStateByModifier();
@@ -161,27 +224,53 @@ void ABAPlayerController::LightAttack()
 	}
 }
 
-void ABAPlayerController::OnWalkStarted()
+void ABAPlayerController::ToggleWalk()
 {
-	bWalkModifierHeld = true;
-	ApplyMovementStateByModifier();
-}
-
-void ABAPlayerController::OnWalkCompleted()
-{
-	bWalkModifierHeld = false;
+	bWalkToggleEnabled = !bWalkToggleEnabled;
 	ApplyMovementStateByModifier();
 }
 
 void ABAPlayerController::OnSprintStarted()
 {
-	bSprintModifierHeld = true;
+	bSprintInputHeld = true;
+	bSprintModifierHeld = false;
+	SprintDodgePressedTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
 	ApplyMovementStateByModifier();
 }
 
 void ABAPlayerController::OnSprintCompleted()
 {
+	const bool bShouldDodge = IsSprintDodgeTap();
+
+	bSprintInputHeld = false;
 	bSprintModifierHeld = false;
+	ApplyMovementStateByModifier();
+
+	if (bShouldDodge)
+	{
+		TryStartDodgeAction();
+	}
+}
+
+void ABAPlayerController::UpdateSprintHoldState()
+{
+	if (!bSprintInputHeld || bSprintModifierHeld)
+	{
+		return;
+	}
+
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	if (World->GetTimeSeconds() - SprintDodgePressedTime < SprintHoldRequiredTime)
+	{
+		return;
+	}
+
+	bSprintModifierHeld = true;
 	ApplyMovementStateByModifier();
 }
 
@@ -205,7 +294,7 @@ void ABAPlayerController::ApplyMovementStateByModifier() const
 	{
 		PC->SetMovementState(EMovementState::Sprint);
 	}
-	else if (bWalkModifierHeld)
+	else if (bWalkToggleEnabled)
 	{
 		PC->SetMovementState(EMovementState::Walk);
 	}
@@ -213,6 +302,35 @@ void ABAPlayerController::ApplyMovementStateByModifier() const
 	{
 		PC->SetMovementState(EMovementState::Run);
 	}
+}
+
+bool ABAPlayerController::IsSprintDodgeTap() const
+{
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	return World->GetTimeSeconds() - SprintDodgePressedTime <= SprintDodgeTapMaxTime;
+}
+
+void ABAPlayerController::TryStartDodgeAction() const
+{
+	ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
+	if (!PC || PC->IsOnLadder())
+	{
+		return;
+	}
+
+	UActionComponent* ActionComponent = PC->GetActionComponent();
+	if (!ActionComponent)
+	{
+		return;
+	}
+
+	const EActionDirection DodgeDirection = GetActionDirectionFromMoveInput(PC->GetMoveInputVector());
+	ActionComponent->TryStartAction(EActionCommand::Dodge, DodgeDirection);
 }
 
 void ABAPlayerController::OnInteract()

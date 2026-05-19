@@ -27,7 +27,8 @@ enum class EEnemyGrade : uint8
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStateChanged, EEnemyState, OldState, EEnemyState, NewState);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnAnimationFinishedDelegate, EEnemyState);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnAttackAnimationFinishedDelegate, EEnemyState);
+DECLARE_MULTICAST_DELEGATE(FOnEnemyDeathDelegate);
 
 UCLASS(Abstract)
 class BAPROJECT_API AEnemyBase : public ACharacterBase
@@ -37,7 +38,6 @@ class BAPROJECT_API AEnemyBase : public ACharacterBase
 public:
 	AEnemyBase();
 
-	UFUNCTION(BlueprintCallable, Category = "Enemy")
 	virtual void InitializeFromTable(int32 InTid);
 
 	virtual void Attack();
@@ -49,6 +49,7 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "State")
 	bool IsDead() const { return CurrentState == EEnemyState::Dead; }
+	void SetSuperArmor(bool NewBool) { bIsSuperArmor = NewBool; }
 
 	UFUNCTION(BlueprintPure, Category = "State")
 	EEnemyState GetCurrentState() const { return CurrentState; }
@@ -56,16 +57,29 @@ public:
 	UFUNCTION(BlueprintPure, Category = "State")
 	EEnemyGrade GetEnemyGrade() const { return EnemyGrade; }
 
+	int32 GetMonsterTid() const { return MonsterTid; }
+
+	void SetState(EEnemyState NewState);
+
+	UAnimMontage* GetEnemyAttackMontage() const { return AttackMontage; }
+
+	virtual void Tick(float DeltaTime) override;
+
+#if WITH_EDITOR
+	virtual bool ShouldTickIfViewportsOnly() const override { return true; }
+#endif
 	virtual void UpdateMoveSpeed(EEnemyState NewState);
+	virtual void UpdateBlackBoardState();
+	virtual void ApplyKnockback(AActor* DamageCauser, float Force);
+
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	virtual void HandlePerfectGuarded(FVector ImpactLocation);
 
 protected:
 	virtual void PostInitializeComponents() override;
 	virtual void PossessedBy(AController* NewController) override;
 
 	virtual void OnDamaged(float FinalDamage, AActor* DamageCauser) override;
-
-	UFUNCTION(BlueprintCallable, Category = "State")
-	void SetState(EEnemyState NewState);
 
 	// 시각 연출 이벤트
 	UFUNCTION(BlueprintImplementableEvent, Category = "Enemy|Visuals", meta = (DisplayName = "OnHitVisuals"))
@@ -74,8 +88,12 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Enemy|Visuals", meta = (DisplayName = "OnDeadVisuals"))
 	void K2_OnDeadVisuals();
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "Combat", meta = (DisplayName = "OnPerfectGuarded"))
+	void K2_OnPerfectGuarded(FVector ImpactLocation);
+
 public:
-	FOnAnimationFinishedDelegate OnAnimationFinished;
+	FOnAttackAnimationFinishedDelegate OnAttackAnimationFinished;
+	FOnEnemyDeathDelegate OnDeathEvent;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -84,11 +102,17 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UCombatComponent> CombatComponent;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 	int32 MonsterTid;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Data")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 	float DetectRange;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	float AttackRange;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
+	bool bShowDebugRanges = true;
 
 	UPROPERTY(BlueprintAssignable, Category = "State")
 	FOnStateChanged OnStateChanged;
@@ -100,5 +124,25 @@ protected:
 	EEnemyGrade EnemyGrade;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	bool bIsSuperArmor;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UAnimMontage> AttackMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Effects")
+	TObjectPtr<class UNiagaraSystem> PerfectDefenseVFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Effects")
+	TObjectPtr<USoundBase> PerfectDefenseSFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Effects")
+	TSubclassOf<class UCameraShakeBase> PerfectDefenseCameraShake;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	TObjectPtr<UAnimMontage> PerfectGuardedMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	UAnimMontage* HitMontage;
+
+	float MaxMoveSpeed;
 };

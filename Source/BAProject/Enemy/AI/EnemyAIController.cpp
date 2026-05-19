@@ -81,11 +81,3 @@ void AEnemyAIController::InitializeAI(int32 InTid, APawn* InPawn)
 			BTAsset ? *BTAsset->GetName() : TEXT("Null"));
 	}
 }
-
-void AEnemyAIController::StartAI()
-{
-}
-
-void AEnemyAIController::StopAI()
-{
-}

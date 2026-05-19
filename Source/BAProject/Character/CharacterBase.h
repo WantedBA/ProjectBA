@@ -28,6 +28,9 @@ public:
 	FORCEINLINE bool CanReceiveDamage() const { return IsAlive() && IsInvincible() == false; }
 	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState; }
 
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void SetInvincible(bool bNewInvincible);
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	ECharacterState CharacterState;

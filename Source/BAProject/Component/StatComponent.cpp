@@ -2,7 +2,7 @@
 
 namespace
 {
-	constexpr uint64 StaminaDebugMessageKey = 13020;
+	const FName DefaultStaminaRecoveryPauseSource(TEXT("Default"));
 }
 
 UStatComponent::UStatComponent()
@@ -21,11 +21,17 @@ void UStatComponent::TickComponent
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// 현재 스테미너가 꽉 찼거나 바닥났을 경우, 혹은 회복률이 0일 경우 타이머 초기화
+	// 현재 스테미너가 꽉 찼거나 회복률이 0일 경우 타이머 초기화
 	if (MaxStamina <= 0.f || StaminaRecoveryPerSecond <= 0.f || CurrentStamina >= MaxStamina)
 	{
 		StaminaRecoveryDelayRemaining = 0.f;
-		SetComponentTickEnabled(false);
+		RefreshStaminaRecoveryTick();
+		return;
+	}
+
+	if (IsStaminaRecoveryPaused())
+	{
+		RefreshStaminaRecoveryTick();
 		return;
 	}
 
@@ -94,7 +100,8 @@ void UStatComponent::InitializeStats
 	StaminaRecoveryPerSecond = InStaminaRecoveryPerSecond;
 	StaminaRecoveryDelay = InStaminaRecoveryDelay;
 	StaminaRecoveryDelayRemaining = 0.f;
-	SetComponentTickEnabled(false);
+	StaminaRecoveryPauseSources.Reset();
+	RefreshStaminaRecoveryTick();
 	WalkSpeed = InWalkSpeed;
 	RunSpeed = InRunSpeed;
 	SprintSpeed = InSprintSpeed;
@@ -102,6 +109,42 @@ void UStatComponent::InitializeStats
 	AttackSpeed = InAttackSpeed;
 	Defence = InDefence;
 	OnHPChanged.Broadcast(CurrentHP, MaxHP);
+}
+
+void UStatComponent::ConsumeStamina(const float ConsumeAmount)
+{
+	if (ConsumeAmount <= 0.f)
+	{
+		return;
+	}
+
+	SetCurrentStamina(CurrentStamina - ConsumeAmount);
+	RefreshStaminaRecoveryTick();
+}
+
+void UStatComponent::PauseStaminaRecovery(const FName Source)
+{
+	const FName SafeSource = Source.IsNone() ? DefaultStaminaRecoveryPauseSource : Source;
+	StaminaRecoveryPauseSources.Add(SafeSource);
+	RefreshStaminaRecoveryTick();
+}
+
+void UStatComponent::ResumeStaminaRecovery(const FName Source, const bool bApplyDelay)
+{
+	const FName SafeSource = Source.IsNone() ? DefaultStaminaRecoveryPauseSource : Source;
+	const int32 RemovedCount = StaminaRecoveryPauseSources.Remove(SafeSource);
+	if (RemovedCount <= 0)
+	{
+		RefreshStaminaRecoveryTick();
+		return;
+	}
+
+	if (!IsStaminaRecoveryPaused() && bApplyDelay && CurrentStamina < MaxStamina)
+	{
+		StaminaRecoveryDelayRemaining = StaminaRecoveryDelay;
+	}
+
+	RefreshStaminaRecoveryTick();
 }
 
 void UStatComponent::SetCurrentStamina(const float NewCurrentStamina)
@@ -115,19 +158,22 @@ void UStatComponent::SetCurrentStamina(const float NewCurrentStamina)
 		OnStaminaChanged.Broadcast(CurrentStamina, MaxStamina);
 	}
 
-	// 스테미너가 소모되고 있을 경우 타이머 최신화
-	if (CurrentStamina < OldStamina)
-	{
-		StaminaRecoveryDelayRemaining = StaminaRecoveryDelay;
-		SetComponentTickEnabled(CurrentStamina < MaxStamina && StaminaRecoveryPerSecond > 0.f);
-
-		return;
-	}
-
 	// 스테미너 다 찼으면 타이머 초기화
 	if (CurrentStamina >= MaxStamina)
 	{
 		StaminaRecoveryDelayRemaining = 0.f;
-		SetComponentTickEnabled(false);
 	}
+
+	RefreshStaminaRecoveryTick();
+}
+
+void UStatComponent::RefreshStaminaRecoveryTick()
+{
+	const bool bCanRecover =
+		MaxStamina > 0.f
+		&& StaminaRecoveryPerSecond > 0.f
+		&& CurrentStamina < MaxStamina
+		&& !IsStaminaRecoveryPaused();
+
+	SetComponentTickEnabled(bCanRecover);
 }

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ActionRows.h"
 #include "PlayerRows.h"
 #include "SkillRows.h"
 #include "Text.h"
@@ -12,6 +13,8 @@
 #include "Tables/MonsterRows.h"
 #include "Tables/BossMonster.h"
 #include "Tables/PatrolPathRow.h"
+#include "Tables/QuestRows.h"
+#include "Tables/RewardRows.h"
 #include "BATableManager.generated.h"
 
 /**
@@ -37,11 +40,19 @@ private:
 	void LoadAllTables();
 
 public:
+	// Action
+	FORCEINLINE const FActionDataRow* FindActionData(const int32 InTid) const { return ActionDataTable.Find(InTid); }
+	FORCEINLINE const TMap<int32, FActionDataRow*>& GetActionDataTable() const { return ActionDataTable.GetMap(); }
+	FORCEINLINE const FMovesetRow* FindMoveset(const int32 InTid) const { return MovesetTable.Find(InTid); }
+	FORCEINLINE const TMap<int32, FMovesetRow*>& GetMovesetTable() const { return MovesetTable.GetMap(); }
+	FORCEINLINE const FActionAnimationDataRow* FindActionAnimationData(const int32 InTid) const { return ActionAnimationDataTable.Find(InTid); }
+	FORCEINLINE const TMap<int32, FActionAnimationDataRow*>& GetActionAnimationDataTable() const { return ActionAnimationDataTable.GetMap(); }
+	FORCEINLINE const FActionWindowDataRow* FindActionWindowData(const int32 InTid) const { return ActionWindowDataTable.Find(InTid); }
+	FORCEINLINE const TMap<int32, FActionWindowDataRow*>& GetActionWindowDataTable() const { return ActionWindowDataTable.GetMap(); }
+
 	// Player
 	FORCEINLINE const FPlayerBaseStatRow* FindPlayerBaseStat() const { return PlayerBaseStatTable.Find(1); } // 플레이어는 1명이므로 매직넘버 고정
-	FORCEINLINE const FPlayerActionDataRow* FindPlayerActionData(const int32 InTid) const { return PlayerActionDataTable.Find(InTid); }
-	FORCEINLINE const TMap<int32, FPlayerActionDataRow*>& GetPlayerActionDataTable() const { return PlayerActionDataTable.GetMap(); }
-	
+
 	// Consume
 	UFUNCTION(BlueprintCallable, Category = "BA|Table")
 	bool HasConsume(const int32 InTid) const { return ConsumeTable.Has(InTid); }
@@ -74,16 +85,27 @@ public:
 	const TMap<int32, F2StageBossAttackRows*>& GetBossAttackMap2() const { return BossAttackTable2.GetMap(); }
 	const TMap<int32, F3StageBossAttackRows*>& GetBossAttackMap3() const { return BossAttackTable3.GetMap(); }
 
+	// Quest
+	const FQuestRows* FindQuest(int32 InTid) const { return QuestTable.Find(InTid); }
+	TArray<const FZoneMonsterRows*> GetZoneMonstersByQuest(int32 InQuestTid) const;
+
+	// Reward
+	TArray<const FRewardRows*> GetRewardsByTid(int32 InRewardTid) const;
+
 	// Text
 	const FTextRows* FindText(const int32 InTid) const { return TextTable.Find(InTid); }
 
 private:
 	template<typename RowType, typename KeyType>
-	void LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const FString AssetPath);
+	bool LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const FString AssetPath);
+
+	TBAPropTable<FActionDataRow, int32> ActionDataTable;
+	TBAPropTable<FMovesetRow, int32> MovesetTable;
+	TBAPropTable<FActionAnimationDataRow, int32> ActionAnimationDataTable;
+	TBAPropTable<FActionWindowDataRow, int32> ActionWindowDataTable;
 
 	TBAPropTable<FPlayerBaseStatRow, int32> PlayerBaseStatTable;
-	TBAPropTable<FPlayerActionDataRow, int32> PlayerActionDataTable;
-	
+
 	TBAPropTable<FConsumeItemRow, int32> ConsumeTable;
 	
 	TBAPropTable<FSkillRow, int32> SkillTable;
@@ -94,6 +116,10 @@ private:
 	TBAPropTable<F1StageBossAttackRows, int32> BossAttackTable1;
 	TBAPropTable<F2StageBossAttackRows, int32> BossAttackTable2;
 	TBAPropTable<F3StageBossAttackRows, int32> BossAttackTable3;
+
+	TBAPropTable<FQuestRows, int32> QuestTable;
+	TBAPropTable<FZoneMonsterRows, int32> ZoneMonsterTable;
+	TBAPropTable<FRewardRows, int32> RewardTable;
 
 	TArray<IBAPostRead*> PostReadList;
 

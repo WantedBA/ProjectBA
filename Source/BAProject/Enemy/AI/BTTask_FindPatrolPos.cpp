@@ -38,7 +38,9 @@ EBTNodeResult::Type UBTTask_FindPatrolPos::ExecuteTask(UBehaviorTreeComponent& O
 
     if (NavSystem->GetRandomPointInNavigableRadius(HomePos, PatrolRadius, NextPatrolPos))
     {
-        BBComponent->SetValueAsVector(BBKey::PatrolPos, NextPatrolPos.Location);
+        FVector PatrolLocation = NextPatrolPos.Location;
+        //// 현재 Pawn 높이로 보정
+        //PatrolLocation.Z = ControllingPawn->GetActorLocation().Z;
         return EBTNodeResult::Succeeded;
     }
 

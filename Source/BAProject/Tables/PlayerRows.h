@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Tables/BAPropTable.h"
-#include "Tables/PlayerEnums.h"
 #include "PlayerRows.generated.h"
 
 /**
@@ -60,38 +59,6 @@ struct BAPROJECT_API FPlayerBaseStatRow : public FBARowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
 	float LadderExitClearance = 0.f;
-
-	virtual void PostRead() override
-	{
-		bTid = Tid;
-	}
-};
-
-USTRUCT(BlueprintType, meta = (BASheet = "ActionData"))
-struct BAPROJECT_API FPlayerActionDataRow : public FBARowBase
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|ActionData")
-	int32 Tid = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|ActionData")
-	FName Name = NAME_None;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|ActionData")
-	EPlayerActionCategory Category = EPlayerActionCategory::Movement;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|ActionData")
-	float StaminaCost = 0.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|ActionData")
-	EPlayerStaminaCostType StaminaCostType = EPlayerStaminaCostType::Instant;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|ActionData")
-	float MinRequiredStamina = 0.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|ActionData")
-	float SprintRestartStaminaPercent = 0.f;
 
 	virtual void PostRead() override
 	{

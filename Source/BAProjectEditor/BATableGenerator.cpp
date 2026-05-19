@@ -57,25 +57,55 @@ namespace
 
 void FBATableGenerator::Generate()
 {
-	FScopedSlowTask SlowTask(3.0f, LOCTEXT("Generating", "Generating DataTables..."));
-	SlowTask.MakeDialog();
+	GenerateInternal(!IsRunningCommandlet());
+}
 
-	SlowTask.EnterProgressFrame(1.0f, LOCTEXT("RunningConverter", "Excel -> JSON"));
+bool FBATableGenerator::GenerateHeadless()
+{
+	return GenerateInternal(false);
+}
+
+bool FBATableGenerator::GenerateInternal(const bool bShowUi)
+{
+	TUniquePtr<FScopedSlowTask> SlowTask;
+	if (bShowUi)
+	{
+		SlowTask = MakeUnique<FScopedSlowTask>(3.0f, LOCTEXT("Generating", "Generating DataTables..."));
+		SlowTask->MakeDialog();
+	}
+
+	if (SlowTask)
+	{
+		SlowTask->EnterProgressFrame(1.0f, LOCTEXT("RunningConverter", "Excel -> JSON"));
+	}
 	FString ConverterLog;
 	if (!RunConverterExe(ConverterLog))
 	{
 		UE_LOG(LogTemp, Error, TEXT("[BATableGenerator] Converter failed:\n%s"), *ConverterLog);
-		Notify(LOCTEXT("ConverterFailed", "Excel -> JSON conversion failed. See Output Log."), false);
-		return;
+		if (bShowUi)
+		{
+			Notify(LOCTEXT("ConverterFailed", "Excel -> JSON conversion failed. See Output Log."), false);
+		}
+		return false;
 	}
 	UE_LOG(LogTemp, Log, TEXT("[BATableGenerator] Converter output:\n%s"), *ConverterLog);
 
-	SlowTask.EnterProgressFrame(1.0f, LOCTEXT("ImportingJson", "JSON -> DataTable"));
+	if (SlowTask)
+	{
+		SlowTask->EnterProgressFrame(1.0f, LOCTEXT("ImportingJson", "JSON -> DataTable"));
+	}
 	FBASheetSpecs::Invalidate();
 	ImportAllJson();
 
-	SlowTask.EnterProgressFrame(1.0f, LOCTEXT("Done", "Done"));
-	Notify(LOCTEXT("DoneMsg", "DataTable generation complete."), true);
+	if (SlowTask)
+	{
+		SlowTask->EnterProgressFrame(1.0f, LOCTEXT("Done", "Done"));
+	}
+	if (bShowUi)
+	{
+		Notify(LOCTEXT("DoneMsg", "DataTable generation complete."), true);
+	}
+	return true;
 }
 
 bool FBATableGenerator::RunConverterExe(FString& OutLog)

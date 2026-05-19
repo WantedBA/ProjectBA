@@ -1,0 +1,19 @@
+{
+    "Moveset": "Tid",
+    "ActionData": "Tid",
+    "ActionAnimationData": "Tid",
+    "ActionWindowData": "Tid",
+    "1StageBossAttack": "Tid",
+    "2StageBossAttack": "Tid",
+    "3StageBossAttack": "Tid",
+    "Consume": "ItemTid",
+    "Monster": "MonsterTid",
+    "PatrolPath": "Tid",
+    "BaseStat": "Tid",
+    "ActionData": "Tid",
+    "Quest": "QuestTid",
+    "ZoneMonster": "ZoneMonsterTid",
+    "Reward": "RewardDetailTid",
+    "Skill": "SkillTid",
+    "Text": "TextTid"
+}
