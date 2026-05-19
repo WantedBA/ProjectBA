@@ -33,6 +33,7 @@ EBTNodeResult::Type UBTTask_ExecuteBossPattern::ExecuteTask(UBehaviorTreeCompone
 	CachedOwnerComp = &OwnerComp;
 
 	int32 PatternTid = BBComp->GetValueAsInt(BBKey::SelectedPatternTid);
+	UE_LOG(LogTemp, Warning, TEXT("[BTTask_ExecuteBossPattern] ExecuteTask Tid=%d"), PatternTid);
 
 	if (PatternTid != 0)
 	{
@@ -42,6 +43,7 @@ EBTNodeResult::Type UBTTask_ExecuteBossPattern::ExecuteTask(UBehaviorTreeCompone
 
 		Boss->OnAttackAnimationFinished.AddLambda([this, WeakOwnerComp](EEnemyState NewState)
 		{
+			UE_LOG(LogTemp, Warning, TEXT("[BTTask_ExecuteBossPattern] Lambda fired, state=%d"), (int32)NewState);
 			if (WeakOwnerComp.IsValid())
 			{
 				FinishLatentTask(*WeakOwnerComp, EBTNodeResult::Succeeded);
@@ -50,9 +52,11 @@ EBTNodeResult::Type UBTTask_ExecuteBossPattern::ExecuteTask(UBehaviorTreeCompone
 
 		Boss->ExecuteBossPattern(PatternTid);
 
+		UE_LOG(LogTemp, Warning, TEXT("[BTTask_ExecuteBossPattern] ExecuteBossPattern returned, awaiting Notify"));
 		return EBTNodeResult::InProgress;
 	}
 
+	UE_LOG(LogTemp, Warning, TEXT("[BTTask_ExecuteBossPattern] FAILED (PatternTid=0)"));
 	return EBTNodeResult::Failed;
 }
 

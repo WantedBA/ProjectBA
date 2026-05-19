@@ -247,6 +247,8 @@ void AEnemyBase::ApplyKnockback(AActor* DamageCauser, float Force)
 
 void AEnemyBase::OnEnemyAttackAniFinished(EEnemyState NewState)
 {
+	UE_LOG(LogTemp, Warning, TEXT("[%s] OnEnemyAttackAniFinished called, NewState=%d, CurrentState=%d"), *GetName(), (int32)NewState, (int32)CurrentState);
+
 	if (IsValid(this) && CurrentState != EEnemyState::Dead)
 	{
 		// 공격 성공 시 횟수 증가 및 상태 판단

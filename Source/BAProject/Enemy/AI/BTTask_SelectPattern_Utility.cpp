@@ -30,6 +30,8 @@ EBTNodeResult::Type UBTTask_SelectPattern_Utility::ExecuteTask(UBehaviorTreeComp
 	}
 
 	int32 SelectedPatternTid = Boss->ChooseBestPattern();
+	UE_LOG(LogTemp, Warning, TEXT("[SelectPattern] ChooseBestPattern returned Tid=%d"), SelectedPatternTid);
+
 	if (SelectedPatternTid != 0)
 	{
 		BBComp->SetValueAsInt(BBKey::SelectedPatternTid, SelectedPatternTid);
@@ -38,8 +40,13 @@ EBTNodeResult::Type UBTTask_SelectPattern_Utility::ExecuteTask(UBehaviorTreeComp
 		const float PatternIdealRange = Boss->GetPatternIdealRange(SelectedPatternTid);
 		BBComp->SetValueAsFloat(BBKey::SelectedPatternIdealRange, PatternIdealRange);
 
+		// 직후 다시 읽어서 BB에 정상적으로 박혔는지 검증
+		const int32 BBVerifyTid = BBComp->GetValueAsInt(BBKey::SelectedPatternTid);
+		UE_LOG(LogTemp, Warning, TEXT("  → SetValueAsInt done, BB readback Tid=%d, Range=%f"), BBVerifyTid, PatternIdealRange);
+
 		return EBTNodeResult::Succeeded;
 	}
 
+	UE_LOG(LogTemp, Warning, TEXT("[SelectPattern] FAILED - Tid=0 from ChooseBestPattern"));
 	return EBTNodeResult::Failed;
 }

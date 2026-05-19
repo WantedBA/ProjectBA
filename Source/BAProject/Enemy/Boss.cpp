@@ -141,8 +141,11 @@ int32 ABoss::ChooseBestPattern()
 	AActor* Target = Cast<AActor>(BB->GetValueAsObject(BBKey::TargetActor));
 	if (Target == nullptr)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[ChooseBestPattern] Target NULL"));
 		return 0;
 	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[ChooseBestPattern] BossPatterns.Num=%d, EvasionPatterns.Num=%d"), BossPatterns.Num(), EvasionPatterns.Num());
 
 	int32 BestPatternTid = 0;
 	float MaxScore = -1.0f;
@@ -150,6 +153,7 @@ int32 ABoss::ChooseBestPattern()
 	for (const FBossAttackData& Pattern : BossPatterns)
 	{
 		float Score = CalculatePatternScore(Pattern, Target);
+		UE_LOG(LogTemp, Warning, TEXT("  Pattern Tid=%d, Score=%f"), Pattern.Tid, Score);
 		if (Score > MaxScore)
 		{
 			MaxScore = Score;
@@ -437,8 +441,11 @@ void ABoss::StartPatternCooldown(int32 PatternTid, float CoolTime)
 
 void ABoss::ExecuteBossPattern(int32 PatternTid)
 {
+	UE_LOG(LogTemp, Warning, TEXT("[ABoss::ExecuteBossPattern] Tid=%d"), PatternTid);
+
 	if (bIsEnding || IsDead())
 	{
+		UE_LOG(LogTemp, Warning, TEXT("  → bIsEnding/IsDead, early return"));
 		return;
 	}
 
@@ -473,13 +480,17 @@ void ABoss::ExecuteBossPattern(int32 PatternTid)
 
 	if (MontageToPlay == nullptr)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("  → MontageToPlay NULL (load failed)"));
 		return;
 	}
+
+	UE_LOG(LogTemp, Warning, TEXT("  → MontageToPlay=%s, calling ExecuteAttack"), *MontageToPlay->GetName());
 
 	SetState(EEnemyState::Attack);
 
 	if (CombatComponent == nullptr)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("  → CombatComponent NULL"));
 		return;
 	}
 

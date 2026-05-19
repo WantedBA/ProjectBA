@@ -82,7 +82,9 @@ void UBTTask_MoveToRange::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
     }
 
     const float Distance = FVector::Dist(BossPawn->GetActorLocation(), TargetActor->GetActorLocation());
-    if (Distance <= IdealRange)
+    // 캡슐 합 + NavMesh 끝점 어긋남에 대한 여유. 정확히 IdealRange로는 도달 못 하는 케이스가 흔함
+    const float ArriveBuffer = 50.0f;
+    if (Distance <= IdealRange + ArriveBuffer)
     {
         AIController->StopMovement();
         FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
