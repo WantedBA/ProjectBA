@@ -68,6 +68,10 @@ public:
 	UFUNCTION()
 	virtual void HandleHPChanged(float CurrentHP, float MaxHP);
 
+	// 패턴 몽타주 종료 콜백 (Anim Notify 누락 시 안전망)
+	UFUNCTION()
+	void OnPatternMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
 	//Quest 인터페이스
 	virtual void OnQuestActivated_Implementation(int32 tid) override;
 	virtual void OnQuestDeactivated_Implementation(int32 tid) override;

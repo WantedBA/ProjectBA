@@ -12,6 +12,8 @@
 #include "BrainComponent.h"
 #include "AI/EnemyAIController.h"
 #include "Kismet/GameplayStatics.h"
+#include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
 
 ABoss::ABoss()
 {
@@ -148,7 +150,7 @@ int32 ABoss::ChooseBestPattern()
 	UE_LOG(LogTemp, Warning, TEXT("[ChooseBestPattern] BossPatterns.Num=%d, EvasionPatterns.Num=%d"), BossPatterns.Num(), EvasionPatterns.Num());
 
 	int32 BestPatternTid = 0;
-	float MaxScore = -1.0f;
+	float MaxScore = 0.0f;
 
 	for (const FBossAttackData& Pattern : BossPatterns)
 	{
@@ -158,6 +160,34 @@ int32 ABoss::ChooseBestPattern()
 		{
 			MaxScore = Score;
 			BestPatternTid = Pattern.Tid;
+		}
+	}
+
+	// Fallback: 모든 패턴이 0점이면 (조건 미달 등) 쿨다운 안 끝난 건 빼고 IdealRange가 가장 적합한 패턴 강제 선택
+	// 보스가 "할 게 없어서 가만히 있는" 상태 방지
+	if (BestPatternTid == 0 && BossPatterns.Num() > 0)
+	{
+		const float Distance = FVector::Dist(GetActorLocation(), Target->GetActorLocation());
+		float MinDistFromIdeal = MAX_flt;
+
+		for (const FBossAttackData& Pattern : BossPatterns)
+		{
+			if (IsPatternAvailable(Pattern.Tid) == false)
+			{
+				continue; // 쿨다운 중인 건 fallback에서도 제외
+			}
+
+			const float DistFromIdeal = FMath::Abs(Distance - Pattern.IdealRange);
+			if (DistFromIdeal < MinDistFromIdeal)
+			{
+				MinDistFromIdeal = DistFromIdeal;
+				BestPatternTid = Pattern.Tid;
+			}
+		}
+
+		if (BestPatternTid != 0)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("  → Fallback selection (all 0 score), Tid=%d, DistFromIdeal=%f"), BestPatternTid, MinDistFromIdeal);
 		}
 	}
 
@@ -516,4 +546,30 @@ void ABoss::ExecuteBossPattern(int32 PatternTid)
 	}
 
 	CombatComponent->ExecuteAttack(MontageToPlay);
+
+	// 안전망: 몽타주 끝나면 자동으로 OnEnemyAttackAniFinished 호출
+	// AN_EnemyAttackEnd Notify가 박혀있으면 두 번 호출되니까, 거기서 중복 방지 처리 필요
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		if (UAnimInstance* AnimInst = MeshComp->GetAnimInstance())
+		{
+			FOnMontageEnded EndDelegate;
+			EndDelegate.BindUObject(this, &ABoss::OnPatternMontageEnded);
+			AnimInst->Montage_SetEndDelegate(EndDelegate, MontageToPlay);
+		}
+	}
+}
+
+void ABoss::OnPatternMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	UE_LOG(LogTemp, Warning, TEXT("[ABoss::OnPatternMontageEnded] Montage=%s, bInterrupted=%d, CurrentState=%d"),
+		Montage ? *Montage->GetName() : TEXT("NULL"), (int32)bInterrupted, (int32)GetCurrentState());
+
+	// 이미 Notify로 처리됐다면 (Attack 상태가 아님) 무시
+	if (GetCurrentState() != EEnemyState::Attack)
+	{
+		return;
+	}
+
+	OnEnemyAttackAniFinished(EEnemyState::Idle);
 }
