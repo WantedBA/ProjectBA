@@ -1,6 +1,6 @@
 {
-    "Moveset": "Tid",
     "ActionData": "Tid",
+    "Moveset": "Tid",
     "ActionAnimationData": "Tid",
     "ActionWindowData": "Tid",
     "1StageBossAttack": "Tid",
@@ -10,7 +10,6 @@
     "Monster": "MonsterTid",
     "PatrolPath": "Tid",
     "BaseStat": "Tid",
-    "ActionData": "Tid",
     "Quest": "QuestTid",
     "ZoneMonster": "ZoneMonsterTid",
     "Reward": "RewardDetailTid",

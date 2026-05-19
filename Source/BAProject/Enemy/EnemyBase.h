@@ -171,7 +171,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UAnimMontage> HitMontage;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UAnimMontage> DeadMontage;
 
