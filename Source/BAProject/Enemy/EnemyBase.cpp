@@ -285,6 +285,7 @@ void AEnemyBase::OnDeath()
 		AIController->BrainComponent->StopLogic(TEXT("Dead"));
 	}
 
+	PlayAnimMontage(DeadMontage);
 	K2_OnDeadVisuals();
 }
 
@@ -402,6 +403,47 @@ void AEnemyBase::HandlePerfectGuarded(FVector ImpactLocation)
 	}
 
 	K2_OnPerfectGuarded(ImpactLocation);
+}
+
+void AEnemyBase::OnStartDissolve()
+{
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	if (MeshComp == nullptr || DissolveMaterialsInput.Num() == 0)
+	{
+		return;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("StartDissolve Called!"));
+	// 기존 배열 비우기
+	DynamicDissolveMaterials.Empty();
+
+	const int32 MaterialCount = MeshComp->GetNumMaterials();
+	for (int32 i = 0; i < MaterialCount; ++i) // 머티리얼 교체 및 동적 인스턴스화
+	{
+		UMaterialInterface* SourceMat = nullptr;
+
+		if (DissolveMaterialsInput.IsValidIndex(i))
+		{
+			SourceMat = DissolveMaterialsInput[i];
+		}
+		else
+		{
+			SourceMat = MeshComp->GetMaterial(i);
+		}
+
+		if (SourceMat == nullptr)
+		{
+			continue;
+		}
+
+		UMaterialInstanceDynamic* DynamicMat = UMaterialInstanceDynamic::Create(SourceMat, this); // 동적 머티리얼 인스턴스 생성
+		if (DynamicMat)
+		{ 
+			MeshComp->SetMaterial(i, DynamicMat); // 메시에 슬롯 번호(i) 맞춰서 교체
+			DynamicDissolveMaterials.Add(DynamicMat); // 제어용 배열에 저장
+		}
+	}
+
+	OnDissolveStarted.Broadcast();
 }
 
 void AEnemyBase::Attack()
