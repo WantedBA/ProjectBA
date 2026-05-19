@@ -9,6 +9,9 @@
 #include "Engine/SkeletalMesh.h"
 #include "DrawDebugHelpers.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "BrainComponent.h"
+#include "AI/EnemyAIController.h"
+#include "Kismet/GameplayStatics.h"
 
 ABoss::ABoss()
 {
@@ -23,6 +26,22 @@ void ABoss::BeginPlay()
 	if (MonsterTid != 0)
 	{
 		InitializeFromTable(MonsterTid);
+	}
+}
+
+void ABoss::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	
+	if (bStartPausedForQuest)
+	{
+		if (AAIController* AIC = Cast<AAIController>(NewController))
+		{
+			if (UBrainComponent* Brain = AIC->GetBrainComponent())
+			{
+				Brain->PauseLogic(TEXT("WaitingForQuest"));
+			}
+		}
 	}
 }
 
@@ -256,6 +275,41 @@ void ABoss::HandleHPChanged(float CurrentHP, float MaxHP)
 		
 		// 페이즈 전환 시 로직 (예: 광폭화, 패턴 추가 등)
 		UE_LOG(LogTemp, Warning, TEXT("Boss Phase Changed: %d"), CurrentPhase);
+	}
+}
+
+void ABoss::OnQuestActivated_Implementation(int32 tid)
+{
+	if (IsDead())
+		return;
+
+	AEnemyAIController* AIC = Cast<AEnemyAIController>(GetController());
+	if (AIC == nullptr)
+		return;
+	
+	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	if (PlayerPawn)
+	{
+		AIC->EngageTarget(PlayerPawn);
+	}
+
+	if (UBrainComponent* Brain = AIC->GetBrainComponent())
+	{
+		Brain->ResumeLogic(TEXT("WaitingForQuest"));
+	}
+}
+
+void ABoss::OnQuestDeactivated_Implementation(int32 tid)
+{
+	if (IsDead())
+		return;
+	
+	if (AAIController* AIC = Cast<AAIController>(GetController()))
+	{
+		if (UBrainComponent* Brain = AIC->GetBrainComponent())
+		{
+			Brain->PauseLogic("WaitingForQuest");
+		}
 	}
 }
 

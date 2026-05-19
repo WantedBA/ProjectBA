@@ -36,12 +36,10 @@ void UBTService_UpdateTargetContext::TickNode(UBehaviorTreeComponent& OwnerComp,
 	}
 
 	float DetectRange = BBComp->GetValueAsFloat(BBKey::DetectRange);
-	if (Enemy->GetEnemyGrade() == EEnemyGrade::Boss)
+	if (Enemy->IsPersistentAggro())
 	{
 		if (DetectRange <= 0.0f)
-		{
-			DetectRange = 100000.0f; // 사실상 무한대
-		}
+			DetectRange = UE_BIG_NUMBER;
 	}
 	
 	FVector Center = ControllingPawn->GetActorLocation();
@@ -83,16 +81,32 @@ void UBTService_UpdateTargetContext::TickNode(UBehaviorTreeComponent& OwnerComp,
 		}
 	}
 
+	// 타겟 유지 정책: 끈질긴 어그로는 살아있는 한 무조건 유지, 그 외는 거리 fallback
 	if (NewTarget == nullptr && CurrentTarget != nullptr)
 	{
-		float DistToOldTarget = FVector::Dist(Center, CurrentTarget->GetActorLocation());
-		if (DistToOldTarget < DetectRange * 1.5f) // 감지 범위보다 조금 더 여유를 둠
+		bool bShouldKeep = false;
+
+		if (Enemy->IsPersistentAggro())
+		{
+			// 끈질긴 어그로: 타겟이 살아있기만 하면 영구 유지 (시야/거리 무관)
+			AEnemyBase* TargetEnemy = Cast<AEnemyBase>(CurrentTarget);
+			bool bTargetDead = TargetEnemy ? TargetEnemy->IsDead() : false;
+			bShouldKeep = !bTargetDead && IsValid(CurrentTarget);
+		}
+		else
+		{
+			// 일반 몬스터: 감지 범위의 1.5배 안에 있으면 유지
+			float DistToOldTarget = FVector::Dist(Center, CurrentTarget->GetActorLocation());
+			bShouldKeep = (DistToOldTarget < DetectRange * 1.5f);
+		}
+
+		if (bShouldKeep)
 		{
 			NewTarget = CurrentTarget;
 		}
 	}
 
-	BBComp->SetValueAsObject(BBKey::TargetActor,NewTarget);
+	BBComp->SetValueAsObject(BBKey::TargetActor, NewTarget);
 
 	// 거리, 각도 체크
 	if (NewTarget)
