@@ -35,6 +35,10 @@ protected:
 	UPROPERTY(meta = (BindWidget), BlueprintReadOnly, Category = "BA|UI")
 	class UBossHPBar* BossHPBar;
 
+	// 툴팁 위젯 (WBP 이름 맞출 것)
+	UPROPERTY(meta = (BindWidget), BlueprintReadOnly, Category = "BA|UI")
+	class UTooltipWidget* Tooltip;
+
 public:
 	// 값 업데이트
 	void UpdatePlayerHP(float Current, float Max);

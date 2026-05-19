@@ -28,6 +28,13 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	class UImage* PreviewVideoImage;
 
+	// 영상을 제어할 미디어 플레이어 에셋
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "BA|UI|Tooltip")
+	class UMediaPlayer* TooltipMediaPlayer;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "BA|UI|Tooltip")
+	class UMediaSource* PreviewVideoSource;
+
 	// 비동기 로딩을 관리 핸들
 	TSharedPtr<FStreamableHandle> AsyncLoadHandle;
 

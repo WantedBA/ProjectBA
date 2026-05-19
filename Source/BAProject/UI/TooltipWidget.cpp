@@ -10,6 +10,7 @@
 #include "Tables/BATableManager.h" // 데이터 테이블 조회용
 #include "Tables/SkillRows.h" // 스킬 데이터
 #include "Tables/Text.h" // 텍스트 데이터 
+#include "MediaPlayer.h" // 영상 재생용
 
 void UTooltipWidget::RequestShowTooltip(int32 InTid)
 {
@@ -59,6 +60,8 @@ void UTooltipWidget::ProcessLoadData(int32 InTid)
 		DescriptionText->SetText(FText::FromString(TextData->KoreanText)); // 설명 테이블: 추후 분리 가능
 	}
 
+	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
 	// 에셋(이미지/영상) 비동기 로딩 시작
 	if (SkillData->IconTexture.IsPending())
 	{
@@ -79,7 +82,6 @@ void UTooltipWidget::ProcessLoadData(int32 InTid)
 		OnAssetLoadCompleted(InTid);
 	}
 
-	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 }
 
 void UTooltipWidget::OnAssetLoadCompleted(int32 InTid)
@@ -95,11 +97,20 @@ void UTooltipWidget::OnAssetLoadCompleted(int32 InTid)
 
 	if (SkillData && PreviewVideoImage)
 	{
+		// 실행중인 영상이 있다면 닫기
+		TooltipMediaPlayer->Close();
+
 		// 로드 완료된 아이콘을 이미지 위젯에 적용
 		UTexture2D* LoadedIcon = SkillData->IconTexture.Get();
 		if (LoadedIcon)
 		{
 			PreviewVideoImage->SetBrushFromTexture(LoadedIcon);
+		}
+
+		// 비디오 재생 로직
+		if (TooltipMediaPlayer)
+		{
+			TooltipMediaPlayer->OpenSource(PreviewVideoSource);
 		}
 	}
 }
