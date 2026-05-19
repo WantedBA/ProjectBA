@@ -7,6 +7,7 @@
 struct FInputActionValue;
 class UInputAction;
 class UInputMappingContext;
+class USkillTreeWidget;
 
 /**
  * 플레이어 입력을 캐릭터의 이동 상태, 액션 명령, 상호작용으로 변환하는 컨트롤러.
@@ -52,6 +53,20 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> SprintAction;
 
+// 체크포인트 인풋
+	// 체크포인트에서 활성화할 IMC
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Checkpoint")
+	TObjectPtr<UInputMappingContext> CheckpointInputMappingContext;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Checkpoint")
+	TObjectPtr<UInputAction> SkillTreeToggleAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI|SkillTree")
+	TSubclassOf<USkillTreeWidget> SkillTreeWidgetClass;
+
+	UPROPERTY(Transient)
+	TObjectPtr<USkillTreeWidget> SkillTreeWidget;
+	
 	// 이 시간 이내에 질주 입력을 떼면 회피 입력으로 해석한다.
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	float SprintDodgeTapMaxTime = 0.25f;
@@ -106,6 +121,9 @@ private:
 
 	// 임시 기능
 	void ToggleStrafe();
+	
+	// 스킬트리 열기
+	void ToggleSkillTree();
 
 	bool bWalkToggleEnabled = false;
 	bool bSprintInputHeld = false;
