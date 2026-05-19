@@ -58,7 +58,6 @@ public:
 	virtual void InitializeFromTable(int32 InTid) override;
 
 	int32 ChooseBestPattern();
-
 	virtual void ExecuteBossPattern(int32 PatternTid);
 
 	UFUNCTION()
@@ -68,6 +67,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void PostInitializeComponents() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
 	void LoadBossPatterns(int32 StageType);
@@ -76,6 +76,7 @@ private:
 	bool IsPatternAvailable(int32 PatternTid) const;
 
 protected:
+	bool bIsEnding = false;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|State")
 	int32 CurrentPhase = 1;
 
@@ -90,4 +91,6 @@ protected:
 
 	UPROPERTY()
 	TMap<int32, float> PatternCooldownMap;
+
+	TArray<int32> PendingCooldownRemove;
 };

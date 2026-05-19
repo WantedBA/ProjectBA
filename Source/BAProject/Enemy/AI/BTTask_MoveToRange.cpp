@@ -33,21 +33,6 @@ EBTNodeResult::Type UBTTask_MoveToRange::ExecuteTask(UBehaviorTreeComponent& Own
 
     float IdealRange = BBComp->GetValueAsFloat(BBKey::AttackRange);
 
-    // IdealRange 내로 유동적 이동
-    //EPathFollowingRequestResult::Type RequestResult = AIController->MoveToActor(TargetActor, IdealRange, true, true, true, 0, true);
-    //switch (RequestResult)
-    //{
-    //case EPathFollowingRequestResult::Type::RequestSuccessful:
-    //    return EBTNodeResult::InProgress;
-
-    //case EPathFollowingRequestResult::Type::AlreadyAtGoal:
-    //    return EBTNodeResult::Succeeded;
-
-    //case EPathFollowingRequestResult::Type::Failed:
-    //    return EBTNodeResult::Failed;
-    //}
-
-    //return EBTNodeResult::Failed;
     FAIMoveRequest Request;
     Request.SetGoalActor(TargetActor);
     Request.SetAcceptanceRadius(IdealRange);
