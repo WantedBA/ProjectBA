@@ -24,6 +24,14 @@ void USkillTreeWidget::NativeDestruct()
 		this, &USkillTreeWidget::HandleSkillNodeStateChanged);
 }
 
+void USkillTreeWidget::OnPopped()
+{
+	Super::OnPopped();
+	
+	// 팝업이 닫힐 때, 스킬트리 서브시스템에서 스킬트리 변경사항 브로드캐스팅
+	GetGameInstance()->GetSubsystem<USkillTreeSubsystem>()->OnSkillTreeChangeCompleted.Broadcast();
+}
+
 void USkillTreeWidget::HandleSkillNodeStateChanged(int32 SkillId, ESkillNodeState NewState)
 {
 	SkillNodeMap[SkillId]->SetSkillNodeState(NewState);

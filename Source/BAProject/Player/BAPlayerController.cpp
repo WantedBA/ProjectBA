@@ -3,21 +3,24 @@
 #include "BAPlayerCharacter.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Engine/GameInstance.h"
 #include "InputMappingContext.h"
 #include "Component/ActionComponent.h"
 #include "Component/InteractorComponent.h"
+#include "UI/SkillTree/SkillTreeWidget.h"
+#include "UI/System/SubSystemUI.h"
 
 namespace
 {
-	EActionDirection GetActionDirectionFromMoveInput(const FVector2D& MoveInput)
+	EActionDirection GetActionDirectionFromRelativeInput(const FVector2D& RelativeInput)
 	{
 		constexpr float DirectionThreshold = 0.35f;
-		if (MoveInput.IsNearlyZero())
+		if (RelativeInput.IsNearlyZero())
 		{
 			return EActionDirection::Any;
 		}
 
-		const FVector2D SafeInput = MoveInput.SizeSquared() > 1.f ? MoveInput.GetSafeNormal() : MoveInput;
+		const FVector2D SafeInput = RelativeInput.SizeSquared() > 1.f ? RelativeInput.GetSafeNormal() : RelativeInput;
 		const bool bForward = SafeInput.Y > DirectionThreshold;
 		const bool bBackward = SafeInput.Y < -DirectionThreshold;
 		const bool bRight = SafeInput.X > DirectionThreshold;
@@ -54,6 +57,33 @@ namespace
 
 		return EActionDirection::Forward;
 	}
+
+	EActionDirection GetActionDirectionFromMoveInput(const ABAPlayerCharacter& Character, const FVector2D& MoveInput)
+	{
+		if (MoveInput.IsNearlyZero())
+		{
+			return EActionDirection::Any;
+		}
+
+		const FVector2D SafeInput = MoveInput.SizeSquared() > 1.f ? MoveInput.GetSafeNormal() : MoveInput;
+		const FRotator ControlYawRotation(0.f, Character.GetControlRotation().Yaw, 0.f);
+		const FVector ControlForward = FRotationMatrix(ControlYawRotation).GetUnitAxis(EAxis::X);
+		const FVector ControlRight = FRotationMatrix(ControlYawRotation).GetUnitAxis(EAxis::Y);
+		const FVector WorldDirection = (ControlForward * SafeInput.Y + ControlRight * SafeInput.X).GetSafeNormal();
+		if (WorldDirection.IsNearlyZero())
+		{
+			return EActionDirection::Any;
+		}
+
+		const FRotator ActorYawRotation(0.f, Character.GetActorRotation().Yaw, 0.f);
+		const FVector ActorForward = FRotationMatrix(ActorYawRotation).GetUnitAxis(EAxis::X);
+		const FVector ActorRight = FRotationMatrix(ActorYawRotation).GetUnitAxis(EAxis::Y);
+		const FVector2D ActorRelativeInput(
+			FVector::DotProduct(WorldDirection, ActorRight),
+			FVector::DotProduct(WorldDirection, ActorForward));
+
+		return GetActionDirectionFromRelativeInput(ActorRelativeInput);
+	}
 }
 
 ABAPlayerController::ABAPlayerController()
@@ -84,6 +114,12 @@ void ABAPlayerController::BeginPlay()
 			if (InputMappingContext)
 			{
 				InputSystem->AddMappingContext(InputMappingContext, 0);
+			}
+			
+			// TODO: 체크포인트 제작 후 이동
+			if (CheckpointInputMappingContext)
+			{
+				InputSystem->AddMappingContext(CheckpointInputMappingContext, 1);
 			}
 		}
 	}
@@ -161,6 +197,17 @@ void ABAPlayerController::SetupInputComponent()
 			&ABAPlayerController::ToggleStrafe
 		);
 	}
+	
+	// 체크포인트(스킬트리 열기)
+	if (ensureMsgf(SkillTreeToggleAction, TEXT("SkillTreeToggleAction is not configured on %s"), *GetName()))
+	{
+		EnhancedInputComponent->BindAction(
+			SkillTreeToggleAction,
+			ETriggerEvent::Started,
+			this,
+			&ABAPlayerController::ToggleSkillTree
+		);
+	}
 }
 
 void ABAPlayerController::PlayerTick(const float DeltaTime)
@@ -188,7 +235,7 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 	ControlledCharacter->SetMoveInputVector(Movement);
 	if (UActionComponent* ActionComponent = ControlledCharacter->GetActionComponent())
 	{
-		ActionComponent->UpdateBufferedActionDirection(GetActionDirectionFromMoveInput(Movement));
+		ActionComponent->UpdateBufferedActionDirection(GetActionDirectionFromMoveInput(*ControlledCharacter, Movement));
 	}
 	ApplyMovementStateByModifier();
 }
@@ -329,7 +376,7 @@ void ABAPlayerController::TryStartDodgeAction() const
 		return;
 	}
 
-	const EActionDirection DodgeDirection = GetActionDirectionFromMoveInput(PC->GetMoveInputVector());
+	const EActionDirection DodgeDirection = GetActionDirectionFromMoveInput(*PC, PC->GetMoveInputVector());
 	ActionComponent->TryStartAction(EActionCommand::Dodge, DodgeDirection);
 }
 
@@ -370,4 +417,33 @@ void ABAPlayerController::ToggleStrafe()
 			: EPlayerLocomotionMode::Strafe;
 
 	PC->SetLocomotionMode(NextMode);
+}
+
+void ABAPlayerController::ToggleSkillTree()
+{
+	if (SkillTreeWidget && SkillTreeWidget->IsInViewport())
+	{
+		SkillTreeWidget->ClosePopup();
+		SkillTreeWidget = nullptr;
+		return;
+	}
+
+	if (!ensureMsgf(SkillTreeWidgetClass, TEXT("SkillTreeWidgetClass is not configured on %s"), *GetName()))
+	{
+		return;
+	}
+
+	UGameInstance* GameInstance = GetGameInstance();
+	if (!GameInstance)
+	{
+		return;
+	}
+
+	USubSystemUI* UISubsystem = GameInstance->GetSubsystem<USubSystemUI>();
+	if (!ensureMsgf(UISubsystem, TEXT("USubSystemUI is not available.")))
+	{
+		return;
+	}
+
+	SkillTreeWidget = Cast<USkillTreeWidget>(UISubsystem->PushUIByClass(SkillTreeWidgetClass));
 }
