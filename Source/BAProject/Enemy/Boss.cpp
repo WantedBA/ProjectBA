@@ -240,18 +240,24 @@ float ABoss::CalculatePatternScore(const FBossAttackData& PatternData, AActor* T
 		return 0.0f;
 	}
 
-	// 거리 점수 (IdealRange 이하일 때 가장 높음)
+	// 거리 점수 (벨 커브): IdealRange와 일치할 때 만점, 가깝거나 멀어질수록 감소
+	// 최소 0.1 보장해서 사거리 밖이어도 완전히 0이 되지 않게 함 (조건 통과 시 fallback 가능)
 	float FinalScore = PatternData.Weight * PatternData.ScoreMultiplier;
 	float DistanceScore = 1.0f;
 
 	if (PatternData.IdealRange > 0.0f)
 	{
-		if (Distance > PatternData.IdealRange)
-		{
-			DistanceScore = FMath::Max(0.0f,1.0f - (Distance - PatternData.IdealRange) / 1000.0f);
-		}
+		const float DistFromIdeal = FMath::Abs(Distance - PatternData.IdealRange);
+		const float Window = PatternData.IdealRange * 0.75f;  // 사거리의 75% 안에서 의미있는 점수
+		DistanceScore = FMath::Max(0.1f, 1.0f - DistFromIdeal / Window);
 	}
 	FinalScore *= DistanceScore;
+
+	// 연속 발동 페널티: 직전 패턴이면 30% 점수만 (다양성 확보)
+	if (PatternData.Tid == LastUsedPatternTid)
+	{
+		FinalScore *= 0.3f;
+	}
 
 	// 각도 점수
 	FVector ToTarget = (Target->GetActorLocation() - GetActorLocation()).GetSafeNormal();
@@ -485,6 +491,9 @@ void ABoss::ExecuteBossPattern(int32 PatternTid)
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("  → MontageToPlay=%s, calling ExecuteAttack"), *MontageToPlay->GetName());
+
+	// 연속 발동 페널티용: 마지막 패턴 기록
+	LastUsedPatternTid = PatternTid;
 
 	SetState(EEnemyState::Attack);
 

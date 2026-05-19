@@ -111,5 +111,9 @@ protected:
 	UPROPERTY()
 	TMap<int32, float> PatternCooldownMap;
 
+	// 직전에 발동한 패턴 Tid. 연속 발동 페널티에 사용 (다양성 확보)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|State")
+	int32 LastUsedPatternTid = 0;
+
 	TArray<int32> PendingCooldownRemove;
 };
