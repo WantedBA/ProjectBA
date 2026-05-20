@@ -149,6 +149,7 @@ private:
 	void OrientOwnerToActionDirection(EActionDirection Direction) const;
 	void ApplyRootMotionModeForAnimation(UAnimInstance& AnimInstance, const FActionAnimationDataRow& AnimationData);
 	void RestoreRootMotionMode();
+	void RestoreRootMotionRotation();
 	void InitializeActionWindows();
 	void TickActionWindows(float MontagePosition);
 	void OpenActionWindow(const FActionWindowDataRow& WindowData);
@@ -159,6 +160,7 @@ private:
 	void ApplyInputBufferWindowDelta(int32 Delta);
 	void RefreshActionWindowTick();
 	void ClearActivePlayback();
+	void MaintainRootMotionRotationLock();
 
 	UPROPERTY(EditAnywhere, Category = "Action|Animation")
 	bool bAutoBindToOwnerActionComponent = true;
@@ -171,6 +173,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Action|Animation")
 	bool bSynchronousLoadMontage = true;
+
+	UPROPERTY(EditAnywhere, Category = "Action|Animation|RootMotion")
+	bool bIgnoreRootMotionRotation = true;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UActionComponent> CachedActionComponent;
@@ -204,5 +209,7 @@ private:
 	TWeakObjectPtr<UAnimInstance> RootMotionModeAnimInstance;
 	TEnumAsByte<ERootMotionMode::Type> PreviousRootMotionMode = ERootMotionMode::NoRootMotionExtraction;
 	bool bRootMotionModeOverridden = false;
+	FRotator LockedRootMotionRotation = FRotator::ZeroRotator;
+	bool bRootMotionRotationLocked = false;
 	bool bHandlingMontageEnd = false;
 };
