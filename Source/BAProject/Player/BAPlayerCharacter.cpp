@@ -190,7 +190,21 @@ void ABAPlayerCharacter::Attack()
 {
 	UE_LOG(LogTemp, Log, TEXT("Player Attack"));
 	BAPlayerState = EBAPlayerState::Attacking;
+	CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack());
 	CombatComponent->ExecuteAttack(AttackMontage);
+}
+
+void ABAPlayerCharacter::HeavyAttack()
+{
+	// TODO
+}
+
+void ABAPlayerCharacter::EndAttack()
+{
+	if (BAPlayerState == EBAPlayerState::Attacking)
+	{
+		BAPlayerState = EBAPlayerState::None;
+	}
 }
 
 // UserDataSubsystem의 기본 스탯과 공용 Action 데이터를 플레이어 런타임 설정에 반영한다.

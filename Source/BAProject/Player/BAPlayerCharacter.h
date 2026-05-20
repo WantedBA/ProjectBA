@@ -61,6 +61,8 @@ public:
 	
 	virtual class UStaticMeshComponent* GetWeaponMesh() const override { return WeaponMeshComponent; }
 
+	void EndAttack();
+	
 // --------------------
 	// UserDataSubsystem과 ActionData 테이블을 읽어 스탯, 이동 속도, 질주 비용을 초기화한다.
 	UFUNCTION(BlueprintCallable, Category = Initialization)
@@ -279,6 +281,9 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Weapon")
 	TObjectPtr<UStaticMeshComponent> WeaponMeshComponent;
+	
+	// 충돌 판정 시 검 두께
+	const float WeaponRadius = 20.f;
 	
 // 공격 관련
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
