@@ -382,6 +382,50 @@ float ABoss::GetPatternIdealRange(int32 PatternTid) const
 	return 0.0f;
 }
 
+UAnimMontage* ABoss::PlayTurnToTarget(AActor* Target)
+{
+	if (Target == nullptr)
+	{
+		return nullptr;
+	}
+
+	const FVector ToTarget = (Target->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
+	if (ToTarget.IsNearlyZero())
+	{
+		return nullptr;
+	}
+
+	const float TargetYaw = ToTarget.Rotation().Yaw;
+	const float DeltaYaw = FMath::FindDeltaAngleDegrees(GetActorRotation().Yaw, TargetYaw);
+	const float AbsDelta = FMath::Abs(DeltaYaw);
+
+	// 정면 기준 45도 이내면 회전 불필요 (공격 추적이 잔여 오차를 흡수)
+	if (AbsDelta <= 45.0f)
+	{
+		return nullptr;
+	}
+
+	// DeltaYaw > 0 = 타겟이 오른쪽, < 0 = 왼쪽 (UE Yaw 기준)
+	UAnimMontage* TurnMontage = nullptr;
+	if (DeltaYaw > 0.0f)
+	{
+		TurnMontage = (AbsDelta > 135.0f) ? TurnRight180Montage : TurnRight90Montage;
+	}
+	else
+	{
+		TurnMontage = (AbsDelta > 135.0f) ? TurnLeft180Montage : TurnLeft90Montage;
+	}
+
+	if (TurnMontage == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ABoss::PlayTurnToTarget] Turn montage not assigned (DeltaYaw=%.1f)"), DeltaYaw);
+		return nullptr;
+	}
+
+	const float Duration = PlayAnimMontage(TurnMontage);
+	return (Duration > 0.0f) ? TurnMontage : nullptr;
+}
+
 void ABoss::LoadBossPatterns(int32 StageType)
 {
 	UBATableManager* TableManager = UBATableManager::Get(this);

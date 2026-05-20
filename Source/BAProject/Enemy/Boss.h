@@ -85,6 +85,9 @@ public:
 	// 패턴 Tid로 해당 패턴의 IdealRange를 조회 (없으면 0)
 	float GetPatternIdealRange(int32 PatternTid) const;
 
+	// 타겟 방향으로 회전 몽타주를 재생. 재생한 몽타주 반환 (회전 불필요/실패 시 nullptr)
+	UAnimMontage* PlayTurnToTarget(AActor* Target);
+
 	UFUNCTION()
 	virtual void HandleHPChanged(float CurrentHP, float MaxHP);
 
@@ -131,6 +134,19 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Debug")
 	bool bShowAIDebug = true;
+
+	// 회전 몽타주 — 캡슐을 실제로 돌리려면 애니메이션에 Enable Root Motion(회전) 필수
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Turn")
+	TObjectPtr<UAnimMontage> TurnLeft90Montage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Turn")
+	TObjectPtr<UAnimMontage> TurnRight90Montage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Turn")
+	TObjectPtr<UAnimMontage> TurnLeft180Montage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Turn")
+	TObjectPtr<UAnimMontage> TurnRight180Montage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Combat")
 	TMap<int32, TObjectPtr<UAnimMontage>> LoadedMontageMap;
