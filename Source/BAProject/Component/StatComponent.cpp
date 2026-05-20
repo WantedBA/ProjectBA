@@ -63,6 +63,11 @@ void UStatComponent::RestoreAll()
 
 void UStatComponent::ApplyDamage(float DamageAmount)
 {
+	if (IsDead())
+	{
+		return;
+	}
+
 	float FinalDamage = FMath::Max(0.f, DamageAmount - Defence);
 	float OldHP = CurrentHP;
 	CurrentHP = FMath::Clamp(CurrentHP - FinalDamage, 0.f, MaxHP);

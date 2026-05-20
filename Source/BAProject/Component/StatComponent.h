@@ -62,6 +62,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Stat")
 	void RestoreAll();
 
+	FORCEINLINE bool IsDead() const { return CurrentHP <= 0.f; }
+
 	FORCEINLINE float GetAttack() const { return Attack; }
 	FORCEINLINE void SetAttack(const float NewAttack) { Attack = NewAttack; }
 
