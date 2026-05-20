@@ -201,7 +201,7 @@ void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
 	switch (NewState)
 	{
 	case EEnemyState::Idle:
-		TargetSpeed = MaxMoveSpeed = 0.6f;
+		TargetSpeed = MaxMoveSpeed;
 		break;
 
 	case EEnemyState::Chase:
