@@ -137,6 +137,18 @@
         {
             "Tid": 30022,
             "ActionTid": 10021,
+            "Direction": "Forward",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Roll_Relaxed_Forward.AM_Roll_Relaxed_Forward",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": 1
+        },
+        {
+            "Tid": 30023,
+            "ActionTid": 10021,
             "Direction": "Backward",
             "CombatStance": "Relaxed",
             "WeaponType": "Any",
@@ -147,7 +159,7 @@
             "bUseRootMotion": 1
         },
         {
-            "Tid": 30023,
+            "Tid": 30024,
             "ActionTid": 10021,
             "Direction": "Left",
             "CombatStance": "Relaxed",
@@ -159,7 +171,7 @@
             "bUseRootMotion": 1
         },
         {
-            "Tid": 30024,
+            "Tid": 30025,
             "ActionTid": 10021,
             "Direction": "Right",
             "CombatStance": "Relaxed",
@@ -171,7 +183,7 @@
             "bUseRootMotion": 1
         },
         {
-            "Tid": 30025,
+            "Tid": 30026,
             "ActionTid": 10021,
             "Direction": "ForwardLeft",
             "CombatStance": "Relaxed",
@@ -183,7 +195,7 @@
             "bUseRootMotion": 1
         },
         {
-            "Tid": 30026,
+            "Tid": 30027,
             "ActionTid": 10021,
             "Direction": "ForwardRight",
             "CombatStance": "Relaxed",
@@ -195,7 +207,7 @@
             "bUseRootMotion": 1
         },
         {
-            "Tid": 30027,
+            "Tid": 30028,
             "ActionTid": 10021,
             "Direction": "BackwardLeft",
             "CombatStance": "Relaxed",
@@ -207,7 +219,7 @@
             "bUseRootMotion": 1
         },
         {
-            "Tid": 30028,
+            "Tid": 30029,
             "ActionTid": 10021,
             "Direction": "BackwardRight",
             "CombatStance": "Relaxed",
@@ -219,7 +231,7 @@
             "bUseRootMotion": 1
         },
         {
-            "Tid": 30029,
+            "Tid": 30030,
             "ActionTid": 10022,
             "Direction": "Any",
             "CombatStance": "Relaxed",
@@ -231,7 +243,19 @@
             "bUseRootMotion": 1
         },
         {
-            "Tid": 30030,
+            "Tid": 30031,
+            "ActionTid": 10022,
+            "Direction": "Forward",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Dodge_Relaxed_Forward.AM_Dodge_Relaxed_Forward",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1,
+            "bUseRootMotion": 1
+        },
+        {
+            "Tid": 30032,
             "ActionTid": 10022,
             "Direction": "Backward",
             "CombatStance": "Relaxed",
@@ -243,7 +267,7 @@
             "bUseRootMotion": 1
         },
         {
-            "Tid": 30031,
+            "Tid": 30033,
             "ActionTid": 10022,
             "Direction": "Left",
             "CombatStance": "Relaxed",
@@ -255,7 +279,7 @@
             "bUseRootMotion": 1
         },
         {
-            "Tid": 30032,
+            "Tid": 30034,
             "ActionTid": 10022,
             "Direction": "Right",
             "CombatStance": "Relaxed",
@@ -267,7 +291,7 @@
             "bUseRootMotion": 1
         },
         {
-            "Tid": 30033,
+            "Tid": 30035,
             "ActionTid": 10022,
             "Direction": "ForwardLeft",
             "CombatStance": "Relaxed",
@@ -279,7 +303,7 @@
             "bUseRootMotion": 1
         },
         {
-            "Tid": 30034,
+            "Tid": 30036,
             "ActionTid": 10022,
             "Direction": "ForwardRight",
             "CombatStance": "Relaxed",
@@ -291,7 +315,7 @@
             "bUseRootMotion": 1
         },
         {
-            "Tid": 30035,
+            "Tid": 30037,
             "ActionTid": 10022,
             "Direction": "BackwardLeft",
             "CombatStance": "Relaxed",
@@ -303,7 +327,7 @@
             "bUseRootMotion": 1
         },
         {
-            "Tid": 30036,
+            "Tid": 30038,
             "ActionTid": 10022,
             "Direction": "BackwardRight",
             "CombatStance": "Relaxed",
@@ -648,6 +672,48 @@
         {
             "Tid": 40068,
             "ActionAnimationTid": 30036,
+            "WindowType": "InputBuffer",
+            "StartTime": 0.55,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40069,
+            "ActionAnimationTid": 30037,
+            "WindowType": "Invincible",
+            "StartTime": 0.1,
+            "EndTime": 0.55
+        },
+        {
+            "Tid": 40070,
+            "ActionAnimationTid": 30037,
+            "WindowType": "InterruptLock",
+            "StartTime": 0,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40071,
+            "ActionAnimationTid": 30037,
+            "WindowType": "InputBuffer",
+            "StartTime": 0.55,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40072,
+            "ActionAnimationTid": 30038,
+            "WindowType": "Invincible",
+            "StartTime": 0.1,
+            "EndTime": 0.55
+        },
+        {
+            "Tid": 40073,
+            "ActionAnimationTid": 30038,
+            "WindowType": "InterruptLock",
+            "StartTime": 0,
+            "EndTime": 0.8
+        },
+        {
+            "Tid": 40074,
+            "ActionAnimationTid": 30038,
             "WindowType": "InputBuffer",
             "StartTime": 0.55,
             "EndTime": 0.8
