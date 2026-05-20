@@ -316,4 +316,6 @@ protected:
 	void OnStaminaChanged(float CurrentStamina, float MaxStamina);
 	UFUNCTION()
 	void HandleActionStarted(int32 ActionTid, EActionType ActionType);
+	UFUNCTION()
+	void HandleActionMontageEnded(int32 ActionTid, EActionType ActionType, UAnimMontage* Montage, bool bInterrupted);
 };

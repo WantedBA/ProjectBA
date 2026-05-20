@@ -135,6 +135,11 @@ void ABAPlayerCharacter::BeginPlay()
 		ActionComponent->OnActionStarted.AddDynamic(this, &ABAPlayerCharacter::HandleActionStarted);
 	}
 	
+	if (ActionAnimationComponent)
+	{
+		ActionAnimationComponent->OnActionMontageEnded.AddDynamic(this, &ABAPlayerCharacter::HandleActionMontageEnded);
+	}
+	
 	if (CombatComponent)
 	{
 		CombatComponent->SetShowDebugTrace(true);
@@ -386,4 +391,18 @@ void ABAPlayerCharacter::HandleActionStarted(const int32 ActionTid, const EActio
 	MovementRuntime.Phase = EPlayerMovementPhase::None;
 	MovementRuntime.PhaseElapsedTime = 0.f;
 	MovementRuntime.bWaitingForPhaseAnimation = false;
+	
+	if (ActionType == EActionType::DodgeRoll)
+	{
+		BAPlayerState = EBAPlayerState::DodgeRolling;
+	}
+}
+
+void ABAPlayerCharacter::HandleActionMontageEnded(int32 ActionTid, EActionType ActionType, UAnimMontage* Montage,
+	bool bInterrupted)
+{
+	if (ActionType == EActionType::DodgeRoll && !bInterrupted && (BAPlayerState == EBAPlayerState::DodgeRolling))
+	{
+		BAPlayerState = EBAPlayerState::None;
+	}
 }
