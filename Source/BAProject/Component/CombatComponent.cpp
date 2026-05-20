@@ -104,15 +104,28 @@ void UCombatComponent::SetAttackData(float InRadius, float InDamage, FName InSta
 	}
 }
 
+void UCombatComponent::SetPerfectWindowActive(bool bActive, float TimeDilation, float Duration)
+{
+	bIsPerfectWindowActive = bActive;
+	ActivePerfectTimeDilation = TimeDilation;
+	ActivePerfectDuration = Duration;
+}
+
 void UCombatComponent::TriggerHitStop(float Duration)
 {
-	if (UWorld* World = GetWorld())
+	UWorld* World = GetWorld();
+	if (World == nullptr)
 	{
-		if (UBATimeSubsystem* TimeSubsystem = World->GetSubsystem<UBATimeSubsystem>())
-		{
-			TimeSubsystem->ApplyHitStop(Duration);
-		}
+		return;
 	}
+
+	UBATimeSubsystem* TimeSubsystem = World->GetSubsystem<UBATimeSubsystem>();
+	if (TimeSubsystem == nullptr)
+	{
+		return;
+	}
+
+	TimeSubsystem->ApplyHitStop(Duration);
 }
 
 void UCombatComponent::ProcessHitCheck()
@@ -244,7 +257,7 @@ void UCombatComponent::ApplyDamage(AActor* Victim, const FHitResult& HitResult)
 				{
 					if (UBATimeSubsystem* TimeSubsystem = World->GetSubsystem<UBATimeSubsystem>())
 					{
-						TimeSubsystem->ApplySlowMotion(0.1f, 0.5f);
+						TimeSubsystem->ApplySlowMotion(ActivePerfectTimeDilation, ActivePerfectDuration);
 					}
 				}
 

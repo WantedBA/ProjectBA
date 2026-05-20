@@ -27,10 +27,10 @@ void UBATimeSubsystem::ApplySlowMotion(float TimeDilation, float Duration)
 	}
 }
 
-void UBATimeSubsystem::ApplyHitStop(float Duration)
+void UBATimeSubsystem::ApplyHitStop(float Duration, float TimeDilation)
 {
 	// 역경직은 아주 강한 슬로우를 짧게 적용
-	ApplySlowMotion(0.01f, Duration);
+	ApplySlowMotion(TimeDilation, Duration);
 }
 
 void UBATimeSubsystem::ResetTimeDilation()

@@ -19,7 +19,7 @@ public:
 
 	// 짧은 정지 효과 (역경직용)
 	UFUNCTION(BlueprintCallable, Category = "Time")
-	void ApplyHitStop(float Duration = 0.05f);
+	void ApplyHitStop(float Duration = 0.05f, float TimeDilation = 0.01f);
 
 	// 시간 팽창 즉시 복구
 	UFUNCTION(BlueprintCallable, Category = "Time")
