@@ -378,7 +378,7 @@ void ABAPlayerController::TryStartDodgeAction() const
 
 	const EActionDirection DodgeDirection =
 		PC->GetLocomotionMode() == EPlayerLocomotionMode::Strafe ?
-		GetActionDirectionFromMoveInput(PC->GetMoveInputVector()) : EActionDirection::Any;
+		GetActionDirectionFromMoveInput(*PC, PC->GetMoveInputVector()) : EActionDirection::Any;
 	ActionComponent->TryStartAction(EActionCommand::Dodge, DodgeDirection);
 }
 

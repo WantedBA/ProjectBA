@@ -11,6 +11,8 @@
 #include "Component/InteractorComponent.h"
 #include "Component/PlayerSkillComponent.h"
 #include "Component/StatComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Constants/BAProjectConstant.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Instance/UserDataSubsystem.h"
@@ -38,6 +40,17 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 		GetMesh()->SetAnimInstanceClass(CharacterAnim.Class);
 	}
 	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
+
+	// 무기 컴포넌트 생성 및 메시 부착
+	WeaponMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMeshComponent"));
+	WeaponMeshComponent->SetupAttachment(GetMesh(), FName(SocketName::RightHandTargetSocketName));
+	WeaponMeshComponent->SetCollisionProfileName(TEXT("NoCollision"));
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> GreatSwordMesh(TEXT("/Game/Assets/Great_Sword.Great_Sword"));
+	if (GreatSwordMesh.Succeeded())
+	{
+		WeaponMeshComponent->SetStaticMesh(GreatSwordMesh.Object);
+	}
 
 	// 스탯 컴포넌트 생성
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));

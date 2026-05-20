@@ -15,7 +15,7 @@ class UInteractorComponent;
 class AMapLadder;
 class USpringArmComponent;
 class UStatComponent;
-
+class UStaticMeshComponent;
 /**
  * 플레이어 캐릭터 본체.
  *
@@ -251,6 +251,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	TObjectPtr<UCameraComponent> Camera;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Weapon")
+	TObjectPtr<UStaticMeshComponent> WeaponMeshComponent;
 	
 protected:
 	UFUNCTION()

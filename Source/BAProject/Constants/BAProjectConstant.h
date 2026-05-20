@@ -28,3 +28,9 @@ namespace BBKey
 	const FName IsInterrupted = TEXT("IsInterrupted");
 	const FName EnemyState = TEXT("State");
 }
+
+namespace SocketName
+{
+	constexpr const TCHAR* WeaponSocketName = TEXT("Socket");
+	constexpr const TCHAR* RightHandTargetSocketName = TEXT("HandGrip_R");
+}
