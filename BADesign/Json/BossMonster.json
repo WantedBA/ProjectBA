@@ -340,7 +340,7 @@
             "BaseWeight": 1.2,
             "ScoreMultiplier": 1.5,
             "CoolTime": 3,
-            "MontagePath": "/Game/Assets/Enemy/1stBoss/.AM_1stBossComboTrace.AM_1stBossComboTrace",
+            "MontagePath": "/Game/Assets/Enemy/1stBoss/AM_1stBossComboTrace.AM_1stBossComboTrace",
             "IdealRange": 200,
             "Attack": 30,
             "NextComboTid": 0,
