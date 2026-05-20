@@ -82,12 +82,13 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Enemy|Effects")
 	void OnStartDissolve();
-	// 공격 횟수 및 쿨다운 관리
-	bool CanAttack() const;
+	bool CanAttack() const; // 공격 횟수 및 쿨다운 관리
 	void ResetAttackCount() { CurrentAttackCount = 0; }
 
-	// 상태 복구 관리
-	void ResetStateToIdle();
+	void ResetStateToIdle();// 상태 복구 관리
+
+	UFUNCTION(BlueprintCallable, Category = "Enemy|Reset")
+	virtual void ResetMonster(const FTransform& ResetTransform); // 몬스터를 초기 스폰 상태로 완전히 리셋한다.
 
 protected:
 	virtual void PostInitializeComponents() override;
@@ -102,7 +103,10 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Enemy|Visuals", meta = (DisplayName = "OnDeadVisuals"))
 	void K2_OnDeadVisuals();
 
-	UFUNCTION(BlueprintImplementableEvent, Category = "Combat", meta = (DisplayName = "OnPerfectGuarded"))
+	UFUNCTION(BlueprintImplementableEvent, Category = "Enemy|Visuals", meta = (DisplayName = "OnResetVisuals"))
+	void K2_OnResetVisuals(); 	// 리셋 시 머티리얼 및 이펙트 복구를 위해 블루프린트에서 구현
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Enemy|Visuals", meta = (DisplayName = "OnPerfectGuarded"))
 	void K2_OnPerfectGuarded(FVector ImpactLocation);
 
 public:
