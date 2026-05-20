@@ -22,6 +22,10 @@ AEnemyBase::AEnemyBase()
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
+
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	GetCharacterMovement()->bUseControllerDesiredRotation = true;
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 0.f, 360.f);
 }
 
 void AEnemyBase::PostInitializeComponents()
@@ -32,8 +36,6 @@ void AEnemyBase::PostInitializeComponents()
 	{
 		StatComponent->OnDead.AddDynamic(this, &AEnemyBase::OnDeath);
 	}
-
-	OnAnimationFinished.AddUObject(this, &AEnemyBase::OnEnemyAttackAniFinished);
 }
 
 void AEnemyBase::PossessedBy(AController* NewController)
@@ -58,7 +60,6 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 	UBATableManager* TableManager = UBATableManager::Get(this);
 	if (TableManager == nullptr)
 	{
-		UE_LOG(LogTemp, Log, TEXT("[AEnemyBase] Monster data not found for Tid: %d"), MonsterTid);
 		return;
 	}
 
@@ -66,32 +67,33 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 	{
 		EnemyGrade = static_cast<EEnemyGrade>(MonsterRow->GradeType);
 
-		StatComponent->InitializeStats(
-			static_cast<float>(MonsterRow->MaxHp),
-			static_cast<float>(MonsterRow->Attack),
-			static_cast<float>(MonsterRow->Defence)
-		);
+		if (StatComponent)
+		{
+			StatComponent->InitializeStats(
+				static_cast<float>(MonsterRow->MaxHp),
+				static_cast<float>(MonsterRow->Attack),
+				static_cast<float>(MonsterRow->Defence)
+			);
+		}
 
-		DetectRange = MonsterRow->DetectRange;
+		DetectRange = static_cast<float>(MonsterRow->DetectRange);
 
 		if (GetCharacterMovement())
 		{
-			GetCharacterMovement()->MaxWalkSpeed = static_cast<float>(MonsterRow->MoveSpeed);
 			GetCharacterMovement()->bOrientRotationToMovement = true;
 			GetCharacterMovement()->RotationRate = FRotator(0.0f, 360.0f, 0.0f);
-		}
-
-		if (!MonsterRow->MeshPath.IsEmpty())
-		{
-			if (USkeletalMesh* LoadedMesh = Cast<USkeletalMesh>(StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, *MonsterRow->MeshPath)))
-			{
-				GetMesh()->SetSkeletalMesh(LoadedMesh);
-			}
+			GetCharacterMovement()->MaxWalkSpeed = static_cast<float>(MonsterRow->MoveSpeed);
 		}
 
 		if (AEnemyAIController* AIController = Cast<AEnemyAIController>(GetController()))
 		{
 			AIController->InitializeAI(MonsterTid, this);
+		}
+
+		USkeletalMesh* LoadedMesh = Cast<USkeletalMesh>(StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, *MonsterRow->MeshPath));
+		if (LoadedMesh)
+		{
+			GetMesh()->SetSkeletalMesh(LoadedMesh);
 		}
 	}
 }
@@ -116,6 +118,7 @@ void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
 {
 	if (GetCharacterMovement() == nullptr)
 	{
+
 		return;
 	}
 
@@ -136,11 +139,37 @@ void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
 	GetCharacterMovement()->MaxWalkSpeed = TargetSpeed;
 }
 
+void AEnemyBase::UpdateBlackBoardState()
+{
+	AAIController* AIController = Cast<AAIController>(GetController());
+	if (AIController == nullptr)
+	{
+		return;
+	}
+
+	UBlackboardComponent* BBComp = AIController->GetBlackboardComponent();
+	if (BBComp == nullptr)
+	{
+		return;
+	}
+
+	BBComp->SetValueAsEnum(BBKey::EnemyState, static_cast<uint8>(CurrentState));
+
+	bool bIsActionLocked = (CurrentState == EEnemyState::Attack ||
+		CurrentState == EEnemyState::Hit ||	CurrentState == EEnemyState::Dead);
+	BBComp->SetValueAsBool(BBKey::IsActionLocked, bIsActionLocked);
+}
+
 void AEnemyBase::OnEnemyAttackAniFinished(EEnemyState NewState)
 {
 	if (IsValid(this) && CurrentState != EEnemyState::Dead)
 	{
 		SetState(NewState);
+	}
+
+	if (OnAttackAnimationFinished.IsBound())
+	{
+		OnAttackAnimationFinished.Broadcast(NewState);
 	}
 }
 
@@ -148,7 +177,17 @@ void AEnemyBase::OnDeath()
 {
 	Super::OnDeath();
 	SetState(EEnemyState::Dead);
+
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->StopMovementImmediately();
+		GetCharacterMovement()->DisableMovement();
+	}
+
+	SetActorEnableCollision(false);
+
 	OnDeathEvent.Broadcast();
+
 	K2_OnDeadVisuals();
 }
 
@@ -162,19 +201,25 @@ void AEnemyBase::SetState(EEnemyState NewState)
 	EEnemyState OldState = CurrentState;
 	CurrentState = NewState;
 
-	if (AEnemyAIController* AIController = Cast<AEnemyAIController>(GetController()))
-	{
-		UBlackboardComponent* BBComponent = AIController->GetBlackboardComponent();
-		if (BBComponent)
-		{
-			// 다음 행위 중에는 BT 막기
-			bool bIsActionLocked = (CurrentState == EEnemyState::Attack || CurrentState == EEnemyState::Hit || CurrentState == EEnemyState::Dead);
-			BBComponent->SetValueAsBool(BBKey::IsActionLocked, bIsActionLocked);
-			UpdateMoveSpeed(CurrentState);
-		}
-	}
+	UpdateBlackBoardState();
+	UpdateMoveSpeed(CurrentState);
 
 	OnStateChanged.Broadcast(OldState, NewState);
+}
+
+void AEnemyBase::ApplyKnockback(AActor* DamageCauser, float Force)
+{
+	if (DamageCauser == nullptr || bIsSuperArmor || IsDead())
+	{
+		return;
+	}
+
+	FVector KnockbackDir = (GetActorLocation() - DamageCauser->GetActorLocation()).GetSafeNormal();
+	KnockbackDir.Z = 0.0f; // 수평 넉백
+
+	FVector FinalForce = (KnockbackDir * Force);
+	
+	LaunchCharacter(FinalForce, true, true);
 }
 
 void AEnemyBase::Attack()

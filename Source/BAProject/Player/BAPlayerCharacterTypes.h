@@ -199,6 +199,7 @@ struct FBAPlayerMovementRuntimeState
 struct FBAPlayerSprintRuntimeState
 {
 	bool bLockedAfterExhausted = false;
+	bool bStaminaRecoveryPaused = false;
 };
 
 struct FBAPlayerLadderRuntimeState

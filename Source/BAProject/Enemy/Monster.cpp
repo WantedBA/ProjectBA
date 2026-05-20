@@ -3,7 +3,6 @@
 AMonster::AMonster()
 {
 }
-
 void AMonster::BeginPlay()
 {
 	Super::BeginPlay();
@@ -12,4 +11,14 @@ void AMonster::BeginPlay()
 	{
 		InitializeFromTable(MonsterTid);
 	}
+}
+
+void AMonster::InitializeFromTable(int32 InTid)
+{
+	Super::InitializeFromTable(InTid);
+}
+
+void AMonster::OnDeath()
+{
+	Super::OnDeath();
 }

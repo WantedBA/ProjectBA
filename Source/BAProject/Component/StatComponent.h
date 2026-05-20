@@ -62,6 +62,12 @@ public:
 	FORCEINLINE float GetCurrentStamina() const { return CurrentStamina; }
 	UFUNCTION(BlueprintCallable, Category = "Stat")
 	void ConsumeStamina(float ConsumeAmount);
+	UFUNCTION(BlueprintCallable, Category = "Stat")
+	void PauseStaminaRecovery(FName Source);
+	UFUNCTION(BlueprintCallable, Category = "Stat")
+	void ResumeStaminaRecovery(FName Source, bool bApplyDelay = true);
+	UFUNCTION(BlueprintPure, Category = "Stat")
+	bool IsStaminaRecoveryPaused() const { return !StaminaRecoveryPauseSources.IsEmpty(); }
 	void SetCurrentStamina(const float NewCurrentStamina);
 
 	FORCEINLINE float GetWalkSpeed() const { return WalkSpeed; }
@@ -86,6 +92,7 @@ protected:
 	float StaminaRecoveryDelay;
 
 	float StaminaRecoveryDelayRemaining = 0.f;
+	TSet<FName> StaminaRecoveryPauseSources;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Movement")
 	float WalkSpeed;
@@ -101,4 +108,7 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Defence")
 	float Defence;
+
+private:
+	void RefreshStaminaRecoveryTick();
 };

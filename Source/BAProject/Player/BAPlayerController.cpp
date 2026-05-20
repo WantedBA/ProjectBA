@@ -7,6 +7,55 @@
 #include "Component/ActionComponent.h"
 #include "Component/InteractorComponent.h"
 
+namespace
+{
+	EActionDirection GetActionDirectionFromMoveInput(const FVector2D& MoveInput)
+	{
+		constexpr float DirectionThreshold = 0.35f;
+		if (MoveInput.IsNearlyZero())
+		{
+			return EActionDirection::Any;
+		}
+
+		const FVector2D SafeInput = MoveInput.SizeSquared() > 1.f ? MoveInput.GetSafeNormal() : MoveInput;
+		const bool bForward = SafeInput.Y > DirectionThreshold;
+		const bool bBackward = SafeInput.Y < -DirectionThreshold;
+		const bool bRight = SafeInput.X > DirectionThreshold;
+		const bool bLeft = SafeInput.X < -DirectionThreshold;
+
+		if (bForward && bRight)
+		{
+			return EActionDirection::ForwardRight;
+		}
+		if (bForward && bLeft)
+		{
+			return EActionDirection::ForwardLeft;
+		}
+		if (bBackward && bRight)
+		{
+			return EActionDirection::BackwardRight;
+		}
+		if (bBackward && bLeft)
+		{
+			return EActionDirection::BackwardLeft;
+		}
+		if (bRight)
+		{
+			return EActionDirection::Right;
+		}
+		if (bLeft)
+		{
+			return EActionDirection::Left;
+		}
+		if (bBackward)
+		{
+			return EActionDirection::Backward;
+		}
+
+		return EActionDirection::Forward;
+	}
+}
+
 ABAPlayerController::ABAPlayerController()
 {
 	// IMC, Input Action 설정은 BP_PlayerController에서 설정함
@@ -114,6 +163,13 @@ void ABAPlayerController::SetupInputComponent()
 	}
 }
 
+void ABAPlayerController::PlayerTick(const float DeltaTime)
+{
+	Super::PlayerTick(DeltaTime);
+
+	UpdateSprintHoldState();
+}
+
 void ABAPlayerController::Move(const FInputActionValue& Value)
 {
 	FVector2D Movement = Value.Get<FVector2D>();
@@ -130,6 +186,10 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 
 	bHasMoveInput = !Movement.IsNearlyZero();
 	ControlledCharacter->SetMoveInputVector(Movement);
+	if (UActionComponent* ActionComponent = ControlledCharacter->GetActionComponent())
+	{
+		ActionComponent->UpdateBufferedActionDirection(GetActionDirectionFromMoveInput(Movement));
+	}
 	ApplyMovementStateByModifier();
 }
 
@@ -140,6 +200,10 @@ void ABAPlayerController::OnMoveCompleted()
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
 	{
 		PC->SetMoveInputVector(FVector2D::ZeroVector);
+		if (UActionComponent* ActionComponent = PC->GetActionComponent())
+		{
+			ActionComponent->UpdateBufferedActionDirection(EActionDirection::Any);
+		}
 	}
 
 	ApplyMovementStateByModifier();
@@ -168,7 +232,8 @@ void ABAPlayerController::ToggleWalk()
 
 void ABAPlayerController::OnSprintStarted()
 {
-	bSprintModifierHeld = true;
+	bSprintInputHeld = true;
+	bSprintModifierHeld = false;
 	SprintDodgePressedTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
 	ApplyMovementStateByModifier();
 }
@@ -177,6 +242,7 @@ void ABAPlayerController::OnSprintCompleted()
 {
 	const bool bShouldDodge = IsSprintDodgeTap();
 
+	bSprintInputHeld = false;
 	bSprintModifierHeld = false;
 	ApplyMovementStateByModifier();
 
@@ -184,6 +250,28 @@ void ABAPlayerController::OnSprintCompleted()
 	{
 		TryStartDodgeAction();
 	}
+}
+
+void ABAPlayerController::UpdateSprintHoldState()
+{
+	if (!bSprintInputHeld || bSprintModifierHeld)
+	{
+		return;
+	}
+
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	if (World->GetTimeSeconds() - SprintDodgePressedTime < SprintHoldRequiredTime)
+	{
+		return;
+	}
+
+	bSprintModifierHeld = true;
+	ApplyMovementStateByModifier();
 }
 
 void ABAPlayerController::ApplyMovementStateByModifier() const
@@ -241,7 +329,8 @@ void ABAPlayerController::TryStartDodgeAction() const
 		return;
 	}
 
-	ActionComponent->TryStartAction(EActionCommand::Dodge);
+	const EActionDirection DodgeDirection = GetActionDirectionFromMoveInput(PC->GetMoveInputVector());
+	ActionComponent->TryStartAction(EActionCommand::Dodge, DodgeDirection);
 }
 
 void ABAPlayerController::OnInteract()
