@@ -55,15 +55,16 @@ public:
 
 // 공격 관련
 	// CharacterBase 공격 진입점. 
-	virtual void Attack(EActionCommand InActionCommand);
+	virtual void TryAttack(EActionCommand InActionCommand);
 
 	void OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg);
-	void LightAttack();
+	void StartAttack(UAnimMontage* InAnimMontage);
 	void HeavyAttack();
 	
 	virtual class UStaticMeshComponent* GetWeaponMesh() const override { return WeaponMeshComponent; }
 
-	void NextComboCheck();
+	void SetNextCombo(EActionCommand InActionCommand);
+	void OnNextComboCheck();
 	
 // --------------------
 	// UserDataSubsystem과 ActionData 테이블을 읽어 스탯, 이동 속도, 질주 비용을 초기화한다.
@@ -289,14 +290,22 @@ protected:
 	
 // 공격 관련
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	TObjectPtr<UAnimMontage> AttackMontage;
+	TObjectPtr<UAnimMontage> FirstLightAttackMontage;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	TObjectPtr<UAnimMontage> FirstHeavyAttackMontage;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	EBAPlayerState BAPlayerState = EBAPlayerState::None;
 
-	// 콤보 액션 판정을 위한 변수
-	int32 PrevActionAnimationTid = 0;
-	EActionCommand NextActionCommand = EActionCommand::None;
+// 콤보 액션 판정을 위한 변수
+	// 다음 콤보 결정할 때 사용
+	int32 NowActionAnimationTid = 0;
+	
+	// 결정된 다음 콤보 저장
+	int32 NextActionAnimationTid = 0;
+	UPROPERTY()
+	TObjectPtr<UAnimMontage> NextAttackMontage = nullptr;
 	
 // --------------------
 	

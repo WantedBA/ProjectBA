@@ -186,10 +186,41 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 }
 
 // 공격 입력 진입점
-void ABAPlayerCharacter::Attack(EActionCommand InActionCommand)
+void ABAPlayerCharacter::TryAttack(EActionCommand InActionCommand)
 {
-	UE_LOG(LogTemp, Log, TEXT("Player Attack: %hhd"), InActionCommand);
-	LightAttack();
+	UE_LOG(LogTemp, Log, TEXT("Player TryAttack Command: %hhd"), InActionCommand);
+
+	switch (BAPlayerState)
+	{
+	// 공격 커맨드 무시
+	case EBAPlayerState::Dead:
+	case EBAPlayerState::HitReacting:
+	case EBAPlayerState::KnockedDown:
+		return;
+		break;
+	// 다음 공격 저장
+	case EBAPlayerState::Attacking:
+	case EBAPlayerState::DodgeRolling:
+		SetNextCombo(InActionCommand);
+		break;
+	// 공격 바로 실행
+	case EBAPlayerState::Guarding:
+	case EBAPlayerState::Moving:
+	case EBAPlayerState::None:
+	default:
+		if (InActionCommand == EActionCommand::LightAttack)
+		{
+			CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack());
+			NextActionAnimationTid = 31001;
+			StartAttack(FirstLightAttackMontage);
+		}
+		else if (InActionCommand == EActionCommand::HeavyAttack)
+		{
+			CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack() * 1.5);
+			NextActionAnimationTid = 32001;
+			StartAttack(FirstHeavyAttackMontage);
+		}
+	}
 }
 
 void ABAPlayerCharacter::OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg)
@@ -198,20 +229,25 @@ void ABAPlayerCharacter::OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bA
 	if (!bArg)
 	{
 		BAPlayerState = EBAPlayerState::None;
+		NowActionAnimationTid = 0;
 	}
+	
 }
 
-void ABAPlayerCharacter::LightAttack()
+void ABAPlayerCharacter::StartAttack(UAnimMontage* InAnimMontage)
 {
+	NowActionAnimationTid = NextActionAnimationTid;
+	NextActionAnimationTid = 0;
+	NextAttackMontage = nullptr;
+	
 	BAPlayerState = EBAPlayerState::Attacking;
-	CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack());
-	CombatComponent->ExecuteAttack(AttackMontage);
+	CombatComponent->ExecuteAttack(InAnimMontage);
 	
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
 		FOnMontageEnded MontageEnded;
 		MontageEnded.BindUObject(this, &ABAPlayerCharacter::OnAttackMontageEnded);
-		AnimInstance->Montage_SetEndDelegate(MontageEnded, AttackMontage);
+		AnimInstance->Montage_SetEndDelegate(MontageEnded, InAnimMontage);
 	}
 }
 
@@ -220,9 +256,52 @@ void ABAPlayerCharacter::HeavyAttack()
 	// TODO
 }
 
-void ABAPlayerCharacter::NextComboCheck()
+void ABAPlayerCharacter::SetNextCombo(EActionCommand InActionCommand)
 {
+	static const UBATableManager* TableManager = UBATableManager::Get(this);
 	
+	if (InActionCommand == EActionCommand::LightAttack)
+	{
+		const FActionAnimationDataRow* NowActionAnimationData = 
+			TableManager->FindActionAnimationData(NowActionAnimationTid);
+		if (!NowActionAnimationData)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[ABAPlayerCharacter::SetNextCombo] Failed to find now action animation data for tid: %d"), NowActionAnimationTid);
+			return;
+		}
+		
+		NextActionAnimationTid = NowActionAnimationData->NextComboLAnimationTid;
+		
+		// 다음 콤보가 없는 경우
+		if (NextActionAnimationTid == 0)
+		{
+			return;
+		}
+		
+		const FActionAnimationDataRow* NextAttackActionAnimationData = 
+			TableManager->FindActionAnimationData(NextActionAnimationTid);
+		
+		if (!NextAttackActionAnimationData)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[ABAPlayerCharacter::SetNextCombo] Failed to find next combo animation data for tid: %d, now: %d"), NextActionAnimationTid, NowActionAnimationTid);
+			return;
+		}
+		
+		// TODO 비동기 로딩으로 변경
+		NextAttackMontage = NextAttackActionAnimationData->Montage.LoadSynchronous();
+	}
+}
+
+void ABAPlayerCharacter::OnNextComboCheck()
+{
+	if (NextAttackMontage)
+	{
+		StartAttack(NextAttackMontage);
+	}
+	else
+	{
+		return;
+	}
 }
 
 // UserDataSubsystem의 기본 스탯과 공용 Action 데이터를 플레이어 런타임 설정에 반영한다.
