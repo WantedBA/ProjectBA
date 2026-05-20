@@ -189,7 +189,7 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 void ABAPlayerCharacter::Attack()
 {
 	UE_LOG(LogTemp, Log, TEXT("Player Attack"));
-	PlayerState = EBAPlayerState::Attacking;
+	BAPlayerState = EBAPlayerState::Attacking;
 	CombatComponent->ExecuteAttack(AttackMontage);
 }
 

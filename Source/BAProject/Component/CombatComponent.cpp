@@ -130,14 +130,26 @@ void UCombatComponent::TriggerHitStop(float Duration)
 
 void UCombatComponent::ProcessHitCheck()
 {
-	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+	ACharacterBase* OwnerCharacter = Cast<ACharacterBase>(GetOwner());
 	if (OwnerCharacter == nullptr)
 	{
 		return;
 	}
 
-	FVector CurrentStart = OwnerCharacter->GetMesh()->GetSocketLocation(StartSocketName);
-	FVector CurrentEnd = OwnerCharacter->GetMesh()->GetSocketLocation(EndSocketName);
+	FVector CurrentStart;
+	FVector CurrentEnd;
+	
+	// WeaponMesh가 있으면 WeaponMesh, 없으면 GetMesh에서 소켓 탐색 (GetWeaponMesh Override 필요)
+	if (OwnerCharacter->GetWeaponMesh())
+	{
+		CurrentStart = OwnerCharacter->GetWeaponMesh()->GetSocketLocation(StartSocketName);
+		CurrentEnd = OwnerCharacter->GetWeaponMesh()->GetSocketLocation(EndSocketName);
+	}
+	else
+	{
+		CurrentStart = OwnerCharacter->GetMesh()->GetSocketLocation(StartSocketName);
+		CurrentEnd = OwnerCharacter->GetMesh()->GetSocketLocation(EndSocketName);
+	}
 	
 	// 무기의 중심점과 방향 계산
 	FVector CurrentMid = (CurrentStart + CurrentEnd) * 0.5f;

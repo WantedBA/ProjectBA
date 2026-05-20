@@ -59,7 +59,7 @@ public:
 	
 	void HeavyAttack();
 	
-	// 
+	virtual class UStaticMeshComponent* GetWeaponMesh() const override { return WeaponMeshComponent; }
 
 // --------------------
 	// UserDataSubsystem과 ActionData 테이블을 읽어 스탯, 이동 속도, 질주 비용을 초기화한다.
@@ -285,7 +285,7 @@ protected:
 	TObjectPtr<UAnimMontage> AttackMontage;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
-	EBAPlayerState PlayerState = EBAPlayerState::None;
+	EBAPlayerState BAPlayerState = EBAPlayerState::None;
 	
 protected:
 	UFUNCTION()
