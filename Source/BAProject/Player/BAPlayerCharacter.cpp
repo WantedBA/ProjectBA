@@ -183,6 +183,9 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 // 기본 공격 입력 진입점
 void ABAPlayerCharacter::Attack()
 {
+	UE_LOG(LogTemp, Log, TEXT("Player Attack"));
+	CombatActionState = EBAPlayerCombatActionState::Attacking;
+	CombatComponent->ExecuteAttack(AttackMontage);
 }
 
 // UserDataSubsystem의 기본 스탯과 공용 Action 데이터를 플레이어 런타임 설정에 반영한다.

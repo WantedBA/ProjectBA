@@ -24,6 +24,16 @@ class UStaticMeshComponent;
  * 스태미너 기반 질주, 사다리 상호작용, 카메라 및 공용 컴포넌트를 묶어 관리한다.
  * 애니메이션 블루프린트는 이 클래스의 BlueprintPure getter로 이동/전투 상태를 조회한다.
  */
+
+// 현재 상태(이동 잠금에 사용) - 추후 피격 로직과 통합 필요 TODO
+UENUM(BlueprintType)
+enum class EBAPlayerCombatActionState : uint8
+{
+	None,
+	Attacking,
+	Guarding
+};
+
 UCLASS()
 class BAPROJECT_API ABAPlayerCharacter : public ACharacterBase
 {
@@ -264,6 +274,13 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Weapon")
 	TObjectPtr<UStaticMeshComponent> WeaponMeshComponent;
+	
+// 공격 관련
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	TObjectPtr<UAnimMontage> AttackMontage;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	EBAPlayerCombatActionState CombatActionState = EBAPlayerCombatActionState::None;
 	
 protected:
 	UFUNCTION()
