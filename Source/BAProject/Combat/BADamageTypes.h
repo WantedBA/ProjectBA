@@ -10,14 +10,15 @@
 UENUM(BlueprintType)
 enum class EBADamageReactionType : uint8
 {
-	// 일반 피격 반응.
+	// 일반 피격 반응: 이동 x
 	HitReact,
 
-	// 강공격이나 큰 패턴의 피격 반응.
+	// 강공격이나 큰 패턴의 피격 반응: 두세걸음 이동 o
 	LargeHitReact,
 
-	// 가드를 깨는 공격 반응.
-	GuardBreak
+	// 장거리 넉백/비행 피격 반응.
+	// 재생 중 추가 피격을 막아, 날아가는 도중 연속으로 맞는 상황을 방지한다.
+	KnockDown
 };
 
 /**

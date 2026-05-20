@@ -154,7 +154,7 @@ void ABAPlayerCharacter::OnDamaged(const FBACharacterDamageContext& DamageContex
 
 	// 데미지 반영 후 생존 상태에서만 가드/브레이크/피격 반응을 결정한다.
 	const bool bGuarding = IsGuardingAgainstDamage(DamageContext);
-	const bool bGuardBreak = bGuarding && ShouldPlayGuardBreakReaction(DamageContext);
+	const bool bGuardBreak = bGuarding && ShouldPlayGuardBreakReaction();
 
 	CancelCurrentActionForDamageReaction();
 	ApplyDamageReactionKnockback(DamageContext, bGuarding, bGuardBreak);
@@ -169,6 +169,7 @@ void ABAPlayerCharacter::OnDeath()
 	DamageReactionState = EPlayerDamageReactionState::None;
 	ActiveDamageReactionMontage = nullptr;
 	ActiveDamageReactionPlaybackId = 0;
+	BAPlayerState = EBAPlayerState::Dead;
 
 	if (ActionComponent)
 	{
@@ -217,10 +218,9 @@ bool ABAPlayerCharacter::IsGuardingAgainstDamage(const FBACharacterDamageContext
 	return FVector::DotProduct(Forward, SourceDirection) >= MinDot;
 }
 
-bool ABAPlayerCharacter::ShouldPlayGuardBreakReaction(const FBACharacterDamageContext& DamageContext) const
+bool ABAPlayerCharacter::ShouldPlayGuardBreakReaction() const
 {
-	return DamageContext.DamageReactionType == EBADamageReactionType::GuardBreak
-		|| (ActionComponent && ActionComponent->GetGuardState() == EGuardState::GuardBroken);
+	return ActionComponent && ActionComponent->GetGuardState() == EGuardState::GuardBroken;
 }
 
 void ABAPlayerCharacter::CancelCurrentActionForDamageReaction()
@@ -260,8 +260,11 @@ void ABAPlayerCharacter::ApplyDamageReactionKnockback(
 	{
 		KnockbackStrength = GuardHitKnockbackStrength;
 	}
-	else if (DamageContext.DamageReactionType == EBADamageReactionType::LargeHitReact
-		|| DamageContext.DamageReactionType == EBADamageReactionType::GuardBreak)
+	else if (DamageContext.DamageReactionType == EBADamageReactionType::KnockDown)
+	{
+		KnockbackStrength = KnockDownKnockbackStrength;
+	}
+	else if (DamageContext.DamageReactionType == EBADamageReactionType::LargeHitReact)
 	{
 		KnockbackStrength = LargeHitReactKnockbackStrength;
 	}
@@ -298,6 +301,14 @@ void ABAPlayerCharacter::PlayDamageReactionAnimation(
 	const int32 PlaybackId = NextDamageReactionPlaybackId++;
 	ActiveDamageReactionPlaybackId = PlaybackId;
 	DamageReactionState = ResolveDamageReactionState(DamageContext, bGuarding, bGuardBreak);
+	BAPlayerState = DamageReactionState == EPlayerDamageReactionState::KnockDown
+		? EBAPlayerState::KnockedDown
+		: EBAPlayerState::HitReacting;
+
+	if (DamageReactionState == EPlayerDamageReactionState::KnockDown)
+	{
+		SetInvincible(true);
+	}
 
 	// 연속 피격 시 이전 종료 타이머가 새 반응 상태를 해제하지 못하게 식별자를 갱신한다.
 	GetWorldTimerManager().ClearTimer(DamageReactionTimerHandle);
@@ -344,8 +355,12 @@ EPlayerDamageReactionState ABAPlayerCharacter::ResolveDamageReactionState(
 		return EPlayerDamageReactionState::GuardHit;
 	}
 
-	if (DamageContext.DamageReactionType == EBADamageReactionType::LargeHitReact
-		|| DamageContext.DamageReactionType == EBADamageReactionType::GuardBreak)
+	if (DamageContext.DamageReactionType == EBADamageReactionType::KnockDown)
+	{
+		return EPlayerDamageReactionState::KnockDown;
+	}
+
+	if (DamageContext.DamageReactionType == EBADamageReactionType::LargeHitReact)
 	{
 		return EPlayerDamageReactionState::LargeHitReact;
 	}
@@ -369,8 +384,16 @@ UAnimMontage* ABAPlayerCharacter::SelectDamageReactionMontage(
 		return FindMontageForDirection(GuardHitReactMontages, HitDirection);
 	}
 
-	if (DamageReactionType == EBADamageReactionType::LargeHitReact
-		|| DamageReactionType == EBADamageReactionType::GuardBreak)
+	if (DamageReactionType == EBADamageReactionType::KnockDown)
+	{
+		if (UAnimMontage* KnockDownMontage = FindMontageForDirection(KnockDownReactMontages, HitDirection))
+		{
+			return KnockDownMontage;
+		}
+		return FindMontageForDirection(LargeHitReactMontages, HitDirection);
+	}
+
+	if (DamageReactionType == EBADamageReactionType::LargeHitReact)
 	{
 		return FindMontageForDirection(LargeHitReactMontages, HitDirection);
 	}
@@ -387,5 +410,13 @@ void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)
 
 	ActiveDamageReactionPlaybackId = 0;
 	ActiveDamageReactionMontage = nullptr;
+	if (DamageReactionState == EPlayerDamageReactionState::KnockDown)
+	{
+		SetInvincible(false);
+	}
 	DamageReactionState = EPlayerDamageReactionState::None;
+	if (BAPlayerState == EBAPlayerState::HitReacting || BAPlayerState == EBAPlayerState::KnockedDown)
+	{
+		BAPlayerState = EBAPlayerState::None;
+	}
 }

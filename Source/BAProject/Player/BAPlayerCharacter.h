@@ -280,7 +280,7 @@ private:
 
 	// 피격 반응
 	bool IsGuardingAgainstDamage(const FBACharacterDamageContext& DamageContext) const;
-	bool ShouldPlayGuardBreakReaction(const FBACharacterDamageContext& DamageContext) const;
+	bool ShouldPlayGuardBreakReaction() const;
 	void CancelCurrentActionForDamageReaction();
 	void PlayDamageReactionAnimation(const FBACharacterDamageContext& DamageContext, bool bGuarding, bool bGuardBreak);
 	EPlayerDamageReactionState ResolveDamageReactionState(
@@ -329,6 +329,9 @@ private:
 	float LargeHitReactKnockbackStrength = 500.f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
+	float KnockDownKnockbackStrength = 650.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
 	float GuardHitKnockbackStrength = 120.f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
@@ -342,6 +345,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")
 	TMap<EActionDirection, TObjectPtr<UAnimMontage>> LargeHitReactMontages;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")
+	TMap<EActionDirection, TObjectPtr<UAnimMontage>> KnockDownReactMontages;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")
 	TMap<EActionDirection, TObjectPtr<UAnimMontage>> GuardHitReactMontages;

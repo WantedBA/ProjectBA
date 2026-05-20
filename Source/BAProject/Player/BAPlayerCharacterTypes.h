@@ -50,6 +50,7 @@ enum class EPlayerDamageReactionState : uint8
 	None,
 	HitReact,
 	LargeHitReact,
+	KnockDown,
 	GuardHit,
 	GuardBreak
 };
