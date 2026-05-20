@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DamageEvents.h"
-#include "Tables/ActionEnums.h"
 #include "BADamageTypes.generated.h"
 
 UENUM(BlueprintType)
@@ -52,34 +51,4 @@ struct BAPROJECT_API FBADamageEvent : public FDamageEvent
 	{
 		return InID == FBADamageEvent::ClassID || FDamageEvent::IsOfType(InID);
 	}
-};
-
-/**
- * CharacterBase 이후의 프로젝트 내부 표준 피해 컨텍스트.
- */
-USTRUCT(BlueprintType)
-struct BAPROJECT_API FBACharacterDamageContext
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadOnly, Category = "Damage")
-	float FinalDamage = 0.f;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Damage")
-	EBADamageReactionType DamageReactionType = EBADamageReactionType::HitReact;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Damage")
-	FVector DamageDirection = FVector::ZeroVector;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Damage")
-	EActionDirection HitDirection = EActionDirection::Any;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Damage")
-	FHitResult HitResult;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Damage")
-	TObjectPtr<AActor> DamageCauser = nullptr;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Damage")
-	TObjectPtr<AController> EventInstigator = nullptr;
 };

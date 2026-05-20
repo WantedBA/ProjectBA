@@ -58,6 +58,9 @@ public:
 	void HeavyAttack();
 	void EndAttack();
 	virtual class UStaticMeshComponent* GetWeaponMesh() const override { return WeaponMeshComponent; }
+
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void SetBAPlayerState(EBAPlayerState NewState);
 	
 	// 초기화
 	UFUNCTION(BlueprintCallable, Category = Initialization)
@@ -173,7 +176,11 @@ public:
 protected:
 	// CharacterBase 훅
 	virtual void PostInitializeComponents() override;
-	virtual void OnDamaged(const FBACharacterDamageContext& DamageContext) override;
+	virtual void OnDamaged(
+		float FinalDamage,
+		FDamageEvent const& DamageEvent,
+		AController* EventInstigator,
+		AActor* DamageCauser) override;
 
 	UFUNCTION()
 	virtual void OnDeath() override;
@@ -279,12 +286,16 @@ private:
 	void ResetMovementRuntimeForLadder();
 
 	// 피격 반응
-	bool IsGuardingAgainstDamage(const FBACharacterDamageContext& DamageContext) const;
+	bool IsGuardingAgainstDamage(const FVector& DamageDirection) const;
 	bool ShouldPlayGuardBreakReaction() const;
 	void CancelCurrentActionForDamageReaction();
-	void PlayDamageReactionAnimation(const FBACharacterDamageContext& DamageContext, bool bGuarding, bool bGuardBreak);
+	void PlayDamageReactionAnimation(
+		EBADamageReactionType DamageReactionType,
+		EActionDirection HitDirection,
+		bool bGuarding,
+		bool bGuardBreak);
 	EPlayerDamageReactionState ResolveDamageReactionState(
-		const FBACharacterDamageContext& DamageContext,
+		EBADamageReactionType DamageReactionType,
 		bool bGuarding,
 		bool bGuardBreak) const;
 	UAnimMontage* SelectDamageReactionMontage(
@@ -292,7 +303,12 @@ private:
 		EActionDirection HitDirection,
 		bool bGuarding,
 		bool bGuardBreak) const;
-	void ApplyDamageReactionKnockback(const FBACharacterDamageContext& DamageContext, bool bGuarding, bool bGuardBreak);
+	void ApplyDamageReactionKnockback(
+		EBADamageReactionType DamageReactionType,
+		const FVector& DamageDirection,
+		EActionDirection HitDirection,
+		bool bGuarding,
+		bool bGuardBreak);
 	void FinishDamageReaction(int32 PlaybackId);
 
 	// 이동 설정

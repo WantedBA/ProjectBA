@@ -124,20 +124,24 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 	}
 }
 
-void AEnemyBase::OnDamaged(const FBACharacterDamageContext& DamageContext)
+void AEnemyBase::OnDamaged(
+	const float FinalDamage,
+	FDamageEvent const& DamageEvent,
+	AController* EventInstigator,
+	AActor* DamageCauser)
 {
-	Super::OnDamaged(DamageContext);
+	Super::OnDamaged(FinalDamage, DamageEvent, EventInstigator, DamageCauser);
 
 	if (StatComponent)
 	{
-		StatComponent->ApplyDamage(DamageContext.FinalDamage);
+		StatComponent->ApplyDamage(FinalDamage);
 		if (IsDead() == false)
 		{
 			// 슈퍼 아머가 아닐 때만 피격 상태로 전환
 			if (bIsSuperArmor == false)
 			{
 				SetState(EEnemyState::Hit);
-				ApplyKnockback(DamageContext.DamageCauser.Get(), 600.f);
+				ApplyKnockback(DamageCauser, 600.f);
 			}
 
 			AAIController* AICon = Cast<AAIController>(GetController());
@@ -149,7 +153,9 @@ void AEnemyBase::OnDamaged(const FBACharacterDamageContext& DamageContext)
 		}
 	}
 
-	K2_OnHitVisuals(GetActorLocation());
+	const FHitResult HitResult = ResolveDamageHitResult(DamageEvent);
+	const FVector HitVisualLocation = HitResult.bBlockingHit ? FVector(HitResult.ImpactPoint) : GetActorLocation();
+	K2_OnHitVisuals(HitVisualLocation);
 }
 
 void AEnemyBase::Tick(float DeltaTime)

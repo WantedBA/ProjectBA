@@ -139,26 +139,34 @@ void ABAPlayerCharacter::PostInitializeComponents()
 	}
 }
 
-void ABAPlayerCharacter::OnDamaged(const FBACharacterDamageContext& DamageContext)
+void ABAPlayerCharacter::OnDamaged(
+	const float FinalDamage,
+	FDamageEvent const& DamageEvent,
+	AController* EventInstigator,
+	AActor* DamageCauser)
 {
-	Super::OnDamaged(DamageContext);
+	Super::OnDamaged(FinalDamage, DamageEvent, EventInstigator, DamageCauser);
 
 	if (StatComponent)
 	{
-		StatComponent->ApplyDamage(DamageContext.FinalDamage);
+		StatComponent->ApplyDamage(FinalDamage);
 		if (StatComponent->IsDead())
 		{
 			return;
 		}
 	}
 
+	const EBADamageReactionType DamageReactionType = ResolveDamageReactionType(DamageEvent);
+	const FVector DamageDirection = ResolveDamageDirection(*this, DamageEvent, DamageCauser);
+	const EActionDirection HitDirection = ResolveHitDirection(*this, DamageDirection);
+
 	// 데미지 반영 후 생존 상태에서만 가드/브레이크/피격 반응을 결정한다.
-	const bool bGuarding = IsGuardingAgainstDamage(DamageContext);
+	const bool bGuarding = IsGuardingAgainstDamage(DamageDirection);
 	const bool bGuardBreak = bGuarding && ShouldPlayGuardBreakReaction();
 
 	CancelCurrentActionForDamageReaction();
-	ApplyDamageReactionKnockback(DamageContext, bGuarding, bGuardBreak);
-	PlayDamageReactionAnimation(DamageContext, bGuarding, bGuardBreak);
+	ApplyDamageReactionKnockback(DamageReactionType, DamageDirection, HitDirection, bGuarding, bGuardBreak);
+	PlayDamageReactionAnimation(DamageReactionType, HitDirection, bGuarding, bGuardBreak);
 }
 
 void ABAPlayerCharacter::OnDeath()
@@ -169,7 +177,7 @@ void ABAPlayerCharacter::OnDeath()
 	DamageReactionState = EPlayerDamageReactionState::None;
 	ActiveDamageReactionMontage = nullptr;
 	ActiveDamageReactionPlaybackId = 0;
-	BAPlayerState = EBAPlayerState::Dead;
+	SetBAPlayerState(EBAPlayerState::Dead);
 
 	if (ActionComponent)
 	{
@@ -192,14 +200,14 @@ bool ABAPlayerCharacter::CanAcceptActionInput() const
 	return IsAlive() && !IsDamageReacting() && !IsOnLadder();
 }
 
-bool ABAPlayerCharacter::IsGuardingAgainstDamage(const FBACharacterDamageContext& DamageContext) const
+bool ABAPlayerCharacter::IsGuardingAgainstDamage(const FVector& DamageDirection) const
 {
 	if (!ActionComponent || ActionComponent->GetGuardState() == EGuardState::None)
 	{
 		return false;
 	}
 
-	FVector SourceDirection = -DamageContext.DamageDirection;
+	FVector SourceDirection = -DamageDirection;
 	SourceDirection.Z = 0.f;
 	if (!SourceDirection.Normalize())
 	{
@@ -242,7 +250,9 @@ void ABAPlayerCharacter::CancelCurrentActionForDamageReaction()
 }
 
 void ABAPlayerCharacter::ApplyDamageReactionKnockback(
-	const FBACharacterDamageContext& DamageContext,
+	const EBADamageReactionType DamageReactionType,
+	const FVector& DamageDirection,
+	const EActionDirection HitDirection,
 	const bool bGuarding,
 	const bool bGuardBreak)
 {
@@ -260,11 +270,11 @@ void ABAPlayerCharacter::ApplyDamageReactionKnockback(
 	{
 		KnockbackStrength = GuardHitKnockbackStrength;
 	}
-	else if (DamageContext.DamageReactionType == EBADamageReactionType::KnockDown)
+	else if (DamageReactionType == EBADamageReactionType::KnockDown)
 	{
 		KnockbackStrength = KnockDownKnockbackStrength;
 	}
-	else if (DamageContext.DamageReactionType == EBADamageReactionType::LargeHitReact)
+	else if (DamageReactionType == EBADamageReactionType::LargeHitReact)
 	{
 		KnockbackStrength = LargeHitReactKnockbackStrength;
 	}
@@ -274,11 +284,11 @@ void ABAPlayerCharacter::ApplyDamageReactionKnockback(
 		return;
 	}
 
-	FVector KnockbackDirection = DamageContext.DamageDirection;
+	FVector KnockbackDirection = DamageDirection;
 	KnockbackDirection.Z = 0.f;
 	if (!KnockbackDirection.Normalize())
 	{
-		KnockbackDirection = GetKnockbackDirectionFromHitDirection(*this, DamageContext.HitDirection);
+		KnockbackDirection = GetKnockbackDirectionFromHitDirection(*this, HitDirection);
 		KnockbackDirection.Z = 0.f;
 		KnockbackDirection.Normalize();
 	}
@@ -294,16 +304,17 @@ void ABAPlayerCharacter::ApplyDamageReactionKnockback(
 }
 
 void ABAPlayerCharacter::PlayDamageReactionAnimation(
-	const FBACharacterDamageContext& DamageContext,
+	const EBADamageReactionType DamageReactionType,
+	const EActionDirection HitDirection,
 	const bool bGuarding,
 	const bool bGuardBreak)
 {
 	const int32 PlaybackId = NextDamageReactionPlaybackId++;
 	ActiveDamageReactionPlaybackId = PlaybackId;
-	DamageReactionState = ResolveDamageReactionState(DamageContext, bGuarding, bGuardBreak);
-	BAPlayerState = DamageReactionState == EPlayerDamageReactionState::KnockDown
+	DamageReactionState = ResolveDamageReactionState(DamageReactionType, bGuarding, bGuardBreak);
+	SetBAPlayerState(DamageReactionState == EPlayerDamageReactionState::KnockDown
 		? EBAPlayerState::KnockedDown
-		: EBAPlayerState::HitReacting;
+		: EBAPlayerState::HitReacting);
 
 	if (DamageReactionState == EPlayerDamageReactionState::KnockDown)
 	{
@@ -314,12 +325,12 @@ void ABAPlayerCharacter::PlayDamageReactionAnimation(
 	GetWorldTimerManager().ClearTimer(DamageReactionTimerHandle);
 
 	ActiveDamageReactionMontage = SelectDamageReactionMontage(
-		DamageContext.DamageReactionType,
-		DamageContext.HitDirection,
+		DamageReactionType,
+		HitDirection,
 		bGuarding,
 		bGuardBreak);
 
-	K2_OnDamageReaction(DamageContext.DamageReactionType, DamageContext.HitDirection, bGuarding, bGuardBreak);
+	K2_OnDamageReaction(DamageReactionType, HitDirection, bGuarding, bGuardBreak);
 
 	float ReactionDuration = DamageReactionFallbackDuration;
 	if (ActiveDamageReactionMontage)
@@ -341,7 +352,7 @@ void ABAPlayerCharacter::PlayDamageReactionAnimation(
 }
 
 EPlayerDamageReactionState ABAPlayerCharacter::ResolveDamageReactionState(
-	const FBACharacterDamageContext& DamageContext,
+	const EBADamageReactionType DamageReactionType,
 	const bool bGuarding,
 	const bool bGuardBreak) const
 {
@@ -355,12 +366,12 @@ EPlayerDamageReactionState ABAPlayerCharacter::ResolveDamageReactionState(
 		return EPlayerDamageReactionState::GuardHit;
 	}
 
-	if (DamageContext.DamageReactionType == EBADamageReactionType::KnockDown)
+	if (DamageReactionType == EBADamageReactionType::KnockDown)
 	{
 		return EPlayerDamageReactionState::KnockDown;
 	}
 
-	if (DamageContext.DamageReactionType == EBADamageReactionType::LargeHitReact)
+	if (DamageReactionType == EBADamageReactionType::LargeHitReact)
 	{
 		return EPlayerDamageReactionState::LargeHitReact;
 	}
@@ -417,6 +428,6 @@ void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)
 	DamageReactionState = EPlayerDamageReactionState::None;
 	if (BAPlayerState == EBAPlayerState::HitReacting || BAPlayerState == EBAPlayerState::KnockedDown)
 	{
-		BAPlayerState = EBAPlayerState::None;
+		SetBAPlayerState(EBAPlayerState::None);
 	}
 }

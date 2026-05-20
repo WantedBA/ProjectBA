@@ -189,7 +189,7 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 void ABAPlayerCharacter::Attack()
 {
 	UE_LOG(LogTemp, Log, TEXT("Player Attack"));
-	BAPlayerState = EBAPlayerState::Attacking;
+	SetBAPlayerState(EBAPlayerState::Attacking);
 	CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack());
 	CombatComponent->ExecuteAttack(AttackMontage);
 }
@@ -203,8 +203,13 @@ void ABAPlayerCharacter::EndAttack()
 {
 	if (BAPlayerState == EBAPlayerState::Attacking)
 	{
-		BAPlayerState = EBAPlayerState::None;
+		SetBAPlayerState(EBAPlayerState::None);
 	}
+}
+
+void ABAPlayerCharacter::SetBAPlayerState(const EBAPlayerState NewState)
+{
+	BAPlayerState = NewState;
 }
 
 // UserDataSubsystem의 기본 스탯과 공용 Action 데이터를 플레이어 런타임 설정에 반영한다.

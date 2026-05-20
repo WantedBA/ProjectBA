@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Combat/BADamageTypes.h"
 #include "GameFramework/Character.h"
+#include "Tables/ActionEnums.h"
 #include "CharacterBase.generated.h"
 
 UENUM(BlueprintType)
@@ -39,12 +40,19 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	ECharacterState CharacterState;
 
-	virtual FBACharacterDamageContext BuildDamageContext(
+	static EBADamageReactionType ResolveDamageReactionType(FDamageEvent const& DamageEvent);
+	static FVector ResolveDamageDirection(
+		const AActor& DamagedActor,
+		FDamageEvent const& DamageEvent,
+		const AActor* DamageCauser);
+	static FHitResult ResolveDamageHitResult(FDamageEvent const& DamageEvent);
+	static EActionDirection ResolveHitDirection(const AActor& DamagedActor, const FVector& DamageDirection);
+
+	virtual void OnDamaged(
 		float FinalDamage,
 		FDamageEvent const& DamageEvent,
 		AController* EventInstigator,
-		AActor* DamageCauser) const;
-	virtual void OnDamaged(const FBACharacterDamageContext& DamageContext);
+		AActor* DamageCauser);
 	
 	virtual void OnDeath();
 };

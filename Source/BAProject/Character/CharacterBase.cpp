@@ -2,63 +2,6 @@
 
 #include "GameFramework/CharacterMovementComponent.h"
 
-namespace
-{
-	EActionDirection ResolveHitDirection(const AActor& DamagedActor, const FVector& DamageDirection)
-	{
-		FVector SourceDirection = -DamageDirection;
-		SourceDirection.Z = 0.f;
-		if (!SourceDirection.Normalize())
-		{
-			return EActionDirection::Any;
-		}
-
-		FVector Forward = DamagedActor.GetActorForwardVector();
-		Forward.Z = 0.f;
-		Forward.Normalize();
-
-		FVector Right = DamagedActor.GetActorRightVector();
-		Right.Z = 0.f;
-		Right.Normalize();
-
-		const float ForwardDot = FVector::DotProduct(Forward, SourceDirection);
-		const float RightDot = FVector::DotProduct(Right, SourceDirection);
-		const float Angle = FMath::RadiansToDegrees(FMath::Atan2(RightDot, ForwardDot));
-
-		// 정면을 0도로 두고 45도 간격으로 8방향 피격 섹터를 나눈다.
-		if (Angle >= -22.5f && Angle < 22.5f)
-		{
-			return EActionDirection::Forward;
-		}
-		if (Angle >= 22.5f && Angle < 67.5f)
-		{
-			return EActionDirection::ForwardRight;
-		}
-		if (Angle >= 67.5f && Angle < 112.5f)
-		{
-			return EActionDirection::Right;
-		}
-		if (Angle >= 112.5f && Angle < 157.5f)
-		{
-			return EActionDirection::BackwardRight;
-		}
-		if (Angle >= 157.5f || Angle < -157.5f)
-		{
-			return EActionDirection::Backward;
-		}
-		if (Angle >= -157.5f && Angle < -112.5f)
-		{
-			return EActionDirection::BackwardLeft;
-		}
-		if (Angle >= -112.5f && Angle < -67.5f)
-		{
-			return EActionDirection::Left;
-		}
-
-		return EActionDirection::ForwardLeft;
-	}
-}
-
 ACharacterBase::ACharacterBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -82,7 +25,7 @@ float ACharacterBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageE
 		return 0.0f;
 	}
 
-	OnDamaged(BuildDamageContext(FinalDamage, DamageEvent, EventInstigator, DamageCauser));
+	OnDamaged(FinalDamage, DamageEvent, EventInstigator, DamageCauser);
 	return FinalDamage;
 }
 
@@ -96,44 +39,119 @@ void ACharacterBase::SetInvincible(const bool bNewInvincible)
 	CharacterState = bNewInvincible ? ECharacterState::Invincible : ECharacterState::Alive;
 }
 
-FBACharacterDamageContext ACharacterBase::BuildDamageContext(
-	const float FinalDamage,
-	FDamageEvent const& DamageEvent,
-	AController* EventInstigator,
-	AActor* DamageCauser) const
+EBADamageReactionType ACharacterBase::ResolveDamageReactionType(FDamageEvent const& DamageEvent)
 {
-	FBACharacterDamageContext DamageContext;
-	DamageContext.FinalDamage = FinalDamage;
-	DamageContext.DamageCauser = DamageCauser;
-	DamageContext.EventInstigator = EventInstigator;
-
-	// 프로젝트 전용 이벤트는 피격 강도와 히트 위치까지 포함한다.
 	if (DamageEvent.IsOfType(FBADamageEvent::ClassID))
 	{
 		const FBADamageEvent& BADamageEvent = static_cast<const FBADamageEvent&>(DamageEvent);
-		DamageContext.DamageReactionType = BADamageEvent.DamageReactionType;
-		DamageContext.DamageDirection = BADamageEvent.DamageDirection.GetSafeNormal();
-		DamageContext.HitResult = BADamageEvent.HitResult;
+		return BADamageEvent.DamageReactionType;
+	}
+
+	return EBADamageReactionType::HitReact;
+}
+
+FVector ACharacterBase::ResolveDamageDirection(
+	const AActor& DamagedActor,
+	FDamageEvent const& DamageEvent,
+	const AActor* DamageCauser)
+{
+	FVector DamageDirection = FVector::ZeroVector;
+
+	if (DamageEvent.IsOfType(FBADamageEvent::ClassID))
+	{
+		const FBADamageEvent& BADamageEvent = static_cast<const FBADamageEvent&>(DamageEvent);
+		DamageDirection = BADamageEvent.DamageDirection.GetSafeNormal();
 	}
 	else if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
 	{
-		// 외부 시스템에서 들어온 PointDamage도 방향 기반 피격 반응에 연결한다.
 		const FPointDamageEvent& PointDamageEvent = static_cast<const FPointDamageEvent&>(DamageEvent);
-		DamageContext.DamageDirection = PointDamageEvent.ShotDirection.GetSafeNormal();
-		DamageContext.HitResult = PointDamageEvent.HitInfo;
+		DamageDirection = PointDamageEvent.ShotDirection.GetSafeNormal();
 	}
 
-	if (DamageContext.DamageDirection.IsNearlyZero() && DamageCauser)
+	if (DamageDirection.IsNearlyZero() && DamageCauser)
 	{
-		// 최소한의 방향 정보가 필요하므로 DamageCauser 위치를 fallback으로 사용한다.
-		DamageContext.DamageDirection = (GetActorLocation() - DamageCauser->GetActorLocation()).GetSafeNormal();
+		DamageDirection = (DamagedActor.GetActorLocation() - DamageCauser->GetActorLocation()).GetSafeNormal();
 	}
 
-	DamageContext.HitDirection = ResolveHitDirection(*this, DamageContext.DamageDirection);
-	return DamageContext;
+	return DamageDirection;
 }
 
-void ACharacterBase::OnDamaged(const FBACharacterDamageContext& DamageContext)
+FHitResult ACharacterBase::ResolveDamageHitResult(FDamageEvent const& DamageEvent)
+{
+	if (DamageEvent.IsOfType(FBADamageEvent::ClassID))
+	{
+		const FBADamageEvent& BADamageEvent = static_cast<const FBADamageEvent&>(DamageEvent);
+		return BADamageEvent.HitResult;
+	}
+
+	if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
+	{
+		const FPointDamageEvent& PointDamageEvent = static_cast<const FPointDamageEvent&>(DamageEvent);
+		return PointDamageEvent.HitInfo;
+	}
+
+	return FHitResult();
+}
+
+EActionDirection ACharacterBase::ResolveHitDirection(const AActor& DamagedActor, const FVector& DamageDirection)
+{
+	FVector SourceDirection = -DamageDirection;
+	SourceDirection.Z = 0.f;
+	if (!SourceDirection.Normalize())
+	{
+		return EActionDirection::Any;
+	}
+
+	FVector Forward = DamagedActor.GetActorForwardVector();
+	Forward.Z = 0.f;
+	Forward.Normalize();
+
+	FVector Right = DamagedActor.GetActorRightVector();
+	Right.Z = 0.f;
+	Right.Normalize();
+
+	const float ForwardDot = FVector::DotProduct(Forward, SourceDirection);
+	const float RightDot = FVector::DotProduct(Right, SourceDirection);
+	const float Angle = FMath::RadiansToDegrees(FMath::Atan2(RightDot, ForwardDot));
+
+	// 정면을 0도로 두고 45도 간격으로 8방향 피격 섹터를 나눈다.
+	if (Angle >= -22.5f && Angle < 22.5f)
+	{
+		return EActionDirection::Forward;
+	}
+	if (Angle >= 22.5f && Angle < 67.5f)
+	{
+		return EActionDirection::ForwardRight;
+	}
+	if (Angle >= 67.5f && Angle < 112.5f)
+	{
+		return EActionDirection::Right;
+	}
+	if (Angle >= 112.5f && Angle < 157.5f)
+	{
+		return EActionDirection::BackwardRight;
+	}
+	if (Angle >= 157.5f || Angle < -157.5f)
+	{
+		return EActionDirection::Backward;
+	}
+	if (Angle >= -157.5f && Angle < -112.5f)
+	{
+		return EActionDirection::BackwardLeft;
+	}
+	if (Angle >= -112.5f && Angle < -67.5f)
+	{
+		return EActionDirection::Left;
+	}
+
+	return EActionDirection::ForwardLeft;
+}
+
+void ACharacterBase::OnDamaged(
+	const float FinalDamage,
+	FDamageEvent const& DamageEvent,
+	AController* EventInstigator,
+	AActor* DamageCauser)
 {
 	// TODO: 실제 HP/스태미너 반영 및 사망 판정은 StatComponent에서 처리
 	
