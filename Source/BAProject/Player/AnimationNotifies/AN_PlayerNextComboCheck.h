@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotify.h"
-#include "AN_PlayerAttackEnd.generated.h"
+#include "AN_PlayerNextComboCheck.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class BAPROJECT_API UAN_PlayerAttackEnd : public UAnimNotify
+class BAPROJECT_API UAN_PlayerNextComboCheck : public UAnimNotify
 {
 	GENERATED_BODY()
 	

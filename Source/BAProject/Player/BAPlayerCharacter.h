@@ -53,15 +53,17 @@ public:
 	// 일반 이동 또는 사다리 이동 런타임을 매 프레임 갱신한다.
 	virtual void Tick(float DeltaTime) override;
 
-// 전투 관련
-	// CharacterBase 공격 진입점. LightAttack
-	virtual void Attack() override;
-	
+// 공격 관련
+	// CharacterBase 공격 진입점. 
+	virtual void Attack(EActionCommand InActionCommand);
+
+	void OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg);
+	void LightAttack();
 	void HeavyAttack();
 	
 	virtual class UStaticMeshComponent* GetWeaponMesh() const override { return WeaponMeshComponent; }
 
-	void EndAttack();
+	void NextComboCheck();
 	
 // --------------------
 	// UserDataSubsystem과 ActionData 테이블을 읽어 스탯, 이동 속도, 질주 비용을 초기화한다.
@@ -291,6 +293,12 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	EBAPlayerState BAPlayerState = EBAPlayerState::None;
+
+	// 콤보 액션 판정을 위한 변수
+	int32 PrevActionAnimationTid = 0;
+	EActionCommand NextActionCommand = EActionCommand::None;
+	
+// --------------------
 	
 protected:
 	UFUNCTION()
