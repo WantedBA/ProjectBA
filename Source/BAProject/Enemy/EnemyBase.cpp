@@ -56,6 +56,7 @@ void AEnemyBase::PossessedBy(AController* NewController)
 		UE_LOG(LogTemp, Log, TEXT("[%s] PossessedBy %s. MonsterTid: %d"), *GetName(), *NewController->GetName(), MonsterTid);
 		if (MonsterTid != 0)
 		{
+			bInitAI = true;
 			AIController->InitializeAI(MonsterTid, this);
 		}
 	}
@@ -111,6 +112,16 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 			GetMesh()->SetSkeletalMesh(LoadedMesh);
 		}
 	}
+
+	if (bInitAI == false)
+	{
+		AEnemyAIController* AIController = Cast<AEnemyAIController>(GetController());
+		if (AIController)
+		{
+			UE_LOG(LogTemp, Log, TEXT("[%s] Reinitialize AI after table init"), *GetName());
+			AIController->InitializeAI(MonsterTid, this);
+		}
+	}
 }
 
 void AEnemyBase::OnDamaged(float FinalDamage, AActor* DamageCauser)
@@ -150,6 +161,32 @@ void AEnemyBase::Tick(float DeltaTime)
 		DrawDebugSphere(GetWorld(), GetActorLocation(), DetectRange, 32, FColor::Green, false, -0.1f, 0, 2.0f);
 		DrawDebugSphere(GetWorld(), GetActorLocation(), AttackRange, 32, FColor::Red, false, -0.1f, 0, 2.0f);
 		DrawDebugSphere(GetWorld(), GetActorLocation(), MaxChaseDistance, 32, FColor::Blue, false, -0.1f, 0, 1.0f);
+
+		// Distance를 글자로 표기하자
+		//AAIController* AIController = Cast<AAIController>(GetController());
+		//if (AIController == nullptr)
+		//{
+		//	return;
+		//}
+
+		//UBlackboardComponent* BBComponent = AIController->GetBlackboardComponent();
+		//if (BBComponent == nullptr)
+		//{
+		//	return;
+		//}
+
+		//float CurrentDistance = BBComponent->GetValueAsFloat(BBKey::TargetDistance);
+		//AActor* Target = BBComponent ? Cast<AActor>(BBComponent->GetValueAsObject(BBKey::TargetActor)) : nullptr;
+		//if (Target == nullptr)
+		//{
+		//	return;
+		//}
+
+		//float Dist = FVector::Dist(GetActorLocation(), Target->GetActorLocation());
+		//FString DebugInfo = FString::Printf(TEXT("\nTargetDist: %.1f \nIdealRange: %.1f"), Dist, AttackRange);
+		//float speed = GetCharacterMovement()->MaxWalkSpeed;
+		//DebugInfo += FString::Printf(TEXT("\nMaxSpeed: %.1f"), speed);
+		//DrawDebugString(GetWorld(), FVector(0, 0, 150), DebugInfo, this, FColor::Red, DeltaTime);
 	}
 }
 
@@ -163,6 +200,10 @@ void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
 	float TargetSpeed = 0.0f;
 	switch (NewState)
 	{
+	case EEnemyState::Idle:
+		TargetSpeed = MaxMoveSpeed = 0.6f;
+		break;
+
 	case EEnemyState::Chase:
 		TargetSpeed = MaxMoveSpeed;
 		break;
@@ -279,6 +320,7 @@ void AEnemyBase::OnDeath()
 	SetActorEnableCollision(false);
 
 	OnDeathEvent.Broadcast();
+
 	AAIController* AIController = Cast<AAIController>(GetController());
 	if (AIController && AIController->BrainComponent)
 	{
@@ -286,6 +328,7 @@ void AEnemyBase::OnDeath()
 	}
 
 	PlayAnimMontage(DeadMontage);
+
 	K2_OnDeadVisuals();
 }
 

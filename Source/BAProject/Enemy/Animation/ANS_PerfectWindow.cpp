@@ -13,7 +13,7 @@ void UANS_PerfectWindow::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequ
 			UCombatComponent* Combat = Enemy->FindComponentByClass<UCombatComponent>();
 			if (Combat)
 			{
-				Combat->SetPerfectWindowActive(true);
+				Combat->SetPerfectWindowActive(true, SuccessTimeDilation, SuccessDuration);
 			}
 		}
 	}

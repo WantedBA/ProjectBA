@@ -73,6 +73,8 @@ void UPlayerSkillComponent::RefreshAllSkills()
 
 void UPlayerSkillComponent::ClearAllSkills()
 {
+	// TODO: 임시 코드
+	ActionComponent->ResetMovesetKeys();
 }
 
 void UPlayerSkillComponent::ApplySkill(int32 SkillId)

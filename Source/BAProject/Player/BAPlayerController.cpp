@@ -267,7 +267,7 @@ void ABAPlayerController::LightAttack()
 {
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
 	{
-		PC->Attack();
+		PC->Attack(EActionCommand::LightAttack);
 	}
 }
 
@@ -376,7 +376,9 @@ void ABAPlayerController::TryStartDodgeAction() const
 		return;
 	}
 
-	const EActionDirection DodgeDirection = GetActionDirectionFromMoveInput(*PC, PC->GetMoveInputVector());
+	const EActionDirection DodgeDirection =
+		PC->GetLocomotionMode() == EPlayerLocomotionMode::Strafe ?
+		GetActionDirectionFromMoveInput(*PC, PC->GetMoveInputVector()) : EActionDirection::Any;
 	ActionComponent->TryStartAction(EActionCommand::Dodge, DodgeDirection);
 }
 

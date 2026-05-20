@@ -8,9 +8,12 @@
 #endif
 #include "Component/ActionAnimationComponent.h"
 #include "Component/ActionComponent.h"
+#include "Component/CombatComponent.h"
 #include "Component/InteractorComponent.h"
 #include "Component/PlayerSkillComponent.h"
 #include "Component/StatComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Constants/BAProjectConstant.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Instance/UserDataSubsystem.h"
@@ -39,6 +42,17 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	}
 	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
 
+	// 무기 컴포넌트 생성 및 메시 부착
+	WeaponMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMeshComponent"));
+	WeaponMeshComponent->SetupAttachment(GetMesh(), FName(SocketName::RightHandTargetSocketName));
+	WeaponMeshComponent->SetCollisionProfileName(TEXT("NoCollision"));
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> GreatSwordMesh(TEXT("/Game/Assets/Great_Sword.Great_Sword"));
+	if (GreatSwordMesh.Succeeded())
+	{
+		WeaponMeshComponent->SetStaticMesh(GreatSwordMesh.Object);
+	}
+
 	// 스탯 컴포넌트 생성
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));
 	
@@ -50,6 +64,9 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 
 	// 공용 액션 애니메이션 재생 컴포넌트 생성
 	ActionAnimationComponent = CreateDefaultSubobject<UActionAnimationComponent>(TEXT("ActionAnimationComponent"));
+	
+	// 공격 컴포넌트 생성
+	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	
 	// 스킬 컴포넌트 생성 - 컴포넌트 중 마지막에
 	PlayerSkillComponent = CreateDefaultSubobject<UPlayerSkillComponent>(TEXT("PlayerSkillComponent"));
@@ -117,6 +134,11 @@ void ABAPlayerCharacter::BeginPlay()
 	{
 		ActionComponent->OnActionStarted.AddDynamic(this, &ABAPlayerCharacter::HandleActionStarted);
 	}
+	
+	if (CombatComponent)
+	{
+		CombatComponent->SetShowDebugTrace(true);
+	}
 }
 
 // 공통 Movement 상태를 매 프레임 갱신하고, 가능한 경우 이동 입력을 소비한다.
@@ -163,9 +185,44 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 #endif
 }
 
-// 기본 공격 입력 진입점
-void ABAPlayerCharacter::Attack()
+// 공격 입력 진입점
+void ABAPlayerCharacter::Attack(EActionCommand InActionCommand)
 {
+	UE_LOG(LogTemp, Log, TEXT("Player Attack: %hhd"), InActionCommand);
+	LightAttack();
+}
+
+void ABAPlayerCharacter::OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg)
+{
+	// 정상 종료되었을 경우
+	if (!bArg)
+	{
+		BAPlayerState = EBAPlayerState::None;
+	}
+}
+
+void ABAPlayerCharacter::LightAttack()
+{
+	BAPlayerState = EBAPlayerState::Attacking;
+	CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack());
+	CombatComponent->ExecuteAttack(AttackMontage);
+	
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		FOnMontageEnded MontageEnded;
+		MontageEnded.BindUObject(this, &ABAPlayerCharacter::OnAttackMontageEnded);
+		AnimInstance->Montage_SetEndDelegate(MontageEnded, AttackMontage);
+	}
+}
+
+void ABAPlayerCharacter::HeavyAttack()
+{
+	// TODO
+}
+
+void ABAPlayerCharacter::NextComboCheck()
+{
+	
 }
 
 // UserDataSubsystem의 기본 스탯과 공용 Action 데이터를 플레이어 런타임 설정에 반영한다.
