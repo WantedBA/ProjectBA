@@ -6,14 +6,15 @@
 #include "Tables/ActionEnums.h"
 #include "BAPlayerCharacter.generated.h"
 
-class AMapLadder;
-class UActionAnimationComponent;
-class UActionComponent;
+class UCombatComponent;
+class UPlayerSkillComponent;
 class UAnimMontage;
 class UCameraComponent;
 class UCharacterMovementComponent;
+class UActionComponent;
+class UActionAnimationComponent;
 class UInteractorComponent;
-class UPlayerSkillComponent;
+class AMapLadder;
 class USpringArmComponent;
 class UStatComponent;
 class UStaticMeshComponent;
@@ -25,6 +26,21 @@ class UStaticMeshComponent;
  * 스태미너 기반 질주, 사다리 상호작용, 카메라 및 공용 컴포넌트를 묶어 관리한다.
  * 애니메이션 블루프린트는 이 클래스의 BlueprintPure getter로 이동/전투 상태를 조회한다.
  */
+ 
+// 현재 재생 중인 애니메이션(컴포넌트로 들어가기 전에 if문으로 분기) - 추후 제거하고 컴포넌트와 통합 TODO
+UENUM(BlueprintType)
+enum class EBAPlayerState : uint8
+{
+	None,
+	Attacking,
+	Guarding,
+	Moving, 
+	DodgeRolling,
+	HitReacting,
+	KnockedDown,
+	Dead
+};
+
 UCLASS()
 class BAPROJECT_API ABAPlayerCharacter : public ACharacterBase
 {
@@ -36,8 +52,13 @@ public:
 	// 생명주기
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
-	virtual void Attack() override;
-
+	
+	// 전투 관련
+	virtual void Attack() override; // CharacterBase 공격 진입점. LightAttack
+	void HeavyAttack();
+	void EndAttack();
+	virtual class UStaticMeshComponent* GetWeaponMesh() const override { return WeaponMeshComponent; }
+	
 	// 초기화
 	UFUNCTION(BlueprintCallable, Category = Initialization)
 	virtual void InitializeFromTable();
@@ -63,6 +84,7 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	EPlayerLocomotionMode GetLocomotionMode() const;
 
+	// Start, Loop, Stop, Turn 등 현재 재생해야 하는 이동 페이즈를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	EPlayerMovementPhase GetMovementPhase() const;
 
@@ -156,6 +178,9 @@ protected:
 	UFUNCTION()
 	virtual void OnDeath() override;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	EBAPlayerState BAPlayerState = EBAPlayerState::None;
+	
 	// 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStatComponent> StatComponent;
@@ -169,6 +194,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UActionAnimationComponent> ActionAnimationComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UCombatComponent> CombatComponent;	
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UPlayerSkillComponent> PlayerSkillComponent;
 
@@ -198,7 +226,13 @@ protected:
 		EActionDirection HitDirection,
 		bool bGuarding,
 		bool bGuardBreak);
-
+	
+	// 공격 관련
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	TObjectPtr<UAnimMontage> AttackMontage;
+	
+	const float WeaponRadius = 20.f; // 충돌 판정 시 검 두께
+	
 private:
 	// 이동 런타임
 	void TickMovementRuntime(float DeltaTime);
@@ -323,7 +357,7 @@ private:
 	FTimerHandle DamageReactionTimerHandle;
 	int32 ActiveDamageReactionPlaybackId = 0;
 	int32 NextDamageReactionPlaybackId = 1;
-
+	
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimMontage> ActiveDamageReactionMontage;
 };

@@ -8,6 +8,7 @@
 #endif
 #include "Component/ActionAnimationComponent.h"
 #include "Component/ActionComponent.h"
+#include "Component/CombatComponent.h"
 #include "Component/InteractorComponent.h"
 #include "Component/PlayerSkillComponent.h"
 #include "Component/StatComponent.h"
@@ -63,6 +64,9 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 
 	// 공용 액션 애니메이션 재생 컴포넌트 생성
 	ActionAnimationComponent = CreateDefaultSubobject<UActionAnimationComponent>(TEXT("ActionAnimationComponent"));
+	
+	// 공격 컴포넌트 생성
+	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	
 	// 스킬 컴포넌트 생성 - 컴포넌트 중 마지막에
 	PlayerSkillComponent = CreateDefaultSubobject<UPlayerSkillComponent>(TEXT("PlayerSkillComponent"));
@@ -130,6 +134,11 @@ void ABAPlayerCharacter::BeginPlay()
 	{
 		ActionComponent->OnActionStarted.AddDynamic(this, &ABAPlayerCharacter::HandleActionStarted);
 	}
+	
+	if (CombatComponent)
+	{
+		CombatComponent->SetShowDebugTrace(true);
+	}
 }
 
 // 공통 Movement 상태를 매 프레임 갱신하고, 가능한 경우 이동 입력을 소비한다.
@@ -179,6 +188,23 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 // 기본 공격 입력 진입점
 void ABAPlayerCharacter::Attack()
 {
+	UE_LOG(LogTemp, Log, TEXT("Player Attack"));
+	BAPlayerState = EBAPlayerState::Attacking;
+	CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack());
+	CombatComponent->ExecuteAttack(AttackMontage);
+}
+
+void ABAPlayerCharacter::HeavyAttack()
+{
+	// TODO
+}
+
+void ABAPlayerCharacter::EndAttack()
+{
+	if (BAPlayerState == EBAPlayerState::Attacking)
+	{
+		BAPlayerState = EBAPlayerState::None;
+	}
 }
 
 // UserDataSubsystem의 기본 스탯과 공용 Action 데이터를 플레이어 런타임 설정에 반영한다.

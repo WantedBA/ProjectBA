@@ -31,6 +31,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void SetInvincible(bool bNewInvincible);
+	
+	// 무기 메쉬와 소켓 설정 시 해당 클래스에서 override 필요
+	virtual class UStaticMeshComponent* GetWeaponMesh() const {return nullptr;}
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
@@ -42,5 +45,6 @@ protected:
 		AController* EventInstigator,
 		AActor* DamageCauser) const;
 	virtual void OnDamaged(const FBACharacterDamageContext& DamageContext);
+	
 	virtual void OnDeath();
 };

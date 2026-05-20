@@ -11,13 +11,13 @@ void UANS_Collision::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequence
 		return;
 	}
 
-	AEnemyBase* Enemy = Cast<AEnemyBase>(MeshComp->GetOwner());
-	if (Enemy == nullptr)
+	ACharacterBase* CharacterBase = Cast<ACharacterBase>(MeshComp->GetOwner());
+	if (CharacterBase == nullptr)
 	{
 		return;
 	}
 
-	UCombatComponent* CombatComp = Enemy->GetComponentByClass<UCombatComponent>();
+	UCombatComponent* CombatComp = CharacterBase->GetComponentByClass<UCombatComponent>();
 	if (CombatComp)
 	{
 		if (bUseDefaultData)
@@ -41,13 +41,13 @@ void UANS_Collision::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBa
 		return;
 	}
 
-	AEnemyBase* Enemy = Cast<AEnemyBase>(MeshComp->GetOwner());
-	if (Enemy == nullptr)
+	ACharacterBase* CharacterBase = Cast<ACharacterBase>(MeshComp->GetOwner());
+	if (CharacterBase == nullptr)
 	{
 		return;
 	}
 
-	UCombatComponent* CombatComp = Enemy->GetComponentByClass<UCombatComponent>();
+	UCombatComponent* CombatComp = CharacterBase->GetComponentByClass<UCombatComponent>();
 	if (CombatComp)
 	{
 		CombatComp->CheckHitEnd();
