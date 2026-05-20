@@ -51,26 +51,22 @@ void AMapResetPoint::Interact_Implementation(AActor* Interactor)
 	{
 		bIsPlayerResting = true;
 
-		// 1. RecoverPlayer
+		// RecoverPlayer
 		if (UStatComponent* StatComp = Player->FindComponentByClass<UStatComponent>())
 		{
 			StatComp->RestoreAll();
 		}
-		Player->ResetStatusForMapResetPoint();
 
-		// 2. RefillConsumables
-		Player->RefillConsumables();
-
-		// 3. RespawnEnemies
+		// RespawnEnemies
 		if (UQuestManageSubsystem* QM = UQuestManageSubsystem::Get(this))
 		{
 			QM->RespawnQuestZoneEnemies();
 		}
 
-		// 4. OpenSkillTree
+		// OpenSkillTree
 		OnRequestOpenSkillTree.Broadcast();
 
-		// 5. SaveProgress
+		// SaveProgress
 		if (UGameInstance* GI = GetGameInstance())
 		{
 			if (USaveGameManager* SaveManager = GI->GetSubsystem<USaveGameManager>())
