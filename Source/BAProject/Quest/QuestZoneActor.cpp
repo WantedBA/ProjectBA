@@ -63,18 +63,18 @@ void AQuestZoneActor::RespawnEnemiesInZone()
         return;
     }
 
-    if (QM->IsQuestCompleted(QuestTid))    // 이미 영구적으로 완료된 퀘스트라면 리스폰안함
-    {
-        return;
-    }
+    // 기존 시체, 몬스터 제거
+    QM->ClearQuestMonsters(QuestTid);
 
-    if (QM->IsQuestActive(QuestTid))  // 현재 진행 중인 해당 퀘스트가 있다면 몬스터만 리필
+    // 현재 진행 중인 해당 퀘스트가 있다면 몬스터만 리필 (진행도 유지)
+    if (QM->IsQuestActive(QuestTid))
     {
         QM->RefreshQuestMonsters(QuestTid, CachedSpawnTransforms, MonsterClass);
     }
     else
     {
-        ReArm(); // 퀘스트가 끝났거나 시작되지 않은 경우 트리거를 다시 활성화하여 처음부터 시작할 수 있게 함
+        // 완료되었거나 시작 전인 경우 트리거 재활성화
+        ReArm();
     }
 }
 
