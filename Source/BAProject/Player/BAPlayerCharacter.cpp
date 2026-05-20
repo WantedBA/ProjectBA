@@ -134,6 +134,11 @@ void ABAPlayerCharacter::BeginPlay()
 	{
 		ActionComponent->OnActionStarted.AddDynamic(this, &ABAPlayerCharacter::HandleActionStarted);
 	}
+	
+	if (CombatComponent)
+	{
+		CombatComponent->SetShowDebugTrace(true);
+	}
 }
 
 // 공통 Movement 상태를 매 프레임 갱신하고, 가능한 경우 이동 입력을 소비한다.
@@ -184,7 +189,7 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 void ABAPlayerCharacter::Attack()
 {
 	UE_LOG(LogTemp, Log, TEXT("Player Attack"));
-	CombatActionState = EBAPlayerCombatActionState::Attacking;
+	PlayerState = EBAPlayerState::Attacking;
 	CombatComponent->ExecuteAttack(AttackMontage);
 }
 

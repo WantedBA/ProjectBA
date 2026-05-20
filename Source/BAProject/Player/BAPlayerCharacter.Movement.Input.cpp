@@ -99,7 +99,7 @@ FVector2D ABAPlayerCharacter::GetInterpolatedMoveInputVector() const
 bool ABAPlayerCharacter::IsActionMovementLocked() const
 {
 	// 상태 관리 중복됨 - 추후 통합 필요
-	return CombatActionState != EBAPlayerCombatActionState::None || 
+	return PlayerState != EBAPlayerState::None || 
 		ActionComponent && ActionComponent->IsMovementLockedByAction();
 }
 
