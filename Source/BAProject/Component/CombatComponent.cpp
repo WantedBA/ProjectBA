@@ -88,10 +88,16 @@ void UCombatComponent::CheckHitEnd()
 	SetComponentTickEnabled(false);
 }
 
-void UCombatComponent::SetAttackData(float InRadius, float InDamage, FName InStartSocket, FName InEndSocket)
+void UCombatComponent::SetAttackData(
+	float InRadius,
+	float InDamage,
+	FName InStartSocket,
+	FName InEndSocket,
+	EBADamageReactionType InDamageReactionType)
 {
 	CurrentRadius = InRadius;
 	CurrentDamage = InDamage;
+	CurrentDamageReactionType = InDamageReactionType;
 	
 	if (InStartSocket != NAME_None)
 	{
@@ -272,7 +278,20 @@ void UCombatComponent::ApplyDamage(AActor* Victim, const FHitResult& HitResult)
 		}
 	}
 
-	FDamageEvent DamageEvent;
+	// 피격 반응 판단에 필요한 공격 강도와 방향을 TakeDamage 경계로 함께 전달한다.
+	FBADamageEvent DamageEvent;
+	DamageEvent.DamageReactionType = CurrentDamageReactionType;
+	DamageEvent.HitResult = HitResult;
+
+	if (OwnerActor)
+	{
+		DamageEvent.DamageDirection = (Victim->GetActorLocation() - OwnerActor->GetActorLocation()).GetSafeNormal();
+	}
+	if (DamageEvent.DamageDirection.IsNearlyZero())
+	{
+		DamageEvent.DamageDirection = OwnerActor ? OwnerActor->GetActorForwardVector().GetSafeNormal() : FVector::ZeroVector;
+	}
+
 	Victim->TakeDamage(CurrentDamage, DamageEvent, Instigator, OwnerActor);
 
 	// 충격파 및 왜곡 발생

@@ -124,20 +124,20 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 	}
 }
 
-void AEnemyBase::OnDamaged(float FinalDamage, AActor* DamageCauser)
+void AEnemyBase::OnDamaged(const FBACharacterDamageContext& DamageContext)
 {
-	Super::OnDamaged(FinalDamage, DamageCauser);
+	Super::OnDamaged(DamageContext);
 
 	if (StatComponent)
 	{
-		StatComponent->ApplyDamage(FinalDamage);
+		StatComponent->ApplyDamage(DamageContext.FinalDamage);
 		if (IsDead() == false)
 		{
 			// 슈퍼 아머가 아닐 때만 피격 상태로 전환
 			if (bIsSuperArmor == false)
 			{
 				SetState(EEnemyState::Hit);
-				ApplyKnockback(DamageCauser, 600.f);
+				ApplyKnockback(DamageContext.DamageCauser.Get(), 600.f);
 			}
 
 			AAIController* AICon = Cast<AAIController>(GetController());
@@ -280,12 +280,6 @@ void AEnemyBase::OnDeath()
 {
 	Super::OnDeath();
 	SetState(EEnemyState::Dead);
-
-	if (GetCharacterMovement())
-	{
-		GetCharacterMovement()->StopMovementImmediately();
-		GetCharacterMovement()->DisableMovement();
-	}
 
 	SetActorEnableCollision(false);
 

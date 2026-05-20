@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Combat/BADamageTypes.h"
 #include "GameFramework/Character.h"
 #include "CharacterBase.generated.h"
 
@@ -35,6 +36,11 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	ECharacterState CharacterState;
 
-	virtual void OnDamaged(float FinalDamage, AActor* DamageCauser);
+	virtual FBACharacterDamageContext BuildDamageContext(
+		float FinalDamage,
+		FDamageEvent const& DamageEvent,
+		AController* EventInstigator,
+		AActor* DamageCauser) const;
+	virtual void OnDamaged(const FBACharacterDamageContext& DamageContext);
 	virtual void OnDeath();
 };

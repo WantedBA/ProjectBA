@@ -93,7 +93,7 @@ protected:
 	virtual void PostInitializeComponents() override;
 	virtual void PossessedBy(AController* NewController) override;
 
-	virtual void OnDamaged(float FinalDamage, AActor* DamageCauser) override;
+	virtual void OnDamaged(const FBACharacterDamageContext& DamageContext) override;
 
 	// 시각 연출 이벤트
 	UFUNCTION(BlueprintImplementableEvent, Category = "Enemy|Visuals", meta = (DisplayName = "OnHitVisuals"))

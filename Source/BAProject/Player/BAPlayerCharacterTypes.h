@@ -43,6 +43,17 @@ enum class EPlayerCombatMode : uint8
 	Block
 };
 
+// 플레이어 피격/가드 반응 애니메이션이 점유 중인 피동 상태.
+UENUM(BlueprintType)
+enum class EPlayerDamageReactionState : uint8
+{
+	None,
+	HitReact,
+	LargeHitReact,
+	GuardHit,
+	GuardBreak
+};
+
 // UserDataSubsystem 또는 디자이너 설정으로부터 채워지는 기본 이동 속도.
 USTRUCT(BlueprintType)
 struct FBAPlayerMovementSpeedSettings

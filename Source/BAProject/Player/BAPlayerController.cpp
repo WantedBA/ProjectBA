@@ -267,6 +267,11 @@ void ABAPlayerController::LightAttack()
 {
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
 	{
+		if (!PC->CanAcceptActionInput())
+		{
+			return;
+		}
+
 		PC->Attack();
 	}
 }
@@ -365,7 +370,7 @@ bool ABAPlayerController::IsSprintDodgeTap() const
 void ABAPlayerController::TryStartDodgeAction() const
 {
 	ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
-	if (!PC || PC->IsOnLadder())
+	if (!PC || !PC->CanAcceptActionInput())
 	{
 		return;
 	}

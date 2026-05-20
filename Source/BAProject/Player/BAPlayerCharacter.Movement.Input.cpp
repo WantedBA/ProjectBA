@@ -98,7 +98,7 @@ FVector2D ABAPlayerCharacter::GetInterpolatedMoveInputVector() const
 
 bool ABAPlayerCharacter::IsActionMovementLocked() const
 {
-	return ActionComponent && ActionComponent->IsMovementLockedByAction();
+	return !IsAlive() || IsDamageReacting() || (ActionComponent && ActionComponent->IsMovementLockedByAction());
 }
 
 // 전달받은 2D 입력을 컨트롤 yaw 기준 월드 방향으로 변환한다.
