@@ -16,10 +16,14 @@ class BAPROJECT_API USkillTreeWidget : public UPopupBase
 	GENERATED_BODY()
 	
 protected:
-	// 재정의 함수
+// 재정의 함수
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 	
+public:
+	virtual void OnPopped() override;
+	
+protected:
 // 델리게이트로 실행되는 함수
 	// SkillNodeWidget
 	UFUNCTION(BlueprintCallable, Category=SkillTree)

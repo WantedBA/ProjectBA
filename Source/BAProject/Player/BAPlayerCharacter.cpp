@@ -1,9 +1,15 @@
 #include "Player/BAPlayerCharacter.h"
 
 #include "Camera/CameraComponent.h"
+#if !UE_BUILD_SHIPPING
+#include "Enemy/EnemyBase.h"
+#include "Component/StatComponent.h"
+#include "EngineUtils.h"
+#endif
 #include "Component/ActionAnimationComponent.h"
 #include "Component/ActionComponent.h"
 #include "Component/InteractorComponent.h"
+#include "Component/PlayerSkillComponent.h"
 #include "Component/StatComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -44,6 +50,9 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 
 	// 공용 액션 애니메이션 재생 컴포넌트 생성
 	ActionAnimationComponent = CreateDefaultSubobject<UActionAnimationComponent>(TEXT("ActionAnimationComponent"));
+	
+	// 스킬 컴포넌트 생성 - 컴포넌트 중 마지막에
+	PlayerSkillComponent = CreateDefaultSubobject<UPlayerSkillComponent>(TEXT("PlayerSkillComponent"));
 
 	// C++ 동적 생성이라 BP 슬롯이 없으므로 외곽선용 PostProcess 머티리얼을 코드에서 주입
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> OutlinePPMat(
@@ -122,6 +131,36 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 	}
 	
 	TickMovementRuntime(DeltaTime);
+
+#if !UE_BUILD_SHIPPING
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (PC->IsInputKeyDown(EKeys::LeftControl) && PC->WasInputKeyJustPressed(EKeys::Zero))
+		{
+			AEnemyBase* NearestEnemy = nullptr;
+			float MinDistSq = FMath::Square(1500.f);
+
+			for (TActorIterator<AEnemyBase> It(GetWorld()); It; ++It)
+			{
+				if (It->IsDead()) continue;
+				float DistSq = FVector::DistSquared(GetActorLocation(), It->GetActorLocation());
+				if (DistSq < MinDistSq)
+				{
+					MinDistSq = DistSq;
+					NearestEnemy = *It;
+				}
+			}
+
+			if (NearestEnemy)
+			{
+				if (UStatComponent* SC = NearestEnemy->FindComponentByClass<UStatComponent>())
+				{
+					SC->ApplyDamage(SC->GetMaxHP() + SC->GetDefence() + 1.f);
+				}
+			}
+		}
+	}
+#endif
 }
 
 // 기본 공격 입력 진입점
@@ -183,6 +222,17 @@ void ABAPlayerCharacter::InitializeFromTable()
 	}
 
 	GetCharacterMovement()->MaxWalkSpeed = SpeedSettings.RunSpeed;
+}
+
+void ABAPlayerCharacter::OnDamaged(float FinalDamage, AActor* DamageCauser)
+{
+	Super::OnDamaged(FinalDamage, DamageCauser);
+	
+	// TODO
+	if (StatComponent)
+	{
+		StatComponent->ApplyDamage(FinalDamage);
+	}
 }
 
 void ABAPlayerCharacter::HandleActionStarted(const int32 ActionTid, const EActionType ActionType)

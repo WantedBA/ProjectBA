@@ -20,7 +20,7 @@ void UAN_EnemyAttackEnd::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceB
     {
         if (Enemy->OnAttackAnimationFinished.IsBound())
         {
-            Enemy->OnAttackAnimationFinished.Broadcast(TargetEndState);
+            Enemy->OnEnemyAttackAniFinished(TargetEndState);
         }
     }
 }

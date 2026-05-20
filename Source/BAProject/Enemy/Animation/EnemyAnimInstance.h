@@ -15,10 +15,13 @@ public:
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override; // ABP Tick °³³ä
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsDead;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float MoveSpeed;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float TargetToAngle;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "State")

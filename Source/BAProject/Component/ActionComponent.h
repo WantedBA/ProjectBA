@@ -9,6 +9,7 @@
 
 class UStatComponent;
 
+// 액션 시작 시도 결과. 실패 원인은 UI/디버그/입력 버퍼 판단에 사용된다.
 UENUM(BlueprintType)
 enum class EActionStartResult : uint8
 {
@@ -22,7 +23,10 @@ enum class EActionStartResult : uint8
 	Buffered
 };
 
+// 액션이 실제로 시작될 때 ActionTid와 ActionType을 알린다.
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionStarted, int32, ActionTid, EActionType, ActionType);
+
+// 현재 액션이 완료되거나 중단되어 런타임 상태가 정리될 때 알린다.
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionCompleted, int32, ActionTid, EActionType, ActionType);
 
 /**
@@ -53,80 +57,112 @@ class BAPROJECT_API UActionComponent : public UActorComponent
 public:
 	UActionComponent();
 
+	// BeginAction 직후 브로드캐스트되는 액션 시작 이벤트.
 	UPROPERTY(BlueprintAssignable, Category = "Action|Event")
 	FOnActionStarted OnActionStarted;
 
+	// CompleteCurrentAction에서 브로드캐스트되는 액션 종료 이벤트.
 	UPROPERTY(BlueprintAssignable, Category = "Action|Event")
 	FOnActionCompleted OnActionCompleted;
 
+	// 현재 Moveset 문맥에서 Command와 Direction에 맞는 액션을 찾아 시작한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	bool TryStartAction(EActionCommand Command, EActionDirection Direction = EActionDirection::Any);
 
+	// Moveset 검색 없이 ActionTid를 직접 지정해 시작을 시도한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	bool TryStartActionByTid(int32 ActionTid);
 
+	// 현재 액션을 종료하고 버퍼된 액션이 있으면 이어서 실행을 시도한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	void CompleteCurrentAction();
 
+	// 애니메이션 윈도우 등에서 현재 액션의 인터럽트 가능 여부를 제어한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	void SetActiveActionInterruptLocked(bool bNewInterruptLocked);
 
+	// 애니메이션 윈도우 등에서 입력 버퍼 수신 가능 여부를 제어한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	void SetActiveActionInputBufferOpen(bool bNewInputBufferOpen);
 
+	// 이동 입력이 바뀔 때 버퍼된 액션의 실행 방향을 최신 값으로 갱신한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	void UpdateBufferedActionDirection(EActionDirection Direction);
 
+	// 현재 액션 Tid가 유효한지 확인한다.
 	UFUNCTION(BlueprintPure, Category = "Action")
 	bool IsActionRunning() const { return ActiveActionTid != 0; }
 
+	// 현재 실행 중인 액션 Tid를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action")
 	int32 GetActiveActionTid() const { return ActiveActionTid; }
 
+	// 현재 실행 중인 액션의 분류를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action")
 	EActionType GetActiveActionType() const { return ActiveActionType; }
 
+	// 현재 액션이 사용하는 런타임 상태 플래그를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action")
 	EActionRuntimeState GetActionRuntimeState() const { return RuntimeState; }
 
+	// 현재 액션 데이터가 일반 이동을 잠그는지 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action")
 	bool IsMovementLockedByAction() const;
 
+	// 현재 액션이 루트 모션 이동을 사용하는지 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action")
 	bool IsActiveActionUsingRootMotion() const;
 
+	// 현재 액션이 선택된 방향을 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action")
 	EActionDirection GetActiveActionDirection() const { return ActiveActionDirection; }
 
+	// 가장 최근 액션 시작 시도 결과를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action")
 	EActionStartResult GetLastStartResult() const { return LastStartResult; }
 
+// Moveset 키 
 	UFUNCTION(BlueprintCallable, Category = "Action|Context")
-	void SetMovesetKey(FName NewMovesetKey);
+	void AddMovesetKey(FName NewMovesetKey) { MovesetKeys.Add(NewMovesetKey); }
 
+	UFUNCTION(BlueprintCallable, Category = "Action|Context")
+	void ResetMovesetKeys() { MovesetKeys = { FName(TEXT("Default")) }; }
+
+	UFUNCTION(BlueprintPure, Category = "Action|Context")
+	bool HasMovesetKey(FName InMovesetKey) const { return MovesetKeys.Contains(InMovesetKey); }
+	
+//
+	// 액션 선택에 사용할 전투 태세를 설정한다.
 	UFUNCTION(BlueprintCallable, Category = "Action|Context")
 	void SetCombatStance(ECombatStance NewCombatStance);
 
+	// 액션 선택에 사용할 가드 상태를 설정한다.
 	UFUNCTION(BlueprintCallable, Category = "Action|Context")
 	void SetGuardState(EGuardState NewGuardState);
 
+	// 액션 선택에 사용할 무기 타입을 설정한다.
 	UFUNCTION(BlueprintCallable, Category = "Action|Context")
 	void SetWeaponType(EActionWeaponType NewWeaponType);
 
-	UFUNCTION(BlueprintPure, Category = "Action|Context")
-	FName GetMovesetKey() const { return MovesetKey; }
-
+	// 현재 전투 태세를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action|Context")
 	ECombatStance GetCombatStance() const { return CombatStance; }
 
+	// 현재 가드 상태를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action|Context")
 	EGuardState GetGuardState() const { return GuardState; }
 
+	// 현재 무기 타입을 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action|Context")
 	EActionWeaponType GetWeaponType() const { return WeaponType; }
 
+	// 현재 액션 Tid에 대응하는 ActionData 행을 반환한다.
 	const FActionDataRow* GetActiveActionData() const;
+
+	// 현재 문맥과 가장 잘 맞는 Moveset 행을 찾는다.
 	const FMovesetRow* FindBestMoveset(EActionCommand Command, EActionDirection Direction) const;
+
+	// 스태미너, 쿨다운, 실행 중 상태를 검사해 액션 시작 가능 여부를 판단한다.
 	bool CanStartAction(const FActionDataRow& ActionData, EActionDirection Direction);
 
 protected:
@@ -146,7 +182,7 @@ private:
 	EActionRuntimeState GetRuntimeStateForAction(const FActionDataRow& ActionData) const;
 
 	UPROPERTY(EditAnywhere, Category = "Action|Context")
-	FName MovesetKey = FName(TEXT("Default"));
+	TSet<FName> MovesetKeys = { FName(TEXT("Default")) };
 
 	UPROPERTY(EditAnywhere, Category = "Action|Context")
 	ECombatStance CombatStance = ECombatStance::Relaxed;
