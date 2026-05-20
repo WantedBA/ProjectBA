@@ -55,6 +55,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void SetPerfectWindowActive(bool bActive, float TimeDilation = -1.f, float Duration = -1.f);
 
+	void SetShowDebugTrace(bool bInShowDebugTrace)
+	{
+		this->bShowDebugTrace = bInShowDebugTrace;
+	}
+
 protected:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
