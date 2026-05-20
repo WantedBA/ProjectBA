@@ -17,6 +17,15 @@
 #include "Animation/AnimMontage.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
+// Utility 패턴 선택 튜닝 상수 (밸런싱 시 한곳에서 조정)
+namespace BossPatternTuning
+{
+	static constexpr float RepeatPenalty    = 0.3f;    // 직전 패턴 재선택 시 점수 배율
+	static constexpr float StrongAttackBias = 1.0f;    // 강공 점수 배율 (1.0 = 무영향, 밸런싱용)
+	static constexpr float FrontHalfAngle   = 60.0f;   // 정면 판정 반각 (|angle| 이하 = Front)
+	static constexpr float BackHalfAngle    = 135.0f;  // 후방 판정 (|angle| 이상 = Back)
+}
+
 ABoss::ABoss()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -39,7 +48,7 @@ void ABoss::BeginPlay()
 void ABoss::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
-	
+
 	if (bStartPausedForQuest)
 	{
 		if (AAIController* AIC = Cast<AAIController>(NewController))
@@ -94,7 +103,7 @@ void ABoss::Tick(float DeltaTime)
 
 		UBlackboardComponent* BBComponent = AIController->GetBlackboardComponent();
 		AActor* Target = BBComponent ? Cast<AActor>(BBComponent->GetValueAsObject(BBKey::TargetActor)) : nullptr;
-			
+
 		FString DebugInfo = FString::Printf(TEXT("Phase: %d\n"), CurrentPhase);
 		if (Target == nullptr)
 		{
@@ -155,15 +164,12 @@ int32 ABoss::ChooseBestPattern()
 		return 0;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[ChooseBestPattern] BossPatterns.Num=%d, EvasionPatterns.Num=%d"), BossPatterns.Num(), EvasionPatterns.Num());
-
 	int32 BestPatternTid = 0;
 	float MaxScore = 0.0f;
 
 	for (const FBossAttackData& Pattern : BossPatterns)
 	{
-		float Score = CalculatePatternScore(Pattern, Target);
-		UE_LOG(LogTemp, Warning, TEXT("  Pattern Tid=%d, Score=%f"), Pattern.Tid, Score);
+		const float Score = CalculatePatternScore(Pattern, Target);
 		if (Score > MaxScore)
 		{
 			MaxScore = Score;
@@ -171,34 +177,7 @@ int32 ABoss::ChooseBestPattern()
 		}
 	}
 
-	// Fallback: 모든 패턴이 0점이면 (조건 미달 등) 쿨다운 안 끝난 건 빼고 IdealRange가 가장 적합한 패턴 강제 선택
-	// 보스가 "할 게 없어서 가만히 있는" 상태 방지
-	if (BestPatternTid == 0 && BossPatterns.Num() > 0)
-	{
-		const float Distance = FVector::Dist(GetActorLocation(), Target->GetActorLocation());
-		float MinDistFromIdeal = MAX_flt;
-
-		for (const FBossAttackData& Pattern : BossPatterns)
-		{
-			if (IsPatternAvailable(Pattern.Tid) == false)
-			{
-				continue; // 쿨다운 중인 건 fallback에서도 제외
-			}
-
-			const float DistFromIdeal = FMath::Abs(Distance - Pattern.IdealRange);
-			if (DistFromIdeal < MinDistFromIdeal)
-			{
-				MinDistFromIdeal = DistFromIdeal;
-				BestPatternTid = Pattern.Tid;
-			}
-		}
-
-		if (BestPatternTid != 0)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("  → Fallback selection (all 0 score), Tid=%d, DistFromIdeal=%f"), BestPatternTid, MinDistFromIdeal);
-		}
-	}
-
+	UE_LOG(LogTemp, Warning, TEXT("[ChooseBestPattern] Selected Tid=%d (Score=%.2f)"), BestPatternTid, MaxScore);
 	return BestPatternTid;
 }
 
@@ -209,105 +188,101 @@ float ABoss::CalculatePatternScore(const FBossAttackData& PatternData, AActor* T
 		return 0.0f;
 	}
 
-	// 쿨타임 체크
+	// --- 게이트: 하나라도 실패하면 후보에서 제외 (0점) ---
+
+	// (Step 2 한정) 특수 패턴은 실행부 미구현 — Step 5·6에서 이 가드 해제
+	if (PatternData.PatternType != EBossPatternType::Normal)
+	{
+		return 0.0f;
+	}
+
+	// 쿨타임
 	if (IsPatternAvailable(PatternData.Tid) == false)
 	{
 		return 0.0f;
 	}
 
-	// 컨디션 체크
-	const float Distance = FVector::Dist(GetActorLocation(), Target->GetActorLocation());
-	const float RandVal = FMath::RandRange(1, 10000);
+	// 보스전 사용 횟수 제한 (MaxUseCount 0 = 무제한)
+	if (PatternData.MaxUseCount > 0)
+	{
+		if (PatternUseCount.FindRef(PatternData.Tid) >= PatternData.MaxUseCount)
+		{
+			return 0.0f;
+		}
+	}
 
-	float HPRatio = 1.0f;
+	// 보스 HP% 범위
 	if (StatComponent)
 	{
-		HPRatio = StatComponent->GetCurrentHP() / StatComponent->GetMaxHP();
+		const float MaxHP = StatComponent->GetMaxHP();
+		if (MaxHP > 0.0f)
+		{
+			const int32 HPPercent = FMath::RoundToInt(StatComponent->GetCurrentHP() / MaxHP * 100.0f);
+			if (HPPercent < PatternData.MinHPPercent || HPPercent > PatternData.MaxHPPercent)
+			{
+				return 0.0f;
+			}
+		}
 	}
 
-	bool bConditionMet = true;
-	switch (PatternData.ConditionType)
+	// 플레이어 거리 범위 (0 = 제한 없음)
+	const float Distance = FVector::Dist(GetActorLocation(), Target->GetActorLocation());
+	if (PatternData.MinDistance > 0.0f && Distance < PatternData.MinDistance)
 	{
-	case 1: // 1. Pure probability, Var1 = 확률
-		if (RandVal > PatternData.Var1)
-		{
-			bConditionMet = false;
-		}
-		break;
-
-	case 2: // 2. HP + probability, Var1 = 확률, Var2 = HP %
-		if (RandVal > PatternData.Var1)
-		{
-			bConditionMet = false;
-			break;
-		}
-
-		if (HPRatio * 100.0f > PatternData.Var2)
-		{
-			bConditionMet = false;
-		}
-		break;
-
-	case 3: // 3. Distance + probability, Var1 = 확률, Var2 = 거리
-		if (RandVal > PatternData.Var1)
-		{
-			bConditionMet = false;
-			break;
-		}
-
-		if (Distance < PatternData.Var2)
-		{
-			bConditionMet = false;
-		}
-		break;
-
-	case 4: // 4. Phase range, Var2 ~ Var3
-		if (CurrentPhase < PatternData.Var2 || CurrentPhase > PatternData.Var3)
-		{
-			bConditionMet = false;
-		}
-		break;
-
-	default:
-		bConditionMet = false;
-		break;
+		return 0.0f;
 	}
-
-	if (!bConditionMet)
+	if (PatternData.MaxDistance > 0.0f && Distance > PatternData.MaxDistance)
 	{
 		return 0.0f;
 	}
 
-	// 거리 점수 (벨 커브): IdealRange와 일치할 때 만점, 가깝거나 멀어질수록 감소
-	// 최소 0.1 보장해서 사거리 밖이어도 완전히 0이 되지 않게 함 (조건 통과 시 fallback 가능)
-	float FinalScore = PatternData.Weight * PatternData.ScoreMultiplier;
-	float DistanceScore = 1.0f;
-
-	if (PatternData.IdealRange > 0.0f)
+	// 플레이어 위치 구역
+	if (PatternData.RequiredZone != EBossPatternZone::Any)
 	{
-		const float DistFromIdeal = FMath::Abs(Distance - PatternData.IdealRange);
-		const float Window = PatternData.IdealRange * 0.75f;  // 사거리의 75% 안에서 의미있는 점수
-		DistanceScore = FMath::Max(0.1f, 1.0f - DistFromIdeal / Window);
+		if (GetPlayerZone(Target) != PatternData.RequiredZone)
+		{
+			return 0.0f;
+		}
 	}
-	FinalScore *= DistanceScore;
 
-	// 연속 발동 페널티: 직전 패턴이면 30% 점수만 (다양성 확보)
+	// --- 게이트 통과: Utility 점수 산출 ---
+	float Score = PatternData.BaseWeight * PatternData.ScoreMultiplier;
+
+	// 연속 발동 페널티 (다양성 확보)
 	if (PatternData.Tid == LastUsedPatternTid)
 	{
-		FinalScore *= 0.3f;
+		Score *= BossPatternTuning::RepeatPenalty;
 	}
 
-	// 각도 점수
-	FVector ToTarget = (Target->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-	float Dot = FVector::DotProduct(GetActorForwardVector(), ToTarget);
-
-	float Angle = FMath::RadiansToDegrees(FMath::Acos(Dot));
-	if (Angle > PatternData.AttackAngle)
+	// 강공 보정 (StrongAttackBias 기본 1.0이면 무영향 — 밸런싱 시 조정)
+	if (PatternData.bIsStrongAttack)
 	{
-		FinalScore *= 0.2f;
+		Score *= BossPatternTuning::StrongAttackBias;
 	}
 
-	return FinalScore;
+	return Score;
+}
+
+EBossPatternZone ABoss::GetPlayerZone(AActor* Target) const
+{
+	if (Target == nullptr)
+	{
+		return EBossPatternZone::Any;
+	}
+
+	const FVector ToTarget = (Target->GetActorLocation() - GetActorLocation()).GetSafeNormal2D();
+	const float Dot = FVector::DotProduct(GetActorForwardVector().GetSafeNormal2D(), ToTarget);
+	const float AngleDeg = FMath::RadiansToDegrees(FMath::Acos(FMath::Clamp(Dot, -1.0f, 1.0f)));
+
+	if (AngleDeg <= BossPatternTuning::FrontHalfAngle)
+	{
+		return EBossPatternZone::Front;
+	}
+	if (AngleDeg >= BossPatternTuning::BackHalfAngle)
+	{
+		return EBossPatternZone::Back;
+	}
+	return EBossPatternZone::Side;
 }
 
 void ABoss::PostInitializeComponents()
@@ -330,6 +305,7 @@ void ABoss::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 	PatternCooldownMap.Empty();
 	PendingCooldownRemove.Empty();
+	PatternUseCount.Empty();
 	BossPatterns.Empty();
 	LoadedMontageMap.Empty();
 
@@ -353,7 +329,7 @@ void ABoss::HandleHPChanged(float CurrentHP, float MaxHP)
 	if (NewPhase != CurrentPhase)
 	{
 		CurrentPhase = NewPhase;
-		
+
 		// 페이즈 전환 시 로직 (예: 광폭화, 패턴 추가 등)
 		UE_LOG(LogTemp, Warning, TEXT("Boss Phase Changed: %d"), CurrentPhase);
 	}
@@ -367,7 +343,7 @@ void ABoss::OnQuestActivated_Implementation(int32 tid)
 	AEnemyAIController* AIC = Cast<AEnemyAIController>(GetController());
 	if (AIC == nullptr)
 		return;
-	
+
 	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
 	if (PlayerPawn)
 	{
@@ -384,7 +360,7 @@ void ABoss::OnQuestDeactivated_Implementation(int32 tid)
 {
 	if (IsDead())
 		return;
-	
+
 	if (AAIController* AIC = Cast<AAIController>(GetController()))
 	{
 		if (UBrainComponent* Brain = AIC->GetBrainComponent())
@@ -415,7 +391,6 @@ void ABoss::LoadBossPatterns(int32 StageType)
 	}
 
 	BossPatterns.Empty();
-	EvasionPatterns.Empty();
 
 	auto MapToBossData = [&](const auto& Rows)
 	{
@@ -427,31 +402,33 @@ void ABoss::LoadBossPatterns(int32 StageType)
 			}
 
 			FBossAttackData NewData;
-			NewData.Tid = Pair.Value->Tid;
-			NewData.PatternMontage = TSoftObjectPtr<UAnimMontage>(FSoftObjectPath(Pair.Value->MontagePath));
-			NewData.CoolTime = static_cast<float>(Pair.Value->CoolTime);
-			NewData.ConditionType = Pair.Value->ConditionType;
-			NewData.Var1 = Pair.Value->Var1;
-			NewData.Var2 = Pair.Value->Var2;
-			NewData.Var3 = Pair.Value->Var3;
-			NewData.Weight = Pair.Value->Weight;
-			NewData.IdealRange = static_cast<float>(Pair.Value->IdealRange);
-			NewData.AttackAngle = static_cast<float>(Pair.Value->AttackAngle);
-			NewData.ScoreMultiplier = Pair.Value->ScoreMultiplier;
-			NewData.Attack = static_cast<float>(Pair.Value->Attack);
-			NewData.NextComboTid = Pair.Value->NextComboTid;
-			NewData.ComboTransitionTime = Pair.Value->ComboTransitionTime;
-			NewData.MaxTrackingAngle = Pair.Value->MaxTrackingAngle;
 
-			// ConditionType 4 = 회피. ChooseBestPattern에 포함시키지 않고 별도 트리거에서 사용
-			if (NewData.ConditionType == 4)
-			{
-				EvasionPatterns.Add(NewData);
-			}
-			else
-			{
-				BossPatterns.Add(NewData);
-			}
+			// A. 식별 / 타입
+			NewData.Tid             = Pair.Value->Tid;
+			NewData.PatternType     = static_cast<EBossPatternType>(Pair.Value->PatternType);
+			NewData.bIsStrongAttack = (Pair.Value->IsStrongAttack != 0);
+
+			// B. 선택 조건 게이트
+			NewData.MinHPPercent    = Pair.Value->MinHPPercent;
+			NewData.MaxHPPercent    = Pair.Value->MaxHPPercent;
+			NewData.MinDistance     = Pair.Value->MinDistance;
+			NewData.MaxDistance     = Pair.Value->MaxDistance;
+			NewData.RequiredZone    = static_cast<EBossPatternZone>(Pair.Value->RequiredZone);
+			NewData.MaxUseCount     = Pair.Value->MaxUseCount;
+
+			// C. 선택 가중치
+			NewData.BaseWeight      = Pair.Value->BaseWeight;
+			NewData.ScoreMultiplier = Pair.Value->ScoreMultiplier;
+			NewData.CoolTime        = Pair.Value->CoolTime;
+
+			// D. 실행 파라미터
+			NewData.PatternMontage      = TSoftObjectPtr<UAnimMontage>(FSoftObjectPath(Pair.Value->MontagePath));
+			NewData.IdealRange          = Pair.Value->IdealRange;
+			NewData.Attack              = Pair.Value->Attack;
+			NewData.NextComboTid        = Pair.Value->NextComboTid;
+			NewData.ComboTransitionTime = Pair.Value->ComboTransitionTime;
+
+			BossPatterns.Add(NewData);
 		}
 	};
 
@@ -500,32 +477,24 @@ void ABoss::ExecuteBossPattern(int32 PatternTid)
 		return;
 	}
 
-	UAnimMontage* MontageToPlay = nullptr;
+	// 패턴 데이터 1회 조회 — 몽타주/쿨타임/사용횟수/전투 데이터에 모두 사용
+	const FBossAttackData* PatternData = BossPatterns.FindByPredicate(
+		[PatternTid](const FBossAttackData& Data) { return Data.Tid == PatternTid; });
 
-	if (LoadedMontageMap.Contains(PatternTid))
+	if (PatternData == nullptr)
 	{
-		MontageToPlay = LoadedMontageMap[PatternTid];
+		UE_LOG(LogTemp, Warning, TEXT("  → PatternTid=%d not found in BossPatterns"), PatternTid);
+		return;
 	}
-	else
-	{
-		for (const FBossAttackData& Data : BossPatterns)
-		{
-			if (Data.Tid == PatternTid)
-			{
-				if (bIsEnding == false)
-				{
-					MontageToPlay = Data.PatternMontage.LoadSynchronous();
-				}
 
-				if (MontageToPlay)
-				{
-					LoadedMontageMap.Add(PatternTid, MontageToPlay);
-				}
-				
-				// 쿨타임 시작
-				StartPatternCooldown(PatternTid, Data.CoolTime);
-				break;
-			}
+	// 몽타주: 캐시 우선, 없으면 로드
+	UAnimMontage* MontageToPlay = LoadedMontageMap.FindRef(PatternTid);
+	if (MontageToPlay == nullptr && bIsEnding == false)
+	{
+		MontageToPlay = PatternData->PatternMontage.LoadSynchronous();
+		if (MontageToPlay)
+		{
+			LoadedMontageMap.Add(PatternTid, MontageToPlay);
 		}
 	}
 
@@ -534,6 +503,10 @@ void ABoss::ExecuteBossPattern(int32 PatternTid)
 		UE_LOG(LogTemp, Warning, TEXT("  → MontageToPlay NULL (load failed)"));
 		return;
 	}
+
+	// 쿨타임·사용횟수는 실행할 때마다 갱신 (캐시 히트/미스와 무관)
+	StartPatternCooldown(PatternTid, PatternData->CoolTime);
+	PatternUseCount.FindOrAdd(PatternTid)++;
 
 	UE_LOG(LogTemp, Warning, TEXT("  → MontageToPlay=%s, calling ExecuteAttack"), *MontageToPlay->GetName());
 
@@ -548,21 +521,14 @@ void ABoss::ExecuteBossPattern(int32 PatternTid)
 		return;
 	}
 
-	// 패턴 데이터를 기반으로 CombatComponent 데이터 설정
-	for (const FBossAttackData& Data : BossPatterns)
-	{
-		if (Data.Tid == PatternTid)
-		{
-			// IdealRange가 0인 경우(무한 인지용) 실제 타격 반경으로 150.0f 사용
-			float HitRadius = (Data.IdealRange <= 0.0f) ? 150.0f : Data.IdealRange;
-			CombatComponent->SetAttackData(HitRadius, Data.Attack, FName("Weapon"), FName("Weapon"));
-			break;
-		}
-	}
+	// 패턴 데이터 기반 CombatComponent 설정
+	// IdealRange가 0인 경우(무한 인지용) 실제 타격 반경으로 150.0f 사용
+	const float HitRadius = (PatternData->IdealRange <= 0.0f) ? 150.0f : PatternData->IdealRange;
+	CombatComponent->SetAttackData(HitRadius, PatternData->Attack, FName("Weapon"), FName("Weapon"));
 
 	CombatComponent->ExecuteAttack(MontageToPlay);
 
-	// 안전망: 몽타주 끝나면 자동으로 OnEnemyAttackAniFinished 호출
+	// 안전망: 몽타주 끝나면 자동으로 OnPatternMontageEnded 호출
 	// AN_EnemyAttackEnd Notify가 박혀있으면 두 번 호출되니까, 거기서 중복 방지 처리 필요
 	if (USkeletalMeshComponent* MeshComp = GetMesh())
 	{
@@ -597,7 +563,6 @@ void ABoss::OnPatternMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 			{
 				NextTid = Data.NextComboTid;
 				TransitionTime = Data.ComboTransitionTime;
-				ComboMaxTrackingAngle = Data.MaxTrackingAngle;
 				break;
 			}
 		}

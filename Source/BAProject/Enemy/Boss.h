@@ -6,56 +6,66 @@
 #include "Quest/QuestActivatable.h"
 #include "Boss.generated.h"
 
+// 보스 공격 패턴 1개의 런타임 데이터. BossMonster 테이블 행을 LoadBossPatterns에서 매핑.
 USTRUCT(BlueprintType)
 struct BAPROJECT_API FBossAttackData
 {
 	GENERATED_BODY()
-	
 
+	// --- A. 식별 / 타입 ---
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int32 Tid = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	EBossPatternType PatternType = EBossPatternType::Normal;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	bool bIsStrongAttack = false;
+
+	// --- B. 선택 조건 게이트 ---
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	int32 MinHPPercent = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	int32 MaxHPPercent = 100;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	float MinDistance = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	float MaxDistance = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	EBossPatternZone RequiredZone = EBossPatternZone::Any;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	int32 MaxUseCount = 0;
+
+	// --- C. 선택 가중치 ---
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	float BaseWeight = 1.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	float ScoreMultiplier = 1.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float CoolTime = 0.0f;
 
+	// --- D. 실행 파라미터 ---
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	int32 ConditionType = 0;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	int32 Var1 = 0;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	int32 Var2 = 0;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	int32 Var3 = 0;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	float Weight = 0.0f;
+	TSoftObjectPtr<UAnimMontage> PatternMontage;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float IdealRange = 0.0f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	int32 AttackAngle = 0;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	float ScoreMultiplier = 0.0f;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	float Attack = 0.0f;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	TSoftObjectPtr<UAnimMontage> PatternMontage;
+	int32 Attack = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int32 NextComboTid = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float ComboTransitionTime = 0.2f;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	float MaxTrackingAngle = 90.0f;
 };
 
 UCLASS()
@@ -68,6 +78,7 @@ public:
 
 	virtual void InitializeFromTable(int32 InTid) override;
 
+	// Utility AI — 현재 상황에서 가장 점수 높은 패턴 Tid 반환 (후보 없으면 0)
 	int32 ChooseBestPattern();
 	virtual void ExecuteBossPattern(int32 PatternTid);
 
@@ -98,7 +109,13 @@ protected:
 
 private:
 	void LoadBossPatterns(int32 StageType);
+
+	// Utility 점수 계산. 조건 게이트를 통과 못 하면 0 반환.
 	float CalculatePatternScore(const FBossAttackData& PatternData, AActor* Target);
+
+	// 플레이어가 보스 정면 기준 어느 구역(정면/측면/후방)에 있는지
+	EBossPatternZone GetPlayerZone(AActor* Target) const;
+
 	void StartPatternCooldown(int32 PatternTid, float CoolTime);
 	bool IsPatternAvailable(int32 PatternTid) const;
 	void TrackPlayerDuringComboTransition(float DeltaTime);
@@ -121,12 +138,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Data")
 	TArray<FBossAttackData> BossPatterns;
 
-	// 회피 패턴 (ConditionType=4). ChooseBestPattern에서 제외, 별도 트리거 시스템에서 사용
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Data")
-	TArray<FBossAttackData> EvasionPatterns;
-
 	UPROPERTY()
 	TMap<int32, float> PatternCooldownMap;
+
+	// 패턴별 보스전 누적 사용 횟수 (MaxUseCount 제한 체크용)
+	UPROPERTY()
+	TMap<int32, int32> PatternUseCount;
 
 	// 직전에 발동한 패턴 Tid. 연속 발동 페널티에 사용 (다양성 확보)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|State")
