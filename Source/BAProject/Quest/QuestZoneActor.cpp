@@ -50,6 +50,34 @@ void AQuestZoneActor::ReArm()
     }
 }
 
+void AQuestZoneActor::RespawnEnemiesInZone()
+{
+    if (QuestTid <= 0)
+    {
+        return;
+    }
+
+    UQuestManageSubsystem* QM = UQuestManageSubsystem::Get(this);
+    if (QM == nullptr)
+    {
+        return;
+    }
+
+    if (QM->IsQuestCompleted(QuestTid))    // 이미 영구적으로 완료된 퀘스트라면 리스폰안함
+    {
+        return;
+    }
+
+    if (QM->IsQuestActive(QuestTid))  // 현재 진행 중인 해당 퀘스트가 있다면 몬스터만 리필
+    {
+        QM->RefreshQuestMonsters(QuestTid, CachedSpawnTransforms, MonsterClass);
+    }
+    else
+    {
+        ReArm(); // 퀘스트가 끝났거나 시작되지 않은 경우 트리거를 다시 활성화하여 처음부터 시작할 수 있게 함
+    }
+}
+
 // Called when the game starts or when spawned
 void AQuestZoneActor::BeginPlay()
 {

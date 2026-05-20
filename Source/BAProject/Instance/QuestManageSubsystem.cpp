@@ -170,6 +170,54 @@ void UQuestManageSubsystem::AbortQuest(int32 QuestTid)
     }
 }
 
+void UQuestManageSubsystem::RefreshQuestMonsters(int32 QuestTid, const TArray<FTransform>& SpawnTransforms, TSubclassOf<AMonster> MonsterClass)
+{
+    FQuestRuntimeState* State = ActiveQuests.Find(QuestTid);
+    if (State == nullptr)
+    {
+        return;
+    }
+
+    // 현재 월드에 소환되어 있는 물리 몬스터들만 파괴
+    for (auto& WeakM : State->SpawnedMonsters)
+    {
+        if (AActor* M = WeakM.Get())
+        {
+            M->Destroy();
+        }
+    }
+    State->SpawnedMonsters.Empty();
+
+    // 새로운 몬스터 인스턴스들을 스폰
+    SpawnQuestMonsters(QuestTid, SpawnTransforms, MonsterClass);
+}
+
+void UQuestManageSubsystem::RespawnQuestZoneEnemies()
+{
+    // 등록된 모든 트리거(존)를 순회하며 리스폰 처리
+    for (auto& Pair : RegisteredTriggers)
+    {
+        for (auto& WeakTrigger : Pair.Value)
+        {
+            if (AQuestZoneActor* Trigger = WeakTrigger.Get())
+            {
+                // 개별 존의 리스폰 로직 호출
+                Trigger->RespawnEnemiesInZone();
+            }
+        }
+    }
+}
+
+void UQuestManageSubsystem::ApplyQuestSaveData(const TSet<int32>& QuestSaveDataTSet)
+{
+    if (QuestSaveDataTSet.IsEmpty() == true)
+    {
+        return;
+    }
+
+    CompletedQuests = QuestSaveDataTSet;
+}
+
 void UQuestManageSubsystem::SpawnQuestMonsters(int32 QuestTid, const TArray<FTransform>& SpawnTransforms,
                                                TSubclassOf<AMonster> MonsterClass)
 {
@@ -213,6 +261,8 @@ void UQuestManageSubsystem::SpawnQuestMonsters(int32 QuestTid, const TArray<FTra
 void UQuestManageSubsystem::CompleteQuest(int32 QuestTid)
 {
     if (!ActiveQuests.Contains(QuestTid)) return;
+
+    CompletedQuests.Add(QuestTid);
 
     SetActivatablesActive(QuestTid, false);
 

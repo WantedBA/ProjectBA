@@ -38,7 +38,14 @@ public:
 
     void RegisterTrigger(int32 QuestTid, AQuestZoneActor* Trigger);
     void AbortQuest(int32 QuestTid);
+
+    void RefreshQuestMonsters(int32 QuestTid, const TArray<FTransform>& SpawnTransforms, TSubclassOf<AMonster> MonsterClass);
+    void RespawnQuestZoneEnemies();
     
+    bool IsQuestCompleted(int32 QuestTid) const { return CompletedQuests.Contains(QuestTid); }
+    TSet<int32> MakeQuestSaveData() const { return CompletedQuests; }
+    void ApplyQuestSaveData(const TSet<int32>& QuestSaveDataTSet);
+
     FOnQuestCompleted OnQuestCompleted;
     FOnQuestRewardGranted OnRewardGranted;
 
@@ -54,4 +61,6 @@ private:
     TMap<int32, TArray<TWeakObjectPtr<AActor>>> PendingActivatables;
     
     TMap<int32, TArray<TWeakObjectPtr<AQuestZoneActor>>> RegisteredTriggers;
+
+    TSet<int32> CompletedQuests;
 };
