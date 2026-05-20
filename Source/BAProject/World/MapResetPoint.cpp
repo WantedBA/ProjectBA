@@ -11,12 +11,20 @@ AMapResetPoint::AMapResetPoint()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	InteractionPivot = CreateDefaultSubobject<USceneComponent>(TEXT("InteractionPivot"));
-	RootComponent = InteractionPivot;
+	Root = CreateDefaultSubobject<USceneComponent>(TEXT("ResetPointRoot"));
+	RootComponent = Root;
 
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
-	MeshComponent->SetupAttachment(RootComponent);
-	MeshComponent->SetCollisionProfileName(TEXT("NoCollision"));
+	// 감지를 위해 콜리전 활성화 (InteractorComponent의 Sphere가 감지할 수 있도록)
+	MeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	MeshComponent->SetCollisionObjectType(ECC_WorldStatic);
+	MeshComponent->SetCollisionResponseToAllChannels(ECR_Block);
+	MeshComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	MeshComponent->SetupAttachment(Root);
+
+	InteractionPivot = CreateDefaultSubobject<USceneComponent>(TEXT("InteractionPivot"));
+	InteractionPivot->SetRelativeLocation(FVector(30.f, 30.f, 10.f));
+	InteractionPivot->SetupAttachment(Root);
 }
 
 void AMapResetPoint::BeginPlay()
@@ -26,6 +34,10 @@ void AMapResetPoint::BeginPlay()
 
 bool AMapResetPoint::CanInteract_Implementation(AActor* Interactor) const
 {
+#if !UE_BUILD_SHIPPING
+	DrawDebugSphere(GetWorld(), GetActorLocation(), 100.f, 12, FColor::Yellow, false, 0.1f);
+#endif
+
 	if (bConditionUnlocked == false)
 	{
 		return false;

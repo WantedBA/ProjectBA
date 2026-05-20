@@ -29,15 +29,19 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-private:
-	bool bIsPlayerResting = false; // 플레이어가 휴식 중인지 여부
-	bool bConditionUnlocked = true;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Interaction", meta = (AllowPrivateAccess = "true"))
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USceneComponent> InteractionPivot;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<USceneComponent> Root;
+
+private:
+	bool bIsPlayerResting = false; // 플레이어가 휴식 중인지 여부
+	bool bConditionUnlocked = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction", meta = (AllowPrivateAccess = "true"))
 	FText PromptEnter = NSLOCTEXT("Interaction", "RestEnter", "E - 휴식하기");
