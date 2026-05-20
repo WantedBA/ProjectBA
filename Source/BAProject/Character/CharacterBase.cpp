@@ -41,6 +41,8 @@ void ACharacterBase::SetInvincible(const bool bNewInvincible)
 
 EBADamageReactionType ACharacterBase::ResolveDamageReactionType(FDamageEvent const& DamageEvent)
 {
+	// UE 기본 DamageEvent에는 BA 피격 반응 강도 필드가 없으므로,
+	// 프로젝트 전용 이벤트일 때만 추가 메타데이터를 꺼낸다.
 	if (DamageEvent.IsOfType(FBADamageEvent::ClassID))
 	{
 		const FBADamageEvent& BADamageEvent = static_cast<const FBADamageEvent&>(DamageEvent);
@@ -57,6 +59,7 @@ FVector ACharacterBase::ResolveDamageDirection(
 {
 	FVector DamageDirection = FVector::ZeroVector;
 
+	// FBADamageEvent는 BA 전투 코드가 명시적으로 넘긴 방향을 사용한다.
 	if (DamageEvent.IsOfType(FBADamageEvent::ClassID))
 	{
 		const FBADamageEvent& BADamageEvent = static_cast<const FBADamageEvent&>(DamageEvent);
@@ -64,6 +67,7 @@ FVector ACharacterBase::ResolveDamageDirection(
 	}
 	else if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
 	{
+		// 외부/기본 UE 경로는 PointDamage의 ShotDirection을 같은 의미의 게임플레이 방향으로 취급한다.
 		const FPointDamageEvent& PointDamageEvent = static_cast<const FPointDamageEvent&>(DamageEvent);
 		DamageDirection = PointDamageEvent.ShotDirection.GetSafeNormal();
 	}
@@ -78,6 +82,7 @@ FVector ACharacterBase::ResolveDamageDirection(
 
 FHitResult ACharacterBase::ResolveDamageHitResult(FDamageEvent const& DamageEvent)
 {
+	// 커스텀 이벤트와 UE PointDamageEvent는 HitResult 저장 위치가 다르므로 타입별로 안전하게 꺼낸다.
 	if (DamageEvent.IsOfType(FBADamageEvent::ClassID))
 	{
 		const FBADamageEvent& BADamageEvent = static_cast<const FBADamageEvent&>(DamageEvent);

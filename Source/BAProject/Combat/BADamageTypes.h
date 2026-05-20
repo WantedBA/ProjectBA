@@ -21,10 +21,16 @@ enum class EBADamageReactionType : uint8
 };
 
 /**
- * BA 전투 시스템에서 TakeDamage 경계로 넘기는 피해 이벤트.
+ * BA 전투 시스템에서 TakeDamage 경계로 넘길 수 있는 프로젝트 전용 피해 이벤트.
  *
- * DamageDirection은 공격 판정 원점에서 피격자 쪽으로 향하는 월드 방향이다.
- * 피격자 기준 앞/뒤/좌/우 방향은 CharacterBase가 이 값을 캐릭터 로컬 방향으로 변환해 계산한다.
+ * FPointDamageEvent는 HitResult와 ShotDirection을 이미 제공하므로, 단순한 타격 지점/방향 전달에는 충분하다.
+ * 그래도 이 타입을 남기는 이유는 HitReact/LargeHitReact/KnockDown 같은 BA 전용 피격 반응 메타데이터가
+ * UE 기본 FDamageEvent 계열에는 없기 때문이다. 공격자가 피격 반응 강도만 런타임으로 지정해야 할 때
+ * DamageReactionType을 TakeDamage 경계로 함께 넘기기 위한 최소 확장점으로 사용한다.
+ *
+ * DamageDirection은 충돌면 법선이 아니라 공격자에서 피격자 쪽으로 향하는 게임플레이 방향이다.
+ * 가드 각도, 피격 방향 몽타주, 넉백 방향처럼 “어느 방향에서 맞았는가”를 판단할 때 사용한다.
+ * HitResult는 시각 연출 위치나 fallback 정보가 필요할 때만 사용하고, 표면 법선 기반 판정과 혼동하지 않는다.
  */
 USTRUCT(BlueprintType)
 struct BAPROJECT_API FBADamageEvent : public FDamageEvent
