@@ -56,6 +56,7 @@ void AEnemyBase::PossessedBy(AController* NewController)
 		UE_LOG(LogTemp, Log, TEXT("[%s] PossessedBy %s. MonsterTid: %d"), *GetName(), *NewController->GetName(), MonsterTid);
 		if (MonsterTid != 0)
 		{
+			bInitAI = true;
 			AIController->InitializeAI(MonsterTid, this);
 		}
 	}
@@ -109,6 +110,16 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 		if (LoadedMesh)
 		{
 			GetMesh()->SetSkeletalMesh(LoadedMesh);
+		}
+	}
+
+	if (bInitAI == false)
+	{
+		AEnemyAIController* AIController = Cast<AEnemyAIController>(GetController());
+		if (AIController)
+		{
+			UE_LOG(LogTemp, Log, TEXT("[%s] Reinitialize AI after table init"), *GetName());
+			AIController->InitializeAI(MonsterTid, this);
 		}
 	}
 }

@@ -114,6 +114,8 @@ public:
 	FOnEnemyDeathDelegate OnDeathEvent;
 
 protected:
+	bool bInitAI = false;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStatComponent> StatComponent;
 
