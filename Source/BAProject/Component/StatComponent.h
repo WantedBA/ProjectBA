@@ -58,9 +58,11 @@ public:
 		const float InDefence
 	);
 
-	// 현재 HP가 0 이하인지 반환한다.
-	UFUNCTION(BlueprintPure, Category = "Stat")
-	bool IsDead() const { return CurrentHP <= 0.f; }
+	// 모든 스탯을 최대치로 복구하고 이벤트를 발행한다.
+	UFUNCTION(BlueprintCallable, Category = "Stat")
+	void RestoreAll();
+
+	FORCEINLINE bool IsDead() const { return CurrentHP <= 0.f; }
 
 	FORCEINLINE float GetAttack() const { return Attack; }
 	FORCEINLINE void SetAttack(const float NewAttack) { Attack = NewAttack; }

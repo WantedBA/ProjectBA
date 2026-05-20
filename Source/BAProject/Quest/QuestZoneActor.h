@@ -24,6 +24,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Quest")
 	void TriggerStart();
 
+	UFUNCTION(BlueprintCallable, Category = "Quest")
+	void RespawnEnemiesInZone();
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

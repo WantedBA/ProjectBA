@@ -48,6 +48,19 @@ void UStatComponent::TickComponent
 	SetCurrentStamina(CurrentStamina + RecoveryAmountThisFrame);
 }
 
+void UStatComponent::RestoreAll()
+{
+	CurrentHP = MaxHP;
+	CurrentStamina = MaxStamina;
+	StaminaRecoveryDelayRemaining = 0.f;
+	StaminaRecoveryPauseSources.Reset();
+
+	OnHPChanged.Broadcast(CurrentHP, MaxHP);
+	OnStaminaChanged.Broadcast(CurrentStamina, MaxStamina);
+
+	RefreshStaminaRecoveryTick();
+}
+
 void UStatComponent::ApplyDamage(float DamageAmount)
 {
 	if (IsDead())

@@ -82,12 +82,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Enemy|Effects")
 	void OnStartDissolve();
-	// 공격 횟수 및 쿨다운 관리
-	bool CanAttack() const;
+	bool CanAttack() const; // 공격 횟수 및 쿨다운 관리
 	void ResetAttackCount() { CurrentAttackCount = 0; }
 
-	// 상태 복구 관리
-	void ResetStateToIdle();
+	void ResetStateToIdle();// 상태 복구 관리
 
 protected:
 	virtual void PostInitializeComponents() override;
@@ -102,7 +100,7 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category = "Enemy|Visuals", meta = (DisplayName = "OnDeadVisuals"))
 	void K2_OnDeadVisuals();
 
-	UFUNCTION(BlueprintImplementableEvent, Category = "Combat", meta = (DisplayName = "OnPerfectGuarded"))
+	UFUNCTION(BlueprintImplementableEvent, Category = "Enemy|Visuals", meta = (DisplayName = "OnPerfectGuarded"))
 	void K2_OnPerfectGuarded(FVector ImpactLocation);
 
 public:
