@@ -13,8 +13,10 @@ enum class EEnemyState : uint8
 	Idle,
 	Move,
 	Chase,
+	Alert,
 	Attack,
 	Hit,
+	Stagger,
 	Dead
 };
 
@@ -29,6 +31,7 @@ enum class EEnemyGrade : uint8
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStateChanged, EEnemyState, OldState, EEnemyState, NewState);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAttackAnimationFinishedDelegate, EEnemyState);
 DECLARE_MULTICAST_DELEGATE(FOnEnemyDeathDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDissolveStarted);
 
 UCLASS(Abstract)
 class BAPROJECT_API AEnemyBase : public ACharacterBase
@@ -63,6 +66,8 @@ public:
 
 	UAnimMontage* GetEnemyAttackMontage() const { return AttackMontage; }
 
+	float GetMaxChaseDistance() { return MaxChaseDistance; }
+
 	virtual void Tick(float DeltaTime) override;
 
 #if WITH_EDITOR
@@ -72,8 +77,17 @@ public:
 	virtual void UpdateBlackBoardState();
 	virtual void ApplyKnockback(AActor* DamageCauser, float Force);
 
-	UFUNCTION(BlueprintCallable, Category = "Combat")
+	UFUNCTION(BlueprintCallable, Category = "Enemy|Combat")
 	virtual void HandlePerfectGuarded(FVector ImpactLocation);
+
+	UFUNCTION(BlueprintCallable, Category = "Enemy|Effects")
+	void OnStartDissolve();
+	// 공격 횟수 및 쿨다운 관리
+	bool CanAttack() const;
+	void ResetAttackCount() { CurrentAttackCount = 0; }
+
+	// 상태 복구 관리
+	void ResetStateToIdle();
 
 protected:
 	virtual void PostInitializeComponents() override;
@@ -96,6 +110,8 @@ public:
 	FOnEnemyDeathDelegate OnDeathEvent;
 
 protected:
+	bool bInitAI = false;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStatComponent> StatComponent;
 
@@ -110,6 +126,20 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 	float AttackRange;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
+	float MaxChaseDistance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	int32 MaxAttackCount = 3;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	int32 CurrentAttackCount = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	float AlertDuration = 3.0f;
+
+	FTimerHandle StateTimerHandle;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
 	bool bShowDebugRanges = true;
@@ -142,7 +172,19 @@ protected:
 	TObjectPtr<UAnimMontage> PerfectGuardedMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	UAnimMontage* HitMontage;
+	TObjectPtr<UAnimMontage> HitMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	TObjectPtr<UAnimMontage> DeadMontage;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effects")
+	TArray<UMaterialInterface*> DissolveMaterialsInput;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Effects")
+	TArray<UMaterialInstanceDynamic*> DynamicDissolveMaterials;
+
+	UPROPERTY(BlueprintAssignable, Category = "Effects")
+	FOnDissolveStarted OnDissolveStarted;
 
 	float MaxMoveSpeed;
 };

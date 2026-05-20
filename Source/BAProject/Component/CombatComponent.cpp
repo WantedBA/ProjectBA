@@ -12,6 +12,7 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "Instance/BATimeSubsystem.h"
+#include "Component/ActionComponent.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -215,9 +216,6 @@ void UCombatComponent::SpawnShockwave(FVector Location, float Scale)
 		);
 	}
 }
-
-#include "Instance/BATimeSubsystem.h"
-#include "Component/ActionComponent.h"
 
 void UCombatComponent::ApplyDamage(AActor* Victim, const FHitResult& HitResult)
 {
