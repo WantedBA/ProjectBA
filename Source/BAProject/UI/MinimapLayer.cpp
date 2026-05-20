@@ -34,6 +34,16 @@ void UMinimapLayer::NativeConstruct()
 	}
 }
 
+void UMinimapLayer::NativePreConstruct()
+{
+	Super::NativePreConstruct();
+
+	if (MinimapFrame && FrameTexture)
+	{
+		MinimapFrame->SetBrushFromTexture(FrameTexture);
+	}
+}
+
 void UMinimapLayer::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);

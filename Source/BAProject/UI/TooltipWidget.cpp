@@ -11,6 +11,7 @@
 #include "Tables/SkillRows.h" // 스킬 데이터
 #include "Tables/Text.h" // 텍스트 데이터 
 #include "MediaPlayer.h" // 영상 재생용
+#include "Materials/MaterialInterface.h"
 
 void UTooltipWidget::RequestShowTooltip(int32 InTid)
 {
@@ -97,20 +98,27 @@ void UTooltipWidget::OnAssetLoadCompleted(int32 InTid)
 
 	if (SkillData && PreviewVideoImage)
 	{
-		// 실행중인 영상이 있다면 닫기
-		TooltipMediaPlayer->Close();
-
-		// 로드 완료된 아이콘을 이미지 위젯에 적용
-		UTexture2D* LoadedIcon = SkillData->IconTexture.Get();
-		if (LoadedIcon)
+		// 영상 소스가 있는지 확인
+		if (TooltipMediaPlayer && PreviewVideoSource)
 		{
-			PreviewVideoImage->SetBrushFromTexture(LoadedIcon);
-		}
+			// 이전에 아이콘이 출력되었다면 다시 영상 머티리얼 브러시를 복구
+			if (VideoMaterial)
+			{
+				PreviewVideoImage->SetBrushFromMaterial(VideoMaterial);
+			}
 
-		// 비디오 재생 로직
-		if (TooltipMediaPlayer)
-		{
+			// 영상 재생
+			TooltipMediaPlayer->Close();
 			TooltipMediaPlayer->OpenSource(PreviewVideoSource);
+		}
+		else
+		{
+			// 영상이 없다면 텍스처(아이콘)로 브러시를 교체
+			UTexture2D* LoadedIcon = SkillData->IconTexture.Get();
+			if (LoadedIcon)
+			{
+				PreviewVideoImage->SetBrushFromTexture(LoadedIcon);
+			}
 		}
 	}
 }

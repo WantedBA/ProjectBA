@@ -43,6 +43,24 @@ protected:
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
 	class UTextBlock* HotKeyText;
 
+	// 테두리 이미지 위젯 바인딩
+	UPROPERTY(meta = (BindWodget))
+	class UImage* SlotFrame;
+
+	// 배경 이미지 위젯 바인딩
+	UPROPERTY(meta = (BindWodget))
+	class UImage* SlotBG;
+
+	UPROPERTY(EditAnywhere, Category = "BA|UI")
+	class UTexture2D* FrameTexture;
+
+	UPROPERTY(EditAnywhere, Category = "BA|UI")
+	class UTexture2D* BGTexture;
+
+	// 패딩
+	UPROPERTY(EditAnywhere, Category = "BA|UI")
+	FMargin IconPadding;
+
 public:
 	// 아이템 사용 시 호출하여 쿨타임을 시작하는 함수
 	UFUNCTION(BlueprintCallable, Category = "BA|UI|QuickSlot")

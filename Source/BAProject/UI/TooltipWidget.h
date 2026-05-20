@@ -41,6 +41,10 @@ protected:
 	// 마우스 오버 시 즉시 로딩을 방지하기 위한 타이머 핸들
 	FTimerHandle HoverDelayTimerHandle;
 
+	// 미디어 머티리얼
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "BA|UI|Tooltip")
+	class UMaterialInterface* VideoMaterial;
+
 public:
 	// 데이터 테이블의 ID를 받아 툴팁 정보 로드
 	UFUNCTION(BlueprintCallable, Category = "BA|UI|Tooltip")

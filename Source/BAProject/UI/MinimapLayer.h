@@ -35,6 +35,8 @@ protected:
 	// MapInfoActor를 찾아서 데이터 주입
 	virtual void NativeConstruct() override;
 
+	virtual void NativePreConstruct() override;
+
 	// 현재 맵의 정보를 담고 있는 액터의 참조
 	UPROPERTY()
 	class AMapInfoActor* StoredMapInfo;
@@ -42,6 +44,13 @@ protected:
 	// 회전용 컨테이너 패널
 	UPROPERTY(meta = (BindWidget))
 	class UCanvasPanel* MapContainer;
+
+	// 미니맵 외각틀 위젯
+	UPROPERTY(meta = (BindWidget))
+	class UImage* MinimapFrame;
+
+	UPROPERTY(EditAnywhere, Category = "Minimap|Settings")
+	class UTexture2D* FrameTexture;
 
 public:
 	// 매 프레임 캐릭터 위치를 체크해서 마커 이동 함수

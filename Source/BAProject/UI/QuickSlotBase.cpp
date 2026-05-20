@@ -3,8 +3,10 @@
 
 #include "UI/QuickSlotBase.h"
 #include "Components/Image.h"
+#include "Engine/Texture2D.h"
 #include "Components/TextBlock.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Components/OverlaySlot.h"
 
 
 void UQuickSlotBase::NativeConstruct()
@@ -61,6 +63,26 @@ void UQuickSlotBase::NativePreConstruct()
 	if (HotKeyText)
 	{
 		HotKeyText->SetText(HotKeyName);
+	}
+
+	// 배경 및 테두리 PNG 적용
+	if (SlotBG && BGTexture)
+	{
+		SlotBG->SetBrushFromTexture(BGTexture);
+	}
+	if (SlotFrame && FrameTexture)
+	{
+		SlotFrame->SetBrushFromTexture(FrameTexture);
+	}
+
+	// 아이콘 패딩 적용
+	if (SlotIcon)
+	{
+		UOverlaySlot* IconSlot = Cast<UOverlaySlot>(SlotIcon->Slot);
+		if (IconSlot)
+		{
+			IconSlot->SetPadding(IconPadding);
+		}
 	}
 }
 
