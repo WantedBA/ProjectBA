@@ -320,6 +320,7 @@ void AEnemyBase::OnDeath()
 	SetActorEnableCollision(false);
 
 	OnDeathEvent.Broadcast();
+
 	AAIController* AIController = Cast<AAIController>(GetController());
 	if (AIController && AIController->BrainComponent)
 	{
@@ -327,6 +328,7 @@ void AEnemyBase::OnDeath()
 	}
 
 	PlayAnimMontage(DeadMontage);
+
 	K2_OnDeadVisuals();
 }
 
@@ -406,69 +408,6 @@ void AEnemyBase::ResetStateToIdle()
 		ResetAttackCount(); // 공격 횟수 리셋하여 다시 공격 가능하게 함
 		
 		UE_LOG(LogTemp, Log, TEXT("[%s] State Recovered to Idle"), *GetName());
-	}
-}
-
-void AEnemyBase::ResetMonster(const FTransform& ResetTransform)
-{
-	// 회복
-	if (StatComponent)
-	{
-		StatComponent->RestoreAll();
-	}
-
-	// State 초기화
-	CurrentState = EEnemyState::Idle;
-	ResetAttackCount();
-
-	// 타이머 초기화
-	if (GetWorld())
-	{
-		GetWorldTimerManager().ClearTimer(StateTimerHandle);
-	}
-
-	// 몽타주 중지
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance)
-	{
-		AnimInstance->Montage_Stop(0.1f);
-	}
-
-	// 위치
-	SetActorTransform(ResetTransform);
-
-	// 물리 상태
-	if (GetCharacterMovement()) 
-	{
-		GetCharacterMovement()->StopMovementImmediately();
-		GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-		GetCharacterMovement()->SetComponentTickEnabled(true);
-	}
-
-	// Collision
-	SetActorEnableCollision(true);
-	
-	// Visuals 디졸브 상태 리셋
-	GetMesh()->SetVisibility(true);
-
-	// 동적 머티리얼 파라미터 등을 초기화하는 BP 이벤트 호출
-	K2_OnResetVisuals();
-
-	// AI 로직 초기화
-	AAIController* AIController = Cast<AAIController>(GetController());
-	if (AIController)
-	{
-		// 블랙보드 상태 초기화
-		UpdateBlackBoardState();
-
-		// BrainComponent(Behavior Tree)를 처음부터 다시 실행
-		if (AIController->BrainComponent)
-		{
-			AIController->BrainComponent->RestartLogic();
-		}
-
-		// 타겟 인지 정보 제거
-		AIController->StopMovement();
 	}
 }
 
