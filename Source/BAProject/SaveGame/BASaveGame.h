@@ -18,6 +18,14 @@ struct FSkillTreeSaveData
 	TSet<int32> ActivatedSkillIds;
 };
 
+USTRUCT(BlueprintType)
+struct FQuestSaveData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(SaveGame)
+	TSet<int32> QuestTids;
+};
 /**
  * 
  */
@@ -29,4 +37,7 @@ class BAPROJECT_API UBASaveGame : public USaveGame
 public:
 	UPROPERTY(SaveGame)
 	FSkillTreeSaveData SkillTreeData;
+
+	UPROPERTY(SaveGame)
+	FQuestSaveData QuestData;
 };

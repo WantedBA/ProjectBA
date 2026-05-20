@@ -5,6 +5,7 @@
 
 #include "BASaveGame.h"
 #include "Instance/SkillTreeSubsystem.h"
+#include "Instance/QuestManageSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 
 void USaveGameManager::Initialize(FSubsystemCollectionBase& Collection)
@@ -101,6 +102,7 @@ UBASaveGame* USaveGameManager::CreateSaveGame()
 
 	// 저장할 데이터 추가
 	SaveGameInstance->SkillTreeData = GetGameInstance()->GetSubsystem<USkillTreeSubsystem>()->MakeSaveData();
+	SaveGameInstance->QuestData.QuestTids = GetGameInstance()->GetSubsystem<UQuestManageSubsystem>()->MakeQuestSaveData();
 	
 	return SaveGameInstance;
 }

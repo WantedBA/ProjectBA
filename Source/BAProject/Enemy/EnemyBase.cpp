@@ -320,6 +320,7 @@ void AEnemyBase::OnDeath()
 	SetActorEnableCollision(false);
 
 	OnDeathEvent.Broadcast();
+
 	AAIController* AIController = Cast<AAIController>(GetController());
 	if (AIController && AIController->BrainComponent)
 	{
@@ -327,6 +328,7 @@ void AEnemyBase::OnDeath()
 	}
 
 	PlayAnimMontage(DeadMontage);
+
 	K2_OnDeadVisuals();
 }
 

@@ -9,6 +9,7 @@
 #include "Quest/QuestActivatable.h"
 #include "Quest/QuestZoneActor.h"
 #include "Tables/QuestEnums.h"
+#include "GameFramework/Actor.h"
 
 UQuestManageSubsystem* UQuestManageSubsystem::Get(const UObject* WorldContext)
 {
@@ -53,6 +54,12 @@ void UQuestManageSubsystem::StartQuest(int32 QuestTid, const TArray<FTransform>&
                                        TSubclassOf<AMonster> MonsterClass)
 {
     if (ActiveQuests.Contains(QuestTid)) return;
+
+    if (IsQuestCompleted(QuestTid)) // 이미 완료된 퀘스트인 경우
+    {
+        SpawnQuestMonsters(QuestTid, SpawnTransforms, MonsterClass); // 몬스터만 소환하고 종료
+        return;
+    }
 
     UBATableManager* TM = UBATableManager::Get(GetGameInstance());
     if (!TM || !TM->FindQuest(QuestTid))
@@ -170,6 +177,79 @@ void UQuestManageSubsystem::AbortQuest(int32 QuestTid)
     }
 }
 
+void UQuestManageSubsystem::ClearQuestMonsters(int32 QuestTid)
+{
+    TArray<TWeakObjectPtr<AActor>>* Monsters = AllSpawnedMonsters.Find(QuestTid);
+    if (Monsters == nullptr)
+    {
+        return;
+    }
+
+    for (auto& WeakM : *Monsters)
+    {
+        AActor* Monster = WeakM.Get();
+        if (Monster == nullptr)
+        {
+            continue;
+        }
+
+        Monster->Destroy();
+    }
+
+    Monsters->Empty();
+}
+
+void UQuestManageSubsystem::RefreshQuestMonsters(int32 QuestTid, const TArray<FTransform>& SpawnTransforms, TSubclassOf<AMonster> MonsterClass)
+{
+    FQuestRuntimeState* State = ActiveQuests.Find(QuestTid);
+    if (State == nullptr)
+    {
+        return;
+    }
+
+    
+    for (auto& WeakM : State->SpawnedMonsters) // 현재 월드에 소환되어 있는 물리 몬스터들만 파괴
+    {
+        AActor* Monster = WeakM.Get();
+        if (Monster == nullptr)
+        {
+            continue;
+        }
+
+        Monster->Destroy();
+    }
+    State->SpawnedMonsters.Empty();
+
+    SpawnQuestMonsters(QuestTid, SpawnTransforms, MonsterClass); // 새로운 몬스터 인스턴스들을 스폰
+}
+
+void UQuestManageSubsystem::RespawnQuestZoneEnemies()
+{
+    for (auto& Pair : RegisteredTriggers) // 등록된 모든 트리거(존)를 순회하며 리스폰 처리
+    {
+        for (auto& WeakTrigger : Pair.Value)
+        {
+            AQuestZoneActor* Trigger = WeakTrigger.Get();
+            if (Trigger == nullptr)
+            {
+                continue;
+            }
+                
+            Trigger->RespawnEnemiesInZone();// 개별 존의 리스폰 로직 호출
+        }
+    }
+}
+
+void UQuestManageSubsystem::ApplyQuestSaveData(const TSet<int32>& QuestSaveDataTSet)
+{
+    if (QuestSaveDataTSet.IsEmpty() == true)
+    {
+        return;
+    }
+
+    CompletedQuests = QuestSaveDataTSet;
+}
+
 void UQuestManageSubsystem::SpawnQuestMonsters(int32 QuestTid, const TArray<FTransform>& SpawnTransforms,
                                                TSubclassOf<AMonster> MonsterClass)
 {
@@ -195,6 +275,8 @@ void UQuestManageSubsystem::SpawnQuestMonsters(int32 QuestTid, const TArray<FTra
             AMonster* Spawned = World->SpawnActor<AMonster>(MonsterClass, T, Params);
             if (!Spawned) continue;
             
+            AllSpawnedMonsters.FindOrAdd(QuestTid).Add(Spawned); // 전역 추적 목록에 추가 (리셋 시 청소용)
+
             if (FQuestRuntimeState* RunningState = ActiveQuests.Find(QuestTid))
             {
                 RunningState->SpawnedMonsters.Add(Spawned);
@@ -213,6 +295,8 @@ void UQuestManageSubsystem::SpawnQuestMonsters(int32 QuestTid, const TArray<FTra
 void UQuestManageSubsystem::CompleteQuest(int32 QuestTid)
 {
     if (!ActiveQuests.Contains(QuestTid)) return;
+
+    CompletedQuests.Add(QuestTid);
 
     SetActivatablesActive(QuestTid, false);
 
