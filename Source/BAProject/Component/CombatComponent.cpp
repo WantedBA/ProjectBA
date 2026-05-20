@@ -241,12 +241,13 @@ void UCombatComponent::ApplyDamage(AActor* Victim, const FHitResult& HitResult)
 	AEnemyBase* OwnerEnemy = Cast<AEnemyBase>(OwnerActor);
 	AController* Instigator = OwnerActor ? OwnerActor->GetInstigatorController() : nullptr;
 
-	// 퍼펙트 가드/회피 체크
+	// 퍼펙트 가드/회피 체크 - Owner의 현재 공격이 퍼펙트 가드/회피를 허용하는가
 	if (bIsPerfectWindowActive)
 	{
 		UActionComponent* VictimAction = Victim->FindComponentByClass<UActionComponent>();
 		if (VictimAction)
 		{
+			// 피격 상대의 Dodged 상태와 Guard 상태 확인
 			bool bPerfectGuarded = VictimAction->GetGuardState() != EGuardState::None;
 			bool bPerfectDodged = VictimAction->GetActionRuntimeState() == EActionRuntimeState::Dodging;
 
@@ -261,7 +262,7 @@ void UCombatComponent::ApplyDamage(AActor* Victim, const FHitResult& HitResult)
 					}
 				}
 
-				// 몬스터 리액션 및 피드백 실행 (VFX, SFX, CameraShake 포함)
+				// 몬스터 리액션 및 피드백 실행 (VFX, SFX, CameraShake 포함) - Owner가 Enemy인 경우에만 적용
 				if (OwnerEnemy)
 				{
 					OwnerEnemy->HandlePerfectGuarded(HitResult.ImpactPoint);
@@ -278,7 +279,7 @@ void UCombatComponent::ApplyDamage(AActor* Victim, const FHitResult& HitResult)
 	// 충격파 및 왜곡 발생
 	SpawnShockwave(HitResult.ImpactPoint, 1.0f);
 
-	// 넉백 처리
+	// 넉백 처리 - 상대가 Enemy인 경우에만 적용
 	if (AEnemyBase* EnemyVictim = Cast<AEnemyBase>(Victim))
 	{
 		EnemyVictim->ApplyKnockback(OwnerActor, 500.0f);

@@ -8,6 +8,7 @@
 #endif
 #include "Component/ActionAnimationComponent.h"
 #include "Component/ActionComponent.h"
+#include "Component/CombatComponent.h"
 #include "Component/InteractorComponent.h"
 #include "Component/PlayerSkillComponent.h"
 #include "Component/StatComponent.h"
@@ -63,6 +64,9 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 
 	// 공용 액션 애니메이션 재생 컴포넌트 생성
 	ActionAnimationComponent = CreateDefaultSubobject<UActionAnimationComponent>(TEXT("ActionAnimationComponent"));
+	
+	// 공격 컴포넌트 생성
+	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	
 	// 스킬 컴포넌트 생성 - 컴포넌트 중 마지막에
 	PlayerSkillComponent = CreateDefaultSubobject<UPlayerSkillComponent>(TEXT("PlayerSkillComponent"));

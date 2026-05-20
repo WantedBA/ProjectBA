@@ -6,6 +6,7 @@
 #include "Tables/ActionEnums.h"
 #include "BAPlayerCharacter.generated.h"
 
+class UCombatComponent;
 class UPlayerSkillComponent;
 class UCameraComponent;
 class UCharacterMovementComponent;
@@ -37,9 +38,15 @@ public:
 	// 일반 이동 또는 사다리 이동 런타임을 매 프레임 갱신한다.
 	virtual void Tick(float DeltaTime) override;
 
-	// CharacterBase 공격 진입점. 실제 액션 실행은 ActionComponent 연동으로 확장된다.
+// 전투 관련
+	// CharacterBase 공격 진입점. LightAttack
 	virtual void Attack() override;
+	
+	void HeavyAttack();
+	
+	// 
 
+// --------------------
 	// UserDataSubsystem과 ActionData 테이블을 읽어 스탯, 이동 속도, 질주 비용을 초기화한다.
 	UFUNCTION(BlueprintCallable, Category = Initialization)
 	virtual void InitializeFromTable();
@@ -242,6 +249,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UActionAnimationComponent> ActionAnimationComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UCombatComponent> CombatComponent;	
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UPlayerSkillComponent> PlayerSkillComponent;
