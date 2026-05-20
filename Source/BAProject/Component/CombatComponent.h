@@ -53,7 +53,7 @@ public:
 	bool IsPerfectWindowActive() const { return bIsPerfectWindowActive; }
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void SetPerfectWindowActive(bool bActive) { bIsPerfectWindowActive = bActive; }
+	void SetPerfectWindowActive(bool bActive, float TimeDilation = -1.f, float Duration = -1.f);
 
 protected:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -82,6 +82,12 @@ protected:
 
 	UPROPERTY()
 	bool bIsPerfectWindowActive = false;
+
+	UPROPERTY()
+	float ActivePerfectTimeDilation = -1.f;
+
+	UPROPERTY()
+	float ActivePerfectDuration = -1.f;
 
 	UPROPERTY()
 	float CurrentRadius;
