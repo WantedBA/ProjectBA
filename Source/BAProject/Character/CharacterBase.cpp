@@ -40,6 +40,7 @@ void ACharacterBase::SetInvincible(const bool bNewInvincible)
 void ACharacterBase::OnDamaged(float FinalDamage, AActor* DamageCauser)
 {
 	// TODO: 실제 HP/스태미너 반영 및 사망 판정은 StatComponent에서 처리
+	
 }
 
 void ACharacterBase::OnDeath()
