@@ -57,6 +57,8 @@ void ABAPlayerCharacter::StopGuard()
 
 	if (bGuardActionRunning)
 	{
+		// 실제 가드 판정이 열린 뒤의 해제만 End 섹션으로 보낸다.
+		// Start 중 키를 떼는 스팸 입력은 아직 가드가 성립하지 않았으므로 몽타주를 끊는다.
 		if ((bGuardWindowActive || bGuardBroken) && RequestGuardMontageEnd())
 		{
 			SetBAPlayerState(EBAPlayerState::None);
