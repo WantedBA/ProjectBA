@@ -216,13 +216,13 @@ void ABAPlayerCharacter::TryAttack(EActionCommand InActionCommand)
 		if (InActionCommand == EActionCommand::LightAttack)
 		{
 			CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack());
-			NextActionAnimationTid = 31001;
+			NextActionAnimationTid = FirstLightAttackMontageTid;
 			StartAttack(FirstLightAttackMontage);
 		}
 		else if (InActionCommand == EActionCommand::HeavyAttack)
 		{
 			CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack() * 1.5);
-			NextActionAnimationTid = 32001;
+			NextActionAnimationTid = FirstHeavyAttackMontageTid;
 			StartAttack(FirstHeavyAttackMontage);
 		}
 	}
@@ -256,45 +256,45 @@ void ABAPlayerCharacter::StartAttack(UAnimMontage* InAnimMontage)
 	}
 }
 
-void ABAPlayerCharacter::HeavyAttack()
-{
-	// TODO
-}
-
 void ABAPlayerCharacter::SetNextCombo(EActionCommand InActionCommand)
 {
 	static const UBATableManager* TableManager = UBATableManager::Get(this);
 	
+	const FActionAnimationDataRow* NowActionAnimationData = 
+		TableManager->FindActionAnimationData(NowActionAnimationTid);
+	if (!NowActionAnimationData)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ABAPlayerCharacter::SetNextCombo] Failed to find now action animation data for tid: %d"), NowActionAnimationTid);
+		return;
+	}
+	
+	// 현재 액션과 입력 커맨드로 다음 액션 탐색
 	if (InActionCommand == EActionCommand::LightAttack)
 	{
-		const FActionAnimationDataRow* NowActionAnimationData = 
-			TableManager->FindActionAnimationData(NowActionAnimationTid);
-		if (!NowActionAnimationData)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[ABAPlayerCharacter::SetNextCombo] Failed to find now action animation data for tid: %d"), NowActionAnimationTid);
-			return;
-		}
-		
 		NextActionAnimationTid = NowActionAnimationData->NextComboLAnimationTid;
-		
-		// 다음 콤보가 없는 경우
-		if (NextActionAnimationTid == 0)
-		{
-			return;
-		}
-		
-		const FActionAnimationDataRow* NextAttackActionAnimationData = 
-			TableManager->FindActionAnimationData(NextActionAnimationTid);
-		
-		if (!NextAttackActionAnimationData)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[ABAPlayerCharacter::SetNextCombo] Failed to find next combo animation data for tid: %d, now: %d"), NextActionAnimationTid, NowActionAnimationTid);
-			return;
-		}
-		
-		// TODO 비동기 로딩으로 변경
-		NextAttackMontage = NextAttackActionAnimationData->Montage.LoadSynchronous();
 	}
+	else if (InActionCommand == EActionCommand::HeavyAttack)
+	{
+		NextActionAnimationTid = NowActionAnimationData->NextComboRAnimationTid;
+	}
+	
+	// 다음 콤보가 없는 경우
+	if (NextActionAnimationTid == 0)
+	{
+		return;
+	}
+	
+	const FActionAnimationDataRow* NextAttackActionAnimationData = 
+		TableManager->FindActionAnimationData(NextActionAnimationTid);
+	
+	if (!NextAttackActionAnimationData)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ABAPlayerCharacter::SetNextCombo] Failed to find next combo animation data for tid: %d, now: %d"), NextActionAnimationTid, NowActionAnimationTid);
+		return;
+	}
+	
+	// TODO 비동기 로딩으로 변경
+	NextAttackMontage = NextAttackActionAnimationData->Montage.LoadSynchronous();
 }
 
 void ABAPlayerCharacter::OnNextComboCheck()

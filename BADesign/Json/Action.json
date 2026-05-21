@@ -358,7 +358,8 @@
             "Montage": "/Game/Character/Player/Animation/Montages/LightAttack/AM_Player_LightAttack_4.AM_Player_LightAttack_4"
         },
         {
-            "Tid": 32001
+            "Tid": 32001,
+            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_1.AM_Player_HeavyAttack_1"
         }
     ],
     "ActionWindowData": [

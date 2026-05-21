@@ -59,7 +59,6 @@ public:
 
 	void OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg);
 	void StartAttack(UAnimMontage* InAnimMontage);
-	void HeavyAttack();
 	
 	virtual class UStaticMeshComponent* GetWeaponMesh() const override { return WeaponMeshComponent; }
 
@@ -291,9 +290,11 @@ protected:
 // 공격 관련
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UAnimMontage> FirstLightAttackMontage;
+	const int32 FirstLightAttackMontageTid = 31001;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UAnimMontage> FirstHeavyAttackMontage;
+	const int32 FirstHeavyAttackMontageTid = 32001;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	EBAPlayerState BAPlayerState = EBAPlayerState::None;
