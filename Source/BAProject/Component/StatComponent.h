@@ -78,7 +78,10 @@ public:
 	FORCEINLINE float GetMaxStamina() const { return MaxStamina; }
 	FORCEINLINE void SetMaxStamina(const float NewMaxStamina) { MaxStamina = NewMaxStamina; }
 	FORCEINLINE float GetCurrentStamina() const { return CurrentStamina; }
-
+	
+	FORCEINLINE float GetAttackSpeed() const { return AttackSpeed; }
+	FORCEINLINE void SetAttackSpeed(const float NewAttackSpeed) { AttackSpeed = NewAttackSpeed; }
+	
 	// 스태미너를 지정량 소비하고 회복 Tick 상태를 갱신한다.
 	UFUNCTION(BlueprintCallable, Category = "Stat")
 	void ConsumeStamina(float ConsumeAmount);
@@ -132,7 +135,7 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Attack")
 	float Attack;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Attack")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stat|Attack")
 	float AttackSpeed;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Defence")
