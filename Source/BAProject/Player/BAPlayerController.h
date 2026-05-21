@@ -53,6 +53,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> SprintAction;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> GuardAction;
+
 // 체크포인트 인풋
 	// 체크포인트에서 활성화할 IMC
 	UPROPERTY(EditDefaultsOnly, Category = "Input|Checkpoint")
@@ -116,6 +119,10 @@ private:
 	// 현재 이동 입력 방향을 사용해 Dodge 액션을 시작한다.
 	void TryStartDodgeAction() const;
 
+	// 가드
+	void OnGuardStarted();
+	void OnGuardCompleted();
+
 	// 사다리 상태면 이탈하고, 아니면 현재 상호작용 대상을 실행한다.
 	void OnInteract();
 
@@ -130,12 +137,5 @@ private:
 	bool bSprintModifierHeld = false;
 	bool bHasMoveInput = false;
 	double SprintDodgePressedTime = 0.0;
-	
-// protected: TODO: 은성님 HUD 작업
-// 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
-// 	TSubClassOf<class UHUDWidget> HUDWidgetClass;
-// 	
-// 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
-// 	TObjectPtr<class UHUDWidget> HUDWidget;
 	
 };
