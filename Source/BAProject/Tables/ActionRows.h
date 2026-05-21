@@ -183,11 +183,6 @@ struct BAPROJECT_API FActionAnimationDataRow : public FBARowBase
 	// true면 재생 중 AnimInstance RootMotionMode를 RootMotionFromMontagesOnly로 임시 전환한다.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ActionAnimationData")
 	bool bUseRootMotion = false;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Action|ActionAnimationData")
-	int32 NextComboLAnimationTid = 0;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Action|ActionAnimationData")
-	int32 NextComboRAnimationTid = 0;
 
 	virtual void PostRead() override
 	{
