@@ -1,6 +1,7 @@
 #include "Player/BAPlayerCharacter.h"
 
 #include "Component/ActionComponent.h"
+#include "Component/ActionAnimationComponent.h"
 
 namespace
 {
@@ -18,6 +19,7 @@ bool ABAPlayerCharacter::TryStartGuard()
 		return false;
 	}
 
+	SetGuardWindowActive(false);
 	SetPerfectGuardWindowActive(false);
 
 	if (!ActionComponent->TryStartAction(EActionCommand::Guard))
@@ -30,7 +32,7 @@ bool ABAPlayerCharacter::TryStartGuard()
 		return false;
 	}
 
-	ActionComponent->SetGuardState(EGuardState::Guarding);
+	ConfigureGuardMontageSections();
 	SetBAPlayerState(EBAPlayerState::Guarding);
 	SetCombatMode(EPlayerCombatMode::Block);
 	return true;
@@ -43,8 +45,6 @@ void ABAPlayerCharacter::StopGuard()
 		return;
 	}
 
-	SetPerfectGuardWindowActive(false);
-
 	bool bStoppedGuard = false;
 	const EGuardState GuardState = ActionComponent->GetGuardState();
 	switch (GuardState)
@@ -52,18 +52,29 @@ void ABAPlayerCharacter::StopGuard()
 	case EGuardState::Guarding:
 	case EGuardState::Blocking:
 	case EGuardState::GuardBroken:
-		ActionComponent->SetGuardState(EGuardState::None);
 		bStoppedGuard = true;
 		break;
 	case EGuardState::None:
 	default:
 		break;
 	}
+	SetGuardWindowActive(false);
+	if (GuardState == EGuardState::GuardBroken)
+	{
+		ActionComponent->SetGuardState(EGuardState::None);
+	}
 
 	if (ActionComponent->GetActiveActionType() == EActionType::Guard)
 	{
-		ActionComponent->CompleteCurrentAction();
 		bStoppedGuard = true;
+		if (RequestGuardMontageEnd())
+		{
+			SetBAPlayerState(EBAPlayerState::None);
+			SetCombatMode(EPlayerCombatMode::None);
+			return;
+		}
+
+		ActionComponent->CompleteCurrentAction();
 	}
 
 	if (!bStoppedGuard || IsDamageReacting())
@@ -73,6 +84,29 @@ void ABAPlayerCharacter::StopGuard()
 
 	SetBAPlayerState(EBAPlayerState::None);
 	SetCombatMode(EPlayerCombatMode::None);
+}
+
+void ABAPlayerCharacter::ConfigureGuardMontageSections()
+{
+	if (!ActionAnimationComponent)
+	{
+		return;
+	}
+
+	ActionAnimationComponent->SetActiveMontageNextSection(GuardStartSection, GuardLoopSection);
+	ActionAnimationComponent->SetActiveMontageNextSection(GuardLoopSection, GuardLoopSection);
+}
+
+bool ABAPlayerCharacter::RequestGuardMontageEnd()
+{
+	if (!ActionAnimationComponent)
+	{
+		return false;
+	}
+
+	ActionAnimationComponent->SetActiveMontageNextSection(GuardStartSection, GuardEndSection);
+	ActionAnimationComponent->SetActiveMontageNextSection(GuardLoopSection, GuardEndSection);
+	return ActionAnimationComponent->JumpActiveMontageToSection(GuardEndSection);
 }
 
 void ABAPlayerCharacter::ConsumePerfectGuardStaminaCost()
@@ -86,8 +120,40 @@ void ABAPlayerCharacter::ConsumePerfectGuardStaminaCost()
 	ActionComponent->ConsumeActiveActionStaminaCost(GetPerfectGuardStaminaCostMultiplier());
 }
 
+void ABAPlayerCharacter::SetGuardWindowActive(const bool bActive)
+{
+	if (!ActionComponent)
+	{
+		SetPerfectGuardWindowActive(false);
+		return;
+	}
+
+	if (bActive)
+	{
+		if (ActionComponent->GetActiveActionType() == EActionType::Guard && !IsDamageReacting())
+		{
+			ActionComponent->SetGuardState(EGuardState::Guarding);
+		}
+		return;
+	}
+
+	const EGuardState GuardState = ActionComponent->GetGuardState();
+	if (GuardState == EGuardState::Guarding || GuardState == EGuardState::Blocking)
+	{
+		ActionComponent->SetGuardState(EGuardState::None);
+	}
+	SetPerfectGuardWindowActive(false);
+}
+
 void ABAPlayerCharacter::SetPerfectGuardWindowActive(const bool bActive)
 {
+	if (bActive && (!ActionComponent
+			|| (ActionComponent->GetGuardState() != EGuardState::Guarding
+				&& ActionComponent->GetGuardState() != EGuardState::Blocking)))
+	{
+		return;
+	}
+
 	bPerfectGuardWindowActive = bActive;
 }
 

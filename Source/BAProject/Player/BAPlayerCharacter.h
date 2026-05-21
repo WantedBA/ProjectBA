@@ -59,6 +59,7 @@ public:
 	bool TryStartGuard();
 	void StopGuard();
 	void ConsumePerfectGuardStaminaCost();
+	void SetGuardWindowActive(bool bActive);
 	void SetPerfectGuardWindowActive(bool bActive);
 	virtual bool IsGuardingAgainstDamage(const FVector& DamageDirection) const override;
 	virtual bool IsPerfectGuardWindowActive() const override;
@@ -307,6 +308,8 @@ private:
 	void UnlockSprintAfterRecovery();
 
 	// 가드
+	void ConfigureGuardMontageSections();
+	bool RequestGuardMontageEnd();
 	float GetGuardAbsorptionMultiplier() const;
 	float GetPerfectGuardStaminaCostMultiplier() const;
 	bool ConsumeGuardStaminaForDamage();
@@ -403,6 +406,15 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")
 	TMap<EActionDirection, TObjectPtr<UAnimMontage>> GuardBreakReactMontages;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Montage")
+	FName GuardStartSection = TEXT("Start");
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Montage")
+	FName GuardLoopSection = TEXT("Loop");
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Montage")
+	FName GuardEndSection = TEXT("End");
 
 	// 런타임 상태
 	FBAPlayerMovementRuntimeState MovementRuntime;

@@ -195,7 +195,7 @@ void ABAPlayerCharacter::OnDeath()
 	DamageReactionState = EPlayerDamageReactionState::None;
 	ActiveDamageReactionMontage = nullptr;
 	ActiveDamageReactionPlaybackId = 0;
-	SetPerfectGuardWindowActive(false);
+	SetGuardWindowActive(false);
 	SetBAPlayerState(EBAPlayerState::Dead);
 
 	if (ActionComponent)
@@ -258,7 +258,7 @@ bool ABAPlayerCharacter::ShouldPlayGuardBreakReaction() const
 
 void ABAPlayerCharacter::CancelCurrentActionForDamageReaction()
 {
-	SetPerfectGuardWindowActive(false);
+	SetGuardWindowActive(false);
 
 	if (ActionComponent)
 	{

@@ -276,6 +276,13 @@ void ABAPlayerCharacter::HandleActionStarted(const int32 ActionTid, const EActio
 void ABAPlayerCharacter::HandleActionMontageEnded(int32 ActionTid, EActionType ActionType, UAnimMontage* Montage,
 	bool bInterrupted)
 {
+	if (ActionType == EActionType::Guard && !IsDamageReacting())
+	{
+		SetGuardWindowActive(false);
+		SetBAPlayerState(EBAPlayerState::None);
+		SetCombatMode(EPlayerCombatMode::None);
+	}
+
 	if (ActionType == EActionType::DodgeRoll && !bInterrupted && (BAPlayerState == EBAPlayerState::DodgeRolling))
 	{
 		SetBAPlayerState(EBAPlayerState::None);
