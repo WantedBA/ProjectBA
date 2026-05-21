@@ -177,6 +177,13 @@ void ABAPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABAPlayerController::OnSprintCompleted);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Canceled, this, &ABAPlayerController::OnSprintCompleted);
 	}
+
+	if (ensureMsgf(GuardAction, TEXT("GuardAction is not configured on %s"), *GetName()))
+	{
+		EnhancedInputComponent->BindAction(GuardAction, ETriggerEvent::Started, this, &ABAPlayerController::OnGuardStarted);
+		EnhancedInputComponent->BindAction(GuardAction, ETriggerEvent::Completed, this, &ABAPlayerController::OnGuardCompleted);
+		EnhancedInputComponent->BindAction(GuardAction, ETriggerEvent::Canceled, this, &ABAPlayerController::OnGuardCompleted);
+	}
 	
 	if (ensureMsgf(InteractAction, TEXT("InteractAction is not configured on %s"), *GetName()))
 	{
@@ -380,6 +387,22 @@ void ABAPlayerController::TryStartDodgeAction() const
 		PC->GetLocomotionMode() == EPlayerLocomotionMode::Strafe ?
 		GetActionDirectionFromMoveInput(*PC, PC->GetMoveInputVector()) : EActionDirection::Any;
 	ActionComponent->TryStartAction(EActionCommand::Dodge, DodgeDirection);
+}
+
+void ABAPlayerController::OnGuardStarted()
+{
+	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
+	{
+		PC->TryStartGuard();
+	}
+}
+
+void ABAPlayerController::OnGuardCompleted()
+{
+	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
+	{
+		PC->StopGuard();
+	}
 }
 
 void ABAPlayerController::OnInteract()

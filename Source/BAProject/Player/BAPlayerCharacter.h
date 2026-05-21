@@ -56,6 +56,9 @@ public:
 	// 공격 관련
 	virtual void TryAttack(EActionCommand InActionCommand); // CharacterBase 공격 진입점. 
 
+	bool TryStartGuard();
+	void StopGuard();
+
 	void OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg);
 	void StartAttack(UAnimMontage* InAnimMontage);
 	void HeavyAttack();
