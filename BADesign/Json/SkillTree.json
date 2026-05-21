@@ -238,23 +238,23 @@
     "SkillModifier": [
         {
             "SkillTid": 6,
-            "ApplyType": "VFX"
+            "ApplyType": "Element"
         },
         {
             "SkillTid": 7,
-            "ApplyType": "VFX"
+            "ApplyType": "Element"
         },
         {
             "SkillTid": 8,
-            "ApplyType": "VFX"
+            "ApplyType": "Element"
         },
         {
             "SkillTid": 9,
-            "ApplyType": "ComboTransition"
+            "ApplyType": "Action"
         },
         {
             "SkillTid": 10,
-            "ApplyType": "ComboTransition"
+            "ApplyType": "Action"
         },
         {
             "SkillTid": 11,
@@ -262,15 +262,15 @@
         },
         {
             "SkillTid": 12,
-            "ApplyType": "ComboTransition"
+            "ApplyType": "Action"
         },
         {
             "SkillTid": 13,
-            "ApplyType": "MovesetKey"
+            "ApplyType": "Action"
         },
         {
             "SkillTid": 14,
-            "ApplyType": "ComboTransition"
+            "ApplyType": "Action"
         },
         {
             "SkillTid": 15,
@@ -294,11 +294,11 @@
         },
         {
             "SkillTid": 20,
-            "ApplyType": "ComboTransition"
+            "ApplyType": "Action"
         },
         {
             "SkillTid": 21,
-            "ApplyType": "ComboTransition"
+            "ApplyType": "Action"
         }
     ]
 }

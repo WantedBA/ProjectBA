@@ -236,7 +236,7 @@ struct BAPROJECT_API FComboTransitionRow : public FBARowBase
 	GENERATED_BODY()
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ComboTransition")
-	int32 TransitionTid = 0;
+	int32 Tid = 0;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ComboTransition")
 	TSoftObjectPtr<UAnimMontage> Montage;
@@ -252,6 +252,6 @@ struct BAPROJECT_API FComboTransitionRow : public FBARowBase
 	
 	virtual void PostRead() override
 	{
-		bTid = TransitionTid;
+		bTid = Tid;
 	}
 };

@@ -49,10 +49,10 @@ public:
 	FORCEINLINE const TMap<int32, FActionAnimationDataRow*>& GetActionAnimationDataTable() const { return ActionAnimationDataTable.GetMap(); }
 	FORCEINLINE const FActionWindowDataRow* FindActionWindowData(const int32 InTid) const { return ActionWindowDataTable.Find(InTid); }
 	FORCEINLINE const TMap<int32, FActionWindowDataRow*>& GetActionWindowDataTable() const { return ActionWindowDataTable.GetMap(); }
-	FORCEINLINE const FComboTransitionRow* FindComboTransitionData(const int32 InTid) const { return ComboTransitionTable.Find(InTid); }
-	FORCEINLINE const TMap<int32, FComboTransitionRow*>& GetComboTransitionDataTable() const { return ComboTransitionTable.GetMap(); }
-	FORCEINLINE const FSkillModifierRow* FindSkillModifierData(const int32 InTid) const { return SkillModifierTable.Find(InTid); }
-	FORCEINLINE const TMap<int32, FSkillModifierRow*>& GetSkillModifierDataTable() const { return SkillModifierTable.GetMap(); }
+	FORCEINLINE const FComboTransitionRow* FindComboTransition(const int32 InTid) const { return ComboTransitionTable.Find(InTid); }
+	FORCEINLINE const TMap<int32, FComboTransitionRow*>& GetComboTransitionTable() const { return ComboTransitionTable.GetMap(); }
+	FORCEINLINE const FSkillModifierRow* FindSkillModifier(const int32 InTid) const { return SkillModifierTable.Find(InTid); }
+	FORCEINLINE const TMap<int32, FSkillModifierRow*>& GetSkillModifierTable() const { return SkillModifierTable.GetMap(); }
 	
 	// Player
 	FORCEINLINE const FPlayerBaseStatRow* FindPlayerBaseStat() const { return PlayerBaseStatTable.Find(1); } // 플레이어는 1명이므로 매직넘버 고정

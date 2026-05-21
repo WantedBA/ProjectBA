@@ -741,18 +741,18 @@
         {
             "Tid": 71001,
             "Montage": "/Game/Character/Player/Animation/Montages/LightAttack/AM_Player_LightAttack_1.AM_Player_LightAttack_1",
-            "NextOnL": 31002
+            "NextOnL": 71002
         },
         {
             "Tid": 71002,
             "Montage": "/Game/Character/Player/Animation/Montages/LightAttack/AM_Player_LightAttack_2.AM_Player_LightAttack_2",
-            "NextOnL": 31003,
-            "NextOnR": 32002
+            "NextOnL": 71003,
+            "NextOnR": 72002
         },
         {
             "Tid": 71003,
             "Montage": "/Game/Character/Player/Animation/Montages/LightAttack/AM_Player_LightAttack_3.AM_Player_LightAttack_3",
-            "NextOnL": 31004
+            "NextOnL": 71004
         },
         {
             "Tid": 71004,

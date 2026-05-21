@@ -116,9 +116,8 @@ struct BAPROJECT_API FSkillRow : public FBARowBase
 UENUM(BlueprintType)
 enum class ESkillApplyType : uint8
 {
-	VFX, ComboTransition, Stat, MovesetKey, Etc
+	Element, Action, Stat, Etc
 };
-
 
 // PlayerSkillComponent에서 스킬 적용을 위한 데이터
 USTRUCT(BlueprintType, meta = (BASheet = "SkillModifier"))
@@ -129,12 +128,20 @@ struct BAPROJECT_API FSkillModifierRow : public FBARowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Modifier")
 	int32 SkillTid = 0;
 	
+	// 스킬 적용 방식 분류
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Modifier")
 	ESkillApplyType ApplyType = ESkillApplyType::Etc;
 	
+	// 2차 분류
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Modifier")
 	FString Target;
 	
+	// 필요한 값
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Modifier")
 	FString Value;
+	
+	virtual void PostRead() override
+	{
+		bTid = SkillTid;
+	}
 };
