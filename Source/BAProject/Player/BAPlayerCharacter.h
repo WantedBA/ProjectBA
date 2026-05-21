@@ -58,7 +58,7 @@ public:
 
 	bool TryStartGuard();
 	void StopGuard();
-	bool TryConsumePerfectGuardStamina();
+	void ConsumePerfectGuardStaminaCost();
 
 	void OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg);
 	void StartAttack(UAnimMontage* InAnimMontage);

@@ -71,15 +71,15 @@ void ABAPlayerCharacter::StopGuard()
 	SetCombatMode(EPlayerCombatMode::None);
 }
 
-bool ABAPlayerCharacter::TryConsumePerfectGuardStamina()
+void ABAPlayerCharacter::ConsumePerfectGuardStaminaCost()
 {
 	if (!ActionComponent)
 	{
-		return false;
+		return;
 	}
 
 	// TODO: 무기 테이블로 분리 필요. 퍼펙트 가드 스태미너 비용 배율 적용도 장비 정책에서 계산해야 한다.
-	return ActionComponent->ConsumeActiveActionStaminaCost(GetPerfectGuardStaminaCostMultiplier());
+	ActionComponent->ConsumeActiveActionStaminaCost(GetPerfectGuardStaminaCostMultiplier());
 }
 
 float ABAPlayerCharacter::GetGuardAbsorptionMultiplier() const

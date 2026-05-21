@@ -271,14 +271,12 @@ void UCombatComponent::ApplyDamage(AActor* Victim, const FHitResult& HitResult)
 			bool bPerfectGuarded = false;
 			if (GuardState == EGuardState::Guarding || GuardState == EGuardState::Blocking)
 			{
+				// 퍼펙트 가드는 일반 가드/가드브레이크보다 우선하므로 스태미너 소비 실패가 성공 판정을 막지 않는다.
 				if (ABAPlayerCharacter* VictimPlayer = Cast<ABAPlayerCharacter>(Victim))
 				{
-					bPerfectGuarded = VictimPlayer->TryConsumePerfectGuardStamina();
+					VictimPlayer->ConsumePerfectGuardStaminaCost();
 				}
-				else
-				{
-					bPerfectGuarded = true;
-				}
+				bPerfectGuarded = true;
 			}
 			const bool bPerfectDodged = VictimAction->GetActionRuntimeState() == EActionRuntimeState::Dodging;
 
