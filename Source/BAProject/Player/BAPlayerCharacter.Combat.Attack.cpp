@@ -68,9 +68,8 @@ void ABAPlayerCharacter::StartAttack(UAnimMontage* InAnimMontage)
 		return;
 	}
 	
-	// 재생 속도 : 몽타주 재생 속도 * 공격 속도
-	float MontagePlayRate = NowCombo->PlayRate;
-	MontagePlayRate *= StatComponent->GetAttackSpeed();
+	// 재생 속도 : 테이블에 정의된 몽타주 재생 속도 * 공격 속도
+	const float MontagePlayRate = NowCombo->PlayRate * StatComponent->GetAttackSpeed();
 	CombatComponent->ExecuteAttack(InAnimMontage, MontagePlayRate);
 	
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
