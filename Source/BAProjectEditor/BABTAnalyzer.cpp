@@ -27,7 +27,7 @@ bool UBABTAnalyzer::AnalyzeBehaviorTree(UBehaviorTree* InTree, FBAAIAnalyzerTree
 		// Extract Blackboard Keys
 		for (int32 i = 0; i < InTree->BlackboardAsset->GetNumKeys(); ++i)
 		{
-			FBlackboardEntry* Entry = InTree->BlackboardAsset->GetKey(i);
+			const FBlackboardEntry* Entry = InTree->BlackboardAsset->GetKey(i);
 			if (Entry)
 			{
 				FBAAIAnalyzerBlackboardKeyData KeyData;
