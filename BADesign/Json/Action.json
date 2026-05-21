@@ -378,7 +378,8 @@
             "Direction": "Any",
             "CombatStance": "Relaxed",
             "WeaponType": "Any",
-            "Montage": "/Game/Character/Player/Animation/Montages/Guard/AM_Player_Guard_Loop.AM_Player_Guard_Loop",
+            "Montage": "/Game/Character/Player/Animation/Montages/Guard/AM_Player_Guard.AM_Player_Guard",
+            "StartSection": "Start",
             "PlayRate": 1,
             "BlendIn": 0.1,
             "BlendOut": 0.1
