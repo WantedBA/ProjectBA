@@ -267,7 +267,7 @@ void ABAPlayerController::LightAttack()
 {
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
 	{
-		PC->Attack(EActionCommand::LightAttack);
+		PC->TryAttack(EActionCommand::LightAttack);
 	}
 }
 

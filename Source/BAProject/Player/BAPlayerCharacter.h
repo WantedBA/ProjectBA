@@ -54,15 +54,16 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	// 공격 관련
-	virtual void Attack(EActionCommand InActionCommand); // CharacterBase 공격 진입점. 
+	virtual void TryAttack(EActionCommand InActionCommand); // CharacterBase 공격 진입점. 
 
 	void OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg);
-	void LightAttack();
+	void StartAttack(UAnimMontage* InAnimMontage);
 	void HeavyAttack();
 	
 	virtual class UStaticMeshComponent* GetWeaponMesh() const override { return WeaponMeshComponent; }
 
-	void NextComboCheck();
+	void SetNextCombo(EActionCommand InActionCommand);
+	void OnNextComboCheck();
 	
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void SetBAPlayerState(EBAPlayerState NewState);
@@ -241,12 +242,17 @@ protected:
 	
 	// 공격 관련
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	TObjectPtr<UAnimMontage> AttackMontage;
+	TObjectPtr<UAnimMontage> FirstLightAttackMontage;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	TObjectPtr<UAnimMontage> FirstHeavyAttackMontage;
 	
 	const float WeaponRadius = 20.f; // 충돌 판정 시 검 두께
+	int32 NowActionAnimationTid = 0; // 다음 콤보 결정할 때 사용
+	int32 NextActionAnimationTid = 0; // 결정된 다음 콤보 저장
 	
-	int32 PrevActionAnimationTid = 0; // 콤보 액션 판정을 위한 변수
-	EActionCommand NextActionCommand = EActionCommand::None; 
+	UPROPERTY()
+	TObjectPtr<UAnimMontage> NextAttackMontage = nullptr;
 	
 private:
 	// 이동 런타임
