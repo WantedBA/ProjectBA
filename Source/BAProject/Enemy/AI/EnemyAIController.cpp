@@ -81,3 +81,16 @@ void AEnemyAIController::InitializeAI(int32 InTid, APawn* InPawn)
 			BTAsset ? *BTAsset->GetName() : TEXT("Null"));
 	}
 }
+
+void AEnemyAIController::EngageTarget(AActor* target)
+{
+	if (target == nullptr)
+	{
+		return;
+	}
+	
+	if (UBlackboardComponent* BB = GetBlackboardComponent())
+	{
+		BB->SetValueAsObject(BBKey::TargetActor, target);
+	}
+}

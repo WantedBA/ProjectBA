@@ -17,8 +17,14 @@ public:
 	UBTTask_ExecuteBossPattern();
 
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+	virtual EBTNodeResult::Type AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+
 	void OnAttackFinishedCallback(EEnemyState NewState);
 
 private:
-	TObjectPtr<UBehaviorTreeComponent> CachedOwnerComp;
+	// 보스 OnAttackAnimationFinished 델리게이트에서 이 태스크 바인딩을 해제한다.
+	void CleanupDelegate();
+
+	TWeakObjectPtr<UBehaviorTreeComponent> CachedOwnerComp;
+	TWeakObjectPtr<ABoss> CachedBoss;
 };

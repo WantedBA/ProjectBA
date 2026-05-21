@@ -211,7 +211,9 @@ void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
 		break;
 
 	case EEnemyState::Chase:
-		TargetSpeed = MaxMoveSpeed;
+		// 추격은 걷기 모션으로 — 속도 기반 BlendSpace가 Run 대신 Walk를 고르도록 낮춘다.
+		// 0.5 배율은 임시값. ABP BlendSpace의 Walk/Run 경계 속도에 맞춰 조정할 것.
+		TargetSpeed = MaxMoveSpeed * 0.5f;
 		break;
 
 	case EEnemyState::Move:
