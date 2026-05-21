@@ -349,6 +349,17 @@
         },
         {
             "Tid": 32001
+        },
+        {
+            "Tid": 30011,
+            "ActionTid": 10011,
+            "Direction": "Any",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/Guard/AM_Player_Guard_Loop.AM_Player_Guard_Loop",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.1
         }
     ],
     "ActionWindowData": [
