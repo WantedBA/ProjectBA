@@ -9,6 +9,7 @@ namespace
 {
 	constexpr int32 ActionComponentInvalidActionTid = 0;
 	const FName ActionStaminaRecoveryPauseSource(TEXT("Action"));
+	const FName ActionStaminaRecoveryRateMultiplierSource(TEXT("Action"));
 }
 
 UActionComponent::UActionComponent()
@@ -111,7 +112,9 @@ void UActionComponent::CompleteCurrentAction()
 	bActiveActionInterruptLocked = false;
 	bActiveActionInputBufferOpen = false;
 	const bool bShouldResumeStaminaRecovery = bActiveActionPausedStaminaRecovery;
+	const bool bShouldClearStaminaRecoveryRateMultiplier = bActiveActionModifiedStaminaRecoveryRate;
 	bActiveActionPausedStaminaRecovery = false;
+	bActiveActionModifiedStaminaRecoveryRate = false;
 	ClearBufferedAction();
 
 	if (bShouldResumeStaminaRecovery && CachedStatComponent)
@@ -119,8 +122,19 @@ void UActionComponent::CompleteCurrentAction()
 		CachedStatComponent->ResumeStaminaRecovery(ActionStaminaRecoveryPauseSource, true);
 	}
 
+	if (bShouldClearStaminaRecoveryRateMultiplier && CachedStatComponent)
+	{
+		CachedStatComponent->ClearStaminaRecoveryRateMultiplier(ActionStaminaRecoveryRateMultiplierSource);
+	}
+
 	OnActionCompleted.Broadcast(CompletedActionTid, CompletedActionType);
 	RefreshTickEnabled();
+}
+
+bool UActionComponent::ConsumeActiveActionStaminaCost()
+{
+	const FActionDataRow* ActionData = GetActiveActionData();
+	return ActionData && ConsumeStamina(*ActionData, EActionStaminaConsumeContext::OnDemand);
 }
 
 void UActionComponent::CancelCurrentAction()
@@ -289,8 +303,7 @@ bool UActionComponent::CanStartAction(const FActionDataRow& ActionData, const EA
 
 	if (CachedStatComponent)
 	{
-		const float CurrentStamina = CachedStatComponent->GetCurrentStamina();
-		if (CurrentStamina < ActionData.MinRequiredStamina || CurrentStamina < ActionData.StaminaCost)
+		if (!CanConsumeStamina(ActionData, EActionStaminaConsumeContext::Start))
 		{
 			LastStartResult = EActionStartResult::NotEnoughStamina;
 			return false;
@@ -311,10 +324,12 @@ void UActionComponent::BeginAction(const FActionDataRow& ActionData, const EActi
 	bActiveActionInterruptLocked = false;
 	bActiveActionInputBufferOpen = false;
 	bActiveActionPausedStaminaRecovery = false;
+	bActiveActionModifiedStaminaRecoveryRate = false;
 	LastStartResult = EActionStartResult::Success;
 
 	// TODO: 스탯 컴포넌트 결합 의존성 없애기 - Delegate로 디커플링 (곽민규)
-	ConsumeInstantCost(ActionData);
+	ConsumeStamina(ActionData, EActionStaminaConsumeContext::Start);
+	ApplyStaminaRecoveryRateMultiplier(ActionData);
 	StartCooldown(ActionData);
 
 	OnActionStarted.Broadcast(ActiveActionTid, ActiveActionType);
@@ -329,18 +344,84 @@ void UActionComponent::StartCooldown(const FActionDataRow& ActionData)
 	}
 }
 
-void UActionComponent::ConsumeInstantCost(const FActionDataRow& ActionData)
+void UActionComponent::ApplyStaminaRecoveryRateMultiplier(const FActionDataRow& ActionData)
 {
-	if (!CachedStatComponent
-		|| ActionData.StaminaCost <= 0.f
-		|| ActionData.StaminaCostType != EActionStaminaCostType::Instant)
+	if (!CachedStatComponent || FMath::IsNearlyEqual(ActionData.StaminaRecoveryRateMultiplier, 1.f))
 	{
 		return;
 	}
 
-	CachedStatComponent->PauseStaminaRecovery(ActionStaminaRecoveryPauseSource);
-	CachedStatComponent->ConsumeStamina(ActionData.StaminaCost);
-	bActiveActionPausedStaminaRecovery = true;
+	CachedStatComponent->SetStaminaRecoveryRateMultiplier(
+		ActionStaminaRecoveryRateMultiplierSource,
+		ActionData.StaminaRecoveryRateMultiplier);
+	bActiveActionModifiedStaminaRecoveryRate = true;
+}
+
+bool UActionComponent::CanConsumeStamina(
+	const FActionDataRow& ActionData,
+	const EActionStaminaConsumeContext ConsumeContext) const
+{
+	if (!CachedStatComponent)
+	{
+		return true;
+	}
+
+	const float RequiredStamina = FMath::Max(
+		ActionData.MinRequiredStamina,
+		GetStaminaCostForContext(ActionData, ConsumeContext));
+
+	return CachedStatComponent->GetCurrentStamina() >= RequiredStamina;
+}
+
+bool UActionComponent::ConsumeStamina(
+	const FActionDataRow& ActionData,
+	const EActionStaminaConsumeContext ConsumeContext)
+{
+	if (!CachedStatComponent)
+	{
+		return true;
+	}
+
+	const float StaminaCost = GetStaminaCostForContext(ActionData, ConsumeContext);
+	if (StaminaCost <= 0.f)
+	{
+		return true;
+	}
+
+	if (!CanConsumeStamina(ActionData, ConsumeContext))
+	{
+		LastStartResult = EActionStartResult::NotEnoughStamina;
+		return false;
+	}
+
+	if (ConsumeContext == EActionStaminaConsumeContext::Start)
+	{
+		CachedStatComponent->PauseStaminaRecovery(ActionStaminaRecoveryPauseSource);
+		bActiveActionPausedStaminaRecovery = true;
+	}
+
+	CachedStatComponent->ConsumeStamina(StaminaCost);
+	return true;
+}
+
+float UActionComponent::GetStaminaCostForContext(
+	const FActionDataRow& ActionData,
+	const EActionStaminaConsumeContext ConsumeContext) const
+{
+	switch (ActionData.StaminaCostType)
+	{
+	case EActionStaminaCostType::Instant:
+		return ConsumeContext == EActionStaminaConsumeContext::Start
+			? FMath::Max(0.f, ActionData.StaminaCost)
+			: 0.f;
+	case EActionStaminaCostType::OnDemand:
+		return ConsumeContext == EActionStaminaConsumeContext::OnDemand
+			? FMath::Max(0.f, ActionData.StaminaCost)
+			: 0.f;
+	case EActionStaminaCostType::PerSecond:
+	default:
+		return 0.f;
+	}
 }
 
 void UActionComponent::BufferAction(const int32 ActionTid, const EActionDirection Direction)

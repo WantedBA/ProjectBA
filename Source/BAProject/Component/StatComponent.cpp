@@ -3,6 +3,7 @@
 namespace
 {
 	const FName DefaultStaminaRecoveryPauseSource(TEXT("Default"));
+	const FName DefaultStaminaRecoveryRateMultiplierSource(TEXT("Default"));
 }
 
 UStatComponent::UStatComponent()
@@ -42,9 +43,9 @@ void UStatComponent::TickComponent
 		return;
 	}
 
-	// 초당 회복률을 실제 초당 회복량으로 바꾼 뒤, 이번 프레임 시간만큼만 회복
+	// 초당 회복률을 실제 초당 회복량으로 바꾼 뒤, 이번 프레임 시간과 회복 배율만큼만 회복
 	const float RecoveryAmountPerSecond = MaxStamina * StaminaRecoveryPerSecond / 100.f;
-	const float RecoveryAmountThisFrame = RecoveryAmountPerSecond * DeltaTime;
+	const float RecoveryAmountThisFrame = RecoveryAmountPerSecond * GetStaminaRecoveryRateMultiplier() * DeltaTime;
 	SetCurrentStamina(CurrentStamina + RecoveryAmountThisFrame);
 }
 
@@ -54,6 +55,7 @@ void UStatComponent::RestoreAll()
 	CurrentStamina = MaxStamina;
 	StaminaRecoveryDelayRemaining = 0.f;
 	StaminaRecoveryPauseSources.Reset();
+	StaminaRecoveryRateMultipliers.Reset();
 
 	OnHPChanged.Broadcast(CurrentHP, MaxHP);
 	OnStaminaChanged.Broadcast(CurrentStamina, MaxStamina);
@@ -114,6 +116,7 @@ void UStatComponent::InitializeStats
 	StaminaRecoveryDelay = InStaminaRecoveryDelay;
 	StaminaRecoveryDelayRemaining = 0.f;
 	StaminaRecoveryPauseSources.Reset();
+	StaminaRecoveryRateMultipliers.Reset();
 	RefreshStaminaRecoveryTick();
 	WalkSpeed = InWalkSpeed;
 	RunSpeed = InRunSpeed;
@@ -160,6 +163,31 @@ void UStatComponent::ResumeStaminaRecovery(const FName Source, const bool bApply
 	RefreshStaminaRecoveryTick();
 }
 
+void UStatComponent::SetStaminaRecoveryRateMultiplier(const FName Source, const float Multiplier)
+{
+	const FName SafeSource = Source.IsNone() ? DefaultStaminaRecoveryRateMultiplierSource : Source;
+	StaminaRecoveryRateMultipliers.Add(SafeSource, FMath::Max(0.f, Multiplier));
+	RefreshStaminaRecoveryTick();
+}
+
+void UStatComponent::ClearStaminaRecoveryRateMultiplier(const FName Source)
+{
+	const FName SafeSource = Source.IsNone() ? DefaultStaminaRecoveryRateMultiplierSource : Source;
+	StaminaRecoveryRateMultipliers.Remove(SafeSource);
+	RefreshStaminaRecoveryTick();
+}
+
+float UStatComponent::GetStaminaRecoveryRateMultiplier() const
+{
+	float Multiplier = 1.f;
+	for (const TPair<FName, float>& Pair : StaminaRecoveryRateMultipliers)
+	{
+		Multiplier *= FMath::Max(0.f, Pair.Value);
+	}
+
+	return Multiplier;
+}
+
 void UStatComponent::SetCurrentStamina(const float NewCurrentStamina)
 {
 	const float OldStamina = CurrentStamina;
@@ -186,7 +214,8 @@ void UStatComponent::RefreshStaminaRecoveryTick()
 		MaxStamina > 0.f
 		&& StaminaRecoveryPerSecond > 0.f
 		&& CurrentStamina < MaxStamina
-		&& !IsStaminaRecoveryPaused();
+		&& !IsStaminaRecoveryPaused()
+		&& GetStaminaRecoveryRateMultiplier() > 0.f;
 
 	SetComponentTickEnabled(bCanRecover);
 }

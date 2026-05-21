@@ -29,6 +29,12 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionStarted, int32, ActionTid,
 // 현재 액션이 완료되거나 중단되어 런타임 상태가 정리될 때 알린다.
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionCompleted, int32, ActionTid, EActionType, ActionType);
 
+enum class EActionStaminaConsumeContext : uint8
+{
+	Start,
+	OnDemand
+};
+
 /**
  * 공용 Action 실행 컴포넌트.
  *
@@ -76,6 +82,10 @@ public:
 	// 현재 액션을 종료하고 버퍼된 액션이 있으면 이어서 실행을 시도한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	void CompleteCurrentAction();
+
+	// 현재 액션의 OnDemand 스태미너 비용을 명시적으로 소비한다.
+	UFUNCTION(BlueprintCallable, Category = "Action|Stamina")
+	bool ConsumeActiveActionStaminaCost();
 
 	// 피격/사망처럼 외부 상태가 현재 액션을 강제로 끊을 때 사용한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
@@ -177,7 +187,10 @@ private:
 	bool TryStartActionByTid(int32 ActionTid, EActionDirection Direction);
 	void BeginAction(const FActionDataRow& ActionData, EActionDirection Direction);
 	void StartCooldown(const FActionDataRow& ActionData);
-	void ConsumeInstantCost(const FActionDataRow& ActionData);
+	void ApplyStaminaRecoveryRateMultiplier(const FActionDataRow& ActionData);
+	bool CanConsumeStamina(const FActionDataRow& ActionData, EActionStaminaConsumeContext ConsumeContext) const;
+	bool ConsumeStamina(const FActionDataRow& ActionData, EActionStaminaConsumeContext ConsumeContext);
+	float GetStaminaCostForContext(const FActionDataRow& ActionData, EActionStaminaConsumeContext ConsumeContext) const;
 	void BufferAction(int32 ActionTid, EActionDirection Direction);
 	void ClearBufferedAction();
 	void TryStartBufferedAction();
@@ -217,6 +230,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
 	bool bActiveActionPausedStaminaRecovery = false;
+
+	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
+	bool bActiveActionModifiedStaminaRecoveryRate = false;
 
 	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
 	int32 BufferedActionTid = 0;
