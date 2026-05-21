@@ -48,6 +48,14 @@ struct BAPROJECT_API FBADamageEvent : public FDamageEvent
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
 	FHitResult HitResult;
 
+	// CombatComponent가 피해 적용 시점에 확인한 피해자 가드 상태다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage|Guard")
+	bool bVictimGuarding = false;
+
+	// 피해자의 가드 몽타주 퍼펙트 윈도우 안에서 성립한 가드인지 여부다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage|Guard")
+	bool bVictimPerfectGuard = false;
+
 	virtual int32 GetTypeID() const override
 	{
 		return FBADamageEvent::ClassID;

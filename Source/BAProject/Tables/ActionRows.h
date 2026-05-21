@@ -34,13 +34,17 @@ struct BAPROJECT_API FActionDataRow : public FBARowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ActionData")
 	EActionType ActionType = EActionType::None;
 
-	// CanStartAction의 필요 스태미너 검사와 Instant 액션 비용 소비에 사용된다. Sprint는 루프 중 소모량으로도 읽는다.
+	// CanStartAction의 필요 스태미너 검사와 액션 비용 소비에 사용된다. Sprint와 OnDemand 액션은 각 전용 시점에서 읽는다.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ActionData")
 	float StaminaCost = 0.f;
 
-	// 일반 액션은 Instant일 때만 즉시 소비한다. Sprint는 Instant/PerSecond에 따라 프레임별 소모량 계산을 분기한다.
+	// Instant는 시작 시, PerSecond는 지속 중, OnDemand는 피격/방어 판정 같은 명시적 시점에 소비한다.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ActionData")
 	EActionStaminaCostType StaminaCostType = EActionStaminaCostType::Instant;
+
+	// 액션 실행 중 적용할 스태미너 회복 배율. 1이면 기본 회복, 0.5면 절반 속도로 회복한다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ActionData")
+	float StaminaRecoveryRateMultiplier = 1.f;
 
 	// 액션 시작 가능 여부와 Sprint 진입 가능 여부를 검사하는 최소 현재 스태미너.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ActionData")

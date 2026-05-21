@@ -58,6 +58,11 @@ public:
 
 	bool TryStartGuard();
 	void StopGuard();
+	void ConsumePerfectGuardStaminaCost();
+	void SetGuardWindowActive(bool bActive);
+	void SetPerfectGuardWindowActive(bool bActive);
+	virtual bool IsGuardingAgainstDamage(const FVector& DamageDirection) const override;
+	virtual bool IsPerfectGuardWindowActive() const override;
 
 	void OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg);
 	void StartAttack(UAnimMontage* InAnimMontage);
@@ -244,6 +249,9 @@ protected:
 		EActionDirection HitDirection,
 		bool bGuarding,
 		bool bGuardBreak);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Combat|Guard", meta = (DisplayName = "OnPerfectGuardSucceeded"))
+	void K2_OnPerfectGuardSucceeded(const FHitResult& HitResult, AActor* DamageCauser);
 	
 	// 공격 관련
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
@@ -299,6 +307,15 @@ private:
 	void LockSprintUntilRecovered();
 	void UnlockSprintAfterRecovery();
 
+	// 가드
+	void ConfigureGuardMontageSections();
+	bool RequestGuardMontageEnd();
+	float GetGuardAbsorptionMultiplier() const;
+	float GetPerfectGuardStaminaCostMultiplier() const;
+	bool ConsumeGuardStaminaForDamage();
+	bool ShouldResumeGuardAfterGuardHit() const;
+	void ShowGuardJudgementDebugMessage(const FString& Message, const FColor& Color) const;
+
 	// 사다리 런타임
 	void TickLadderClimb(float DeltaTime);
 	float CalculateLadderClimbSpeed(float VerticalInput) const;
@@ -307,8 +324,8 @@ private:
 	void ResetMovementRuntimeForLadder();
 
 	// 피격 반응
-	bool IsGuardingAgainstDamage(const FVector& DamageDirection) const;
 	bool ShouldPlayGuardBreakReaction() const;
+	void HandlePerfectGuardSucceeded(const FHitResult& HitResult, AActor* DamageCauser);
 	void CancelCurrentActionForDamageReaction();
 	void PlayDamageReactionAnimation(
 		EBADamageReactionType DamageReactionType,
@@ -392,6 +409,15 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")
 	TMap<EActionDirection, TObjectPtr<UAnimMontage>> GuardBreakReactMontages;
 
+	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Montage")
+	FName GuardStartSection = TEXT("Start");
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Montage")
+	FName GuardLoopSection = TEXT("Loop");
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Montage")
+	FName GuardEndSection = TEXT("End");
+
 	// 런타임 상태
 	FBAPlayerMovementRuntimeState MovementRuntime;
 	FBAPlayerSprintRuntimeState SprintRuntime;
@@ -400,6 +426,8 @@ private:
 	FTimerHandle DamageReactionTimerHandle;
 	int32 ActiveDamageReactionPlaybackId = 0;
 	int32 NextDamageReactionPlaybackId = 1;
+	bool bGuardInputHeld = false;
+	bool bPerfectGuardWindowActive = false;
 	
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimMontage> ActiveDamageReactionMontage;

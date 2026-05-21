@@ -6,6 +6,7 @@
             "Category": "Attack",
             "StaminaCost": 15,
             "StaminaCostType": "Instant",
+            "StaminaRecoveryRateMultiplier": 1,
             "MinRequiredStamina": 1,
             "SprintRestartStaminaPercent": 0,
             "ActionType": "LightAttack"
@@ -16,6 +17,7 @@
             "Category": "Attack",
             "StaminaCost": 30,
             "StaminaCostType": "Instant",
+            "StaminaRecoveryRateMultiplier": 1,
             "MinRequiredStamina": 1,
             "SprintRestartStaminaPercent": 0,
             "ActionType": "HeavyAttack"
@@ -24,8 +26,9 @@
             "Tid": 10011,
             "Name": "Guard",
             "Category": "Defence",
-            "StaminaCost": 20,
-            "StaminaCostType": "Instant",
+            "StaminaCost": 15,
+            "StaminaCostType": "OnDemand",
+            "StaminaRecoveryRateMultiplier": 0.5,
             "MinRequiredStamina": 1,
             "SprintRestartStaminaPercent": 0,
             "ActionType": "Guard"
@@ -36,6 +39,7 @@
             "Category": "Movement",
             "StaminaCost": 20,
             "StaminaCostType": "PerSecond",
+            "StaminaRecoveryRateMultiplier": 1,
             "MinRequiredStamina": 0,
             "SprintRestartStaminaPercent": 70,
             "ActionType": "Sprint"
@@ -46,6 +50,7 @@
             "Category": "Movement",
             "StaminaCost": 12,
             "StaminaCostType": "Instant",
+            "StaminaRecoveryRateMultiplier": 1,
             "MinRequiredStamina": 1,
             "SprintRestartStaminaPercent": 0,
             "ActionType": "DodgeRoll",
@@ -60,6 +65,7 @@
             "Category": "Movement",
             "StaminaCost": 10,
             "StaminaCostType": "Instant",
+            "StaminaRecoveryRateMultiplier": 1,
             "MinRequiredStamina": 1,
             "SprintRestartStaminaPercent": 0,
             "ActionType": "DodgeRoll",
@@ -372,7 +378,8 @@
             "Direction": "Any",
             "CombatStance": "Relaxed",
             "WeaponType": "Any",
-            "Montage": "/Game/Character/Player/Animation/Montages/Guard/AM_Player_Guard_Loop.AM_Player_Guard_Loop",
+            "Montage": "/Game/Character/Player/Animation/Montages/Guard/AM_Player_Guard.AM_Player_Guard",
+            "StartSection": "Start",
             "PlayRate": 1,
             "BlendIn": 0.1,
             "BlendOut": 0.1

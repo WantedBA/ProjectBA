@@ -64,8 +64,10 @@ float ABAPlayerCharacter::CalculateSprintStaminaDrain(const float DeltaTime) con
 	case EActionStaminaCostType::PerSecond:
 		return StatComponent->GetMaxStamina() * SprintCostSettings.StaminaCost / 100.f * DeltaTime;
 	case EActionStaminaCostType::Instant:
-	default:
 		return SprintCostSettings.StaminaCost;
+	case EActionStaminaCostType::OnDemand:
+	default:
+		return 0.f;
 	}
 }
 
