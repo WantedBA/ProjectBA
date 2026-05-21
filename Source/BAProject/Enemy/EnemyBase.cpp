@@ -207,7 +207,7 @@ void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
 	switch (NewState)
 	{
 	case EEnemyState::Idle:
-		TargetSpeed = MaxMoveSpeed = 0.6f;
+		TargetSpeed = MaxMoveSpeed * 0.1f;
 		break;
 
 	case EEnemyState::Chase:
@@ -216,6 +216,10 @@ void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
 
 	case EEnemyState::Move:
 		TargetSpeed = MaxMoveSpeed * 0.6f;
+		break;
+
+	case EEnemyState::Tactical:
+		TargetSpeed = MaxMoveSpeed * 0.5f; // 서성일 때는 평소보다 느리게
 		break;
 
 	case EEnemyState::Alert:
@@ -229,7 +233,7 @@ void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
 		TargetSpeed = 0.f;
 		break;
 
-	default:
+	default: 
 		TargetSpeed = MaxMoveSpeed;
 		break;
 	}
