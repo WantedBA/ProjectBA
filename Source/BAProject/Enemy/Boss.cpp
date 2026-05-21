@@ -59,6 +59,10 @@ void ABoss::BeginPlay()
 	{
 		InitializeFromTable(MonsterTid);
 	}
+
+	// 보스는 기본적으로 슈퍼아머 — 피격당해도 공격·추격이 끊기지 않는다.
+	// (103·104 차징 중 그로기 같은 특수 상황에서만 SetSuperArmor(false)로 일시 해제 예정)
+	SetSuperArmor(true);
 }
 
 void ABoss::PossessedBy(AController* NewController)
@@ -180,21 +184,60 @@ int32 ABoss::ChooseBestPattern()
 		return 0;
 	}
 
-	int32 BestPatternTid = 0;
-	float MaxScore = 0.0f;
+	// === 1단계: 조건부 우선 패턴 ===
+	// 상황(플레이어 위치 등)이 맞으면 가중 랜덤을 건너뛰고 해당 패턴을 확정 선택한다.
+	const EBossPatternZone PlayerZone = GetPlayerZone(Target);
 
-	for (const FBossAttackData& Pattern : BossPatterns)
+	// 후방/측면 대응 — 플레이어가 보스 후방·측면에 있으면 그 구역 전용 패턴(106/107)을 즉시 선택
+	if (PlayerZone == EBossPatternZone::Back || PlayerZone == EBossPatternZone::Side)
 	{
-		const float Score = CalculatePatternScore(Pattern, Target);
-		if (Score > MaxScore)
+		for (const FBossAttackData& Pattern : BossPatterns)
 		{
-			MaxScore = Score;
-			BestPatternTid = Pattern.Tid;
+			if (Pattern.RequiredZone == PlayerZone && IsPatternAvailable(Pattern.Tid))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[ChooseBestPattern] Conditional pick Tid=%d (Zone=%d)"), Pattern.Tid, (int32)PlayerZone);
+				return Pattern.Tid;
+			}
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[ChooseBestPattern] Selected Tid=%d (Score=%.2f)"), BestPatternTid, MaxScore);
-	return BestPatternTid;
+	// TODO: 105 패리 스탠스 / 104 차징 광역 — 실행부 구현 + 트리거 조건 정의 후 여기에 추가
+
+	// === 2단계: 나머지 패턴 가중 랜덤 ===
+	// 게이트를 통과한 후보의 점수를 확률 가중치로 한 룰렛 선택.
+	// (항상 최고점만 고르면 1·2순위 패턴만 무한 반복되는 문제를 피한다.)
+	TArray<TPair<int32, float>> Candidates;
+	float TotalScore = 0.0f;
+	for (const FBossAttackData& Pattern : BossPatterns)
+	{
+		const float Score = CalculatePatternScore(Pattern, Target);
+		if (Score > 0.0f)
+		{
+			Candidates.Emplace(Pattern.Tid, Score);
+			TotalScore += Score;
+		}
+	}
+
+	if (Candidates.Num() == 0 || TotalScore <= 0.0f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ChooseBestPattern] No candidate"));
+		return 0;
+	}
+	
+	float Roll = FMath::FRandRange(0.0f, TotalScore);
+	int32 SelectedTid = Candidates.Last().Key;
+	for (const TPair<int32, float>& Candidate : Candidates)
+	{
+		Roll -= Candidate.Value;
+		if (Roll <= 0.0f)
+		{
+			SelectedTid = Candidate.Key;
+			break;
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[ChooseBestPattern] Weighted pick Tid=%d (candidates=%d)"), SelectedTid, Candidates.Num());
+	return SelectedTid;
 }
 
 float ABoss::CalculatePatternScore(const FBossAttackData& PatternData, AActor* Target)
@@ -491,6 +534,7 @@ void ABoss::LoadBossPatterns(int32 StageType)
 			NewData.PatternMontage      = TSoftObjectPtr<UAnimMontage>(FSoftObjectPath(Pair.Value->MontagePath));
 			NewData.IdealRange          = Pair.Value->IdealRange;
 			NewData.Attack              = Pair.Value->Attack;
+			NewData.DamageReactionType  = static_cast<EBADamageReactionType>(Pair.Value->DamageReactionType);
 			NewData.NextComboTid        = Pair.Value->NextComboTid;
 			NewData.ComboTransitionTime = Pair.Value->ComboTransitionTime;
 
@@ -590,7 +634,7 @@ bool ABoss::ExecuteBossPattern(int32 PatternTid)
 	// 타격 소켓은 CombatComponent에 설정된 StartSocketName/EndSocketName을 그대로 사용한다.
 	// 소켓 인자를 생략(NAME_None)하면 SetAttackData가 기존 소켓 이름을 덮어쓰지 않는다.
 	// IdealRange는 AI 위치 선정용 거리라 타격 반경으로 쓰면 안 된다 → 검 두께(WeaponHitRadius) 사용.
-	CombatComponent->SetAttackData(WeaponHitRadius, PatternData->Attack);
+	CombatComponent->SetAttackData(WeaponHitRadius, PatternData->Attack, NAME_None, NAME_None, PatternData->DamageReactionType);
 
 	CombatComponent->ExecuteAttack(MontageToPlay);
 
@@ -619,16 +663,19 @@ void ABoss::OnPatternMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 	// 공격 상태가 아니다 = AN_EnemyAttackEnd 노티 또는 피격이 이미 상태를 바꿔놓았다.
 	if (State != EEnemyState::Attack)
 	{
-		// 피격/경직으로 공격이 강제 중단된 경우, BT 래턴트 태스크(ExecuteBossPattern)는
-		// 아직 InProgress로 살아있다. 종료 신호를 안 보내면 트리가 영구히 멈춰 보스가 정지한다.
-		if (bInterrupted && (State == EEnemyState::Hit || State == EEnemyState::Stagger))
+		// 공격 몽타주가 인터럽트로 끊긴 경우(피격·경직 등): AN_EnemyAttackEnd 노티가
+		// 지나가지 않아 BT 래턴트 태스크(ExecuteBossPattern)가 종료 신호를 못 받고 갇힌다.
+		// 피격 리액션이 짧아 이미 Hit/Stagger를 거쳐 Idle로 복구된 뒤일 수도 있으므로,
+		// State 종류를 가리지 않고 인터럽트면 무조건 종료 신호를 보낸다.
+		if (bInterrupted)
 		{
 			bIsComboTransitioning = false;
 			PendingComboTid = 0;
 			GetWorldTimerManager().ClearTimer(ComboTransitionHandle);
 			OnAttackAnimationFinished.Broadcast(State);
 		}
-		// 그 외(노티가 이미 정상 처리)는 중복 방지를 위해 아무것도 하지 않는다.
+		// bInterrupted == false면 AN_EnemyAttackEnd 노티가 이미 정상 처리했으므로
+		// 중복 방지를 위해 아무것도 하지 않는다.
 		return;
 	}
 

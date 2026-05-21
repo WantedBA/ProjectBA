@@ -13,6 +13,8 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "Instance/BATimeSubsystem.h"
+#include "Component/ActionComponent.h"
+#include "Enemy/Monster.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -294,7 +296,8 @@ void UCombatComponent::ApplyDamage(AActor* Victim, const FHitResult& HitResult)
 	SpawnShockwave(HitResult.ImpactPoint, 1.0f);
 
 	// 넉백 처리 - 상대가 Enemy인 경우에만 적용
-	if (AEnemyBase* EnemyVictim = Cast<AEnemyBase>(Victim))
+	// 보스 제외
+	if (AMonster* EnemyVictim = Cast<AMonster>(Victim))
 	{
 		EnemyVictim->ApplyKnockback(OwnerActor, 500.0f);
 	}

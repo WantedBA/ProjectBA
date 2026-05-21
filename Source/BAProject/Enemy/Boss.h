@@ -63,6 +63,10 @@ struct BAPROJECT_API FBossAttackData
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int32 Attack = 0;
 
+	// 피격 반응 타입. 플레이어가 피격 반응 애니메이션·넉백 강도 분기에 사용한다.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	EBADamageReactionType DamageReactionType = EBADamageReactionType::HitReact;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int32 NextComboTid = 0;
 

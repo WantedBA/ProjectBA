@@ -292,6 +292,7 @@ void ABAPlayerCharacter::ApplyDamageReactionKnockback(
 		return;
 	}
 
+	// 넉백 강도는 플레이어가 보유한 피격 반응 타입별 값으로 결정한다.
 	float KnockbackStrength = HitReactKnockbackStrength;
 	if (bGuardBreak)
 	{

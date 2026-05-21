@@ -139,18 +139,19 @@ void AEnemyBase::OnDamaged(
 		StatComponent->ApplyDamage(FinalDamage);
 		if (IsDead() == false)
 		{
-			// 슈퍼 아머가 아닐 때만 피격 상태로 전환
+			// 슈퍼 아머가 아닐 때만 피격 반응(상태 전환·넉백·경로 이동 중단).
+			// 슈퍼아머 중에는 피격당해도 공격·추격이 끊기지 않는다.
 			if (bIsSuperArmor == false)
 			{
 				SetState(EEnemyState::Hit);
 				ApplyKnockback(DamageCauser, 600.f);
-			}
 
-			AAIController* AICon = Cast<AAIController>(GetController());
-			if (AICon)
-			{
-				// 피격 시 현재 경로 이동 중단
-				AICon->StopMovement();
+				AAIController* AICon = Cast<AAIController>(GetController());
+				if (AICon)
+				{
+					// 피격 시 현재 경로 이동 중단
+					AICon->StopMovement();
+				}
 			}
 		}
 	}
