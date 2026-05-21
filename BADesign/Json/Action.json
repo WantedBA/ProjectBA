@@ -337,6 +337,18 @@
             "BlendIn": 0.1,
             "BlendOut": 0.1,
             "bUseRootMotion": 1
+        },
+        {
+            "Tid": 31001,
+            "Montage": "/Game/Character/Player/Animation/Montages/LightAttack/AM_Player_LightAttack_1.AM_Player_LightAttack_1",
+            "NextComboLAnimationTid": 31002
+        },
+        {
+            "Tid": 31002,
+            "Montage": "/Game/Character/Player/Animation/Montages/LightAttack/AM_Player_LightAttack_2.AM_Player_LightAttack_2"
+        },
+        {
+            "Tid": 32001
         }
     ],
     "ActionWindowData": [
