@@ -191,6 +191,29 @@ bool ABAPlayerCharacter::ShouldResumeGuardAfterGuardHit() const
 	return bGuardInputHeld && IsAlive() && !IsOnLadder();
 }
 
+bool ABAPlayerCharacter::ResumeGuardAfterGuardHit()
+{
+	if (!TryStartGuard())
+	{
+		return false;
+	}
+
+	if (ActionAnimationComponent)
+	{
+		ActionAnimationComponent->JumpActiveMontageToSection(GuardLoopSection);
+	}
+
+	SetGuardWindowActive(true);
+	SetPerfectGuardWindowActive(false);
+	if (ActionComponent)
+	{
+		ActionComponent->SetGuardState(EGuardState::Guarding);
+	}
+	SetBAPlayerState(EBAPlayerState::Guarding);
+	SetCombatMode(EPlayerCombatMode::Block);
+	return true;
+}
+
 void ABAPlayerCharacter::ShowGuardJudgementDebugMessage(const FString& Message, const FColor& Color) const
 {
 #if !UE_BUILD_SHIPPING
