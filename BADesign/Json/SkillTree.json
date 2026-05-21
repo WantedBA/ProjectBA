@@ -2,195 +2,307 @@
     "Skill": [
         {
             "SkillTid": 1,
+            "SkillNameTid": 34001,
             "TextTid": 33001,
             "bIsDefaultSkill": 1,
             "NeededSkillPoint": 0,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Normal-Attack-Icon-_1_.Img_Normal-Attack-Icon-_1_",
             "PositionX": 300,
-            "PositionY": 250
+            "PositionY": 250,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 2,
+            "SkillNameTid": 34002,
             "TextTid": 33002,
             "bIsDefaultSkill": 1,
             "NeededSkillPoint": 0,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Heavy-Attack-Icon-_2_.Img_Heavy-Attack-Icon-_2_",
             "PositionX": 600,
-            "PositionY": 250
+            "PositionY": 250,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 3,
+            "SkillNameTid": 34003,
             "TextTid": 33003,
             "bIsDefaultSkill": 1,
             "NeededSkillPoint": 0,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Dodge-Icon-_3_.Img_Dodge-Icon-_3_",
             "PositionX": 900,
-            "PositionY": 250
+            "PositionY": 250,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 4,
+            "SkillNameTid": 34004,
             "TextTid": 33004,
             "bIsDefaultSkill": 1,
             "NeededSkillPoint": 0,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Guard-Icon-_4_.Img_Guard-Icon-_4_",
             "PositionX": 1200,
-            "PositionY": 250
+            "PositionY": 250,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 5,
+            "SkillNameTid": 34005,
             "TextTid": 33005,
             "bIsDefaultSkill": 1,
             "NeededSkillPoint": 0,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Greater-Potion-_5_.Img_Greater-Potion-_5_",
             "PositionX": 1500,
-            "PositionY": 250
+            "PositionY": 250,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 6,
+            "SkillNameTid": 34006,
             "TextTid": 33006,
             "Prerequisites": 1,
             "ExclusiveSkills": "7,8",
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_fire-enchant-_6_.Img_fire-enchant-_6_",
             "PositionX": 180,
-            "PositionY": 500
+            "PositionY": 500,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 7,
+            "SkillNameTid": 34007,
             "TextTid": 33007,
             "Prerequisites": 1,
             "ExclusiveSkills": "6,8",
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_ice-enchant-_7_.Img_ice-enchant-_7_",
             "PositionX": 300,
-            "PositionY": 500
+            "PositionY": 500,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 8,
+            "SkillNameTid": 34008,
             "TextTid": 33008,
             "Prerequisites": 1,
             "ExclusiveSkills": "6,7",
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_No-enchant-_8_.Img_No-enchant-_8_",
             "PositionX": 420,
-            "PositionY": 500
+            "PositionY": 500,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 9,
+            "SkillNameTid": 34009,
             "TextTid": 33009,
             "Prerequisites": 6,
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Homing-Burst-_9_.Img_Homing-Burst-_9_",
             "PositionX": 180,
-            "PositionY": 750
+            "PositionY": 750,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 10,
+            "SkillNameTid": 34010,
             "TextTid": 33010,
             "Prerequisites": "2,7",
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_enhanced-heavy-attack-_10_.Img_enhanced-heavy-attack-_10_",
             "PositionX": 450,
-            "PositionY": 750
+            "PositionY": 750,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 11,
+            "SkillNameTid": 34011,
             "TextTid": 33011,
             "Prerequisites": 1,
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Attack-Speed-Up-Icon-_11_.Img_Attack-Speed-Up-Icon-_11_",
             "PositionX": 120,
-            "PositionY": 420
+            "PositionY": 420,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 12,
+            "SkillNameTid": 34012,
             "TextTid": 33012,
             "Prerequisites": 11,
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Final-Strike_Icon-_12_.Img_Final-Strike_Icon-_12_",
             "PositionX": 120,
-            "PositionY": 600
+            "PositionY": 600,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 13,
+            "SkillNameTid": 34013,
             "TextTid": 33013,
             "Prerequisites": 3,
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Invincible-Dash-_13_.Img_Invincible-Dash-_13_",
             "PositionX": 700,
-            "PositionY": 500
+            "PositionY": 500,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 14,
+            "SkillNameTid": 34014,
             "TextTid": 33014,
             "Prerequisites": 13,
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Whirlwind-Strike-_14_.Img_Whirlwind-Strike-_14_",
             "PositionX": 700,
-            "PositionY": 750
+            "PositionY": 750,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 15,
+            "SkillNameTid": 34015,
             "TextTid": 33015,
             "Prerequisites": "3,4",
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Max-Stamina-Icon-_15_.Img_Max-Stamina-Icon-_15_",
             "PositionX": 1050,
-            "PositionY": 500
+            "PositionY": 500,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 16,
+            "SkillNameTid": 34016,
             "TextTid": 33016,
             "Prerequisites": 15,
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Stamina-Recovery-Icon-_16_.Img_Stamina-Recovery-Icon-_16_",
             "PositionX": 1050,
-            "PositionY": 750
+            "PositionY": 750,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 17,
+            "SkillNameTid": 34017,
             "TextTid": 33017,
             "Prerequisites": 4,
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Damage-Reduction-Icon-_17_.Img_Damage-Reduction-Icon-_17_",
             "PositionX": 1200,
-            "PositionY": 600
+            "PositionY": 600,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 18,
+            "SkillNameTid": 34018,
             "TextTid": 33018,
             "Prerequisites": 5,
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Healing-Boost-_18_.Img_Healing-Boost-_18_",
             "PositionX": 1400,
-            "PositionY": 500
+            "PositionY": 500,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 19,
+            "SkillNameTid": 34019,
             "TextTid": 33019,
             "Prerequisites": 5,
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Healing-Boosts_19_.Img_Healing-Boosts_19_",
             "PositionX": 1600,
-            "PositionY": 500
+            "PositionY": 500,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 20,
+            "SkillNameTid": 34020,
             "TextTid": 33020,
             "Prerequisites": "1,2",
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_normal-attack+-heavy-attack.Img_normal-attack+-heavy-attack",
             "PositionX": 450,
-            "PositionY": 350
+            "PositionY": 350,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         },
         {
             "SkillTid": 21,
+            "SkillNameTid": 34021,
             "TextTid": 33021,
             "Prerequisites": "8,20",
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Charged-Attack.Img_Charged-Attack",
             "PositionX": 350,
-            "PositionY": 800
+            "PositionY": 800,
+            "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
+        }
+    ],
+    "SkillModifier": [
+        {
+            "SkillTid": 6,
+            "ApplyType": "Element"
+        },
+        {
+            "SkillTid": 7,
+            "ApplyType": "Element"
+        },
+        {
+            "SkillTid": 8,
+            "ApplyType": "Element"
+        },
+        {
+            "SkillTid": 9,
+            "ApplyType": "Action"
+        },
+        {
+            "SkillTid": 10,
+            "ApplyType": "Action"
+        },
+        {
+            "SkillTid": 11,
+            "ApplyType": "Stat",
+            "Target": "AttackSpeed",
+            "Value": 0.2
+        },
+        {
+            "SkillTid": 12,
+            "ApplyType": "Action"
+        },
+        {
+            "SkillTid": 13,
+            "ApplyType": "Action",
+            "Target": "MovesetKey",
+            "Value": "Dash"
+        },
+        {
+            "SkillTid": 14,
+            "ApplyType": "Action"
+        },
+        {
+            "SkillTid": 15,
+            "ApplyType": "Stat"
+        },
+        {
+            "SkillTid": 16,
+            "ApplyType": "Stat"
+        },
+        {
+            "SkillTid": 17,
+            "ApplyType": "Stat"
+        },
+        {
+            "SkillTid": 18,
+            "ApplyType": "Etc"
+        },
+        {
+            "SkillTid": 19,
+            "ApplyType": "Etc"
+        },
+        {
+            "SkillTid": 20,
+            "ApplyType": "Action"
+        },
+        {
+            "SkillTid": 21,
+            "ApplyType": "Action"
         }
     ]
 }

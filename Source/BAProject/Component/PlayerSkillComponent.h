@@ -3,10 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "StatComponent.h"
 #include "Components/ActorComponent.h"
 #include "PlayerSkillComponent.generated.h"
 
 
+struct FSkillModifierRow;
 class UActionComponent;
 class UBATableManager;
 class USkillTreeSubsystem;
@@ -41,6 +43,12 @@ protected:
 	void ApplySkill(int32 SkillId);
 	
 private:
+// 1차 분기 - ApplyType
+	void ApplyAction(const FSkillModifierRow* SkillModifier);
+	void ApplyElement(const FSkillModifierRow* SkillModifier);
+	void ApplyStat(const FSkillModifierRow* SkillModifier);
+	void ApplyEtc(const FSkillModifierRow* SkillModifier);
+	
 // 서브시스템 포인터
 	UPROPERTY(Transient)
 	TObjectPtr<USkillTreeSubsystem> SkillTreeSubsystem = nullptr;
@@ -50,4 +58,6 @@ private:
 // 액터컴포넌트 포인터
 	UPROPERTY(Transient)
 	TObjectPtr<UActionComponent> ActionComponent = nullptr;
+	UPROPERTY(Transient)
+	TObjectPtr<UStatComponent> StatComponent = nullptr;
 };
