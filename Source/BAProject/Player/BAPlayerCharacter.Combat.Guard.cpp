@@ -45,29 +45,19 @@ void ABAPlayerCharacter::StopGuard()
 		return;
 	}
 
-	bool bStoppedGuard = false;
 	const EGuardState GuardState = ActionComponent->GetGuardState();
-	switch (GuardState)
-	{
-	case EGuardState::Guarding:
-	case EGuardState::Blocking:
-	case EGuardState::GuardBroken:
-		bStoppedGuard = true;
-		break;
-	case EGuardState::None:
-	default:
-		break;
-	}
+	const bool bGuardActionRunning = ActionComponent->GetActiveActionType() == EActionType::Guard;
+	const bool bGuardWindowActive = GuardState == EGuardState::Guarding || GuardState == EGuardState::Blocking;
+	const bool bGuardBroken = GuardState == EGuardState::GuardBroken;
 	SetGuardWindowActive(false);
-	if (GuardState == EGuardState::GuardBroken)
+	if (bGuardBroken)
 	{
 		ActionComponent->SetGuardState(EGuardState::None);
 	}
 
-	if (ActionComponent->GetActiveActionType() == EActionType::Guard)
+	if (bGuardActionRunning)
 	{
-		bStoppedGuard = true;
-		if (RequestGuardMontageEnd())
+		if ((bGuardWindowActive || bGuardBroken) && RequestGuardMontageEnd())
 		{
 			SetBAPlayerState(EBAPlayerState::None);
 			SetCombatMode(EPlayerCombatMode::None);
@@ -77,7 +67,12 @@ void ABAPlayerCharacter::StopGuard()
 		ActionComponent->CompleteCurrentAction();
 	}
 
-	if (!bStoppedGuard || IsDamageReacting())
+	if (!bGuardWindowActive && !bGuardBroken)
+	{
+		return;
+	}
+
+	if (IsDamageReacting())
 	{
 		return;
 	}
