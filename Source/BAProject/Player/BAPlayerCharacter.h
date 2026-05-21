@@ -8,6 +8,7 @@
 
 class UCombatComponent;
 class UPlayerSkillComponent;
+class UAnimMontage;
 class UCameraComponent;
 class UCharacterMovementComponent;
 class UActionComponent;
@@ -17,6 +18,7 @@ class AMapLadder;
 class USpringArmComponent;
 class UStatComponent;
 class UStaticMeshComponent;
+
 /**
  * 플레이어 캐릭터 본체.
  *
@@ -47,15 +49,15 @@ class BAPROJECT_API ABAPlayerCharacter : public ACharacterBase
 public:
 	ABAPlayerCharacter();
 
-	// 테이블 초기화, 컴포넌트 이벤트 바인딩, 초기 이동 상태 동기화를 수행한다.
+	// 생명주기
 	virtual void BeginPlay() override;
-
-	// 일반 이동 또는 사다리 이동 런타임을 매 프레임 갱신한다.
 	virtual void Tick(float DeltaTime) override;
 
-// 공격 관련
-	// CharacterBase 공격 진입점. 
-	virtual void TryAttack(EActionCommand InActionCommand);
+	// 공격 관련
+	virtual void TryAttack(EActionCommand InActionCommand); // CharacterBase 공격 진입점. 
+
+	bool TryStartGuard();
+	void StopGuard();
 
 	void OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg);
 	void StartAttack(UAnimMontage* InAnimMontage);
@@ -66,37 +68,31 @@ public:
 	void SetNextCombo(EActionCommand InActionCommand);
 	void OnNextComboCheck();
 	
-// --------------------
-	// UserDataSubsystem과 ActionData 테이블을 읽어 스탯, 이동 속도, 질주 비용을 초기화한다.
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void SetBAPlayerState(EBAPlayerState NewState);
+	
+	// 초기화
 	UFUNCTION(BlueprintCallable, Category = Initialization)
 	virtual void InitializeFromTable();
 
-	// 컨트롤러 입력이 요청한 보행/달리기/질주 상태를 설정한다.
+	// 이동 입력 및 제어
 	void SetMovementState(EMovementState NewState);
-
-	// 컨트롤러 기준 2D 이동 입력을 저장하고 월드/로컬 방향 계산에 사용한다.
 	void SetMoveInputVector(const FVector2D& NewMoveInput);
-
-	// 현재 프레임에 유효한 이동 입력이 있는지 애니메이션 상태로 전달한다.
 	void SetHasMoveInput(bool bNewHasMoveInput);
 
-	// 자유 이동과 스트레이프 이동 모드를 전환한다.
 	UFUNCTION(BlueprintCallable, Category = "Animation|Movement")
 	void SetLocomotionMode(EPlayerLocomotionMode NewMode);
 
-	// 애니메이션 블루프린트에서 사용할 전투 태세를 설정한다.
 	UFUNCTION(BlueprintCallable, Category = "Animation|Combat")
 	void SetCombatMode(EPlayerCombatMode NewMode);
 
-	// 스태미너 제한까지 반영된 실제 활성 이동 상태를 반환한다.
+	// 이동 애니메이션 상태 조회
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	EMovementState GetMovementState() const;
 
-	// 입력이 요청한 이동 상태를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	EMovementState GetDesiredMovementState() const;
 
-	// 현재 회전/가속 세팅에 적용된 이동 모드를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	EPlayerLocomotionMode GetLocomotionMode() const;
 
@@ -104,71 +100,66 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	EPlayerMovementPhase GetMovementPhase() const;
 
-	// 애니메이션 블루프린트용 전투 모드를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Animation|Combat")
 	EPlayerCombatMode GetCombatMode() const;
 
-	// 현재 이동 입력이 남아 있는지 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	bool HasMoveInput() const;
 
-	// 원본 2D 이동 입력을 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	FVector2D GetMoveInputVector() const;
 
-	// 입력 벡터를 컨트롤러 yaw 기준 월드 방향으로 변환해 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	FVector GetMoveInputWorldDirection() const;
 
-	// 입력 벡터를 액터 로컬 기준 방향으로 변환해 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	FVector GetMoveInputLocalDirection() const;
 
-	// 액터 정면과 입력 방향 사이의 yaw 각도를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	float GetMoveInputDirectionAngle() const;
 
-	// 액터 정면과 실제 속도 방향 사이의 yaw 각도를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	float GetVelocityDirectionAngle() const;
 
-	// 수평 이동 속도를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	float GetGroundSpeed() const;
 
-	// 현재 이동 페이즈 진입 시점의 방향 각도를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	float GetMovementPhaseDirectionAngle() const;
 
-	// 지정한 이동 페이즈가 현재 활성 상태인지 확인한다.
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	bool IsMovementPhase(EPlayerMovementPhase Phase) const;
 
-	// 현재 이동 페이즈가 루트 모션 애니메이션으로 처리되어야 하는지 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	bool IsMovementPhaseUsingRootMotion() const;
 
-	// 애니메이션 블루프린트가 Start/Stop/Turn 몽타주 종료를 캐릭터에 통지할 때 호출한다.
 	UFUNCTION(BlueprintCallable, Category = "Animation|Movement")
 	void CompleteMovementPhaseAnimation(EPlayerMovementPhase CompletedPhase);
 
-	// 스태미너 고갈 후 재시작 기준까지 질주가 잠겨 있는지 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Animation|Sprint")
 	bool IsSprintLockedAfterExhausted() const;
 
-	// 상호작용 후보 탐색과 실행을 담당하는 컴포넌트를 반환한다.
+	// 주요 컴포넌트 접근
 	UFUNCTION(BlueprintPure, Category = "Interaction")
 	UInteractorComponent* GetInteractorComponent() const { return InteractorComponent; }
 
-	// 공용 액션 실행 상태와 입력 버퍼를 관리하는 컴포넌트를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action")
 	UActionComponent* GetActionComponent() const { return ActionComponent; }
 
-	// 액션 몽타주와 액션 윈도우 판정을 담당하는 컴포넌트를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action")
 	UActionAnimationComponent* GetActionAnimationComponent() const { return ActionAnimationComponent; }
 
-	// 사다리 관련 상호작용
+	// 피격 반응 상태 조회
+	UFUNCTION(BlueprintPure, Category = "Combat|DamageReaction")
+	bool IsDamageReacting() const;
+
+	UFUNCTION(BlueprintPure, Category = "Combat|DamageReaction")
+	EPlayerDamageReactionState GetDamageReactionState() const;
+
+	UFUNCTION(BlueprintPure, Category = "Action")
+	bool CanAcceptActionInput() const;
+
+	// 사다리 상호작용
 	UFUNCTION(BlueprintCallable, Category = "Interaction|Ladder")
 	void EnterLadder(AMapLadder* Ladder, const FVector& EntryLocation, const FRotator& FaceRotation);
 
@@ -178,26 +169,99 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Interaction|Ladder")
 	bool IsOnLadder() const;
 
-	// 현재 매달려 있는 사다리 액터를 반환한다. 사다리 상태가 아니면 nullptr이다.
 	UFUNCTION(BlueprintPure, Category = "Interaction|Ladder")
 	AMapLadder* GetCurrentLadder() const;
 
-	// 입력, 질주 요청, 빠른 하강을 반영한 현재 사다리 수직 속도를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Interaction|Ladder")
 	float GetLadderClimbVelocity() const;
 
-	// 컷신 시작 시 캐릭터 이동을 즉시 정지하고 이동 입력 처리를 잠근다.
+	// 컷신 제어
 	UFUNCTION(BlueprintCallable, Category = "Control|Cutscene")
 	void LockMovementForCutscene();
 
-	// 컷신 종료 후 일반 이동 입력 처리를 다시 허용한다.
 	UFUNCTION(BlueprintCallable, Category = "Control|Cutscene")
 	void UnlockMovementForCutscene();
-	
+
 protected:
-	virtual void OnDamaged(float FinalDamage, AActor* DamageCauser) override;
+	// CharacterBase 훅
+	virtual void PostInitializeComponents() override;
+	virtual void OnDamaged(
+		float FinalDamage,
+		FDamageEvent const& DamageEvent,
+		AController* EventInstigator,
+		AActor* DamageCauser) override;
+
+	UFUNCTION()
+	virtual void OnDeath() override;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
+	EBAPlayerState BAPlayerState = EBAPlayerState::None;
+	
+	// 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UStatComponent> StatComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UInteractorComponent> InteractorComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UActionComponent> ActionComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UActionAnimationComponent> ActionAnimationComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UCombatComponent> CombatComponent;	
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UPlayerSkillComponent> PlayerSkillComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = Camera)
+	TObjectPtr<USpringArmComponent> SpringArm;
+
+	UPROPERTY(VisibleAnywhere, Category = Camera)
+	TObjectPtr<UCameraComponent> Camera;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Weapon")
+	TObjectPtr<UStaticMeshComponent> WeaponMeshComponent;
+
+	// 스탯 및 액션 콜백
+	UFUNCTION()
+	void OnHealthChanged(float CurrentHP, float MaxHP);
+
+	UFUNCTION()
+	void OnStaminaChanged(float CurrentStamina, float MaxStamina);
+
+	UFUNCTION()
+	void HandleActionStarted(int32 ActionTid, EActionType ActionType);
+
+	UFUNCTION()
+	void HandleActionMontageEnded(int32 ActionTid, EActionType ActionType, UAnimMontage* Montage, bool bInterrupted);
+
+	// 피격 반응을 C++ 기본 처리 이후 블루프린트 연출로 확장한다.
+	UFUNCTION(BlueprintImplementableEvent, Category = "Combat|DamageReaction", meta = (DisplayName = "OnDamageReaction"))
+	void K2_OnDamageReaction(
+		EBADamageReactionType DamageReactionType,
+		EActionDirection HitDirection,
+		bool bGuarding,
+		bool bGuardBreak);
+	
+	// 공격 관련
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	TObjectPtr<UAnimMontage> FirstLightAttackMontage;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	TObjectPtr<UAnimMontage> FirstHeavyAttackMontage;
+	
+	const float WeaponRadius = 20.f; // 충돌 판정 시 검 두께
+	int32 NowActionAnimationTid = 0; // 다음 콤보 결정할 때 사용
+	int32 NextActionAnimationTid = 0; // 결정된 다음 콤보 저장
+	
+	UPROPERTY()
+	TObjectPtr<UAnimMontage> NextAttackMontage = nullptr;
 	
 private:
+	// 이동 런타임
 	void TickMovementRuntime(float DeltaTime);
 	void UpdatePhaseFromInputAndGait(float DeltaTime);
 	void BeginMovementPhase(EPlayerMovementPhase NewPhase);
@@ -211,6 +275,7 @@ private:
 	bool ShouldEnterTurnPhase() const;
 	float CalculateInputYawDeltaFromActor() const;
 
+	// 이동 입력 버퍼와 회전
 	void ApplyBufferedMoveInput();
 	bool IsActionMovementLocked() const;
 	void SyncFreeStrafeFacingMode();
@@ -224,6 +289,7 @@ private:
 	FVector2D ConvertWorldDirectionToMoveInput(const FVector& WorldDirection) const;
 	FVector ConvertMoveInputToWorldDirection(const FVector2D& MoveInput) const;
 
+	// 질주 스태미너
 	bool IsSprintAllowedByStamina() const;
 	void DrainSprintStaminaDuringLoop(float DeltaTime);
 	float CalculateSprintStaminaDrain(float DeltaTime) const;
@@ -232,12 +298,40 @@ private:
 	void LockSprintUntilRecovered();
 	void UnlockSprintAfterRecovery();
 
+	// 사다리 런타임
 	void TickLadderClimb(float DeltaTime);
 	float CalculateLadderClimbSpeed(float VerticalInput) const;
 	bool IsLadderSprintRequested() const;
 	void DrainLadderSprintStamina(float DeltaTime);
 	void ResetMovementRuntimeForLadder();
 
+	// 피격 반응
+	bool IsGuardingAgainstDamage(const FVector& DamageDirection) const;
+	bool ShouldPlayGuardBreakReaction() const;
+	void CancelCurrentActionForDamageReaction();
+	void PlayDamageReactionAnimation(
+		EBADamageReactionType DamageReactionType,
+		EActionDirection HitDirection,
+		bool bGuarding,
+		bool bGuardBreak);
+	EPlayerDamageReactionState ResolveDamageReactionState(
+		EBADamageReactionType DamageReactionType,
+		bool bGuarding,
+		bool bGuardBreak) const;
+	UAnimMontage* SelectDamageReactionMontage(
+		EBADamageReactionType DamageReactionType,
+		EActionDirection HitDirection,
+		bool bGuarding,
+		bool bGuardBreak) const;
+	void ApplyDamageReactionKnockback(
+		EBADamageReactionType DamageReactionType,
+		const FVector& DamageDirection,
+		EActionDirection HitDirection,
+		bool bGuarding,
+		bool bGuardBreak);
+	void FinishDamageReaction(int32 PlaybackId);
+
+	// 이동 설정
 	UPROPERTY(EditAnywhere, Category = "Movement", meta = (ShowOnlyInnerProperties))
 	FBAPlayerMovementSpeedSettings SpeedSettings;
 
@@ -253,69 +347,59 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Interaction|Ladder", meta = (ShowOnlyInnerProperties))
 	FBAPlayerLadderSettings LadderSettings;
 
+	// 피격 반응 설정
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction", meta = (ClampMin = "0.0", ClampMax = "360.0"))
+	float GuardDamageBlockAngle = 120.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction")
+	float DamageReactionFallbackDuration = 0.6f;
+
+	// 피격 몽타주의 루트모션을 우선 사용한다. 루트모션이 없는 임시 반응에서만 Launch 넉백을 켠다.
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
+	bool bUseLaunchKnockbackForDamageReaction = false;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
+	float HitReactKnockbackStrength = 250.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
+	float LargeHitReactKnockbackStrength = 500.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
+	float KnockDownKnockbackStrength = 650.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
+	float GuardHitKnockbackStrength = 120.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
+	float GuardBreakKnockbackStrength = 650.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
+	float DamageReactionKnockbackZ = 20.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")
+	TMap<EActionDirection, TObjectPtr<UAnimMontage>> HitReactMontages;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")
+	TMap<EActionDirection, TObjectPtr<UAnimMontage>> LargeHitReactMontages;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")
+	TMap<EActionDirection, TObjectPtr<UAnimMontage>> KnockDownReactMontages;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")
+	TMap<EActionDirection, TObjectPtr<UAnimMontage>> GuardHitReactMontages;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")
+	TMap<EActionDirection, TObjectPtr<UAnimMontage>> GuardBreakReactMontages;
+
+	// 런타임 상태
 	FBAPlayerMovementRuntimeState MovementRuntime;
 	FBAPlayerSprintRuntimeState SprintRuntime;
 	FBAPlayerLadderRuntimeState LadderRuntime;
-
-protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStatComponent> StatComponent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UInteractorComponent> InteractorComponent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UActionComponent> ActionComponent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UActionAnimationComponent> ActionAnimationComponent;
+	EPlayerDamageReactionState DamageReactionState = EPlayerDamageReactionState::None;
+	FTimerHandle DamageReactionTimerHandle;
+	int32 ActiveDamageReactionPlaybackId = 0;
+	int32 NextDamageReactionPlaybackId = 1;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UCombatComponent> CombatComponent;	
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UPlayerSkillComponent> PlayerSkillComponent;
-
-	UPROPERTY(VisibleAnywhere, Category = Camera)
-	TObjectPtr<USpringArmComponent> SpringArm;
-
-	UPROPERTY(VisibleAnywhere, Category = Camera)
-	TObjectPtr<UCameraComponent> Camera;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Weapon")
-	TObjectPtr<UStaticMeshComponent> WeaponMeshComponent;
-	
-	// 충돌 판정 시 검 두께
-	const float WeaponRadius = 20.f;
-	
-// 공격 관련
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	TObjectPtr<UAnimMontage> FirstLightAttackMontage;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	TObjectPtr<UAnimMontage> FirstHeavyAttackMontage;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
-	EBAPlayerState BAPlayerState = EBAPlayerState::None;
-
-// 콤보 액션 판정을 위한 변수
-	// 다음 콤보 결정할 때 사용
-	int32 NowActionAnimationTid = 0;
-	
-	// 결정된 다음 콤보 저장
-	int32 NextActionAnimationTid = 0;
-	UPROPERTY()
-	TObjectPtr<UAnimMontage> NextAttackMontage = nullptr;
-	
-// --------------------
-	
-protected:
-	UFUNCTION()
-	void OnHealthChanged(float CurrentHP, float MaxHP);
-	UFUNCTION()
-	void OnStaminaChanged(float CurrentStamina, float MaxStamina);
-	UFUNCTION()
-	void HandleActionStarted(int32 ActionTid, EActionType ActionType);
-	UFUNCTION()
-	void HandleActionMontageEnded(int32 ActionTid, EActionType ActionType, UAnimMontage* Montage, bool bInterrupted);
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimMontage> ActiveDamageReactionMontage;
 };

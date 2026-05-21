@@ -124,9 +124,13 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 	}
 }
 
-void AEnemyBase::OnDamaged(float FinalDamage, AActor* DamageCauser)
+void AEnemyBase::OnDamaged(
+	const float FinalDamage,
+	FDamageEvent const& DamageEvent,
+	AController* EventInstigator,
+	AActor* DamageCauser)
 {
-	Super::OnDamaged(FinalDamage, DamageCauser);
+	Super::OnDamaged(FinalDamage, DamageEvent, EventInstigator, DamageCauser);
 
 	if (StatComponent)
 	{
@@ -149,7 +153,9 @@ void AEnemyBase::OnDamaged(float FinalDamage, AActor* DamageCauser)
 		}
 	}
 
-	K2_OnHitVisuals(GetActorLocation());
+	const FHitResult HitResult = ResolveDamageHitResult(DamageEvent);
+	const FVector HitVisualLocation = HitResult.bBlockingHit ? FVector(HitResult.ImpactPoint) : GetActorLocation();
+	K2_OnHitVisuals(HitVisualLocation);
 }
 
 void AEnemyBase::Tick(float DeltaTime)
@@ -312,12 +318,6 @@ void AEnemyBase::OnDeath()
 {
 	Super::OnDeath();
 	SetState(EEnemyState::Dead);
-
-	if (GetCharacterMovement())
-	{
-		GetCharacterMovement()->StopMovementImmediately();
-		GetCharacterMovement()->DisableMovement();
-	}
 
 	SetActorEnableCollision(false);
 
