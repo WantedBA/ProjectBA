@@ -7,6 +7,7 @@
 #include "PlayerSkillComponent.generated.h"
 
 
+struct FSkillModifierRow;
 class UActionComponent;
 class UBATableManager;
 class USkillTreeSubsystem;
@@ -41,6 +42,16 @@ protected:
 	void ApplySkill(int32 SkillId);
 	
 private:
+// 1차 분기 - ApplyType
+	void ApplyAction(const FSkillModifierRow* SkillModifier);
+	void ApplyElement(const FSkillModifierRow* SkillModifier);
+	void ApplyStat(const FSkillModifierRow* SkillModifier);
+	void ApplyEtc(const FSkillModifierRow* SkillModifier);
+	
+// 2차 분기
+	// ActionComponent에 MovesetKey 추가
+	void AddMovesetKey(const FName& NewMovesetKey);
+	
 // 서브시스템 포인터
 	UPROPERTY(Transient)
 	TObjectPtr<USkillTreeSubsystem> SkillTreeSubsystem = nullptr;

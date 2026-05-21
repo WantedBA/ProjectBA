@@ -134,7 +134,7 @@ struct BAPROJECT_API FSkillModifierRow : public FBARowBase
 	
 	// 2차 분류
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Modifier")
-	FString Target;
+	FName Target;
 	
 	// 필요한 값
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Modifier")

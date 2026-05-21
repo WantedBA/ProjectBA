@@ -79,16 +79,11 @@ void UPlayerSkillComponent::ClearAllSkills()
 
 void UPlayerSkillComponent::ApplySkill(int32 SkillId)
 {
-	const FSkillRow* SkillRow = TableManager->FindSkill(SkillId);
-	if (!SkillRow)
+	const FSkillModifierRow* SkillModifier = TableManager->FindSkillModifier(SkillId);
+	if (!SkillModifier)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("PlayerSkillComponent: Skill not found for ID %d"), SkillId);
-		return;
-	}
-	
-	// 기본값으로 항상 적용되어 있는 스킬
-	if (SkillRow->bIsDefaultSkill)
-	{
+		// 기본 스킬은 SkillModifier에 없음
+		UE_LOG(LogTemp, Log, TEXT("PlayerSkillComponent: SkillModifier not found for ID %d"), SkillId);
 		return;
 	}
 	
@@ -100,11 +95,52 @@ void UPlayerSkillComponent::ApplySkill(int32 SkillId)
 	 * 13: ActionComponent에 MoveSetKey 추가
 	 * 18, 19: 회복 아직 미구현
 	 */
-	
-	// TODO: 임시 코드
-	if (SkillId == 13)
+
+	switch (SkillModifier->ApplyType)
 	{
-		ActionComponent->AddMovesetKey(FName("Dash"));
+	case ESkillApplyType::Action:
+		ApplyAction(SkillModifier);
+		break;
+	case ESkillApplyType::Element:
+		break;
+	case ESkillApplyType::Stat:
+		break;
+	case ESkillApplyType::Etc:
+		break;
+	default:
+		UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Invalid ApplyType for SkillId %d"), SkillId);
 	}
+}
+
+void UPlayerSkillComponent::ApplyAction(const FSkillModifierRow* SkillModifier)
+{
+	static const FName AddMovesetKeyTarget = FName(TEXT("AddMovesetKey"));
+
+	// ActionComponent에 관련 로직이 구현되어 있는 경우
+	if (SkillModifier->Target == AddMovesetKeyTarget)
+	{
+		AddMovesetKey(FName(*SkillModifier->Value));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Invalid Skill Modifier Target: %s"), *SkillModifier->Target.ToString());
+	}
+}
+
+void UPlayerSkillComponent::ApplyElement(const FSkillModifierRow* SkillModifier)
+{
+}
+
+void UPlayerSkillComponent::ApplyStat(const FSkillModifierRow* SkillModifier)
+{
+}
+
+void UPlayerSkillComponent::ApplyEtc(const FSkillModifierRow* SkillModifier)
+{
+}
+
+void UPlayerSkillComponent::AddMovesetKey(const FName& NewMovesetKey)
+{
+	ActionComponent->AddMovesetKey(NewMovesetKey);
 }
 

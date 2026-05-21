@@ -266,7 +266,9 @@
         },
         {
             "SkillTid": 13,
-            "ApplyType": "Action"
+            "ApplyType": "Action",
+            "Target": "AddMovesetKey",
+            "Value": "Dash"
         },
         {
             "SkillTid": 14,
