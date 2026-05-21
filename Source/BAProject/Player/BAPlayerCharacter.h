@@ -52,13 +52,18 @@ public:
 	// 생명주기
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
-	
-	// 전투 관련
-	virtual void Attack() override; // CharacterBase 공격 진입점. LightAttack
+
+	// 공격 관련
+	virtual void Attack(EActionCommand InActionCommand); // CharacterBase 공격 진입점. 
+
+	void OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg);
+	void LightAttack();
 	void HeavyAttack();
-	void EndAttack();
+	
 	virtual class UStaticMeshComponent* GetWeaponMesh() const override { return WeaponMeshComponent; }
 
+	void NextComboCheck();
+	
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void SetBAPlayerState(EBAPlayerState NewState);
 	
@@ -239,6 +244,9 @@ protected:
 	TObjectPtr<UAnimMontage> AttackMontage;
 	
 	const float WeaponRadius = 20.f; // 충돌 판정 시 검 두께
+	
+	int32 PrevActionAnimationTid = 0; // 콤보 액션 판정을 위한 변수
+	EActionCommand NextActionCommand = EActionCommand::None; 
 	
 private:
 	// 이동 런타임
