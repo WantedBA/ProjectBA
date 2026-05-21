@@ -313,6 +313,7 @@ void UActionComponent::BeginAction(const FActionDataRow& ActionData, const EActi
 	bActiveActionPausedStaminaRecovery = false;
 	LastStartResult = EActionStartResult::Success;
 
+	// TODO: 스탯 컴포넌트 결합 의존성 없애기 - Delegate로 디커플링 (곽민규)
 	ConsumeInstantCost(ActionData);
 	StartCooldown(ActionData);
 

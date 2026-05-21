@@ -138,11 +138,4 @@ private:
 	bool bHasMoveInput = false;
 	double SprintDodgePressedTime = 0.0;
 	
-// protected: TODO: 은성님 HUD 작업
-// 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
-// 	TSubClassOf<class UHUDWidget> HUDWidgetClass;
-// 	
-// 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HUD)
-// 	TObjectPtr<class UHUDWidget> HUDWidget;
-	
 };
