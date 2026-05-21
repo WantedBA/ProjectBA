@@ -36,11 +36,11 @@ void UBTService_UpdateTargetContext::TickNode(UBehaviorTreeComponent& OwnerComp,
 	}
 
 	float DetectRange = BBComp->GetValueAsFloat(BBKey::DetectRange);
-	if (Enemy->GetEnemyGrade() == EEnemyGrade::Boss)
+	if (Enemy->IsPersistentAggro())
 	{
 		if (DetectRange <= 0.0f)
 		{
-			DetectRange = 100000.0f; // 사실상 무한대
+			DetectRange = UE_BIG_NUMBER; // 사실상 무한대
 		}
 	}
 	
@@ -83,10 +83,23 @@ void UBTService_UpdateTargetContext::TickNode(UBehaviorTreeComponent& OwnerComp,
 		}
 	}
 
-	// [개선] 타겟 유실 및 복귀 로직
-	// 공격 중(Attack), 피격(Hit/Stagger) 또는 경계(Alert) 중일 때는 타겟 유실 판정을 유보하여 상태 급변 방지
-	bool bIsBusy = (Enemy->GetCurrentState() == EEnemyState::Attack || 
-					Enemy->GetCurrentState() == EEnemyState::Hit || 
+	// [개선] 타겟 유지 정책
+	// (1) 끈질긴 어그로(보스): 타겟이 살아있고 valid면 거리/시야 무관하게 영구 유지
+	// (2) 일반 몬스터: 공격/피격/경직/경계 중이면 NewTarget==null이라도 유지(상태 급변 방지),
+	//                  그 외엔 복귀 모드로 전환
+
+	if (NewTarget == nullptr && CurrentTarget != nullptr && Enemy->IsPersistentAggro())
+	{
+		AEnemyBase* TargetEnemy = Cast<AEnemyBase>(CurrentTarget);
+		bool bTargetDead = TargetEnemy ? TargetEnemy->IsDead() : false;
+		if (!bTargetDead && IsValid(CurrentTarget))
+		{
+			NewTarget = CurrentTarget;
+		}
+	}
+
+	bool bIsBusy = (Enemy->GetCurrentState() == EEnemyState::Attack ||
+					Enemy->GetCurrentState() == EEnemyState::Hit ||
 					Enemy->GetCurrentState() == EEnemyState::Stagger ||
 					Enemy->GetCurrentState() == EEnemyState::Alert);
 

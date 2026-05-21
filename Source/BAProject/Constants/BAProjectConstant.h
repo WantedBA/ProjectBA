@@ -21,6 +21,7 @@ namespace BBKey
 	const FName IsReturning = TEXT("IsReturning");
 	const FName SelectedPatternIndex = TEXT("SelectedPatternIndex");
 	const FName SelectedPatternTid = TEXT("SelectedPatternTid");
+	const FName SelectedPatternIdealRange = TEXT("SelectedPatternIdealRange");
 	const FName TargetDistance = TEXT("TargetDistance");
 	const FName IsActionLocked = TEXT("IsActionLocked");
 	const FName TargetAngle = TEXT("TargetAngle");
