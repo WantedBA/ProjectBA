@@ -79,11 +79,27 @@ void UPlayerSkillComponent::ClearAllSkills()
 
 void UPlayerSkillComponent::ApplySkill(int32 SkillId)
 {
+	const FSkillRow* SkillRow = TableManager->FindSkill(SkillId);
+	if (!SkillRow)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PlayerSkillComponent: Skill not found for ID %d"), SkillId);
+		return;
+	}
+	
 	// 기본값으로 항상 적용되어 있는 스킬
-	if (TableManager->FindSkill(SkillId)->bIsDefaultSkill)
+	if (SkillRow->bIsDefaultSkill)
 	{
 		return;
 	}
+	
+	/*
+	 * SkillId 1, 2, 3, 4, 5: 기본 스킬
+	 * 6, 7, 8: CombatComponent에 NiagaraSystem 전달
+	 * 9, 10, 12, 14, 20, 21: 콤보 연계 데이터 수정
+	 * 11, 15, 16, 17: StatComponent에서 스탯 변경
+	 * 13: ActionComponent에 MoveSetKey 추가
+	 * 18, 19: 회복 아직 미구현
+	 */
 	
 	// TODO: 임시 코드
 	if (SkillId == 13)
