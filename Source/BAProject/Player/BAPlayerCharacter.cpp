@@ -246,7 +246,7 @@ void ABAPlayerCharacter::StartAttack(UAnimMontage* InAnimMontage)
 	NextAttackMontage = nullptr;
 	
 	BAPlayerState = EBAPlayerState::Attacking;
-	CombatComponent->ExecuteAttack(InAnimMontage);
+	CombatComponent->ExecuteAttack(InAnimMontage, StatComponent->GetAttackSpeed());
 	
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
