@@ -1,4 +1,5 @@
 #include "Component/CombatComponent.h"
+#include "Character/CharacterBase.h"
 #include "GameFramework/Character.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Engine/DamageEvents.h"
@@ -12,8 +13,6 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "Instance/BATimeSubsystem.h"
-#include "Component/ActionComponent.h"
-#include "Player/BAPlayerCharacter.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -109,13 +108,6 @@ void UCombatComponent::SetAttackData(
 	{
 		EndSocketName = InEndSocket;
 	}
-}
-
-void UCombatComponent::SetPerfectWindowActive(bool bActive, float TimeDilation, float Duration)
-{
-	bIsPerfectWindowActive = bActive;
-	ActivePerfectTimeDilation = TimeDilation;
-	ActivePerfectDuration = Duration;
 }
 
 void UCombatComponent::TriggerHitStop(float Duration)
@@ -257,63 +249,29 @@ void UCombatComponent::ApplyDamage(AActor* Victim, const FHitResult& HitResult)
 	}
 
 	AActor* OwnerActor = GetOwner();
-	AEnemyBase* OwnerEnemy = Cast<AEnemyBase>(OwnerActor);
 	AController* Instigator = OwnerActor ? OwnerActor->GetInstigatorController() : nullptr;
-
-	// 퍼펙트 가드/회피 체크 - Owner의 현재 공격이 퍼펙트 가드/회피를 허용하는가
-	if (bIsPerfectWindowActive)
-	{
-		UActionComponent* VictimAction = Victim->FindComponentByClass<UActionComponent>();
-		if (VictimAction)
-		{
-			// 피격 상대의 Dodged 상태와 Guard 상태 확인
-			const EGuardState GuardState = VictimAction->GetGuardState();
-			bool bPerfectGuarded = false;
-			if (GuardState == EGuardState::Guarding || GuardState == EGuardState::Blocking)
-			{
-				// 퍼펙트 가드는 일반 가드/가드브레이크보다 우선하므로 스태미너 소비 실패가 성공 판정을 막지 않는다.
-				if (ABAPlayerCharacter* VictimPlayer = Cast<ABAPlayerCharacter>(Victim))
-				{
-					VictimPlayer->ConsumePerfectGuardStaminaCost();
-				}
-				bPerfectGuarded = true;
-			}
-			const bool bPerfectDodged = VictimAction->GetActionRuntimeState() == EActionRuntimeState::Dodging;
-
-			if (bPerfectGuarded || bPerfectDodged)
-			{
-				// 슬로우 모션 발동
-				if (UWorld* World = GetWorld())
-				{
-					if (UBATimeSubsystem* TimeSubsystem = World->GetSubsystem<UBATimeSubsystem>())
-					{
-						TimeSubsystem->ApplySlowMotion(ActivePerfectTimeDilation, ActivePerfectDuration);
-					}
-				}
-
-				// 몬스터 리액션 및 피드백 실행 (VFX, SFX, CameraShake 포함) - Owner가 Enemy인 경우에만 적용
-				if (OwnerEnemy)
-				{
-					OwnerEnemy->HandlePerfectGuarded(HitResult.ImpactPoint);
-				}
-
-				return; // 데미지 적용 취소
-			}
-		}
-	}
 
 	// 피격 반응 판단에 필요한 공격 강도와 방향을 TakeDamage 경계로 함께 전달한다.
 	FBADamageEvent DamageEvent;
 	DamageEvent.DamageReactionType = CurrentDamageReactionType;
 	DamageEvent.HitResult = HitResult;
 
+	FVector DamageDirection = FVector::ZeroVector;
 	if (OwnerActor)
 	{
-		DamageEvent.DamageDirection = (Victim->GetActorLocation() - OwnerActor->GetActorLocation()).GetSafeNormal();
+		DamageDirection = (Victim->GetActorLocation() - OwnerActor->GetActorLocation()).GetSafeNormal();
 	}
-	if (DamageEvent.DamageDirection.IsNearlyZero())
+	if (DamageDirection.IsNearlyZero())
 	{
-		DamageEvent.DamageDirection = OwnerActor ? OwnerActor->GetActorForwardVector().GetSafeNormal() : FVector::ZeroVector;
+		DamageDirection = OwnerActor ? OwnerActor->GetActorForwardVector().GetSafeNormal() : FVector::ZeroVector;
+	}
+
+	DamageEvent.DamageDirection = DamageDirection;
+	if (ACharacterBase* VictimCharacter = Cast<ACharacterBase>(Victim))
+	{
+		DamageEvent.bVictimGuarding = VictimCharacter->IsGuardingAgainstDamage(DamageDirection);
+		DamageEvent.bVictimPerfectGuard = DamageEvent.bVictimGuarding
+			&& VictimCharacter->IsPerfectGuardWindowActive();
 	}
 
 	Victim->TakeDamage(CurrentDamage, DamageEvent, Instigator, OwnerActor);

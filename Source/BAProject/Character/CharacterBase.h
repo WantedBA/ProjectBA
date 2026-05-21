@@ -36,6 +36,9 @@ public:
 	// 무기 메쉬와 소켓 설정 시 해당 클래스에서 override 필요
 	virtual class UStaticMeshComponent* GetWeaponMesh() const {return nullptr;}
 
+	virtual bool IsGuardingAgainstDamage(const FVector& DamageDirection) const { return false; }
+	virtual bool IsPerfectGuardWindowActive() const { return false; }
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	ECharacterState CharacterState;

@@ -150,8 +150,20 @@ void ABAPlayerCharacter::OnDamaged(
 	const EBADamageReactionType DamageReactionType = ResolveDamageReactionType(DamageEvent);
 	const FVector DamageDirection = ResolveDamageDirection(*this, DamageEvent, DamageCauser);
 	const EActionDirection HitDirection = ResolveHitDirection(*this, DamageDirection);
+	const FBADamageEvent* BADamageEvent = DamageEvent.IsOfType(FBADamageEvent::ClassID)
+		? static_cast<const FBADamageEvent*>(&DamageEvent)
+		: nullptr;
 
-	const bool bGuarding = IsGuardingAgainstDamage(DamageDirection);
+	const bool bGuarding = BADamageEvent ? BADamageEvent->bVictimGuarding : IsGuardingAgainstDamage(DamageDirection);
+	const bool bPerfectGuard = bGuarding && (BADamageEvent
+		? BADamageEvent->bVictimPerfectGuard
+		: IsPerfectGuardWindowActive());
+	if (bPerfectGuard)
+	{
+		HandlePerfectGuardSucceeded(ResolveDamageHitResult(DamageEvent), DamageCauser);
+		return;
+	}
+
 	bool bGuardBreak = false;
 	float AppliedDamage = FinalDamage;
 	if (bGuarding)
@@ -183,6 +195,7 @@ void ABAPlayerCharacter::OnDeath()
 	DamageReactionState = EPlayerDamageReactionState::None;
 	ActiveDamageReactionMontage = nullptr;
 	ActiveDamageReactionPlaybackId = 0;
+	SetPerfectGuardWindowActive(false);
 	SetBAPlayerState(EBAPlayerState::Dead);
 
 	if (ActionComponent)
@@ -245,6 +258,8 @@ bool ABAPlayerCharacter::ShouldPlayGuardBreakReaction() const
 
 void ABAPlayerCharacter::CancelCurrentActionForDamageReaction()
 {
+	SetPerfectGuardWindowActive(false);
+
 	if (ActionComponent)
 	{
 		// 액션 종료 이벤트를 통해 ActionAnimationComponent가 현재 액션 몽타주를 정리한다.

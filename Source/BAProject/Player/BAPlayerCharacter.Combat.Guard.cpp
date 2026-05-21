@@ -1,6 +1,7 @@
 #include "Player/BAPlayerCharacter.h"
 
 #include "Component/ActionComponent.h"
+#include "Enemy/EnemyBase.h"
 
 namespace
 {
@@ -17,6 +18,8 @@ bool ABAPlayerCharacter::TryStartGuard()
 	{
 		return false;
 	}
+
+	SetPerfectGuardWindowActive(false);
 
 	if (!ActionComponent->TryStartAction(EActionCommand::Guard))
 	{
@@ -40,6 +43,8 @@ void ABAPlayerCharacter::StopGuard()
 	{
 		return;
 	}
+
+	SetPerfectGuardWindowActive(false);
 
 	bool bStoppedGuard = false;
 	const EGuardState GuardState = ActionComponent->GetGuardState();
@@ -82,6 +87,16 @@ void ABAPlayerCharacter::ConsumePerfectGuardStaminaCost()
 	ActionComponent->ConsumeActiveActionStaminaCost(GetPerfectGuardStaminaCostMultiplier());
 }
 
+void ABAPlayerCharacter::SetPerfectGuardWindowActive(const bool bActive)
+{
+	bPerfectGuardWindowActive = bActive;
+}
+
+bool ABAPlayerCharacter::IsPerfectGuardWindowActive() const
+{
+	return bPerfectGuardWindowActive;
+}
+
 float ABAPlayerCharacter::GetGuardAbsorptionMultiplier() const
 {
 	return GuardAbsorptionMultiplier;
@@ -102,4 +117,24 @@ bool ABAPlayerCharacter::ConsumeGuardStaminaForDamage()
 	const bool bConsumedStamina = ActionComponent->ConsumeActiveActionStaminaCost();
 	ActionComponent->SetGuardState(bConsumedStamina ? EGuardState::Blocking : EGuardState::GuardBroken);
 	return bConsumedStamina;
+}
+
+void ABAPlayerCharacter::HandlePerfectGuardSucceeded(const FHitResult& HitResult, AActor* DamageCauser)
+{
+	ConsumePerfectGuardStaminaCost();
+	K2_OnPerfectGuardSucceeded(HitResult, DamageCauser);
+
+	if (AEnemyBase* Enemy = Cast<AEnemyBase>(DamageCauser))
+	{
+		Enemy->HandlePerfectGuarded(HitResult.ImpactPoint);
+	}
+
+	// 슬로우모션은 아직 합의되지 않은 스펙이라 플레이어 가드 성공 처리 쪽에 위치만 남기고 비활성화한다.
+	// if (UWorld* World = GetWorld())
+	// {
+	// 	if (UBATimeSubsystem* TimeSubsystem = World->GetSubsystem<UBATimeSubsystem>())
+	// 	{
+	// 		TimeSubsystem->ApplySlowMotion(TimeDilation, Duration);
+	// 	}
+	// }
 }
