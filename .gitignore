@@ -1,6 +1,13 @@
 .idea/
 *.DotSettings.user
 
+# Office temporary files
+~$*.xls
+~$*.xlsx
+~$*.xlsm
+~$*.xlsb
+.~lock.*.xlsx#
+
 # Visual Studio 2015 user specific files
 .vs/
 

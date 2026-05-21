@@ -55,12 +55,6 @@ public:
 	// SetAttackData로 저장된 기본 판정값으로 히트 체크를 시작한다.
 	void CheckHitStartDefault();
 
-	UFUNCTION(BlueprintPure, Category = "Combat")
-	bool IsPerfectWindowActive() const { return bIsPerfectWindowActive; }
-
-	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void SetPerfectWindowActive(bool bActive, float TimeDilation = -1.f, float Duration = -1.f);
-
 	void SetShowDebugTrace(bool bInShowDebugTrace)
 	{
 		this->bShowDebugTrace = bInShowDebugTrace;
@@ -93,15 +87,6 @@ protected:
 
 	UPROPERTY()
 	bool bIsHitChecking = false;
-
-	UPROPERTY()
-	bool bIsPerfectWindowActive = false;
-
-	UPROPERTY()
-	float ActivePerfectTimeDilation = -1.f;
-
-	UPROPERTY()
-	float ActivePerfectDuration = -1.f;
 
 	UPROPERTY()
 	float CurrentRadius;
