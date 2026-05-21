@@ -9,6 +9,7 @@
 #include "Engine/SkeletalMesh.h"
 #include "DrawDebugHelpers.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "BrainComponent.h"
 #include "AI/EnemyAIController.h"
 #include "Kismet/GameplayStatics.h"
@@ -38,6 +39,21 @@ void ABoss::BeginPlay()
 
 	bIsEnding = false;
 
+	// BP에 추가된 무기 메시 컴포넌트를 태그로 찾아 캐싱 (히트 트레이스 소켓 조회용)
+	TArray<UActorComponent*> WeaponComps = GetComponentsByTag(UStaticMeshComponent::StaticClass(), WeaponComponentTag);
+	if (WeaponComps.Num() > 0)
+	{
+		CachedWeaponMesh = Cast<UStaticMeshComponent>(WeaponComps[0]);
+	}
+	else
+	{
+		// 태그를 못 찾으면 첫 StaticMeshComponent로 폴백 (보스 본체는 SkeletalMesh라 보통 무기뿐)
+		CachedWeaponMesh = FindComponentByClass<UStaticMeshComponent>();
+		UE_LOG(LogTemp, Warning,
+			TEXT("[ABoss] 무기 태그 '%s' 미발견 → 첫 StaticMeshComponent 폴백(%s). BP에서 Component Tag 지정 권장."),
+			*WeaponComponentTag.ToString(),
+			CachedWeaponMesh ? *CachedWeaponMesh->GetName() : TEXT("없음"));
+	}
 
 	if (MonsterTid != 0)
 	{
@@ -426,6 +442,11 @@ UAnimMontage* ABoss::PlayTurnToTarget(AActor* Target)
 	return (Duration > 0.0f) ? TurnMontage : nullptr;
 }
 
+UStaticMeshComponent* ABoss::GetWeaponMesh() const
+{
+	return CachedWeaponMesh;
+}
+
 void ABoss::LoadBossPatterns(int32 StageType)
 {
 	UBATableManager* TableManager = UBATableManager::Get(this);
@@ -565,10 +586,10 @@ void ABoss::ExecuteBossPattern(int32 PatternTid)
 		return;
 	}
 
-	// 패턴 데이터 기반 CombatComponent 설정
-	// IdealRange가 0인 경우(무한 인지용) 실제 타격 반경으로 150.0f 사용
-	const float HitRadius = (PatternData->IdealRange <= 0.0f) ? 150.0f : PatternData->IdealRange;
-	CombatComponent->SetAttackData(HitRadius, PatternData->Attack, FName("Weapon"), FName("Weapon"));
+	// 타격 소켓은 CombatComponent에 설정된 StartSocketName/EndSocketName을 그대로 사용한다.
+	// 소켓 인자를 생략(NAME_None)하면 SetAttackData가 기존 소켓 이름을 덮어쓰지 않는다.
+	// IdealRange는 AI 위치 선정용 거리라 타격 반경으로 쓰면 안 된다 → 검 두께(WeaponHitRadius) 사용.
+	CombatComponent->SetAttackData(WeaponHitRadius, PatternData->Attack);
 
 	CombatComponent->ExecuteAttack(MontageToPlay);
 
@@ -590,8 +611,21 @@ void ABoss::OnPatternMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 	UE_LOG(LogTemp, Warning, TEXT("[ABoss::OnPatternMontageEnded] Montage=%s, bInterrupted=%d, CurrentState=%d"),
 		Montage ? *Montage->GetName() : TEXT("NULL"), (int32)bInterrupted, (int32)GetCurrentState());
 
-	if (GetCurrentState() != EEnemyState::Attack)
+	const EEnemyState State = GetCurrentState();
+
+	// 공격 상태가 아니다 = AN_EnemyAttackEnd 노티 또는 피격이 이미 상태를 바꿔놓았다.
+	if (State != EEnemyState::Attack)
 	{
+		// 피격/경직으로 공격이 강제 중단된 경우, BT 래턴트 태스크(ExecuteBossPattern)는
+		// 아직 InProgress로 살아있다. 종료 신호를 안 보내면 트리가 영구히 멈춰 보스가 정지한다.
+		if (bInterrupted && (State == EEnemyState::Hit || State == EEnemyState::Stagger))
+		{
+			bIsComboTransitioning = false;
+			PendingComboTid = 0;
+			GetWorldTimerManager().ClearTimer(ComboTransitionHandle);
+			OnAttackAnimationFinished.Broadcast(State);
+		}
+		// 그 외(노티가 이미 정상 처리)는 중복 방지를 위해 아무것도 하지 않는다.
 		return;
 	}
 

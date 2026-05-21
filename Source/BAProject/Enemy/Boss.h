@@ -6,6 +6,8 @@
 #include "Quest/QuestActivatable.h"
 #include "Boss.generated.h"
 
+class UStaticMeshComponent;
+
 // 보스 공격 패턴 1개의 런타임 데이터. BossMonster 테이블 행을 LoadBossPatterns에서 매핑.
 USTRUCT(BlueprintType)
 struct BAPROJECT_API FBossAttackData
@@ -88,6 +90,9 @@ public:
 	// 타겟 방향으로 회전 몽타주를 재생. 재생한 몽타주 반환 (회전 불필요/실패 시 nullptr)
 	UAnimMontage* PlayTurnToTarget(AActor* Target);
 
+	// 히트 트레이스용 무기 메시 반환. 보스는 검이 별도 컴포넌트라 GetMesh() 대신 이걸 쓴다.
+	virtual UStaticMeshComponent* GetWeaponMesh() const override;
+
 	UFUNCTION()
 	virtual void HandleHPChanged(float CurrentHP, float MaxHP);
 
@@ -150,6 +155,19 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Combat")
 	TMap<int32, TObjectPtr<UAnimMontage>> LoadedMontageMap;
+
+	// 검 타격 판정의 두께(박스 트레이스 반경). 소켓 위치는 CombatComponent의
+	// StartSocketName/EndSocketName을 사용하므로, 그 두 소켓 사이를 이 두께로 스윕한다.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Combat")
+	float WeaponHitRadius = 15.0f;
+
+	// BP의 무기 메시 컴포넌트에 달아둘 태그. BeginPlay에서 이 태그로 무기 컴포넌트를 찾는다.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Combat")
+	FName WeaponComponentTag = TEXT("Weapon");
+
+	// 태그로 찾은 무기 메시 컴포넌트 캐시. GetWeaponMesh()가 반환한다.
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMeshComponent> CachedWeaponMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Data")
 	TArray<FBossAttackData> BossPatterns;
