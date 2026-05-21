@@ -346,7 +346,8 @@
         {
             "Tid": 31002,
             "Montage": "/Game/Character/Player/Animation/Montages/LightAttack/AM_Player_LightAttack_2.AM_Player_LightAttack_2",
-            "NextComboLAnimationTid": 31003
+            "NextComboLAnimationTid": 31003,
+            "NextComboRAnimationTid": 32002
         },
         {
             "Tid": 31003,
@@ -360,6 +361,10 @@
         {
             "Tid": 32001,
             "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_1.AM_Player_HeavyAttack_1"
+        },
+        {
+            "Tid": 32002,
+            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_2.AM_Player_HeavyAttack_2"
         }
     ],
     "ActionWindowData": [
