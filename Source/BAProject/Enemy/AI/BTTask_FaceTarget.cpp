@@ -32,8 +32,8 @@ EBTNodeResult::Type UBTTask_FaceTarget::ExecuteTask(UBehaviorTreeComponent& Owne
 	UAnimMontage* TurnMontage = Boss->PlayTurnToTarget(Target);
 	if (TurnMontage == nullptr)
 	{
-		// 회전 불필요(이미 정면) — Failed 반환해 Selector가 다음 분기(Idle 등)로 진행하게 함
-		return EBTNodeResult::Failed;
+		// 회전 불필요(90도 이내) — Succeeded 반환해 Combat 시퀀스가 다음(SelectPattern)으로 진행
+		return EBTNodeResult::Succeeded;
 	}
 
 	// 회전 몽타주 재생 중 — 종료까지 대기 (TickTask 폴링)

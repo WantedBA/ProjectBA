@@ -82,7 +82,9 @@ public:
 
 	// Utility AI — 현재 상황에서 가장 점수 높은 패턴 Tid 반환 (후보 없으면 0)
 	int32 ChooseBestPattern();
-	virtual void ExecuteBossPattern(int32 PatternTid);
+	// 공격을 실제로 시작했으면 true. 몽타주 로드 실패 등으로 못 했으면 false
+	// (false면 BT 태스크가 InProgress로 갇히지 않도록 호출부가 즉시 종료해야 한다).
+	virtual bool ExecuteBossPattern(int32 PatternTid);
 
 	// 패턴 Tid로 해당 패턴의 IdealRange를 조회 (없으면 0)
 	float GetPatternIdealRange(int32 PatternTid) const;

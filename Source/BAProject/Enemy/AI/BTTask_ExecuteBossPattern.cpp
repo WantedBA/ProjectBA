@@ -48,7 +48,16 @@ EBTNodeResult::Type UBTTask_ExecuteBossPattern::ExecuteTask(UBehaviorTreeCompone
 	Boss->OnAttackAnimationFinished.RemoveAll(this);
 	Boss->OnAttackAnimationFinished.AddUObject(this, &UBTTask_ExecuteBossPattern::OnAttackFinishedCallback);
 
-	Boss->ExecuteBossPattern(PatternTid);
+	// 공격을 시작하지 못하면(몽타주 로드 실패 등) OnAttackAnimationFinished가
+	// 영원히 broadcast되지 않아 이 태스크가 InProgress로 갇히고 BT 전체가 멈춘다.
+	// 실패 시 델리게이트를 정리하고 즉시 Failed로 끝내 트리 흐름을 유지한다.
+	const bool bStarted = Boss->ExecuteBossPattern(PatternTid);
+	if (!bStarted)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[BTTask_ExecuteBossPattern] ExecuteBossPattern failed to start → Failed"));
+		CleanupDelegate();
+		return EBTNodeResult::Failed;
+	}
 
 	UE_LOG(LogTemp, Warning, TEXT("[BTTask_ExecuteBossPattern] ExecuteBossPattern returned, awaiting Notify"));
 	return EBTNodeResult::InProgress;

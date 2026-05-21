@@ -3,6 +3,7 @@
 #include "Constants/BAProjectConstant.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Navigation/PathFollowingComponent.h"
+#include "Enemy/EnemyBase.h"
 
 UBTTask_MoveToRange::UBTTask_MoveToRange()
 {
@@ -28,6 +29,13 @@ EBTNodeResult::Type UBTTask_MoveToRange::ExecuteTask(UBehaviorTreeComponent& Own
     if (TargetActor == nullptr)
     {
         return EBTNodeResult::Failed;
+    }
+
+    // 추격 이동 시작 — 보스 상태를 Chase로 올려 MaxWalkSpeed를 100%로 복구한다.
+    // (공격 후 Idle(10%)/Alert(40%)로 떨어진 속도가 그대로면 추격이 기어가듯 느려진다)
+    if (AEnemyBase* Enemy = Cast<AEnemyBase>(AIController->GetPawn()))
+    {
+        Enemy->SetState(EEnemyState::Chase);
     }
 
     // 패턴별 사거리 우선. 비어있으면(=비-패턴 컨텍스트) 공용 AttackRange로 fallback

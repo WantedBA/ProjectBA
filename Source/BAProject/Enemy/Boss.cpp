@@ -415,8 +415,9 @@ UAnimMontage* ABoss::PlayTurnToTarget(AActor* Target)
 	const float DeltaYaw = FMath::FindDeltaAngleDegrees(GetActorRotation().Yaw, TargetYaw);
 	const float AbsDelta = FMath::Abs(DeltaYaw);
 
-	// 정면 기준 45도 이내면 회전 불필요 (공격 추적이 잔여 오차를 흡수)
-	if (AbsDelta <= 45.0f)
+	// 정면 기준 90도 이내면 회전 몽타주 미사용
+	// (90도 이하 각도는 이동 중 회전·공격 추적이 잔여 오차를 흡수)
+	if (AbsDelta <= 90.0f)
 	{
 		return nullptr;
 	}
@@ -532,14 +533,14 @@ void ABoss::StartPatternCooldown(int32 PatternTid, float CoolTime)
 	}
 }
 
-void ABoss::ExecuteBossPattern(int32 PatternTid)
+bool ABoss::ExecuteBossPattern(int32 PatternTid)
 {
 	UE_LOG(LogTemp, Warning, TEXT("[ABoss::ExecuteBossPattern] Tid=%d"), PatternTid);
 
 	if (bIsEnding || IsDead())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("  → bIsEnding/IsDead, early return"));
-		return;
+		return false;
 	}
 
 	// 패턴 데이터 1회 조회 — 몽타주/쿨타임/사용횟수/전투 데이터에 모두 사용
@@ -549,7 +550,7 @@ void ABoss::ExecuteBossPattern(int32 PatternTid)
 	if (PatternData == nullptr)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("  → PatternTid=%d not found in BossPatterns"), PatternTid);
-		return;
+		return false;
 	}
 
 	// 몽타주: 캐시 우선, 없으면 로드
@@ -566,7 +567,7 @@ void ABoss::ExecuteBossPattern(int32 PatternTid)
 	if (MontageToPlay == nullptr)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("  → MontageToPlay NULL (load failed)"));
-		return;
+		return false;
 	}
 
 	// 쿨타임·사용횟수는 실행할 때마다 갱신 (캐시 히트/미스와 무관)
@@ -583,7 +584,7 @@ void ABoss::ExecuteBossPattern(int32 PatternTid)
 	if (CombatComponent == nullptr)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("  → CombatComponent NULL"));
-		return;
+		return false;
 	}
 
 	// 타격 소켓은 CombatComponent에 설정된 StartSocketName/EndSocketName을 그대로 사용한다.
@@ -604,6 +605,8 @@ void ABoss::ExecuteBossPattern(int32 PatternTid)
 			AnimInst->Montage_SetEndDelegate(EndDelegate, MontageToPlay);
 		}
 	}
+
+	return true;
 }
 
 void ABoss::OnPatternMontageEnded(UAnimMontage* Montage, bool bInterrupted)
