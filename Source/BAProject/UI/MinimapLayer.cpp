@@ -48,6 +48,18 @@ void UMinimapLayer::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
+	if (StoredMapInfo == nullptr)
+	{
+		TArray<AActor*> FoundActors;
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMapInfoActor::StaticClass(), FoundActors);
+
+		if (FoundActors.Num() > 0)
+		{
+			StoredMapInfo = Cast<AMapInfoActor>(FoundActors[0]);
+		}
+		return;
+	}
+
 	// 플레이어 캐릭터와 위치 정보 가져오기
 	APawn* PlayerPawn = GetOwningPlayerPawn();
 	
@@ -56,6 +68,11 @@ void UMinimapLayer::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 	{
 		return;
 	}
+
+	// 사이즈 및 줌
+	float Currentworldsize = StoredMapInfo->MapWorldSize;
+	float ZoomFactor = 1.0f;
+	float AdjustedWorldSize = Currentworldsize * ZoomFactor;
 
 	// 데이터 가져오기 (플레이어 위치, 맵 중심점)
 	FVector PlayerLocation = PlayerPawn->GetActorLocation();
@@ -70,20 +87,19 @@ void UMinimapLayer::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 		// 에디터에서 설정한 실제 이미지 큭ㅣ를 기준으로 비율 계산
 		float ActualImageSize = MapSlot->GetSize().X;
 
-		// 월드 이동 비율을 이미지 크기에 반영
-		float MapX = -(RelativeLocation.Y / WorldSize) * ActualImageSize;
-		float MapY = (RelativeLocation.X / WorldSize) * ActualImageSize;
+		// 최종 위젯에 위치 적용
+		float MapX = -(RelativeLocation.Y / AdjustedWorldSize) * ActualImageSize;
+		float MapY = (RelativeLocation.X / AdjustedWorldSize) * ActualImageSize;
 
 		MapSlot->SetPosition(FVector2D(MapX, MapY));
 
-		// [회전] MapContainer 자체를 회전값만큼 돌림
-		// 컨테이너가 현위치를 기준으로 회전
-		float PlayerYaw = PlayerPawn->GetActorRotation().Yaw;
-		MapContainer->SetRenderTransformAngle(-PlayerYaw);
+		// 컨테이너 회전 적용
+		MapContainer->SetRenderTransformAngle(0.0f);
 	}
 
 	// [마커 설정] 마커는 항상 위를 향하도록 고정
-	PlayerMarker->SetRenderTransformAngle(-90.f);
+	float PlayerYaw = PlayerPawn->GetActorRotation().Yaw;
+	PlayerMarker->SetRenderTransformAngle(PlayerYaw - 90.f);
 
 	if (UCanvasPanelSlot* MarkerSlot = Cast<UCanvasPanelSlot>(PlayerMarker->Slot))
 	{

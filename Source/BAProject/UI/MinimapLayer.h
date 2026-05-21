@@ -4,13 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "UI/System/LayerBase.h"
+#include "UI/BaseWidget.h"
 #include "MinimapLayer.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class BAPROJECT_API UMinimapLayer : public ULayerBase
+class BAPROJECT_API UMinimapLayer : public UBaseWidget
 {
 	GENERATED_BODY()
 	

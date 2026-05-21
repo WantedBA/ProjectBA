@@ -44,11 +44,11 @@ protected:
 	class UTextBlock* HotKeyText;
 
 	// 테두리 이미지 위젯 바인딩
-	UPROPERTY(meta = (BindWodget))
+	UPROPERTY(meta = (BindWidget))
 	class UImage* SlotFrame;
 
 	// 배경 이미지 위젯 바인딩
-	UPROPERTY(meta = (BindWodget))
+	UPROPERTY(meta = (BindWidget))
 	class UImage* SlotBG;
 
 	UPROPERTY(EditAnywhere, Category = "BA|UI")
