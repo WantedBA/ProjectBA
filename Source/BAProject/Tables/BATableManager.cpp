@@ -73,6 +73,9 @@ void UBATableManager::LoadAllTables()
 	// Reward
 	LoadTable(RewardTable, *(TablePath + TEXT("DT_Reward_Reward.DT_Reward_Reward")));
 
+	// Text
+	LoadTable(TextTable, *(TablePath + TEXT("DT_Text_Text.DT_Text_Text")));
+
 	for (IBAPostRead* Table : PostReadList)
 	{
 		Table->PostRead();
