@@ -68,9 +68,7 @@ enum class EActionRuntimeState : uint8
 	Attacking,
 	Dodging,
 	Guarding,
-	UsingItem,
-	HitReact,
-	Dead
+	UsingItem
 };
 
 UENUM(BlueprintType)

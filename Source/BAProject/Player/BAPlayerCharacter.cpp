@@ -309,6 +309,11 @@ void ABAPlayerCharacter::OnNextComboCheck()
 	}
 }
 
+void ABAPlayerCharacter::SetBAPlayerState(const EBAPlayerState NewState)
+{
+	BAPlayerState = NewState;
+}
+
 // UserDataSubsystem의 기본 스탯과 공용 Action 데이터를 플레이어 런타임 설정에 반영한다.
 void ABAPlayerCharacter::InitializeFromTable()
 {
@@ -363,17 +368,6 @@ void ABAPlayerCharacter::InitializeFromTable()
 	}
 
 	GetCharacterMovement()->MaxWalkSpeed = SpeedSettings.RunSpeed;
-}
-
-void ABAPlayerCharacter::OnDamaged(float FinalDamage, AActor* DamageCauser)
-{
-	Super::OnDamaged(FinalDamage, DamageCauser);
-	
-	// TODO
-	if (StatComponent)
-	{
-		StatComponent->ApplyDamage(FinalDamage);
-	}
 }
 
 void ABAPlayerCharacter::HandleActionStarted(const int32 ActionTid, const EActionType ActionType)

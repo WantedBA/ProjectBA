@@ -123,6 +123,12 @@ void UActionComponent::CompleteCurrentAction()
 	RefreshTickEnabled();
 }
 
+void UActionComponent::CancelCurrentAction()
+{
+	CompleteCurrentAction();
+	ClearBufferedAction();
+}
+
 void UActionComponent::SetActiveActionInterruptLocked(const bool bNewInterruptLocked)
 {
 	if (ActiveActionTid == ActionComponentInvalidActionTid)
