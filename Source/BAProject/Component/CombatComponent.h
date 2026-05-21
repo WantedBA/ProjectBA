@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Combat/BADamageTypes.h"
 #include "Components/ActorComponent.h"
 #include "CombatComponent.generated.h"
 
@@ -37,7 +38,12 @@ public:
 
 	// 노티파이 등에서 기본값으로 사용할 공격 판정 데이터를 저장한다.
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void SetAttackData(float InRadius, float InDamage, FName InStartSocket = NAME_None, FName InEndSocket = NAME_None);
+	void SetAttackData(
+		float InRadius,
+		float InDamage,
+		FName InStartSocket = NAME_None,
+		FName InEndSocket = NAME_None,
+		EBADamageReactionType InDamageReactionType = EBADamageReactionType::HitReact);
 
 	// 전역 시간 배율을 짧게 낮춰 타격감을 만든다.
 	void TriggerHitStop(float Duration);
@@ -59,6 +65,9 @@ public:
 	{
 		this->bShowDebugTrace = bInShowDebugTrace;
 	}
+
+	UFUNCTION(BlueprintPure, Category = "Combat")
+	EBADamageReactionType GetDamageReactionType() const { return CurrentDamageReactionType; }
 
 protected:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -99,6 +108,9 @@ protected:
 
 	UPROPERTY()
 	float CurrentDamage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	EBADamageReactionType CurrentDamageReactionType = EBADamageReactionType::HitReact;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Socket")
 	FName StartSocketName = TEXT("Sword_Start");

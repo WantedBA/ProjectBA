@@ -77,6 +77,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	void CompleteCurrentAction();
 
+	// 피격/사망처럼 외부 상태가 현재 액션을 강제로 끊을 때 사용한다.
+	UFUNCTION(BlueprintCallable, Category = "Action")
+	void CancelCurrentAction();
+
 	// 애니메이션 윈도우 등에서 현재 액션의 인터럽트 가능 여부를 제어한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	void SetActiveActionInterruptLocked(bool bNewInterruptLocked);

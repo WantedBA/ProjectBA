@@ -7,8 +7,7 @@
 
 class USceneComponent;
 class UStaticMeshComponent;
-
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRequestOpenSkillTree);
+class USkillTreeWidget;
 
 UCLASS()
 class BAPROJECT_API AMapResetPoint : public AActor, public IInteractable
@@ -23,17 +22,17 @@ public:
 	virtual FText GetInteractionPrompt_Implementation() const override;
 	virtual FVector GetInteractionLocation_Implementation() const override;
 
-	UPROPERTY(BlueprintAssignable, Category = "Events") //블루프린트 UI 단에서 바인딩하여 스킬트리를 열 때 사용
-	FOnRequestOpenSkillTree OnRequestOpenSkillTree;
-
 protected:
 	virtual void BeginPlay() override;
+
+private:
+	void ToggleSkillTreeInResetPoint();
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USceneComponent> InteractionPivot;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -48,4 +47,10 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction", meta = (AllowPrivateAccess = "true"))
 	FText PromptExit = NSLOCTEXT("Interaction", "RestExit", "E - 일어나기");
+
+	UPROPERTY(EditDefaultsOnly, Category = "Interaction|UI|SkillTree")
+	TSubclassOf<USkillTreeWidget> SkillTreeWidgetClass;
+
+	UPROPERTY(Transient)
+	TObjectPtr<USkillTreeWidget> SkillTreeWidget;
 };

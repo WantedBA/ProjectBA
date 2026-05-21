@@ -2,9 +2,13 @@
 
 #include "BAProjectEditorModule.h"
 
+#include "BABTAnalyzer.h"
+#include "BAAIExporter.h"
 #include "BATableGenerator.h"
+#include "EditorUtilityLibrary.h"
 #include "Framework/Commands/UIAction.h"
 #include "ToolMenus.h"
+#include "BehaviorTree/BehaviorTree.h"
 #include "Tables/BATableManager.h"
 #include "Textures/SlateIcon.h"
 
@@ -77,6 +81,51 @@ void FBAProjectEditorModule::RegisterMenus()
 					}
 					TableManager->ReloadAllTables();
 					UE_LOG(LogTemp, Log, TEXT("Table data reloaded successfully."));
+				})));
+
+			FToolMenuSection& AISection = InSubMenu->AddSection(
+				"AI", LOCTEXT("AISection", "AI"));
+
+			// Analyze AI
+			AISection.AddMenuEntry(
+				"AnalyzeAI",
+				LOCTEXT("AnalyzeAILabel", "Analyze Selected BT"),
+				LOCTEXT("AnalyzeAITooltip", "Analyze selected Behavior Tree and export to Mermaid/D2"),
+				FSlateIcon(FAppStyle::GetAppStyleSetName(), "ClassIcon.BehaviorTree"),
+				FUIAction(FExecuteAction::CreateLambda([]()
+				{
+					TArray<UObject*> SelectedAssets = UEditorUtilityLibrary::GetSelectedAssets();
+					if (SelectedAssets.Num() == 0)
+					{
+						UE_LOG(LogTemp, Warning, TEXT("No assets selected. Please select a Behavior Tree in the Content Browser."));
+						return;
+					}
+
+					UBABTAnalyzer* Analyzer = NewObject<UBABTAnalyzer>();
+					for (UObject* Asset : SelectedAssets)
+					{
+						UBehaviorTree* BT = Cast<UBehaviorTree>(Asset);
+						if (!BT)
+						{
+							continue;
+						}
+
+						FBAAIAnalyzerTreeData TreeData;
+						if (Analyzer->AnalyzeBehaviorTree(BT, TreeData))
+						{
+							FString MermaidContent;
+							if (FBAAIExporter::ExportToMermaid(TreeData, MermaidContent))
+							{
+								FBAAIExporter::SaveToFile(FString::Printf(TEXT("%s.mmd"), *BT->GetName()), MermaidContent);
+							}
+
+							FString D2Content;
+							if (FBAAIExporter::ExportToD2(TreeData, D2Content))
+							{
+								FBAAIExporter::SaveToFile(FString::Printf(TEXT("%s.d2"), *BT->GetName()), D2Content);
+							}
+						}
+					}
 				})));
 		}));
 

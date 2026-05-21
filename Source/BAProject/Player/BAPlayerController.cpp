@@ -165,6 +165,11 @@ void ABAPlayerController::SetupInputComponent()
 	{
 		EnhancedInputComponent->BindAction(LightAttackAction, ETriggerEvent::Triggered, this, &ABAPlayerController::LightAttack);
 	}
+	
+	if (ensureMsgf(HeavyAttackAction, TEXT("HeavyAttackAction is not configured on %s"), *GetName()))
+	{
+		EnhancedInputComponent->BindAction(HeavyAttackAction, ETriggerEvent::Triggered, this, &ABAPlayerController::HeavyAttack);
+	}
 
 	if (ensureMsgf(WalkAction, TEXT("WalkAction is not configured on %s"), *GetName()))
 	{
@@ -176,6 +181,13 @@ void ABAPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ABAPlayerController::OnSprintStarted);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABAPlayerController::OnSprintCompleted);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Canceled, this, &ABAPlayerController::OnSprintCompleted);
+	}
+
+	if (ensureMsgf(GuardAction, TEXT("GuardAction is not configured on %s"), *GetName()))
+	{
+		EnhancedInputComponent->BindAction(GuardAction, ETriggerEvent::Started, this, &ABAPlayerController::OnGuardStarted);
+		EnhancedInputComponent->BindAction(GuardAction, ETriggerEvent::Completed, this, &ABAPlayerController::OnGuardCompleted);
+		EnhancedInputComponent->BindAction(GuardAction, ETriggerEvent::Canceled, this, &ABAPlayerController::OnGuardCompleted);
 	}
 	
 	if (ensureMsgf(InteractAction, TEXT("InteractAction is not configured on %s"), *GetName()))
@@ -268,6 +280,14 @@ void ABAPlayerController::LightAttack()
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
 	{
 		PC->TryAttack(EActionCommand::LightAttack);
+	}
+}
+
+void ABAPlayerController::HeavyAttack()
+{
+	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
+	{
+		PC->TryAttack(EActionCommand::HeavyAttack);
 	}
 }
 
@@ -365,7 +385,7 @@ bool ABAPlayerController::IsSprintDodgeTap() const
 void ABAPlayerController::TryStartDodgeAction() const
 {
 	ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
-	if (!PC || PC->IsOnLadder())
+	if (!PC || !PC->CanAcceptActionInput())
 	{
 		return;
 	}
@@ -380,6 +400,22 @@ void ABAPlayerController::TryStartDodgeAction() const
 		PC->GetLocomotionMode() == EPlayerLocomotionMode::Strafe ?
 		GetActionDirectionFromMoveInput(*PC, PC->GetMoveInputVector()) : EActionDirection::Any;
 	ActionComponent->TryStartAction(EActionCommand::Dodge, DodgeDirection);
+}
+
+void ABAPlayerController::OnGuardStarted()
+{
+	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
+	{
+		PC->TryStartGuard();
+	}
+}
+
+void ABAPlayerController::OnGuardCompleted()
+{
+	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
+	{
+		PC->StopGuard();
+	}
 }
 
 void ABAPlayerController::OnInteract()

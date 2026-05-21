@@ -182,6 +182,8 @@ struct BAPROJECT_API FActionAnimationDataRow : public FBARowBase
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Action|ActionAnimationData")
 	int32 NextComboLAnimationTid = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Action|ActionAnimationData")
+	int32 NextComboRAnimationTid = 0;
 
 	virtual void PostRead() override
 	{

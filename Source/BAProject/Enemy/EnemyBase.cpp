@@ -124,9 +124,13 @@ void AEnemyBase::InitializeFromTable(int32 InTid)
 	}
 }
 
-void AEnemyBase::OnDamaged(float FinalDamage, AActor* DamageCauser)
+void AEnemyBase::OnDamaged(
+	const float FinalDamage,
+	FDamageEvent const& DamageEvent,
+	AController* EventInstigator,
+	AActor* DamageCauser)
 {
-	Super::OnDamaged(FinalDamage, DamageCauser);
+	Super::OnDamaged(FinalDamage, DamageEvent, EventInstigator, DamageCauser);
 
 	if (StatComponent)
 	{
@@ -149,7 +153,9 @@ void AEnemyBase::OnDamaged(float FinalDamage, AActor* DamageCauser)
 		}
 	}
 
-	K2_OnHitVisuals(GetActorLocation());
+	const FHitResult HitResult = ResolveDamageHitResult(DamageEvent);
+	const FVector HitVisualLocation = HitResult.bBlockingHit ? FVector(HitResult.ImpactPoint) : GetActorLocation();
+	K2_OnHitVisuals(HitVisualLocation);
 }
 
 void AEnemyBase::Tick(float DeltaTime)
@@ -201,7 +207,7 @@ void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
 	switch (NewState)
 	{
 	case EEnemyState::Idle:
-		TargetSpeed = MaxMoveSpeed = 0.6f;
+		TargetSpeed = MaxMoveSpeed * 0.1f;
 		break;
 
 	case EEnemyState::Chase:
@@ -210,6 +216,10 @@ void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
 
 	case EEnemyState::Move:
 		TargetSpeed = MaxMoveSpeed * 0.6f;
+		break;
+
+	case EEnemyState::Tactical:
+		TargetSpeed = MaxMoveSpeed * 0.5f; // 서성일 때는 평소보다 느리게
 		break;
 
 	case EEnemyState::Alert:
@@ -223,7 +233,7 @@ void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
 		TargetSpeed = 0.f;
 		break;
 
-	default:
+	default: 
 		TargetSpeed = MaxMoveSpeed;
 		break;
 	}
@@ -310,12 +320,6 @@ void AEnemyBase::OnDeath()
 {
 	Super::OnDeath();
 	SetState(EEnemyState::Dead);
-
-	if (GetCharacterMovement())
-	{
-		GetCharacterMovement()->StopMovementImmediately();
-		GetCharacterMovement()->DisableMovement();
-	}
 
 	SetActorEnableCollision(false);
 
