@@ -1,14 +1,14 @@
-﻿#include "Enemy/AI/BTTask_MoveToRange.h"
+#include "Enemy/AI/BTTask_MoveToRange.h"
 #include "AIController.h"
 #include "Constants/BAProjectConstant.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Navigation/PathFollowingComponent.h"
-#include "Blueprint/AIBlueprintHelperLibrary.h"
+#include "Enemy/EnemyBase.h"
 
 UBTTask_MoveToRange::UBTTask_MoveToRange()
 {
 	NodeName = TEXT("Move To Range");
-    bNotifyTick = false;
+	bNotifyTick = true;
 }
 
 EBTNodeResult::Type UBTTask_MoveToRange::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -31,7 +31,19 @@ EBTNodeResult::Type UBTTask_MoveToRange::ExecuteTask(UBehaviorTreeComponent& Own
         return EBTNodeResult::Failed;
     }
 
-    float IdealRange = BBComp->GetValueAsFloat(BBKey::AttackRange);
+    // 추격 이동 시작 — 보스 상태를 Chase로 올려 MaxWalkSpeed를 100%로 복구한다.
+    // (공격 후 Idle(10%)/Alert(40%)로 떨어진 속도가 그대로면 추격이 기어가듯 느려진다)
+    if (AEnemyBase* Enemy = Cast<AEnemyBase>(AIController->GetPawn()))
+    {
+        Enemy->SetState(EEnemyState::Chase);
+    }
+
+    // 패턴별 사거리 우선. 비어있으면(=비-패턴 컨텍스트) 공용 AttackRange로 fallback
+    float IdealRange = BBComp->GetValueAsFloat(BBKey::SelectedPatternIdealRange);
+    if (IdealRange <= 0.0f)
+    {
+        IdealRange = BBComp->GetValueAsFloat(BBKey::AttackRange);
+    }
 
     FAIMoveRequest Request;
     Request.SetGoalActor(TargetActor);
@@ -39,41 +51,65 @@ EBTNodeResult::Type UBTTask_MoveToRange::ExecuteTask(UBehaviorTreeComponent& Own
     Request.SetUsePathfinding(true);
     Request.SetProjectGoalLocation(true);
 
-    // 도달 여부를 테스트할 때 몬스터와 플레이어의 캡슐 컴포넌트 반지름을 계산에서 제외합니다.
-    Request.SetReachTestIncludesAgentRadius(false);
-    Request.SetReachTestIncludesGoalRadius(false);
-
     FNavPathSharedPtr OutPath;
 
     EPathFollowingRequestResult::Type Result = AIController->MoveTo(Request, &OutPath);
+
     if (Result == EPathFollowingRequestResult::Failed)
     {
-        UE_LOG(LogTemp, Warning, TEXT("MoveToRange Fail"));
         return EBTNodeResult::Failed;
     }
-    else if (Result == EPathFollowingRequestResult::AlreadyAtGoal)
+
+    return EBTNodeResult::InProgress;
+}
+
+void UBTTask_MoveToRange::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
+{
+    AAIController* AIController = OwnerComp.GetAIOwner();
+    UBlackboardComponent* BBComp = OwnerComp.GetBlackboardComponent();
+
+    if (AIController == nullptr || BBComp == nullptr)
     {
-        UE_LOG(LogTemp, Warning, TEXT("MoveToRange AlreadyAtGoal"));
-        return EBTNodeResult::Succeeded;
-    }
-    UPathFollowingComponent* PathFollowingComp = AIController->GetPathFollowingComponent();
-    if (PathFollowingComp)
-    {
-        PathFollowingComp->OnRequestFinished.AddWeakLambda(this, [&OwnerComp](FAIRequestID RequestID, const FPathFollowingResult& Result)
-            {
-                if (Result.IsSuccess())
-                {
-                    // 성공적으로 도달했다면 BT에 성공을 알림
-                    Cast<UBTTask_MoveToRange>(OwnerComp.GetActiveNode())->FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
-                }
-                else
-                {
-                    // 가는 도중 뼈대나 장애물에 막혀 실패했다면 실패를 알림
-                    Cast<UBTTask_MoveToRange>(OwnerComp.GetActiveNode())->FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
-                }
-            });
+        FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+        return;
     }
 
-    UE_LOG(LogTemp, Log, TEXT("MoveToRange InProgress"));
-    return EBTNodeResult::InProgress;
+    APawn* BossPawn = AIController->GetPawn();
+    AActor* TargetActor = Cast<AActor>(BBComp->GetValueAsObject(BBKey::TargetActor));
+
+    float IdealRange = BBComp->GetValueAsFloat(BBKey::SelectedPatternIdealRange);
+    if (IdealRange <= 0.0f)
+    {
+        IdealRange = BBComp->GetValueAsFloat(BBKey::AttackRange);
+    }
+
+    if (BossPawn == nullptr || TargetActor == nullptr)
+    {
+        FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+        return;
+    }
+
+    const float Distance = FVector::Dist(BossPawn->GetActorLocation(), TargetActor->GetActorLocation());
+    // 캡슐 합 + NavMesh 끝점 어긋남에 대한 여유. 정확히 IdealRange로는 도달 못 하는 케이스가 흔함
+    const float ArriveBuffer = 50.0f;
+    if (Distance <= IdealRange + ArriveBuffer)
+    {
+        AIController->StopMovement();
+        FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+        return;
+    }
+
+    // 안전망: path follow가 끝났는데(=path 종료) 아직 IdealRange 밖이면 path 재요청
+    // 타겟이 도망갔거나, AlreadyAtGoal로 시작했거나, NavMesh path 끝점이 IdealRange보다 멀어서 stuck일 때 복구
+    UPathFollowingComponent* PathFollow = AIController->GetPathFollowingComponent();
+    if (PathFollow && PathFollow->GetStatus() == EPathFollowingStatus::Idle)
+    {
+        FAIMoveRequest Request;
+        Request.SetGoalActor(TargetActor);
+        Request.SetAcceptanceRadius(IdealRange);
+        Request.SetUsePathfinding(true);
+        Request.SetProjectGoalLocation(true);
+
+        AIController->MoveTo(Request);
+    }
 }

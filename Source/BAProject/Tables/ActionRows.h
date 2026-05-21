@@ -183,11 +183,6 @@ struct BAPROJECT_API FActionAnimationDataRow : public FBARowBase
 	// true면 재생 중 AnimInstance RootMotionMode를 RootMotionFromMontagesOnly로 임시 전환한다.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ActionAnimationData")
 	bool bUseRootMotion = false;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Action|ActionAnimationData")
-	int32 NextComboLAnimationTid = 0;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Action|ActionAnimationData")
-	int32 NextComboRAnimationTid = 0;
 
 	virtual void PostRead() override
 	{
@@ -228,6 +223,33 @@ struct BAPROJECT_API FActionWindowDataRow : public FBARowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ActionWindowData")
 	FString Payload;
 
+	virtual void PostRead() override
+	{
+		bTid = Tid;
+	}
+};
+
+// 공격 몽타주 연결 + 다음 콤보 정보
+USTRUCT(BlueprintType, meta = (BASheet = "ComboTransition"))
+struct BAPROJECT_API FComboTransitionRow : public FBARowBase
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ComboTransition")
+	int32 Tid = 0;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ComboTransition")
+	TSoftObjectPtr<UAnimMontage> Montage;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ComboTransition")
+	float PlayRate = 1.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ComboTransition")
+	int32 NextOnL = 0;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ComboTransition")
+	int32 NextOnR = 0;
+	
 	virtual void PostRead() override
 	{
 		bTid = Tid;

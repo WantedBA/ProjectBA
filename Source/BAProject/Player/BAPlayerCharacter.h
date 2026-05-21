@@ -256,15 +256,15 @@ protected:
 	// 공격 관련
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UAnimMontage> FirstLightAttackMontage;
-	const int32 FirstLightAttackMontageTid = 31001;
+	const int32 FirstLComboTransitionTid = 71001;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UAnimMontage> FirstHeavyAttackMontage;
-	const int32 FirstHeavyAttackMontageTid = 32001;
+	const int32 FirstRComboTransitionTid = 72001;
 	
 	const float WeaponRadius = 20.f; // 충돌 판정 시 검 두께
-	int32 NowActionAnimationTid = 0; // 다음 콤보 결정할 때 사용
-	int32 NextActionAnimationTid = 0; // 결정된 다음 콤보 저장
+	int32 NowComboTransitionTid = 0; // 다음 콤보 결정할 때 사용
+	int32 NextComboTransitionTid = 0; // 결정된 다음 콤보 저장
 	
 	UPROPERTY()
 	TObjectPtr<UAnimMontage> NextAttackMontage = nullptr;

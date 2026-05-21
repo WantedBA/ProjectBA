@@ -60,7 +60,11 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "State")
 	EEnemyGrade GetEnemyGrade() const { return EnemyGrade; }
-
+	
+	//한번 잡은 타겟 영구 유지 여부
+	UFUNCTION(BlueprintPure, Category="AI")
+	virtual bool IsPersistentAggro() const { return false; }
+	
 	int32 GetMonsterTid() const { return MonsterTid; }
 
 	void SetState(EEnemyState NewState);

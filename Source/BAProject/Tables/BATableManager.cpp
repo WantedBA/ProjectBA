@@ -47,12 +47,14 @@ void UBATableManager::LoadAllTables()
 	LoadTable(MovesetTable, *(TablePath + TEXT("DT_Action_Moveset.DT_Action_Moveset")));
 	LoadTable(ActionAnimationDataTable, *(TablePath + TEXT("DT_Action_ActionAnimationData.DT_Action_ActionAnimationData")));
 	LoadTable(ActionWindowDataTable, *(TablePath + TEXT("DT_Action_ActionWindowData.DT_Action_ActionWindowData")));
+	LoadTable(ComboTransitionTable, *(TablePath + TEXT("DT_Action_ComboTransition.DT_Action_ComboTransition")));
 
 	// Player
 	LoadTable(PlayerBaseStatTable, *(TablePath + TEXT("DT_Player_BaseStat.DT_Player_BaseStat")));
 	
 	// Skills
 	LoadTable(SkillTable, *(TablePath + TEXT("DT_SkillTree_Skill.DT_SkillTree_Skill")));
+	LoadTable(SkillModifierTable, *(TablePath + TEXT("DT_SkillTree_SkillModifier.DT_SkillTree_SkillModifier")));
 	
 	// Items
 	LoadTable(ConsumeTable,  *(TablePath + TEXT("DT_Item_Consume.DT_Item_Consume")));
@@ -72,6 +74,9 @@ void UBATableManager::LoadAllTables()
 
 	// Reward
 	LoadTable(RewardTable, *(TablePath + TEXT("DT_Reward_Reward.DT_Reward_Reward")));
+
+	// Text
+	LoadTable(TextTable, *(TablePath + TEXT("DT_Text_Text.DT_Text_Text")));
 
 	for (IBAPostRead* Table : PostReadList)
 	{

@@ -13,6 +13,8 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "Instance/BATimeSubsystem.h"
+#include "Component/ActionComponent.h"
+#include "Enemy/Monster.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -51,7 +53,7 @@ void UCombatComponent::CheckHitStartDefault()
 
 void UCombatComponent::CheckHitStart(float InRadius, float InDamage, FName InStartSocket, FName InEndSocket)
 {
-	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+	ACharacterBase* OwnerCharacter = Cast<ACharacterBase>(GetOwner());
 	if (OwnerCharacter == nullptr)
 	{
 		return;
@@ -75,8 +77,18 @@ void UCombatComponent::CheckHitStart(float InRadius, float InDamage, FName InSta
 		EndSocketName = InEndSocket;
 	}
 	
-	PrevStartLocation = OwnerCharacter->GetMesh()->GetSocketLocation(StartSocketName);
-	PrevEndLocation = OwnerCharacter->GetMesh()->GetSocketLocation(EndSocketName);
+	// Prev 위치는 ProcessHitCheck와 반드시 같은 메시(무기 우선)에서 가져와야 한다.
+	// 안 그러면 첫 히트체크 프레임의 스윕이 본체↔무기 사이를 가로질러 거대한 박스가 된다.
+	if (OwnerCharacter->GetWeaponMesh())
+	{
+		PrevStartLocation = OwnerCharacter->GetWeaponMesh()->GetSocketLocation(StartSocketName);
+		PrevEndLocation = OwnerCharacter->GetWeaponMesh()->GetSocketLocation(EndSocketName);
+	}
+	else
+	{
+		PrevStartLocation = OwnerCharacter->GetMesh()->GetSocketLocation(StartSocketName);
+		PrevEndLocation = OwnerCharacter->GetMesh()->GetSocketLocation(EndSocketName);
+	}
 	HitActors.Empty();
 	
 	SetComponentTickEnabled(true);
@@ -284,7 +296,8 @@ void UCombatComponent::ApplyDamage(AActor* Victim, const FHitResult& HitResult)
 	SpawnShockwave(HitResult.ImpactPoint, 1.0f);
 
 	// 넉백 처리 - 상대가 Enemy인 경우에만 적용
-	if (AEnemyBase* EnemyVictim = Cast<AEnemyBase>(Victim))
+	// 보스 제외
+	if (AMonster* EnemyVictim = Cast<AMonster>(Victim))
 	{
 		EnemyVictim->ApplyKnockback(OwnerActor, 500.0f);
 	}
