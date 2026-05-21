@@ -165,6 +165,11 @@ void ABAPlayerController::SetupInputComponent()
 	{
 		EnhancedInputComponent->BindAction(LightAttackAction, ETriggerEvent::Triggered, this, &ABAPlayerController::LightAttack);
 	}
+	
+	if (ensureMsgf(HeavyAttackAction, TEXT("HeavyAttackAction is not configured on %s"), *GetName()))
+	{
+		EnhancedInputComponent->BindAction(HeavyAttackAction, ETriggerEvent::Triggered, this, &ABAPlayerController::HeavyAttack);
+	}
 
 	if (ensureMsgf(WalkAction, TEXT("WalkAction is not configured on %s"), *GetName()))
 	{
@@ -275,6 +280,14 @@ void ABAPlayerController::LightAttack()
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
 	{
 		PC->TryAttack(EActionCommand::LightAttack);
+	}
+}
+
+void ABAPlayerController::HeavyAttack()
+{
+	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
+	{
+		PC->TryAttack(EActionCommand::HeavyAttack);
 	}
 }
 
