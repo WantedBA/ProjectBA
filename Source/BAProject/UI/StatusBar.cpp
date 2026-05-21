@@ -88,7 +88,7 @@ void UStatusBar::NativePreConstruct()
 
 		// 프로그레스 바 스타일 적용 
 		// 프로그레스 바의 전체 스타일 구조체 복사
-		FProgressBarStyle NewStyle = Bar->WidgetStyle;
+		FProgressBarStyle NewStyle = Bar->GetWidgetStyle();
 
 		// 게이지 영역의 렌더링 리소스를 동적 머티리얼로 교체
 		NewStyle.FillImage.SetResourceObject(BarMID);
