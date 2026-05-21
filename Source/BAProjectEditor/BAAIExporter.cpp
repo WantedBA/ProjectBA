@@ -1,4 +1,4 @@
-// Copyright TeamBA. All Rights Reserved.
+﻿// Copyright TeamBA. All Rights Reserved.
 
 #include "BAAIExporter.h"
 #include "Misc/FileHelper.h"
@@ -61,6 +61,19 @@ bool FBAAIExporter::ExportToMermaid(const FBAAIAnalyzerTreeData& InData, FString
 bool FBAAIExporter::ExportToD2(const FBAAIAnalyzerTreeData& InData, FString& OutContent)
 {
 	OutContent = FString::Printf(TEXT("%s: {\n  shape: cloud\n}\n"), *InData.TreeName);
+
+	// [수정] Blackboard 정보 추가 (D2 컨테이너 문법 적용)
+	if (!InData.BlackboardName.IsEmpty())
+	{
+		// D2에서는 컨테이너명: { ... } 내부에 자식 노드들을 작성합니다.
+		OutContent += FString::Printf(TEXT("Blackboard_%s: {\n  label: \"%s\"\n"), *InData.BlackboardName, *InData.BlackboardName);
+		for (const FBAAIAnalyzerBlackboardKeyData& Key : InData.BlackboardKeys)
+		{
+			// 컨테이너 내부의 노드 정의
+			OutContent += FString::Printf(TEXT("  BB_%s: \"%s (%s)\"\n"), *Key.KeyName, *Key.KeyName, *Key.KeyType);
+		}
+		OutContent += TEXT("}\n");
+	}
 
 	for (auto& Elem : InData.Nodes)
 	{
