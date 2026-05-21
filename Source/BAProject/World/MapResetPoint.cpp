@@ -1,11 +1,12 @@
 #include "World/MapResetPoint.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Player/BAPlayerCharacter.h"
 #include "Component/StatComponent.h"
 #include "Instance/QuestManageSubsystem.h"
 #include "SaveGame/SaveGameManager.h"
-#include "Kismet/GameplayStatics.h"
+#include "Player/BAPlayerCharacter.h"
+#include "UI/SkillTree/SkillTreeWidget.h"
+#include "UI/System/SubSystemUI.h"
 
 AMapResetPoint::AMapResetPoint()
 {
@@ -30,6 +31,35 @@ AMapResetPoint::AMapResetPoint()
 void AMapResetPoint::BeginPlay()
 {
 	Super::BeginPlay();
+}
+
+void AMapResetPoint::ToggleSkillTreeInResetPoint()
+{
+	if (SkillTreeWidget && SkillTreeWidget->IsInViewport())
+	{
+		SkillTreeWidget->ClosePopup();
+		SkillTreeWidget = nullptr;
+		return;
+	}
+
+	if (!ensureMsgf(SkillTreeWidgetClass, TEXT("SkillTreeWidgetClass is not configured on %s"), *GetName()))
+	{
+		return;
+	}
+
+	UGameInstance* GameInstance = GetGameInstance();
+	if (GameInstance == nullptr)
+	{
+		return;
+	}
+
+	USubSystemUI* UISubsystem = GameInstance->GetSubsystem<USubSystemUI>();
+	if (!ensureMsgf(UISubsystem, TEXT("USubSystemUI is not available.")))
+	{
+		return;
+	}
+
+	SkillTreeWidget = Cast<USkillTreeWidget>(UISubsystem->PushUIByClass(SkillTreeWidgetClass));
 }
 
 bool AMapResetPoint::CanInteract_Implementation(AActor* Interactor) const
@@ -76,7 +106,7 @@ void AMapResetPoint::Interact_Implementation(AActor* Interactor)
 		}
 
 		// OpenSkillTree
-		OnRequestOpenSkillTree.Broadcast();
+		ToggleSkillTreeInResetPoint();
 
 		// SaveProgress
 		if (UGameInstance* GI = GetGameInstance())

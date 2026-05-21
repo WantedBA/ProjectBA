@@ -207,7 +207,7 @@ void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
 	switch (NewState)
 	{
 	case EEnemyState::Idle:
-		TargetSpeed = MaxMoveSpeed;
+		TargetSpeed = MaxMoveSpeed * 0.1f;
 		break;
 
 	case EEnemyState::Chase:
@@ -216,6 +216,10 @@ void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
 
 	case EEnemyState::Move:
 		TargetSpeed = MaxMoveSpeed * 0.6f;
+		break;
+
+	case EEnemyState::Tactical:
+		TargetSpeed = MaxMoveSpeed * 0.5f; // 서성일 때는 평소보다 느리게
 		break;
 
 	case EEnemyState::Alert:
@@ -229,7 +233,7 @@ void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
 		TargetSpeed = 0.f;
 		break;
 
-	default:
+	default: 
 		TargetSpeed = MaxMoveSpeed;
 		break;
 	}
@@ -294,8 +298,6 @@ void AEnemyBase::ApplyKnockback(AActor* DamageCauser, float Force)
 
 void AEnemyBase::OnEnemyAttackAniFinished(EEnemyState NewState)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[%s] OnEnemyAttackAniFinished called, NewState=%d, CurrentState=%d"), *GetName(), (int32)NewState, (int32)CurrentState);
-
 	if (IsValid(this) && CurrentState != EEnemyState::Dead)
 	{
 		// 공격 성공 시 횟수 증가 및 상태 판단

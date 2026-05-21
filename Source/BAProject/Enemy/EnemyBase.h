@@ -17,7 +17,8 @@ enum class EEnemyState : uint8
 	Attack,
 	Hit,
 	Stagger,
-	Dead
+	Dead,
+	Tactical
 };
 
 UENUM(BlueprintType)
@@ -69,6 +70,8 @@ public:
 	void SetState(EEnemyState NewState);
 
 	UAnimMontage* GetEnemyAttackMontage() const { return AttackMontage; }
+	UAnimMontage* GetEnemyHitMontage() const { return HitMontage; }
+	UAnimMontage* GetEnemyStaggerMontage() const { return PerfectGuardedMontage; }
 
 	float GetMaxChaseDistance() { return MaxChaseDistance; }
 
@@ -95,11 +98,7 @@ protected:
 	virtual void PostInitializeComponents() override;
 	virtual void PossessedBy(AController* NewController) override;
 
-	virtual void OnDamaged(
-		float FinalDamage,
-		FDamageEvent const& DamageEvent,
-		AController* EventInstigator,
-		AActor* DamageCauser) override;
+	virtual void OnDamaged(float FinalDamage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 	// 시각 연출 이벤트
 	UFUNCTION(BlueprintImplementableEvent, Category = "Enemy|Visuals", meta = (DisplayName = "OnHitVisuals"))

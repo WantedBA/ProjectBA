@@ -27,6 +27,8 @@ namespace BBKey
 	const FName TargetAngle = TEXT("TargetAngle");
 	const FName IsInterrupted = TEXT("IsInterrupted");
 	const FName EnemyState = TEXT("State");
+	const FName TacticalPos = TEXT("TacticalPos");
+	const FName StrafeDir = TEXT("StrafeDir");
 }
 
 namespace SocketName
