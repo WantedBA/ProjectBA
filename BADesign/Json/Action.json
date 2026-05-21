@@ -345,34 +345,6 @@
             "bUseRootMotion": 1
         },
         {
-            "Tid": 31001,
-            "Montage": "/Game/Character/Player/Animation/Montages/LightAttack/AM_Player_LightAttack_1.AM_Player_LightAttack_1",
-            "NextComboLAnimationTid": 31002
-        },
-        {
-            "Tid": 31002,
-            "Montage": "/Game/Character/Player/Animation/Montages/LightAttack/AM_Player_LightAttack_2.AM_Player_LightAttack_2",
-            "NextComboLAnimationTid": 31003,
-            "NextComboRAnimationTid": 32002
-        },
-        {
-            "Tid": 31003,
-            "Montage": "/Game/Character/Player/Animation/Montages/LightAttack/AM_Player_LightAttack_3.AM_Player_LightAttack_3",
-            "NextComboLAnimationTid": 31004
-        },
-        {
-            "Tid": 31004,
-            "Montage": "/Game/Character/Player/Animation/Montages/LightAttack/AM_Player_LightAttack_4.AM_Player_LightAttack_4"
-        },
-        {
-            "Tid": 32001,
-            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_1.AM_Player_HeavyAttack_1"
-        },
-        {
-            "Tid": 32002,
-            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_2.AM_Player_HeavyAttack_2"
-        },
-        {
             "Tid": 30011,
             "ActionTid": 10011,
             "Direction": "Any",
@@ -763,6 +735,36 @@
             "WindowType": "InputBuffer",
             "StartTime": 0.55,
             "EndTime": 0.8
+        }
+    ],
+    "ComboTransition": [
+        {
+            "Tid": 71001,
+            "Montage": "/Game/Character/Player/Animation/Montages/LightAttack/AM_Player_LightAttack_1.AM_Player_LightAttack_1",
+            "NextOnL": 31002
+        },
+        {
+            "Tid": 71002,
+            "Montage": "/Game/Character/Player/Animation/Montages/LightAttack/AM_Player_LightAttack_2.AM_Player_LightAttack_2",
+            "NextOnL": 31003,
+            "NextOnR": 32002
+        },
+        {
+            "Tid": 71003,
+            "Montage": "/Game/Character/Player/Animation/Montages/LightAttack/AM_Player_LightAttack_3.AM_Player_LightAttack_3",
+            "NextOnL": 31004
+        },
+        {
+            "Tid": 71004,
+            "Montage": "/Game/Character/Player/Animation/Montages/LightAttack/AM_Player_LightAttack_4.AM_Player_LightAttack_4"
+        },
+        {
+            "Tid": 72001,
+            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_1.AM_Player_HeavyAttack_1"
+        },
+        {
+            "Tid": 72002,
+            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_2.AM_Player_HeavyAttack_2"
         }
     ]
 }

@@ -233,3 +233,30 @@ struct BAPROJECT_API FActionWindowDataRow : public FBARowBase
 		bTid = Tid;
 	}
 };
+
+// 공격 몽타주 연결 + 다음 콤보 정보
+USTRUCT(BlueprintType, meta = (BASheet = "ComboTransition"))
+struct BAPROJECT_API FComboTransitionRow : public FBARowBase
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ComboTransition")
+	int32 TransitionTid = 0;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ComboTransition")
+	TSoftObjectPtr<UAnimMontage> Montage;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ComboTransition")
+	float PlayRate = 1.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ComboTransition")
+	int32 NextOnL = 0;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ComboTransition")
+	int32 NextOnR = 0;
+	
+	virtual void PostRead() override
+	{
+		bTid = TransitionTid;
+	}
+};

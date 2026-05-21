@@ -234,5 +234,71 @@
             "PositionY": 800,
             "VideoPathString": "/Game/Movies/TestVideo.TestVideo"
         }
+    ],
+    "SkillModifier": [
+        {
+            "SkillTid": 6,
+            "ApplyType": "VFX"
+        },
+        {
+            "SkillTid": 7,
+            "ApplyType": "VFX"
+        },
+        {
+            "SkillTid": 8,
+            "ApplyType": "VFX"
+        },
+        {
+            "SkillTid": 9,
+            "ApplyType": "ComboTransition"
+        },
+        {
+            "SkillTid": 10,
+            "ApplyType": "ComboTransition"
+        },
+        {
+            "SkillTid": 11,
+            "ApplyType": "Stat"
+        },
+        {
+            "SkillTid": 12,
+            "ApplyType": "ComboTransition"
+        },
+        {
+            "SkillTid": 13,
+            "ApplyType": "MovesetKey"
+        },
+        {
+            "SkillTid": 14,
+            "ApplyType": "ComboTransition"
+        },
+        {
+            "SkillTid": 15,
+            "ApplyType": "Stat"
+        },
+        {
+            "SkillTid": 16,
+            "ApplyType": "Stat"
+        },
+        {
+            "SkillTid": 17,
+            "ApplyType": "Stat"
+        },
+        {
+            "SkillTid": 18,
+            "ApplyType": "Etc"
+        },
+        {
+            "SkillTid": 19,
+            "ApplyType": "Etc"
+        },
+        {
+            "SkillTid": 20,
+            "ApplyType": "ComboTransition"
+        },
+        {
+            "SkillTid": 21,
+            "ApplyType": "ComboTransition"
+        }
     ]
 }

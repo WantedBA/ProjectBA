@@ -111,3 +111,30 @@ struct BAPROJECT_API FSkillRow : public FBARowBase
 		return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(IconPathString));
 	}
 };
+
+// 스킬 적용 방식 분류
+UENUM(BlueprintType)
+enum class ESkillApplyType : uint8
+{
+	VFX, ComboTransition, Stat, MovesetKey, Etc
+};
+
+
+// PlayerSkillComponent에서 스킬 적용을 위한 데이터
+USTRUCT(BlueprintType, meta = (BASheet = "SkillModifier"))
+struct BAPROJECT_API FSkillModifierRow : public FBARowBase
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Modifier")
+	int32 SkillTid = 0;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Modifier")
+	ESkillApplyType ApplyType = ESkillApplyType::Etc;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Modifier")
+	FString Target;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Modifier")
+	FString Value;
+};
