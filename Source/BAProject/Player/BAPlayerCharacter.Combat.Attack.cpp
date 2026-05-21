@@ -48,7 +48,7 @@ void ABAPlayerCharacter::OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bA
 	// 정상 종료되었을 경우
 	if (!bArg)
 	{
-		BAPlayerState = EBAPlayerState::None;
+		SetBAPlayerState(EBAPlayerState::None);
 		NowActionAnimationTid = 0;
 	}
 	
@@ -60,7 +60,7 @@ void ABAPlayerCharacter::StartAttack(UAnimMontage* InAnimMontage)
 	NextActionAnimationTid = 0;
 	NextAttackMontage = nullptr;
 	
-	BAPlayerState = EBAPlayerState::Attacking;
+	SetBAPlayerState(EBAPlayerState::Attacking);
 	CombatComponent->ExecuteAttack(InAnimMontage, StatComponent->GetAttackSpeed());
 	
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())

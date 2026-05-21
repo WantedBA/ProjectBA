@@ -269,7 +269,7 @@ void ABAPlayerCharacter::HandleActionStarted(const int32 ActionTid, const EActio
 	
 	if (ActionType == EActionType::DodgeRoll)
 	{
-		BAPlayerState = EBAPlayerState::DodgeRolling;
+		SetBAPlayerState(EBAPlayerState::DodgeRolling);
 	}
 }
 
@@ -278,6 +278,6 @@ void ABAPlayerCharacter::HandleActionMontageEnded(int32 ActionTid, EActionType A
 {
 	if (ActionType == EActionType::DodgeRoll && !bInterrupted && (BAPlayerState == EBAPlayerState::DodgeRolling))
 	{
-		BAPlayerState = EBAPlayerState::None;
+		SetBAPlayerState(EBAPlayerState::None);
 	}
 }
