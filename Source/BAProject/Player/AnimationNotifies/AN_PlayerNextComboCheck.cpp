@@ -24,6 +24,6 @@ void UAN_PlayerNextComboCheck::Notify(USkeletalMeshComponent* MeshComp, UAnimSeq
 
 	if (ABAPlayerCharacter* Player = Cast<ABAPlayerCharacter>(Owner); IsValid(Player))
 	{
-		Player->NextComboCheck();
+		Player->OnNextComboCheck();
 	}
 }
