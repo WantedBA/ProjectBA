@@ -185,13 +185,34 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 #endif
 }
 
-// 기본 공격 입력 진입점
-void ABAPlayerCharacter::Attack()
+// 공격 입력 진입점
+void ABAPlayerCharacter::Attack(EActionCommand InActionCommand)
 {
-	UE_LOG(LogTemp, Log, TEXT("Player Attack"));
+	UE_LOG(LogTemp, Log, TEXT("Player Attack: %hhd"), InActionCommand);
+	LightAttack();
+}
+
+void ABAPlayerCharacter::OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg)
+{
+	// 정상 종료되었을 경우
+	if (!bArg)
+	{
+		BAPlayerState = EBAPlayerState::None;
+	}
+}
+
+void ABAPlayerCharacter::LightAttack()
+{
 	BAPlayerState = EBAPlayerState::Attacking;
 	CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack());
 	CombatComponent->ExecuteAttack(AttackMontage);
+	
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		FOnMontageEnded MontageEnded;
+		MontageEnded.BindUObject(this, &ABAPlayerCharacter::OnAttackMontageEnded);
+		AnimInstance->Montage_SetEndDelegate(MontageEnded, AttackMontage);
+	}
 }
 
 void ABAPlayerCharacter::HeavyAttack()
@@ -199,12 +220,9 @@ void ABAPlayerCharacter::HeavyAttack()
 	// TODO
 }
 
-void ABAPlayerCharacter::EndAttack()
+void ABAPlayerCharacter::NextComboCheck()
 {
-	if (BAPlayerState == EBAPlayerState::Attacking)
-	{
-		BAPlayerState = EBAPlayerState::None;
-	}
+	
 }
 
 // UserDataSubsystem의 기본 스탯과 공용 Action 데이터를 플레이어 런타임 설정에 반영한다.
