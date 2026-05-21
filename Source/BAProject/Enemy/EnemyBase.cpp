@@ -44,6 +44,8 @@ void AEnemyBase::PostInitializeComponents()
 	{
 		StatComponent->OnDead.AddDynamic(this, &AEnemyBase::OnDeath);
 	}
+
+	OnAttackPerfectGuarded.AddUObject(this, &AEnemyBase::HandleAttackPerfectGuarded);
 }
 
 void AEnemyBase::PossessedBy(AController* NewController)
@@ -418,6 +420,16 @@ void AEnemyBase::ResetStateToIdle()
 bool AEnemyBase::CanAttack() const
 {
 	return CurrentAttackCount < MaxAttackCount && CurrentState != EEnemyState::Hit && CurrentState != EEnemyState::Stagger;
+}
+
+void AEnemyBase::HandleAttackPerfectGuarded(AActor* GuardingActor, const FHitResult& HitResult)
+{
+	if (!GuardingActor)
+	{
+		return;
+	}
+
+	HandlePerfectGuarded(HitResult.ImpactPoint);
 }
 
 void AEnemyBase::HandlePerfectGuarded(FVector ImpactLocation)

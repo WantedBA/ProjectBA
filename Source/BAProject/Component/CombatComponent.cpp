@@ -241,6 +241,9 @@ void UCombatComponent::SpawnShockwave(FVector Location, float Scale)
 	}
 }
 
+// CombatComponent는 공격자/피격자의 구체 타입에 치우친 전투 처리를 직접 수행하지 않는다.
+// 여기서는 히트 결과를 프로젝트 공용 DamageEvent로 정리하고, 피격자에게 필요한 상태만 질의한다.
+// 실제 피해 보정, 스태미너 소비, 리액션, 성공 피드백은 해당 피격자/공격자 클래스의 책임으로 둔다.
 void UCombatComponent::ApplyDamage(AActor* Victim, const FHitResult& HitResult)
 {
 	if (Victim == nullptr)
@@ -270,6 +273,7 @@ void UCombatComponent::ApplyDamage(AActor* Victim, const FHitResult& HitResult)
 	if (ACharacterBase* VictimCharacter = Cast<ACharacterBase>(Victim))
 	{
 		DamageEvent.bVictimGuarding = VictimCharacter->IsGuardingAgainstDamage(DamageDirection);
+		// CharacterBase 질의를 통해 판정하므로 플레이어뿐 아니라 적도 같은 계약을 구현하면 퍼펙트 가드가 가능하다.
 		DamageEvent.bVictimPerfectGuard = DamageEvent.bVictimGuarding
 			&& VictimCharacter->IsPerfectGuardWindowActive();
 	}

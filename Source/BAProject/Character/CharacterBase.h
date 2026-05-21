@@ -14,6 +14,8 @@ enum class ECharacterState : uint8
 	Dead		UMETA(DisplayName = "Dead"),
 };
 
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnAttackPerfectGuardedDelegate, AActor* /*GuardingActor*/, const FHitResult& /*HitResult*/);
+
 UCLASS()
 class BAPROJECT_API ACharacterBase : public ACharacter
 {
@@ -38,6 +40,9 @@ public:
 
 	virtual bool IsGuardingAgainstDamage(const FVector& DamageDirection) const { return false; }
 	virtual bool IsPerfectGuardWindowActive() const { return false; }
+
+	// 이 캐릭터의 공격이 다른 캐릭터의 퍼펙트 가드에 막혔을 때 공격자 쪽 반응을 연결한다.
+	FOnAttackPerfectGuardedDelegate OnAttackPerfectGuarded;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")

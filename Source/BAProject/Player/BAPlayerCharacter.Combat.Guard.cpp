@@ -1,7 +1,6 @@
 #include "Player/BAPlayerCharacter.h"
 
 #include "Component/ActionComponent.h"
-#include "Enemy/EnemyBase.h"
 
 namespace
 {
@@ -124,9 +123,9 @@ void ABAPlayerCharacter::HandlePerfectGuardSucceeded(const FHitResult& HitResult
 	ConsumePerfectGuardStaminaCost();
 	K2_OnPerfectGuardSucceeded(HitResult, DamageCauser);
 
-	if (AEnemyBase* Enemy = Cast<AEnemyBase>(DamageCauser))
+	if (ACharacterBase* DamageCauserCharacter = Cast<ACharacterBase>(DamageCauser))
 	{
-		Enemy->HandlePerfectGuarded(HitResult.ImpactPoint);
+		DamageCauserCharacter->OnAttackPerfectGuarded.Broadcast(this, HitResult);
 	}
 
 	// 슬로우모션은 아직 합의되지 않은 스펙이라 플레이어 가드 성공 처리 쪽에 위치만 남기고 비활성화한다.
