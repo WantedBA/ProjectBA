@@ -42,8 +42,12 @@ void UPlayerSkillComponent::BeginPlay()
 	ActionComponent = Cast<UActionComponent>(GetOwner()->GetComponentByClass(UActionComponent::StaticClass()));
 	if (!ActionComponent)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("PlayerSkillComponent: ActionComponent not found."));
-		return;
+		UE_LOG(LogTemp, Error, TEXT("[PlayerSkillComponent::BeginPlay] ActionComponent not found."));
+	}
+	StatComponent = Cast<UStatComponent>(GetOwner()->GetComponentByClass(UStatComponent::StaticClass()));
+	if (!StatComponent)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[PlayerSkillComponent::BeginPlay] StatComponent not found."));
 	}
 	
 	// 스킬트리 창이 닫힐 때 스킬 새로고침 바인딩
@@ -73,8 +77,9 @@ void UPlayerSkillComponent::RefreshAllSkills()
 
 void UPlayerSkillComponent::ClearAllSkills()
 {
-	// TODO: 임시 코드
 	ActionComponent->ResetMovesetKeys();
+	
+	// TODO: StatComponent -> 스킬로 올라간 스탯 초기화
 }
 
 void UPlayerSkillComponent::ApplySkill(int32 SkillId)
@@ -104,6 +109,7 @@ void UPlayerSkillComponent::ApplySkill(int32 SkillId)
 	case ESkillApplyType::Element:
 		break;
 	case ESkillApplyType::Stat:
+		ApplyStat(SkillModifier);
 		break;
 	case ESkillApplyType::Etc:
 		break;
@@ -114,16 +120,18 @@ void UPlayerSkillComponent::ApplySkill(int32 SkillId)
 
 void UPlayerSkillComponent::ApplyAction(const FSkillModifierRow* SkillModifier)
 {
-	static const FName AddMovesetKeyTarget = FName(TEXT("AddMovesetKey"));
+	static const FName MovesetKeyTarget = FName(TEXT("MovesetKey"));
 
-	// ActionComponent에 관련 로직이 구현되어 있는 경우
-	if (SkillModifier->Target == AddMovesetKeyTarget)
+	if (SkillModifier->Target == MovesetKeyTarget)
 	{
-		AddMovesetKey(FName(*SkillModifier->Value));
+		// ActionComponent에 관련 로직이 구현되어 있는 경우
+		const FName NewMovesetKey = FName(*SkillModifier->Value);
+		ActionComponent->AddMovesetKey(NewMovesetKey);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Invalid Skill Modifier Target: %s"), *SkillModifier->Target.ToString());
+		// 적절한 Target 분기가 없는 경우
+		UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Invalid Action Skill Modifier Target: %s"), *SkillModifier->Target.ToString());
 	}
 }
 
@@ -133,14 +141,20 @@ void UPlayerSkillComponent::ApplyElement(const FSkillModifierRow* SkillModifier)
 
 void UPlayerSkillComponent::ApplyStat(const FSkillModifierRow* SkillModifier)
 {
+	static const FName AttackSpeedTarget = FName(TEXT("AttackSpeed"));
+	
+	if (SkillModifier->Target == AttackSpeedTarget)
+	{
+		const float NewAttackSpeed = StatComponent->GetAttackSpeed() + FCString::Atof(*SkillModifier->Value); 
+		StatComponent->SetAttackSpeed(NewAttackSpeed);
+	}
+	else
+	{
+		// 적절한 Target 분기가 없는 경우
+		UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Invalid Stat Skill Modifier Target: %s"), *SkillModifier->Target.ToString());
+	}
 }
 
 void UPlayerSkillComponent::ApplyEtc(const FSkillModifierRow* SkillModifier)
 {
 }
-
-void UPlayerSkillComponent::AddMovesetKey(const FName& NewMovesetKey)
-{
-	ActionComponent->AddMovesetKey(NewMovesetKey);
-}
-
