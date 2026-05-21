@@ -91,6 +91,10 @@ struct BAPROJECT_API F1StageBossAttackRows : public FBARowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
 	int32 Attack = 0;
 
+	// 피격 반응 타입 — 0=HitReact, 1=LargeHitReact, 2=KnockDown
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
+	int32 DamageReactionType = 0;
+
 	// 콤보로 이어질 다음 패턴 Tid (0 = 없음)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
 	int32 NextComboTid = 0;
@@ -158,6 +162,10 @@ struct BAPROJECT_API F2StageBossAttackRows : public FBARowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
 	int32 Attack = 0;
 
+	// 피격 반응 타입 — 0=HitReact, 1=LargeHitReact, 2=KnockDown
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
+	int32 DamageReactionType = 0;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
 	int32 NextComboTid = 0;
 
@@ -223,6 +231,10 @@ struct BAPROJECT_API F3StageBossAttackRows : public FBARowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
 	int32 Attack = 0;
+
+	// 피격 반응 타입 — 0=HitReact, 1=LargeHitReact, 2=KnockDown
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
+	int32 DamageReactionType = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
 	int32 NextComboTid = 0;

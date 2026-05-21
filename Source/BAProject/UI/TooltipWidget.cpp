@@ -12,6 +12,7 @@
 #include "Tables/Text.h" // 텍스트 데이터 
 #include "MediaPlayer.h" // 영상 재생용
 #include "Materials/MaterialInterface.h"
+#include "FileMediaSource.h"
 
 void UTooltipWidget::RequestShowTooltip(int32 InTid)
 {
@@ -53,13 +54,24 @@ void UTooltipWidget::ProcessLoadData(int32 InTid)
 		return;
 	}
 
-	// 2. 텍스트 설정 (이름 및 설명)
-	const FTextRows* TextData = TableManager->FindText(SkillData->TextTid);
-	if (TextData)
+	// 2. 스킬 이름 설정 
+	const FTextRows* NameData = TableManager->FindText(SkillData->SkillNameTid);
+	if (NameData)
 	{
-		TitleText->SetText(FText::FromString(TextData->KoreanText));
-		DescriptionText->SetText(FText::FromString(TextData->KoreanText)); // 설명 테이블: 추후 분리 가능
+		TitleText->SetText(FText::FromString(NameData->KoreanText));
 	}
+
+	// 3. 스킬 설명 설정
+	const FTextRows* DescData = TableManager->FindText(SkillData->TextTid);
+	if (DescData)
+	{
+		DescriptionText->SetText(FText::FromString(DescData->KoreanText));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Tooltip: FAILED to find Text for ID: %d"), SkillData->TextTid);
+	}
+
 
 	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
@@ -87,6 +99,9 @@ void UTooltipWidget::ProcessLoadData(int32 InTid)
 
 void UTooltipWidget::OnAssetLoadCompleted(int32 InTid)
 {
+
+	UE_LOG(LogTemp, Error, TEXT("!!! Tooltip: OnAssetLoadCompleted CALLED for ID: %d"), InTid);
+
 	// 로딩 중에 마우스를 뗐다면 처리 중단(Race Condition 방지)
 	if (GetVisibility() == ESlateVisibility::Hidden)
 	{
@@ -99,26 +114,55 @@ void UTooltipWidget::OnAssetLoadCompleted(int32 InTid)
 	if (SkillData && PreviewVideoImage)
 	{
 		// 영상 소스가 있는지 확인
-		if (TooltipMediaPlayer && PreviewVideoSource)
+		if (TooltipMediaPlayer && SkillData->VideoSource.IsValid())
 		{
+			UE_LOG(LogTemp, Warning, TEXT("Tooltip: Found Video Source, Opening..."));
 			// 이전에 아이콘이 출력되었다면 다시 영상 머티리얼 브러시를 복구
 			if (VideoMaterial)
 			{
 				PreviewVideoImage->SetBrushFromMaterial(VideoMaterial);
 			}
 
-			// 영상 재생
 			TooltipMediaPlayer->Close();
-			TooltipMediaPlayer->OpenSource(PreviewVideoSource);
+
+			// 영상 재생
+			if (TooltipMediaPlayer->OpenSource(SkillData->VideoSource.Get()))
+			{
+				// 열기 성공시 재생
+				TooltipMediaPlayer->Rewind();
+				TooltipMediaPlayer->Play();
+				
+				UE_LOG(LogTemp, Warning, TEXT("Tooltip: Now Opening Video Source..."));
+			}
 		}
 		else
 		{
 			// 영상이 없다면 텍스처(아이콘)로 브러시를 교체
-			UTexture2D* LoadedIcon = SkillData->IconTexture.Get();
-			if (LoadedIcon)
+			UE_LOG(LogTemp, Error, TEXT("Tooltip: Video Source is NOT Valid! (Icon fallback)"));
+			UTexture2D* SkillIcon = SkillData->IconTexture.Get();
+			if (SkillIcon)
 			{
-				PreviewVideoImage->SetBrushFromTexture(LoadedIcon);
+				PreviewVideoImage->SetBrushFromTexture(SkillIcon);
 			}
+		}
+
+		const FTextRows* NameData = TableManager->FindText(SkillData->SkillNameTid);
+		const FTextRows* DescData = TableManager->FindText(SkillData->TextTid);
+		if (NameData)
+		{
+			TitleText->SetText(FText::FromString(NameData->KoreanText));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Tooltip: Still CANNOT find Name for Tid: %d"), SkillData->SkillNameTid);
+		}
+		if (DescData)
+		{
+			DescriptionText->SetText(FText::FromString(DescData->KoreanText));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Tooltip: Still CANNOT find Description for Tid: %d"),SkillData->TextTid);
 		}
 	}
 }

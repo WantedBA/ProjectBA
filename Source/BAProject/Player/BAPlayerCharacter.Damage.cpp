@@ -147,22 +147,43 @@ void ABAPlayerCharacter::OnDamaged(
 {
 	Super::OnDamaged(FinalDamage, DamageEvent, EventInstigator, DamageCauser);
 
+	const EBADamageReactionType DamageReactionType = ResolveDamageReactionType(DamageEvent);
+	const FVector DamageDirection = ResolveDamageDirection(*this, DamageEvent, DamageCauser);
+	const EActionDirection HitDirection = ResolveHitDirection(*this, DamageDirection);
+	const FBADamageEvent* BADamageEvent = DamageEvent.IsOfType(FBADamageEvent::ClassID)
+		? static_cast<const FBADamageEvent*>(&DamageEvent)
+		: nullptr;
+
+	const bool bGuarding = BADamageEvent ? BADamageEvent->bVictimGuarding : IsGuardingAgainstDamage(DamageDirection);
+	const bool bPerfectGuard = bGuarding && (BADamageEvent
+		? BADamageEvent->bVictimPerfectGuard
+		: IsPerfectGuardWindowActive());
+	if (bPerfectGuard)
+	{
+		HandlePerfectGuardSucceeded(ResolveDamageHitResult(DamageEvent), DamageCauser);
+		return;
+	}
+
+	bool bGuardBreak = false;
+	float AppliedDamage = FinalDamage;
+	if (bGuarding)
+	{
+		bGuardBreak = !ConsumeGuardStaminaForDamage();
+		ShowGuardJudgementDebugMessage(
+			bGuardBreak ? TEXT("Guard Break") : TEXT("Guard"),
+			bGuardBreak ? FColor::Red : FColor::Yellow);
+		// TODO: 무기 테이블로 분리 필요. 현재는 임시 가드 흡수 배율을 사용해 일반 가드/가드브레이크 피해를 줄인다.
+		AppliedDamage = FinalDamage * GetGuardAbsorptionMultiplier();
+	}
+
 	if (StatComponent)
 	{
-		StatComponent->ApplyDamage(FinalDamage);
+		StatComponent->ApplyDamage(AppliedDamage);
 		if (StatComponent->IsDead())
 		{
 			return;
 		}
 	}
-
-	const EBADamageReactionType DamageReactionType = ResolveDamageReactionType(DamageEvent);
-	const FVector DamageDirection = ResolveDamageDirection(*this, DamageEvent, DamageCauser);
-	const EActionDirection HitDirection = ResolveHitDirection(*this, DamageDirection);
-
-	// 데미지 반영 후 생존 상태에서만 가드/브레이크/피격 반응을 결정한다.
-	const bool bGuarding = IsGuardingAgainstDamage(DamageDirection);
-	const bool bGuardBreak = bGuarding && ShouldPlayGuardBreakReaction();
 
 	CancelCurrentActionForDamageReaction();
 	ApplyDamageReactionKnockback(DamageReactionType, DamageDirection, HitDirection, bGuarding, bGuardBreak);
@@ -177,6 +198,8 @@ void ABAPlayerCharacter::OnDeath()
 	DamageReactionState = EPlayerDamageReactionState::None;
 	ActiveDamageReactionMontage = nullptr;
 	ActiveDamageReactionPlaybackId = 0;
+	bGuardInputHeld = false;
+	SetGuardWindowActive(false);
 	SetBAPlayerState(EBAPlayerState::Dead);
 
 	if (ActionComponent)
@@ -202,7 +225,13 @@ bool ABAPlayerCharacter::CanAcceptActionInput() const
 
 bool ABAPlayerCharacter::IsGuardingAgainstDamage(const FVector& DamageDirection) const
 {
-	if (!ActionComponent || ActionComponent->GetGuardState() == EGuardState::None)
+	if (!ActionComponent)
+	{
+		return false;
+	}
+
+	const EGuardState GuardState = ActionComponent->GetGuardState();
+	if (GuardState != EGuardState::Guarding && GuardState != EGuardState::Blocking)
 	{
 		return false;
 	}
@@ -233,6 +262,8 @@ bool ABAPlayerCharacter::ShouldPlayGuardBreakReaction() const
 
 void ABAPlayerCharacter::CancelCurrentActionForDamageReaction()
 {
+	SetGuardWindowActive(false);
+
 	if (ActionComponent)
 	{
 		// 액션 종료 이벤트를 통해 ActionAnimationComponent가 현재 액션 몽타주를 정리한다.
@@ -256,11 +287,12 @@ void ABAPlayerCharacter::ApplyDamageReactionKnockback(
 	const bool bGuarding,
 	const bool bGuardBreak)
 {
-	if (!bUseLaunchKnockbackForDamageReaction)
+	if (!bUseLaunchKnockbackForDamageReaction && !bGuarding && !bGuardBreak)
 	{
 		return;
 	}
 
+	// 넉백 강도는 플레이어가 보유한 피격 반응 타입별 값으로 결정한다.
 	float KnockbackStrength = HitReactKnockbackStrength;
 	if (bGuardBreak)
 	{
@@ -419,15 +451,47 @@ void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)
 		return;
 	}
 
+	const EPlayerDamageReactionState FinishedDamageReactionState = DamageReactionState;
 	ActiveDamageReactionPlaybackId = 0;
 	ActiveDamageReactionMontage = nullptr;
 	if (DamageReactionState == EPlayerDamageReactionState::KnockDown)
 	{
 		SetInvincible(false);
 	}
+
+	const bool bShouldResumeGuard = FinishedDamageReactionState == EPlayerDamageReactionState::GuardHit
+		&& ShouldResumeGuardAfterGuardHit();
+	if ((FinishedDamageReactionState == EPlayerDamageReactionState::GuardHit
+			|| FinishedDamageReactionState == EPlayerDamageReactionState::GuardBreak)
+		&& ActionComponent)
+	{
+		if (FinishedDamageReactionState == EPlayerDamageReactionState::GuardBreak)
+		{
+			bGuardInputHeld = false;
+			ActionComponent->SetGuardState(EGuardState::None);
+			SetCombatMode(EPlayerCombatMode::None);
+		}
+		else if (!bShouldResumeGuard)
+		{
+			ActionComponent->SetGuardState(EGuardState::None);
+			SetCombatMode(EPlayerCombatMode::None);
+		}
+	}
 	DamageReactionState = EPlayerDamageReactionState::None;
 	if (BAPlayerState == EBAPlayerState::HitReacting || BAPlayerState == EBAPlayerState::KnockedDown)
 	{
 		SetBAPlayerState(EBAPlayerState::None);
+	}
+
+	if (bShouldResumeGuard)
+	{
+		if (!TryStartGuard())
+		{
+			if (ActionComponent)
+			{
+				ActionComponent->SetGuardState(EGuardState::None);
+			}
+			SetCombatMode(EPlayerCombatMode::None);
+		}
 	}
 }
