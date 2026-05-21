@@ -48,6 +48,9 @@ private:
 	TObjectPtr<UInputAction> LightAttackAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> HeavyAttackAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> WalkAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
@@ -97,6 +100,9 @@ private:
 
 	// 기본 공격 입력을 캐릭터 공격 진입점으로 전달한다.
 	void LightAttack();
+	
+	// 강공격(우클릭) 입력을 캐릭터 공격 진입점으로 전달한다.
+	void HeavyAttack();
 
 	// 걷기 토글 상태를 전환하고 이동 상태를 다시 계산한다.
 	void ToggleWalk();
