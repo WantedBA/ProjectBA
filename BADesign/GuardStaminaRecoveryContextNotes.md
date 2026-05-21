@@ -72,8 +72,8 @@
   - 슬로우모션은 합의되지 않은 스펙이라 주석 처리 상태다.
 
 - `FinishDamageReaction()`
-  - GuardHit 종료 후 `bGuardInputHeld`가 true이고 조건이 맞으면 다시 가드를 시작한다.
-  - 현재 구현은 `TryStartGuard()`를 다시 호출하므로 Start를 다시 탈 수 있다. 다음 작업에서 Loop로 바로 복귀하도록 보정해야 한다.
+  - GuardHit 종료 후 `bGuardInputHeld`가 true이고 조건이 맞으면 `ResumeGuardAfterGuardHit()`로 가드를 재개한다.
+  - GuardHit 몽타주가 BlendOut에 들어가면 슬롯 가중치가 빠지며 idle이 보일 수 있어, 완전 종료를 기다리지 않고 BlendOut 시작 시점에 가드 Loop로 복귀한다.
   - GuardBreak 종료 후에는 가드 입력 유지 플래그를 끄고 가드 상태를 해제한다.
 
 ## 데이터와 에셋 상태
@@ -114,6 +114,8 @@
 
 - 가드 입력과 기본 가드 판정은 동작한다.
 - 퍼펙트 가드 판정, 일반 가드 넉백, 일반 가드 HP 피해 보정은 PIE에서 확인했다.
+- 일반 가드 피격 시 GuardHit 몽타주 재생을 확인했다.
+- GuardHit 뒤 입력 유지 상태에서 idle 잡모션 없이 `AM_Player_Guard`의 `Loop` 섹션으로 복귀하는 것을 확인했다.
 - 일반 가드/가드브레이크/퍼펙트 가드 판정은 PIE 화면에 디버그 텍스트로 표시된다.
   - `Guard`
   - `Guard Break`
@@ -121,39 +123,28 @@
 
 ## 남은 이슈
 
-### 1. GuardHit / GuardBreak 몽타주가 아직 연출되지 않음
+### 1. GuardBreak 몽타주 재생 확인 필요
 
-에셋은 만들고 `BP_PlayerCharacter`에 연결했지만 PIE에서 재생이 확인되지 않았다.
+GuardHit 몽타주 재생은 확인 완료했다. 처음 미재생처럼 보였던 원인은 맵/GameMode가 네이티브 `BAGameMode` 경로를 타면서 `BP_PlayerCharacter`에 설정한 몽타주 맵이 사용되지 않았기 때문이다.
 
 우선 확인할 후보:
 
-- `GuardHitReactMontages`, `GuardBreakReactMontages` 맵 키가 실제 `HitDirection`과 맞는지 확인한다.
+- `GuardBreakReactMontages` 맵 키가 실제 `HitDirection`과 맞는지 확인한다.
   - 테스트 중에는 `Any` 키가 가장 안전하다.
 - 몽타주 슬롯이 `PlayAnimMontage()`가 재생하는 슬롯과 맞는지 확인한다.
-- GuardHit 직전에 `CancelCurrentActionForDamageReaction()`가 기존 가드 액션 몽타주를 끊고 있으므로, 이후 `PlayAnimMontage(ActiveDamageReactionMontage)`가 실제로 0보다 큰 duration을 반환하는지 로그로 확인한다.
 - `K2_OnDamageReaction()` 블루프린트 구현이 있다면 거기서 다른 몽타주/상태를 덮어쓰는지 확인한다.
 
-### 2. GuardHit 후 Loop로 바로 복귀해야 함
+### 2. GuardHit 후 Loop 복귀 완료
 
-현재 `FinishDamageReaction()`은 입력 유지 시 `TryStartGuard()`를 다시 호출한다.
+현재 구현은 `FinishDamageReaction()`에서 입력 유지 시 `ResumeGuardAfterGuardHit()`을 호출한다.
 
-문제:
+동작:
 
-- GuardHit 뒤 가드가 유지되더라도 Start 섹션을 다시 탈 수 있다.
-
-원하는 동작:
-
-- GuardHit 리액션 종료
+- GuardHit 리액션이 BlendOut에 진입
 - 입력 유지 및 조건 확인
 - Guard 액션 재시작
 - `AM_Player_Guard`의 `Loop` 섹션으로 즉시 점프
 - `GuardState = Guarding`, `CombatMode = Block` 복구
-
-구현 후보:
-
-- `ResumeGuardAfterGuardHit()` 같은 전용 함수를 만든다.
-- 내부에서 `TryStartGuard()`와 유사하게 액션을 시작하되, 시작 성공 후 `ActionAnimationComponent->JumpActiveMontageToSection(GuardLoopSection)`을 호출한다.
-- 이때 GuardWindow NotifyState가 Loop 구간에 들어 있으므로, 점프 위치가 Notify Begin을 정상 통과하는지 PIE에서 확인해야 한다.
 
 ### 3. 일반 가드 스태미너 소비 후 회복 딜레이가 적용되지 않음
 
@@ -175,10 +166,9 @@
 
 ## 다음 작업 순서 제안
 
-1. GuardHit / GuardBreak 몽타주 미재생 원인 확인
-2. GuardHit 종료 후 `Loop` 섹션으로 직접 복귀하도록 코드 수정
-3. OnDemand 스태미너 소비에도 회복 딜레이가 적용되도록 `StatComponent` / `ActionComponent` 보강
-4. PIE 체크
+1. GuardBreak 몽타주 재생 확인
+2. OnDemand 스태미너 소비에도 회복 딜레이가 적용되도록 `StatComponent` / `ActionComponent` 보강
+3. PIE 체크
    - 일반 가드 피격: HP 감소, 스태미너 15 감소, GuardHit 몽타주, 입력 유지 시 Loop 복귀
    - 퍼펙트 가드 피격: HP 미감소, 스태미너 7.5 감소, 넉백 없음
    - 스태미너 부족 일반 가드: GuardBreak 몽타주, 가드 해제, 긴 무방비 리액션
