@@ -147,22 +147,28 @@ void ABAPlayerCharacter::OnDamaged(
 {
 	Super::OnDamaged(FinalDamage, DamageEvent, EventInstigator, DamageCauser);
 
+	const EBADamageReactionType DamageReactionType = ResolveDamageReactionType(DamageEvent);
+	const FVector DamageDirection = ResolveDamageDirection(*this, DamageEvent, DamageCauser);
+	const EActionDirection HitDirection = ResolveHitDirection(*this, DamageDirection);
+
+	const bool bGuarding = IsGuardingAgainstDamage(DamageDirection);
+	bool bGuardBreak = false;
+	float AppliedDamage = FinalDamage;
+	if (bGuarding)
+	{
+		bGuardBreak = !ConsumeGuardStaminaForDamage();
+		// TODO: 무기 테이블로 분리 필요. 현재는 임시 가드 흡수 배율을 사용해 일반 가드/가드브레이크 피해를 줄인다.
+		AppliedDamage = FinalDamage * GetGuardAbsorptionMultiplier();
+	}
+
 	if (StatComponent)
 	{
-		StatComponent->ApplyDamage(FinalDamage);
+		StatComponent->ApplyDamage(AppliedDamage);
 		if (StatComponent->IsDead())
 		{
 			return;
 		}
 	}
-
-	const EBADamageReactionType DamageReactionType = ResolveDamageReactionType(DamageEvent);
-	const FVector DamageDirection = ResolveDamageDirection(*this, DamageEvent, DamageCauser);
-	const EActionDirection HitDirection = ResolveHitDirection(*this, DamageDirection);
-
-	// 데미지 반영 후 생존 상태에서만 가드/브레이크/피격 반응을 결정한다.
-	const bool bGuarding = IsGuardingAgainstDamage(DamageDirection);
-	const bool bGuardBreak = bGuarding && ShouldPlayGuardBreakReaction();
 
 	CancelCurrentActionForDamageReaction();
 	ApplyDamageReactionKnockback(DamageReactionType, DamageDirection, HitDirection, bGuarding, bGuardBreak);
@@ -202,7 +208,13 @@ bool ABAPlayerCharacter::CanAcceptActionInput() const
 
 bool ABAPlayerCharacter::IsGuardingAgainstDamage(const FVector& DamageDirection) const
 {
-	if (!ActionComponent || ActionComponent->GetGuardState() == EGuardState::None)
+	if (!ActionComponent)
+	{
+		return false;
+	}
+
+	const EGuardState GuardState = ActionComponent->GetGuardState();
+	if (GuardState != EGuardState::Guarding && GuardState != EGuardState::Blocking)
 	{
 		return false;
 	}
@@ -419,11 +431,19 @@ void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)
 		return;
 	}
 
+	const EPlayerDamageReactionState FinishedDamageReactionState = DamageReactionState;
 	ActiveDamageReactionPlaybackId = 0;
 	ActiveDamageReactionMontage = nullptr;
 	if (DamageReactionState == EPlayerDamageReactionState::KnockDown)
 	{
 		SetInvincible(false);
+	}
+	if ((FinishedDamageReactionState == EPlayerDamageReactionState::GuardHit
+			|| FinishedDamageReactionState == EPlayerDamageReactionState::GuardBreak)
+		&& ActionComponent)
+	{
+		ActionComponent->SetGuardState(EGuardState::None);
+		SetCombatMode(EPlayerCombatMode::None);
 	}
 	DamageReactionState = EPlayerDamageReactionState::None;
 	if (BAPlayerState == EBAPlayerState::HitReacting || BAPlayerState == EBAPlayerState::KnockedDown)

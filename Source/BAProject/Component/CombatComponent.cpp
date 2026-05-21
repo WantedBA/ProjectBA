@@ -13,6 +13,7 @@
 #include "TimerManager.h"
 #include "Instance/BATimeSubsystem.h"
 #include "Component/ActionComponent.h"
+#include "Player/BAPlayerCharacter.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -266,8 +267,20 @@ void UCombatComponent::ApplyDamage(AActor* Victim, const FHitResult& HitResult)
 		if (VictimAction)
 		{
 			// 피격 상대의 Dodged 상태와 Guard 상태 확인
-			bool bPerfectGuarded = VictimAction->GetGuardState() != EGuardState::None;
-			bool bPerfectDodged = VictimAction->GetActionRuntimeState() == EActionRuntimeState::Dodging;
+			const EGuardState GuardState = VictimAction->GetGuardState();
+			bool bPerfectGuarded = false;
+			if (GuardState == EGuardState::Guarding || GuardState == EGuardState::Blocking)
+			{
+				if (ABAPlayerCharacter* VictimPlayer = Cast<ABAPlayerCharacter>(Victim))
+				{
+					bPerfectGuarded = VictimPlayer->TryConsumePerfectGuardStamina();
+				}
+				else
+				{
+					bPerfectGuarded = true;
+				}
+			}
+			const bool bPerfectDodged = VictimAction->GetActionRuntimeState() == EActionRuntimeState::Dodging;
 
 			if (bPerfectGuarded || bPerfectDodged)
 			{

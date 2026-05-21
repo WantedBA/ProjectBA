@@ -58,6 +58,7 @@ public:
 
 	bool TryStartGuard();
 	void StopGuard();
+	bool TryConsumePerfectGuardStamina();
 
 	void OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg);
 	void StartAttack(UAnimMontage* InAnimMontage);
@@ -298,6 +299,11 @@ private:
 	void ResumeSprintStaminaRecovery(bool bApplyDelay);
 	void LockSprintUntilRecovered();
 	void UnlockSprintAfterRecovery();
+
+	// 가드
+	float GetGuardAbsorptionMultiplier() const;
+	float GetPerfectGuardStaminaCostMultiplier() const;
+	bool ConsumeGuardStaminaForDamage();
 
 	// 사다리 런타임
 	void TickLadderClimb(float DeltaTime);

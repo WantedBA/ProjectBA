@@ -131,10 +131,10 @@ void UActionComponent::CompleteCurrentAction()
 	RefreshTickEnabled();
 }
 
-bool UActionComponent::ConsumeActiveActionStaminaCost()
+bool UActionComponent::ConsumeActiveActionStaminaCost(const float CostMultiplier)
 {
 	const FActionDataRow* ActionData = GetActiveActionData();
-	return ActionData && ConsumeStamina(*ActionData, EActionStaminaConsumeContext::OnDemand);
+	return ActionData && ConsumeStamina(*ActionData, EActionStaminaConsumeContext::OnDemand, CostMultiplier);
 }
 
 void UActionComponent::CancelCurrentAction()
@@ -359,7 +359,8 @@ void UActionComponent::ApplyStaminaRecoveryRateMultiplier(const FActionDataRow& 
 
 bool UActionComponent::CanConsumeStamina(
 	const FActionDataRow& ActionData,
-	const EActionStaminaConsumeContext ConsumeContext) const
+	const EActionStaminaConsumeContext ConsumeContext,
+	const float CostMultiplier) const
 {
 	if (!CachedStatComponent)
 	{
@@ -368,27 +369,28 @@ bool UActionComponent::CanConsumeStamina(
 
 	const float RequiredStamina = FMath::Max(
 		ActionData.MinRequiredStamina,
-		GetStaminaCostForContext(ActionData, ConsumeContext));
+		GetStaminaCostForContext(ActionData, ConsumeContext, CostMultiplier));
 
 	return CachedStatComponent->GetCurrentStamina() >= RequiredStamina;
 }
 
 bool UActionComponent::ConsumeStamina(
 	const FActionDataRow& ActionData,
-	const EActionStaminaConsumeContext ConsumeContext)
+	const EActionStaminaConsumeContext ConsumeContext,
+	const float CostMultiplier)
 {
 	if (!CachedStatComponent)
 	{
 		return true;
 	}
 
-	const float StaminaCost = GetStaminaCostForContext(ActionData, ConsumeContext);
+	const float StaminaCost = GetStaminaCostForContext(ActionData, ConsumeContext, CostMultiplier);
 	if (StaminaCost <= 0.f)
 	{
 		return true;
 	}
 
-	if (!CanConsumeStamina(ActionData, ConsumeContext))
+	if (!CanConsumeStamina(ActionData, ConsumeContext, CostMultiplier))
 	{
 		LastStartResult = EActionStartResult::NotEnoughStamina;
 		return false;
@@ -406,17 +408,19 @@ bool UActionComponent::ConsumeStamina(
 
 float UActionComponent::GetStaminaCostForContext(
 	const FActionDataRow& ActionData,
-	const EActionStaminaConsumeContext ConsumeContext) const
+	const EActionStaminaConsumeContext ConsumeContext,
+	const float CostMultiplier) const
 {
+	const float SafeCostMultiplier = FMath::Max(0.f, CostMultiplier);
 	switch (ActionData.StaminaCostType)
 	{
 	case EActionStaminaCostType::Instant:
 		return ConsumeContext == EActionStaminaConsumeContext::Start
-			? FMath::Max(0.f, ActionData.StaminaCost)
+			? FMath::Max(0.f, ActionData.StaminaCost) * SafeCostMultiplier
 			: 0.f;
 	case EActionStaminaCostType::OnDemand:
 		return ConsumeContext == EActionStaminaConsumeContext::OnDemand
-			? FMath::Max(0.f, ActionData.StaminaCost)
+			? FMath::Max(0.f, ActionData.StaminaCost) * SafeCostMultiplier
 			: 0.f;
 	case EActionStaminaCostType::PerSecond:
 	default:
