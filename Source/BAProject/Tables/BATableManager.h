@@ -6,6 +6,7 @@
 #include "ActionRows.h"
 #include "PlayerRows.h"
 #include "SkillRows.h"
+#include "Text.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Tables/BAPropTable.h"
 #include "Tables/ItemRows.h"
@@ -91,6 +92,9 @@ public:
 	// Reward
 	TArray<const FRewardRows*> GetRewardsByTid(int32 InRewardTid) const;
 
+	// Text
+	const FTextRows* FindText(const int32 InTid) const { return TextTable.Find(InTid); }
+
 private:
 	template<typename RowType, typename KeyType>
 	bool LoadTable(TBAPropTable<RowType, KeyType>& OutTable, const FString AssetPath);
@@ -118,6 +122,8 @@ private:
 	TBAPropTable<FRewardRows, int32> RewardTable;
 
 	TArray<IBAPostRead*> PostReadList;
+
+	TBAPropTable<FTextRows, int32> TextTable;
 
 	UPROPERTY()
 	TArray<TObjectPtr<UDataTable>> LoadedTables;
