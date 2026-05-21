@@ -2,6 +2,7 @@
 
 #include "Component/ActionComponent.h"
 #include "Component/ActionAnimationComponent.h"
+#include "Engine/Engine.h"
 
 namespace
 {
@@ -14,6 +15,8 @@ namespace
 
 bool ABAPlayerCharacter::TryStartGuard()
 {
+	bGuardInputHeld = true;
+
 	if (!CanAcceptActionInput() || !ActionComponent)
 	{
 		return false;
@@ -40,6 +43,8 @@ bool ABAPlayerCharacter::TryStartGuard()
 
 void ABAPlayerCharacter::StopGuard()
 {
+	bGuardInputHeld = false;
+
 	if (!ActionComponent)
 	{
 		return;
@@ -181,9 +186,25 @@ bool ABAPlayerCharacter::ConsumeGuardStaminaForDamage()
 	return bConsumedStamina;
 }
 
+bool ABAPlayerCharacter::ShouldResumeGuardAfterGuardHit() const
+{
+	return bGuardInputHeld && IsAlive() && !IsOnLadder();
+}
+
+void ABAPlayerCharacter::ShowGuardJudgementDebugMessage(const FString& Message, const FColor& Color) const
+{
+#if !UE_BUILD_SHIPPING
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.5f, Color, Message);
+	}
+#endif
+}
+
 void ABAPlayerCharacter::HandlePerfectGuardSucceeded(const FHitResult& HitResult, AActor* DamageCauser)
 {
 	ConsumePerfectGuardStaminaCost();
+	ShowGuardJudgementDebugMessage(TEXT("Perfect Guard"), FColor::Cyan);
 	K2_OnPerfectGuardSucceeded(HitResult, DamageCauser);
 
 	if (ACharacterBase* DamageCauserCharacter = Cast<ACharacterBase>(DamageCauser))

@@ -313,6 +313,8 @@ private:
 	float GetGuardAbsorptionMultiplier() const;
 	float GetPerfectGuardStaminaCostMultiplier() const;
 	bool ConsumeGuardStaminaForDamage();
+	bool ShouldResumeGuardAfterGuardHit() const;
+	void ShowGuardJudgementDebugMessage(const FString& Message, const FColor& Color) const;
 
 	// 사다리 런타임
 	void TickLadderClimb(float DeltaTime);
@@ -424,6 +426,7 @@ private:
 	FTimerHandle DamageReactionTimerHandle;
 	int32 ActiveDamageReactionPlaybackId = 0;
 	int32 NextDamageReactionPlaybackId = 1;
+	bool bGuardInputHeld = false;
 	bool bPerfectGuardWindowActive = false;
 	
 	UPROPERTY(Transient)

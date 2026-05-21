@@ -169,6 +169,9 @@ void ABAPlayerCharacter::OnDamaged(
 	if (bGuarding)
 	{
 		bGuardBreak = !ConsumeGuardStaminaForDamage();
+		ShowGuardJudgementDebugMessage(
+			bGuardBreak ? TEXT("Guard Break") : TEXT("Guard"),
+			bGuardBreak ? FColor::Red : FColor::Yellow);
 		// TODO: 무기 테이블로 분리 필요. 현재는 임시 가드 흡수 배율을 사용해 일반 가드/가드브레이크 피해를 줄인다.
 		AppliedDamage = FinalDamage * GetGuardAbsorptionMultiplier();
 	}
@@ -195,6 +198,7 @@ void ABAPlayerCharacter::OnDeath()
 	DamageReactionState = EPlayerDamageReactionState::None;
 	ActiveDamageReactionMontage = nullptr;
 	ActiveDamageReactionPlaybackId = 0;
+	bGuardInputHeld = false;
 	SetGuardWindowActive(false);
 	SetBAPlayerState(EBAPlayerState::Dead);
 
@@ -283,7 +287,7 @@ void ABAPlayerCharacter::ApplyDamageReactionKnockback(
 	const bool bGuarding,
 	const bool bGuardBreak)
 {
-	if (!bUseLaunchKnockbackForDamageReaction)
+	if (!bUseLaunchKnockbackForDamageReaction && !bGuarding && !bGuardBreak)
 	{
 		return;
 	}
@@ -453,16 +457,40 @@ void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)
 	{
 		SetInvincible(false);
 	}
+
+	const bool bShouldResumeGuard = FinishedDamageReactionState == EPlayerDamageReactionState::GuardHit
+		&& ShouldResumeGuardAfterGuardHit();
 	if ((FinishedDamageReactionState == EPlayerDamageReactionState::GuardHit
 			|| FinishedDamageReactionState == EPlayerDamageReactionState::GuardBreak)
 		&& ActionComponent)
 	{
-		ActionComponent->SetGuardState(EGuardState::None);
-		SetCombatMode(EPlayerCombatMode::None);
+		if (FinishedDamageReactionState == EPlayerDamageReactionState::GuardBreak)
+		{
+			bGuardInputHeld = false;
+			ActionComponent->SetGuardState(EGuardState::None);
+			SetCombatMode(EPlayerCombatMode::None);
+		}
+		else if (!bShouldResumeGuard)
+		{
+			ActionComponent->SetGuardState(EGuardState::None);
+			SetCombatMode(EPlayerCombatMode::None);
+		}
 	}
 	DamageReactionState = EPlayerDamageReactionState::None;
 	if (BAPlayerState == EBAPlayerState::HitReacting || BAPlayerState == EBAPlayerState::KnockedDown)
 	{
 		SetBAPlayerState(EBAPlayerState::None);
+	}
+
+	if (bShouldResumeGuard)
+	{
+		if (!TryStartGuard())
+		{
+			if (ActionComponent)
+			{
+				ActionComponent->SetGuardState(EGuardState::None);
+			}
+			SetCombatMode(EPlayerCombatMode::None);
+		}
 	}
 }
