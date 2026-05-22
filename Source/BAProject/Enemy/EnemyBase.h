@@ -51,14 +51,14 @@ public:
 
 	virtual void OnEnemyAttackAniFinished(EEnemyState NewState);
 
-	UFUNCTION(BlueprintPure, Category = "State")
+	UFUNCTION(BlueprintPure, Category = "Enemy|State")
 	bool IsDead() const { return CurrentState == EEnemyState::Dead; }
 	void SetSuperArmor(bool NewBool) { bIsSuperArmor = NewBool; }
 
-	UFUNCTION(BlueprintPure, Category = "State")
+	UFUNCTION(BlueprintPure, Category = "Enemy|State")
 	EEnemyState GetCurrentState() const { return CurrentState; }
 
-	UFUNCTION(BlueprintPure, Category = "State")
+	UFUNCTION(BlueprintPure, Category = "Enemy|State")
 	EEnemyGrade GetEnemyGrade() const { return EnemyGrade; }
 	
 	//한번 잡은 타겟 영구 유지 여부
@@ -117,80 +117,81 @@ public:
 
 protected:
 	bool bInitAI = false;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UStatComponent> StatComponent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UCombatComponent> CombatComponent;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
-	int32 MonsterTid;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
-	float DetectRange;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
-	float AttackRange;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
-	float MaxChaseDistance;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	int32 MaxAttackCount = 3;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
-	int32 CurrentAttackCount = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	float AlertDuration = 3.0f;
-
+	float MaxMoveSpeed;
 	FTimerHandle StateTimerHandle;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debug")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Debug")
+	bool bShowDebugState = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Debug")
 	bool bShowDebugRanges = true;
 
-	UPROPERTY(BlueprintAssignable, Category = "State")
-	FOnStateChanged OnStateChanged;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy|Components")
+	TObjectPtr<UStatComponent> StatComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
-	EEnemyState CurrentState;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy|Components")
+	TObjectPtr<UCombatComponent> CombatComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Data")
+	int32 MonsterTid;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy|Data")
 	EEnemyGrade EnemyGrade;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Data")
+	float DetectRange;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Data")
+	float AttackRange;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Data")
+	float MaxChaseDistance;
+
+	UPROPERTY(BlueprintAssignable, Category = "Enemy|State")
+	FOnStateChanged OnStateChanged;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy|State")
+	EEnemyState CurrentState;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Combat")
+	int32 MaxAttackCount = 3;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy|Combat")
+	int32 CurrentAttackCount = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Combat")
+	float AlertDuration = 3.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Combat")
 	bool bIsSuperArmor;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat")
 	TObjectPtr<UAnimMontage> AttackMontage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Effects")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat|Effects")
 	TObjectPtr<class UNiagaraSystem> PerfectDefenseVFX;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Effects")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat|Effects")
 	TObjectPtr<USoundBase> PerfectDefenseSFX;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Effects")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat|Effects")
 	TSubclassOf<class UCameraShakeBase> PerfectDefenseCameraShake;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat")
 	TObjectPtr<UAnimMontage> PerfectGuardedMontage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat")
 	TObjectPtr<UAnimMontage> HitMontage;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat")
 	TObjectPtr<UAnimMontage> DeadMontage;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effects")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enemy|Effects")
 	TArray<UMaterialInterface*> DissolveMaterialsInput;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Effects")
+	UPROPERTY(BlueprintReadOnly, Category = "Enemy|Effects")
 	TArray<UMaterialInstanceDynamic*> DynamicDissolveMaterials;
 
-	UPROPERTY(BlueprintAssignable, Category = "Effects")
+	UPROPERTY(BlueprintAssignable, Category = "Enemy|Effects")
 	FOnDissolveStarted OnDissolveStarted;
-
-	float MaxMoveSpeed;
 };
