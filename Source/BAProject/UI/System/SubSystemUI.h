@@ -39,6 +39,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "BA|UI")
 	bool HandleBackAction();
 
+	// 화면에 출력된 MainHUD를 밖에서 가져갈 수 있게 함
+	UFUNCTION(BlueprintCallable, Category = "BA|UI")
+	class UMainHUD* GetMainHUD() const { return CachedMainHUD; }
+
 protected:
 	// 인터페이스(IStackElem) 타입으로 쌓을 스택 바구니
 	TStack<IStackElem*> UIStack;
@@ -53,6 +57,9 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BA|UI")
 	TSubclassOf<UUserWidget> BlurWidgetClass;
+
+	UPROPERTY()
+	class UMainHUD* CachedMainHUD;
 
 private:
 	// 스택 상황에 따라 마우스 커서와 입력 모드 결정

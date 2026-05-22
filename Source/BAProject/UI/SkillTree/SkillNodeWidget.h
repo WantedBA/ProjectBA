@@ -58,4 +58,13 @@ protected:
 	// 상태 변경 시 블루프린트에서 값 수정
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnSkillNodeStateChanged();
+
+	// 마우스 올린 경우 실행
+	UFUNCTION()
+	void HandleSkillNodeButtonHovered();
+
+	// 마우스 뗀 경우 실행
+	UFUNCTION()
+	void HandleSkillNodeButtonUnhovered();
+
 };

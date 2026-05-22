@@ -35,9 +35,21 @@ protected:
 	UPROPERTY(meta = (BindWidget), BlueprintReadOnly, Category = "BA|UI")
 	class UBossHPBar* BossHPBar;
 
-	// 툴팁 위젯 (WBP 이름 맞출 것)
-	UPROPERTY(meta = (BindWidget), BlueprintReadOnly, Category = "BA|UI")
-	class UTooltipWidget* Tooltip;
+	// 삭제 예정 
+	//// 툴팁 위젯 (WBP 이름 맞출 것) 
+	//UPROPERTY(meta = (BindWidget), BlueprintReadOnly, Category = "BA|UI")
+	//class UTooltipWidget* Tooltip;
+
+	// 툴팁 클래스 정보를 받을 변수
+	UPROPERTY(EditAnywhere, Category = "BA|UI")
+	TSubclassOf<class UTooltipWidget> TooltipClass;
+
+	// 툴팁 인스턴스
+	UPROPERTY()
+	class UTooltipWidget* TooltipInstance;
+
+protected:
+	virtual void NativeConstruct() override;
 
 public:
 	// 값 업데이트
@@ -46,5 +58,13 @@ public:
 	// 보스 데이터 업데이트 및 표시
 	UFUNCTION(BlueprintCallable, Category = "BA|UI|Boss")
 	void UpdateBossStatus(FText Name, float Current, float Max);
+
+	// 특정 ID의 스킬 툴팁 띄우기 요청
+	UFUNCTION(BlueprintCallable, Category = "BA|UI|Tooltip")
+	void RequestShowTooltip(int32 InTid);
+
+	// 현재 툴팁 숨기기
+	UFUNCTION(BlueprintCallable, Category = "BA|UI|Tooltip")
+	void HideTooltip();
 	
 };

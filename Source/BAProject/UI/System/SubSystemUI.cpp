@@ -5,6 +5,7 @@
 #include "StackElem.h"
 #include "LayerBase.h"
 #include "Blueprint/UserWidget.h"
+#include "UI/MainHUD.h"
 
 void USubSystemUI::PushUI(ULayerBase* InWidget)
 {
@@ -12,6 +13,11 @@ void USubSystemUI::PushUI(ULayerBase* InWidget)
 	if (!InWidget)
 	{
 		return;
+	}
+
+	if (UMainHUD* HUD = Cast<UMainHUD>(InWidget))
+	{
+		CachedMainHUD = HUD;
 	}
 
 	// 뷰포트에 위젯 띄움
