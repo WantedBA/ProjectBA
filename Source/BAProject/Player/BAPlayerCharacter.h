@@ -290,6 +290,7 @@ protected:
 	
 	UPROPERTY()
 	TObjectPtr<UAnimMontage> NextAttackMontage = nullptr;
+	EActionType NextAttackActionType = EActionType::None;
 	
 private:
 	// 이동 런타임
