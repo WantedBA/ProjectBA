@@ -5,7 +5,7 @@
             "MaxHp": 200,
             "MaxStamina": 100,
             "StaminaRecoveryPerSecond": 33.3333333333,
-            "StaminaRecoveryDelay": 0.15,
+            "StaminaRecoveryDelay": 1,
             "WalkSpeed": 180,
             "RunSpeed": 500,
             "SprintSpeed": 700,

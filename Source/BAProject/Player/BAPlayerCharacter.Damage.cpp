@@ -288,18 +288,20 @@ void ABAPlayerCharacter::ApplyDamageReactionKnockback(
 	const bool bGuarding,
 	const bool bGuardBreak)
 {
-	if (!bUseLaunchKnockbackForDamageReaction && !bGuarding && !bGuardBreak)
+	if (bGuardBreak)
+	{
+		// GuardBreak는 긴 무방비 리액션의 루트모션으로 밀림을 표현한다.
+		return;
+	}
+
+	if (!bUseLaunchKnockbackForDamageReaction && !bGuarding)
 	{
 		return;
 	}
 
 	// 넉백 강도는 플레이어가 보유한 피격 반응 타입별 값으로 결정한다.
 	float KnockbackStrength = HitReactKnockbackStrength;
-	if (bGuardBreak)
-	{
-		KnockbackStrength = GuardBreakKnockbackStrength;
-	}
-	else if (bGuarding)
+	if (bGuarding)
 	{
 		KnockbackStrength = GuardHitKnockbackStrength;
 	}
