@@ -21,13 +21,10 @@ class BAPROJECT_API UPlayerSkillComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:	
-// 재정의 함수
 	// Sets default values for this component's properties
 	UPlayerSkillComponent();
 	// Called when the game starts
 	virtual void BeginPlay() override;
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 protected:
 	// 전체 스킬 새로고침
