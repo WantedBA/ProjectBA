@@ -24,7 +24,7 @@ namespace BossPatternTuning
 {
 	static constexpr float RepeatPenalty    = 0.3f;    // 직전 패턴 재선택 시 점수 배율
 	static constexpr float StrongAttackBias = 1.0f;    // 강공 점수 배율 (1.0 = 무영향, 밸런싱용)
-	static constexpr float FrontHalfAngle   = 60.0f;   // 정면 판정 반각 (|angle| 이하 = Front)
+	static constexpr float FrontHalfAngle   = 80.0f;   // 정면 판정 반각 (|angle| 이하 = Front)
 	static constexpr float BackHalfAngle    = 135.0f;  // 후방 판정 (|angle| 이상 = Back)
 }
 

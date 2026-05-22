@@ -50,7 +50,11 @@ bool UBTDecorator_CheckPatternRange::CalculateRawConditionValue(UBehaviorTreeCom
 	}
 	else
 	{
-		// 공격 조건: 현재 거리가 사거리 이내일 때
+		// 공격 조건: ImmediateAttackRange 이하면 IdealRange 무관하게 통과
+		if (CurrentDistance <= ImmediateAttackRange)
+		{
+			return true;
+		}
 		return CurrentDistance <= (PatternRange + AcceptanceRadius);
 	}
 }
