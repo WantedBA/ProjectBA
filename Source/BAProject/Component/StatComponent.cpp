@@ -166,6 +166,16 @@ void UStatComponent::ConsumeStamina(const float ConsumeAmount)
 	RefreshStaminaRecoveryTick();
 }
 
+void UStatComponent::RestartStaminaRecoveryDelay()
+{
+	if (CurrentStamina < MaxStamina)
+	{
+		StaminaRecoveryDelayRemaining = StaminaRecoveryDelay;
+	}
+
+	RefreshStaminaRecoveryTick();
+}
+
 void UStatComponent::PauseStaminaRecovery(const FName Source)
 {
 	const FName SafeSource = Source.IsNone() ? DefaultStaminaRecoveryPauseSource : Source;

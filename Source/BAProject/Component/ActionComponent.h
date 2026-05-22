@@ -29,6 +29,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionStarted, int32, ActionTid,
 // 현재 액션이 완료되거나 중단되어 런타임 상태가 정리될 때 알린다.
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionCompleted, int32, ActionTid, EActionType, ActionType);
 
+// 버퍼된 액션이 실제로 시작되기 직전, 현재 입력 기준으로 실행 방향을 다시 정한다.
+DECLARE_DELEGATE_RetVal_TwoParams(EActionDirection, FResolveBufferedActionDirection, int32, EActionDirection);
+
 enum class EActionStaminaConsumeContext : uint8
 {
 	Start,
@@ -71,6 +74,8 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Action|Event")
 	FOnActionCompleted OnActionCompleted;
 
+	FResolveBufferedActionDirection ResolveBufferedActionDirection;
+
 	// 현재 Moveset 문맥에서 Command와 Direction에 맞는 액션을 찾아 시작한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	bool TryStartAction(EActionCommand Command, EActionDirection Direction = EActionDirection::Any);
@@ -86,6 +91,18 @@ public:
 	// 현재 액션의 OnDemand 스태미너 비용을 명시적으로 소비한다.
 	UFUNCTION(BlueprintCallable, Category = "Action|Stamina")
 	bool ConsumeActiveActionStaminaCost(float CostMultiplier = 1.f);
+
+	// 지정 액션 타입의 OnDemand 스태미너 비용을 명시적으로 소비한다.
+	UFUNCTION(BlueprintCallable, Category = "Action|Stamina")
+	bool ConsumeActionStaminaCostByType(EActionType ActionType, float CostMultiplier = 1.f);
+
+	// 현재 액션 데이터에 지정된 스태미너 회복 배율을 명시적으로 적용한다.
+	UFUNCTION(BlueprintCallable, Category = "Action|Stamina")
+	void ApplyActiveActionStaminaRecoveryRateMultiplier();
+
+	// 현재 액션이 적용한 스태미너 회복 배율을 명시적으로 제거한다.
+	UFUNCTION(BlueprintCallable, Category = "Action|Stamina")
+	void ClearActiveActionStaminaRecoveryRateMultiplier();
 
 	// 피격/사망처럼 외부 상태가 현재 액션을 강제로 끊을 때 사용한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
@@ -190,6 +207,7 @@ private:
 	void ApplyStaminaRecoveryRateMultiplier(const FActionDataRow& ActionData);
 	bool CanConsumeStamina(const FActionDataRow& ActionData, EActionStaminaConsumeContext ConsumeContext, float CostMultiplier = 1.f) const;
 	bool ConsumeStamina(const FActionDataRow& ActionData, EActionStaminaConsumeContext ConsumeContext, float CostMultiplier = 1.f);
+	const FActionDataRow* FindFirstActionDataByType(EActionType ActionType) const;
 	float GetStaminaCostForContext(const FActionDataRow& ActionData, EActionStaminaConsumeContext ConsumeContext, float CostMultiplier = 1.f) const;
 	void BufferAction(int32 ActionTid, EActionDirection Direction);
 	void ClearBufferedAction();

@@ -42,7 +42,7 @@ struct BAPROJECT_API FActionDataRow : public FBARowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ActionData")
 	EActionStaminaCostType StaminaCostType = EActionStaminaCostType::Instant;
 
-	// 액션 실행 중 적용할 스태미너 회복 배율. 1이면 기본 회복, 0.5면 절반 속도로 회복한다.
+	// 액션 실행 또는 액션별 유효 구간에 적용할 스태미너 회복 배율. 1이면 기본 회복, 0.5면 절반 속도로 회복한다.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ActionData")
 	float StaminaRecoveryRateMultiplier = 1.f;
 

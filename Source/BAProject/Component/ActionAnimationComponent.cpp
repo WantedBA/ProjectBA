@@ -7,6 +7,7 @@
 #include "Character/CharacterBase.h"
 #include "Component/ActionComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "GameFramework/Pawn.h"
 #include "Tables/ActionRows.h"
 #include "Tables/BATableManager.h"
 
@@ -280,6 +281,7 @@ const FActionAnimationDataRow* UActionAnimationComponent::FindBestAnimationData(
 	const EActionDirection Direction = CachedActionComponent
 		? CachedActionComponent->GetActiveActionDirection()
 		: EActionDirection::Any;
+	const EActionDirection AnimationDirection = ResolveAnimationDirection(ActionTid, Direction);
 	const ECombatStance CombatStance = CachedActionComponent
 		? CachedActionComponent->GetCombatStance()
 		: ECombatStance::Relaxed;
@@ -305,14 +307,14 @@ const FActionAnimationDataRow* UActionAnimationComponent::FindBestAnimationData(
 		{
 			continue;
 		}
-		if (Row->Direction != EActionDirection::Any && Row->Direction != Direction)
+		if (Row->Direction != EActionDirection::Any && Row->Direction != AnimationDirection)
 		{
 			continue;
 		}
 
 		int32 Score = 0;
 		Score += Row->WeaponType == WeaponType ? 8 : 0;
-		Score += Row->Direction == Direction ? 4 : 0;
+		Score += Row->Direction == AnimationDirection ? 4 : 0;
 		if (Score > BestScore)
 		{
 			BestScore = Score;
@@ -393,8 +395,25 @@ UAnimInstance* UActionAnimationComponent::ResolveAnimInstance() const
 	return MeshComponent ? MeshComponent->GetAnimInstance() : nullptr;
 }
 
+// 액션별 방향 정책이 필요한 경우 ResolveActionAnimationDirection Delegate로 전달할 것
+EActionDirection UActionAnimationComponent::ResolveAnimationDirection(
+	const int32 ActionTid,
+	const EActionDirection ActionDirection) const
+{
+	return ResolveActionAnimationDirection.IsBound()
+		? ResolveActionAnimationDirection.Execute(ActionTid, ActionDirection)
+		: ActionDirection;
+}
+
 void UActionAnimationComponent::OrientOwnerToActionDirection(const EActionDirection Direction) const
 {
+	const AActor* Owner = GetOwner();
+	if (!Owner)
+	{
+		return;
+	}
+
+	const APawn* PawnOwner = Cast<APawn>(Owner);
 	if (Direction == EActionDirection::Any)
 	{
 		return;
@@ -432,13 +451,8 @@ void UActionAnimationComponent::OrientOwnerToActionDirection(const EActionDirect
 		return;
 	}
 
-	const AActor* Owner = GetOwner();
-	if (!Owner)
-	{
-		return;
-	}
-
-	const FRotator YawRotation(0.f, Owner->GetActorRotation().Yaw, 0.f);
+	const FRotator BaseRotation = PawnOwner ? PawnOwner->GetControlRotation() : Owner->GetActorRotation();
+	const FRotator YawRotation(0.f, BaseRotation.Yaw, 0.f);
 	const FVector Forward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 	const FVector Right = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 	const FVector WorldDirection = (Forward * LocalDirection.Y + Right * LocalDirection.X).GetSafeNormal();
