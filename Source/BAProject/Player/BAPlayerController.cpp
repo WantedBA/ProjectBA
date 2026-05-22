@@ -259,10 +259,6 @@ void ABAPlayerController::OnMoveCompleted()
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
 	{
 		PC->SetMoveInputVector(FVector2D::ZeroVector);
-		if (UActionComponent* ActionComponent = PC->GetActionComponent())
-		{
-			ActionComponent->UpdateBufferedActionDirection(EActionDirection::Any);
-		}
 	}
 
 	ApplyMovementStateByModifier();
@@ -401,9 +397,7 @@ void ABAPlayerController::TryStartDodgeAction() const
 		return;
 	}
 
-	const EActionDirection DodgeDirection =
-		PC->GetLocomotionMode() == EPlayerLocomotionMode::Strafe ?
-		GetActionDirectionFromMoveInput(*PC, PC->GetMoveInputVector()) : EActionDirection::Any;
+	const EActionDirection DodgeDirection = GetActionDirectionFromMoveInput(*PC, PC->GetMoveInputVector());
 	ActionComponent->TryStartAction(EActionCommand::Dodge, DodgeDirection);
 }
 
