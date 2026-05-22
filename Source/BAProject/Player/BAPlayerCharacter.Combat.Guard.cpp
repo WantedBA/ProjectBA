@@ -5,10 +5,62 @@
 #include "Component/StatComponent.h"
 #include "Engine/Engine.h"
 
+/*
+ * Guard Policy Summary
+ *
+ * 가드는 "입력 유지", "실제 방어 가능 구간", "피격 리액션"을 분리해서 다룬다.
+ * 입력을 누르고 있다는 사실만으로 방어가 성립하지 않고, 몽타주 안의 가드 윈도우가 열려야 방어 판정이 난다.
+ *
+ * 1. 기본 흐름
+ * - 가드 입력을 누르면 Loop 섹션이 바로 재생되고, Loop 섹션을 반복한다.
+ * - 가드 해제는 별도 End 섹션 없이 몽타주 BlendOut으로 locomotion에 복귀한다.
+ * - 이동 중 가드를 누르면 하체 이동은 유지하고, 이동 속도는 Walk로 낮춘다.
+ * - 가드 윈도우가 열린 동안만 정면 방어가 가능하며, 이때 스태미너 회복 속도도 가드용 배율로 낮아진다.
+ * - 가드 윈도우가 열리기 전후와 관계없이 키를 떼면 별도 종료 섹션 없이 블렌딩으로 빠진다.
+ *
+ * 2. 상태 의미
+ * - Guarding: 방어 자세가 실제로 성립한 상태다.
+ * - Blocking: 일반 가드로 공격을 막은 직후다. GuardHit 중에도 추가 공격을 막을 수 있게 유지된다.
+ * - GuardBroken: 스태미너가 부족해서 가드가 깨진 상태다. 이 상태에서는 긴 브레이크 리액션이 끝날 때까지 무방비다.
+ *
+ * 3. 피격 처리
+ * - 퍼펙트 가드가 성공하면 다른 모든 처리보다 우선한다. HP 피해 없이 스태미너만 절반 비용으로 소비하고, 일반 가드와 같은 짧은 넉백을 받는다.
+ * - 일반 가드가 성공하면 스태미너를 소비하고, HP 피해는 현재 임시 흡수 배율만큼 줄여서 적용한다.
+ * - 스태미너 소비에 실패하면 가드 브레이크가 된다. 피해 흡수는 일반 가드와 같지만, 긴 리액션과 루트모션 밀림이 패널티다.
+ * - GuardHit 리액션 중에도 입력이 유지된다면 방어 상태가 유지되며 스테미너나 체력이 있는 한 계속 막을 수 있다.
+ * - GuardBreak 리액션 중에는 무방비지만, 리액션이 끝났을 때 입력이 유지되고 조건이 맞으면 가드를 다시 시작한다.
+ *
+ * 4. 이동과 애니메이션
+ * - 이동 입력이 없으면 가드는 풀바디 포즈로 재생된다.
+ * - 이동 중 가드를 누르면 하체는 이동을 유지하고 상체만 가드 포즈를 얹는다.
+ * - 가드 중 이동은 허용하지만 전투 템포를 위해 Walk 속도로 제한한다.
+ * - 가드 이동은 방어 판정과 별개다. Loop가 재생 중이어도 가드 윈도우 전에는 막을 수 없다.
+ *
+ * 5. 인터럽트 예외
+ * - 가드를 끊을 수 있는 액션은 구르기, 공격, 스프린트 같은 특수 행동이다.
+ * - 이 행동들은 가드 몽타주를 즉시 BlendOut시키고 자기 액션으로 전환한다.
+ * - 가드 브레이크 리액션 중에는 입력 유지 여부와 상관없이 가드를 강제로 종료한다.
+ * - 사망, 사다리, 피격 리액션 종료 실패, 스태미너 부족 같은 상황에서는 가드 복귀를 포기하고 상태를 정리한다.
+ *
+ * 6. 데이터 부채
+ * - 일반 가드 피해 감소율은 현재 StatComponent의 기본 스탯으로 임시 관리한다.
+ * - 퍼펙트 가드 스태미너 배율은 현재 코드에 임시 고정되어 있다.
+ * - 장기적으로는 둘 다 무기/장비 데이터로 분리해야 한다.
+ */
 namespace
 {
 	// TODO: 무기 테이블로 분리 필요. 퍼펙트 가드 스태미너 비용 배율도 장비별 정책으로 옮겨야 한다.
 	constexpr float PerfectGuardStaminaCostMultiplier = 0.5f;
+
+	bool IsGuardInterruptingActionType(const EActionType ActionType)
+	{
+		return ActionType == EActionType::DodgeRoll
+			|| ActionType == EActionType::LightAttack
+			|| ActionType == EActionType::HeavyAttack
+			|| ActionType == EActionType::Backstep
+			|| ActionType == EActionType::Sprint
+			|| ActionType == EActionType::UseConsumable;
+	}
 }
 
 bool ABAPlayerCharacter::TryStartGuard()
@@ -60,15 +112,7 @@ void ABAPlayerCharacter::StopGuard()
 
 	if (bGuardActionRunning)
 	{
-		// 실제 가드 판정이 열린 뒤의 해제만 End 섹션으로 보낸다.
-		// Start 중 키를 떼는 스팸 입력은 아직 가드가 성립하지 않았으므로 몽타주를 끊는다.
-		if ((bGuardWindowActive || bGuardBroken) && RequestGuardMontageEnd())
-		{
-			SetBAPlayerState(EBAPlayerState::None);
-			SetCombatMode(EPlayerCombatMode::None);
-			return;
-		}
-
+		// 가드 해제는 별도 End 섹션 없이 현재 몽타주의 BlendOut으로만 처리한다.
 		ActionComponent->CompleteCurrentAction();
 	}
 
@@ -86,6 +130,89 @@ void ABAPlayerCharacter::StopGuard()
 	SetCombatMode(EPlayerCombatMode::None);
 }
 
+void ABAPlayerCharacter::CancelGuardForSprintInput()
+{
+	// 이미 누르고 있던 Sprint 유지 상태와 구분해, 새 Sprint 입력에서만 가드를 특수 행동으로 끊는다.
+	CancelGuardForActionInterrupt();
+}
+
+void ABAPlayerCharacter::CancelGuardForActionInterrupt()
+{
+	if (!ActionComponent)
+	{
+		return;
+	}
+
+	const bool bGuardActionRunning = ActionComponent->GetActiveActionType() == EActionType::Guard;
+	const EGuardState GuardState = ActionComponent->GetGuardState();
+	const bool bHasGuardState = GuardState == EGuardState::Guarding
+		|| GuardState == EGuardState::Blocking
+		|| GuardState == EGuardState::GuardBroken;
+	if (!bGuardInputHeld && !bGuardActionRunning && !bHasGuardState && BAPlayerState != EBAPlayerState::Guarding)
+	{
+		return;
+	}
+
+	// 공격/구르기는 가드 몽타주를 BlendOut시키고 즉시 자기 액션으로 전환한다.
+	// 가드 입력 유지 플래그까지 내려야 인터럽트 액션 종료 후 GuardHit 복귀 같은 경로가 재진입하지 않는다.
+	bGuardInputHeld = false;
+	SetGuardWindowActive(false);
+	SetPerfectGuardWindowActive(false);
+
+	if (bGuardActionRunning)
+	{
+		ActionComponent->CancelCurrentAction();
+	}
+
+	ActionComponent->SetGuardState(EGuardState::None);
+	if (BAPlayerState == EBAPlayerState::Guarding)
+	{
+		SetBAPlayerState(EBAPlayerState::None);
+	}
+	SetCombatMode(EPlayerCombatMode::None);
+}
+
+void ABAPlayerCharacter::BindGuardActionCallbacks()
+{
+	if (ActionComponent)
+	{
+		ActionComponent->OnActionStarted.AddDynamic(this, &ABAPlayerCharacter::HandleGuardInterruptingActionStarted);
+	}
+
+	if (ActionAnimationComponent)
+	{
+		ActionAnimationComponent->OnActionMontageEnded.AddDynamic(this, &ABAPlayerCharacter::HandleGuardActionMontageEnded);
+	}
+}
+
+void ABAPlayerCharacter::HandleGuardInterruptingActionStarted(
+	const int32 /*ActionTid*/,
+	const EActionType ActionType)
+{
+	if (!IsGuardInterruptingActionType(ActionType))
+	{
+		return;
+	}
+
+	CancelGuardForActionInterrupt();
+}
+
+void ABAPlayerCharacter::HandleGuardActionMontageEnded(
+	const int32 /*ActionTid*/,
+	const EActionType ActionType,
+	UAnimMontage* /*Montage*/,
+	const bool /*bInterrupted*/)
+{
+	if (ActionType != EActionType::Guard || IsDamageReacting())
+	{
+		return;
+	}
+
+	SetGuardWindowActive(false);
+	SetBAPlayerState(EBAPlayerState::None);
+	SetCombatMode(EPlayerCombatMode::None);
+}
+
 void ABAPlayerCharacter::ConfigureGuardMontageSections()
 {
 	if (!ActionAnimationComponent)
@@ -93,20 +220,7 @@ void ABAPlayerCharacter::ConfigureGuardMontageSections()
 		return;
 	}
 
-	ActionAnimationComponent->SetActiveMontageNextSection(GuardStartSection, GuardLoopSection);
 	ActionAnimationComponent->SetActiveMontageNextSection(GuardLoopSection, GuardLoopSection);
-}
-
-bool ABAPlayerCharacter::RequestGuardMontageEnd()
-{
-	if (!ActionAnimationComponent)
-	{
-		return false;
-	}
-
-	ActionAnimationComponent->SetActiveMontageNextSection(GuardStartSection, GuardEndSection);
-	ActionAnimationComponent->SetActiveMontageNextSection(GuardLoopSection, GuardEndSection);
-	return ActionAnimationComponent->JumpActiveMontageToSection(GuardEndSection);
 }
 
 void ABAPlayerCharacter::ConsumePerfectGuardStaminaCost()
@@ -117,7 +231,7 @@ void ABAPlayerCharacter::ConsumePerfectGuardStaminaCost()
 	}
 
 	// TODO: 무기 테이블로 분리 필요. 퍼펙트 가드 스태미너 비용 배율 적용도 장비 정책에서 계산해야 한다.
-	ActionComponent->ConsumeActiveActionStaminaCost(GetPerfectGuardStaminaCostMultiplier());
+	ActionComponent->ConsumeActionStaminaCostByType(EActionType::Guard, GetPerfectGuardStaminaCostMultiplier());
 }
 
 void ABAPlayerCharacter::SetGuardWindowActive(const bool bActive)
@@ -153,13 +267,8 @@ void ABAPlayerCharacter::SetGuardWindowActive(const bool bActive)
 
 void ABAPlayerCharacter::SetPerfectGuardWindowActive(const bool bActive)
 {
-	if (bActive && (!ActionComponent
-			|| (ActionComponent->GetGuardState() != EGuardState::Guarding
-				&& ActionComponent->GetGuardState() != EGuardState::Blocking)))
-	{
-		return;
-	}
-
+	// PerfectWindow는 가드 윈도우보다 먼저 열릴 수 있다.
+	// 실제 성공 여부는 CombatComponent/OnDamaged에서 "가드 중 && PerfectWindow"로 판정한다.
 	bPerfectGuardWindowActive = bActive;
 }
 
@@ -170,7 +279,9 @@ bool ABAPlayerCharacter::IsPerfectGuardWindowActive() const
 
 float ABAPlayerCharacter::GetGuardAbsorptionMultiplier() const
 {
-	return 1 - StatComponent->GetGuardDamageReductionRate();
+	// TODO: 무기 테이블로 분리 필요. 현재는 StatComponent의 임시 가드 피해 감소율을 흡수 배율로 변환한다.
+	const float GuardDamageReductionRate = StatComponent ? StatComponent->GetGuardDamageReductionRate() : 0.f;
+	return 1.f - FMath::Clamp(GuardDamageReductionRate, 0.f, 1.f);
 }
 
 float ABAPlayerCharacter::GetPerfectGuardStaminaCostMultiplier() const
@@ -185,17 +296,29 @@ bool ABAPlayerCharacter::ConsumeGuardStaminaForDamage()
 		return false;
 	}
 
-	const bool bConsumedStamina = ActionComponent->ConsumeActiveActionStaminaCost();
+	const bool bConsumedStamina = ActionComponent->ConsumeActionStaminaCostByType(EActionType::Guard);
 	ActionComponent->SetGuardState(bConsumedStamina ? EGuardState::Blocking : EGuardState::GuardBroken);
 	return bConsumedStamina;
 }
 
-bool ABAPlayerCharacter::ShouldResumeGuardAfterGuardHit() const
+void ABAPlayerCharacter::KeepGuardActiveAfterGuardSuccess()
+{
+	if (!ActionComponent || !ShouldResumeGuardAfterGuardReaction())
+	{
+		return;
+	}
+
+	ActionComponent->SetGuardState(EGuardState::Blocking);
+	SetBAPlayerState(EBAPlayerState::Guarding);
+	SetCombatMode(EPlayerCombatMode::Block);
+}
+
+bool ABAPlayerCharacter::ShouldResumeGuardAfterGuardReaction() const
 {
 	return bGuardInputHeld && IsAlive() && !IsOnLadder();
 }
 
-bool ABAPlayerCharacter::ResumeGuardAfterGuardHit()
+bool ABAPlayerCharacter::ResumeGuardAfterGuardReaction()
 {
 	if (!TryStartGuard())
 	{

@@ -10,6 +10,16 @@ namespace
 	constexpr int32 ActionComponentInvalidActionTid = 0;
 	const FName ActionStaminaRecoveryPauseSource(TEXT("Action"));
 	const FName ActionStaminaRecoveryRateMultiplierSource(TEXT("Action"));
+
+	bool IsGuardInterruptActionType(const EActionType ActionType)
+	{
+		return ActionType == EActionType::DodgeRoll
+			|| ActionType == EActionType::LightAttack
+			|| ActionType == EActionType::HeavyAttack
+			|| ActionType == EActionType::Backstep
+			|| ActionType == EActionType::Sprint
+			|| ActionType == EActionType::UseConsumable;
+	}
 }
 
 UActionComponent::UActionComponent()
@@ -130,6 +140,23 @@ bool UActionComponent::ConsumeActiveActionStaminaCost(const float CostMultiplier
 {
 	const FActionDataRow* ActionData = GetActiveActionData();
 	return ActionData && ConsumeStamina(*ActionData, EActionStaminaConsumeContext::OnDemand, CostMultiplier);
+}
+
+bool UActionComponent::ConsumeActionStaminaCostByType(const EActionType ActionType, const float CostMultiplier)
+{
+	if (const FActionDataRow* ActiveActionData = GetActiveActionData();
+		ActiveActionData && ActiveActionData->ActionType == ActionType)
+	{
+		return ConsumeStamina(*ActiveActionData, EActionStaminaConsumeContext::OnDemand, CostMultiplier);
+	}
+
+	// GuardHit처럼 액션 인스턴스보다 판정 상태가 오래 유지되는 경우에도 같은 ActionData 비용 규칙을 사용한다.
+	if (const FActionDataRow* ActionData = FindFirstActionDataByType(ActionType))
+	{
+		return ConsumeStamina(*ActionData, EActionStaminaConsumeContext::OnDemand, CostMultiplier);
+	}
+
+	return false;
 }
 
 void UActionComponent::ApplyActiveActionStaminaRecoveryRateMultiplier()
@@ -264,9 +291,24 @@ const FMovesetRow* UActionComponent::FindBestMoveset(
 		{
 			continue;
 		}
-		if (Row->CombatStance != CombatStance || Row->GuardState != GuardState)
+		if (Row->CombatStance != CombatStance)
 		{
 			continue;
+		}
+		if (Row->GuardState != GuardState)
+		{
+			const FActionDataRow* RowActionData = TableManager->FindActionData(Row->ActionTid);
+			// 가드 중 특수 행동은 별도 GuardState Moveset을 만들지 않아도 기본 Row를 재사용한다.
+			// 이 예외가 없으면 CanStartAction까지 도달하기 전에 Moveset 검색 단계에서 막힌다.
+			const bool bCanUseDefaultGuardStateForInterrupt =
+				ActiveActionType == EActionType::Guard
+				&& Row->GuardState == EGuardState::None
+				&& RowActionData
+				&& IsGuardInterruptActionType(RowActionData->ActionType);
+			if (!bCanUseDefaultGuardStateForInterrupt)
+			{
+				continue;
+			}
 		}
 		if (Row->WeaponType != EActionWeaponType::Any && Row->WeaponType != WeaponType)
 		{
@@ -305,7 +347,13 @@ bool UActionComponent::CanStartAction(const FActionDataRow& ActionData, const EA
 		const FActionDataRow* ActiveActionData = GetActiveActionData();
 		const bool bCanInterruptActiveAction =
 			ActiveActionData && ActiveActionData->bCanBeInterrupted && !bActiveActionInterruptLocked;
-		if (!bCanInterruptActiveAction)
+		// 가드는 입력 유지형 방어 액션이라 구르기, 공격, 스프린트 같은 특수 행동으로 즉시 빠져나갈 수 있어야 한다.
+		// 데이터의 bCanBeInterrupted를 넓게 열면 모든 액션이 끼어들 수 있어 허용 타입만 예외로 둔다.
+		const bool bCanActionInterruptGuard =
+			ActiveActionType == EActionType::Guard
+			&& IsGuardInterruptActionType(ActionData.ActionType)
+			&& !bActiveActionInterruptLocked;
+		if (!bCanInterruptActiveAction && !bCanActionInterruptGuard)
 		{
 			LastStartResult = EActionStartResult::AlreadyRunning;
 			return false;
@@ -332,7 +380,14 @@ bool UActionComponent::CanStartAction(const FActionDataRow& ActionData, const EA
 
 void UActionComponent::BeginAction(const FActionDataRow& ActionData, const EActionDirection Direction)
 {
+	const bool bInterruptingGuard = ActiveActionType == EActionType::Guard
+		&& ActionData.ActionType != EActionType::Guard;
+
 	CompleteCurrentAction();
+	if (bInterruptingGuard)
+	{
+		GuardState = EGuardState::None;
+	}
 
 	ActiveActionTid = ActionData.Tid;
 	ActiveActionType = ActionData.ActionType;
@@ -346,7 +401,7 @@ void UActionComponent::BeginAction(const FActionDataRow& ActionData, const EActi
 
 	// TODO: 스탯 컴포넌트 결합 의존성 없애기 - Delegate로 디커플링 (곽민규)
 	ConsumeStamina(ActionData, EActionStaminaConsumeContext::Start);
-	// 가드는 Start/End가 아니라 실제 GuardWindow가 열린 동안만 회복 배율을 적용한다.
+	// 가드는 Start/End가 아니라 가드 윈도우(GuardWindow)가 열린 동안만 회복 배율을 적용한다.
 	if (ActionData.ActionType != EActionType::Guard)
 	{
 		ApplyStaminaRecoveryRateMultiplier(ActionData);
@@ -431,6 +486,32 @@ bool UActionComponent::ConsumeStamina(
 		CachedStatComponent->RestartStaminaRecoveryDelay();
 	}
 	return true;
+}
+
+const FActionDataRow* UActionComponent::FindFirstActionDataByType(const EActionType ActionType) const
+{
+	const UBATableManager* TableManager = UBATableManager::Get(this);
+	if (!TableManager)
+	{
+		return nullptr;
+	}
+
+	const FActionDataRow* BestActionData = nullptr;
+	for (const TPair<int32, FActionDataRow*>& Pair : TableManager->GetActionDataTable())
+	{
+		const FActionDataRow* ActionData = Pair.Value;
+		if (!ActionData || ActionData->ActionType != ActionType)
+		{
+			continue;
+		}
+
+		if (!BestActionData || ActionData->Tid < BestActionData->Tid)
+		{
+			BestActionData = ActionData;
+		}
+	}
+
+	return BestActionData;
 }
 
 float UActionComponent::GetStaminaCostForContext(
