@@ -281,6 +281,11 @@ const FActionAnimationDataRow* UActionAnimationComponent::FindBestAnimationData(
 	const EActionDirection Direction = CachedActionComponent
 		? CachedActionComponent->GetActiveActionDirection()
 		: EActionDirection::Any;
+	const bool bIsDodgeRoll = CachedActionComponent
+		&& CachedActionComponent->GetActiveActionType() == EActionType::DodgeRoll;
+	const EActionDirection AnimationDirection = bIsDodgeRoll
+		? (Direction == EActionDirection::Any ? EActionDirection::Backward : EActionDirection::Forward)
+		: Direction;
 	const ECombatStance CombatStance = CachedActionComponent
 		? CachedActionComponent->GetCombatStance()
 		: ECombatStance::Relaxed;
@@ -306,14 +311,14 @@ const FActionAnimationDataRow* UActionAnimationComponent::FindBestAnimationData(
 		{
 			continue;
 		}
-		if (Row->Direction != EActionDirection::Any && Row->Direction != Direction)
+		if (Row->Direction != EActionDirection::Any && Row->Direction != AnimationDirection)
 		{
 			continue;
 		}
 
 		int32 Score = 0;
 		Score += Row->WeaponType == WeaponType ? 8 : 0;
-		Score += Row->Direction == Direction ? 4 : 0;
+		Score += Row->Direction == AnimationDirection ? 4 : 0;
 		if (Score > BestScore)
 		{
 			BestScore = Score;
@@ -403,22 +408,19 @@ void UActionAnimationComponent::OrientOwnerToActionDirection(const EActionDirect
 	}
 
 	const APawn* PawnOwner = Cast<APawn>(Owner);
-	if (PawnOwner
-		&& CachedActionComponent
-		&& CachedActionComponent->GetActiveActionType() == EActionType::DodgeRoll)
-	{
-		const FRotator ControlRotation = PawnOwner->GetControlRotation();
-		GetOwner()->SetActorRotation(FRotator(0.f, ControlRotation.Yaw, 0.f));
-		return;
-	}
+	const bool bIsDodgeRoll = CachedActionComponent
+		&& CachedActionComponent->GetActiveActionType() == EActionType::DodgeRoll;
+	const EActionDirection DirectionToOrient = bIsDodgeRoll && Direction == EActionDirection::Any
+		? EActionDirection::Backward
+		: Direction;
 
-	if (Direction == EActionDirection::Any)
+	if (DirectionToOrient == EActionDirection::Any)
 	{
 		return;
 	}
 
 	FVector2D LocalDirection = FVector2D::ZeroVector;
-	switch (Direction)
+	switch (DirectionToOrient)
 	{
 	case EActionDirection::Forward:
 		LocalDirection = FVector2D(0.f, 1.f);
