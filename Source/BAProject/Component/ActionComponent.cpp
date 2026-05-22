@@ -136,21 +136,28 @@ void UActionComponent::CompleteCurrentAction()
 	RefreshTickEnabled();
 }
 
+bool UActionComponent::ConsumeActionStartStaminaCostByType(const EActionType ActionType, const float CostMultiplier)
+{
+	const FActionDataRow* ActionData = FindCostActionDataByType(ActionType);
+	if (!ActionData)
+	{
+		LastStartResult = EActionStartResult::ActionDataNotFound;
+		return false;
+	}
+
+	return ConsumeStamina(*ActionData, GetStartStaminaCost(*ActionData, CostMultiplier), false, true);
+}
+
 bool UActionComponent::ConsumeActionStaminaCostByType(const EActionType ActionType, const float CostMultiplier)
 {
-	if (const FActionDataRow* ActiveActionData = GetActiveActionData();
-		ActiveActionData && ActiveActionData->ActionType == ActionType)
+	const FActionDataRow* ActionData = FindCostActionDataByType(ActionType);
+	if (!ActionData)
 	{
-		return ConsumeStamina(*ActiveActionData, GetOnDemandStaminaCost(*ActiveActionData, CostMultiplier), false, true);
+		LastStartResult = EActionStartResult::ActionDataNotFound;
+		return false;
 	}
 
-	// GuardHit처럼 액션 인스턴스보다 판정 상태가 오래 유지되는 경우에도 같은 ActionData 비용 규칙을 사용한다.
-	if (const FActionDataRow* ActionData = FindFirstActionDataByType(ActionType))
-	{
-		return ConsumeStamina(*ActionData, GetOnDemandStaminaCost(*ActionData, CostMultiplier), false, true);
-	}
-
-	return false;
+	return ConsumeStamina(*ActionData, GetOnDemandStaminaCost(*ActionData, CostMultiplier), false, true);
 }
 
 void UActionComponent::ApplyActiveActionStaminaRecoveryRateMultiplier()
@@ -480,6 +487,18 @@ bool UActionComponent::ConsumeStamina(
 		CachedStatComponent->RestartStaminaRecoveryDelay();
 	}
 	return true;
+}
+
+const FActionDataRow* UActionComponent::FindCostActionDataByType(const EActionType ActionType) const
+{
+	if (const FActionDataRow* ActiveActionData = GetActiveActionData();
+		ActiveActionData && ActiveActionData->ActionType == ActionType)
+	{
+		return ActiveActionData;
+	}
+
+	// GuardHit처럼 액션 인스턴스보다 판정 상태가 오래 유지되는 경우에도 같은 ActionData 비용 규칙을 사용한다.
+	return FindFirstActionDataByType(ActionType);
 }
 
 const FActionDataRow* UActionComponent::FindFirstActionDataByType(const EActionType ActionType) const

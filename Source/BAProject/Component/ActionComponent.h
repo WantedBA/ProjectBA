@@ -82,6 +82,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	void CompleteCurrentAction();
 
+	// 지정 액션 타입의 Instant 스태미너 비용을 명시적으로 소비한다.
+	UFUNCTION(BlueprintCallable, Category = "Action|Stamina")
+	bool ConsumeActionStartStaminaCostByType(EActionType ActionType, float CostMultiplier = 1.f);
+
 	// 지정 액션 타입의 OnDemand 스태미너 비용을 명시적으로 소비한다.
 	UFUNCTION(BlueprintCallable, Category = "Action|Stamina")
 	bool ConsumeActionStaminaCostByType(EActionType ActionType, float CostMultiplier = 1.f);
@@ -193,6 +197,7 @@ private:
 	bool CanStartAction(const FActionDataRow& ActionData, EActionDirection Direction);
 	bool CanConsumeStamina(const FActionDataRow& ActionData, float StaminaCost) const;
 	bool ConsumeStamina(const FActionDataRow& ActionData, float StaminaCost, bool bPauseRecovery, bool bRestartRecoveryDelay);
+	const FActionDataRow* FindCostActionDataByType(EActionType ActionType) const;
 	const FActionDataRow* FindFirstActionDataByType(EActionType ActionType) const;
 	float GetStartStaminaCost(const FActionDataRow& ActionData, float CostMultiplier = 1.f) const;
 	float GetOnDemandStaminaCost(const FActionDataRow& ActionData, float CostMultiplier = 1.f) const;
