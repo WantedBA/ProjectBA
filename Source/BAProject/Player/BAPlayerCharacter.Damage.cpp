@@ -176,7 +176,7 @@ void ABAPlayerCharacter::OnDamaged(
 	{
 		HandlePerfectGuardSucceeded(ResolveDamageHitResult(DamageEvent), DamageCauser);
 		KeepGuardActiveAfterGuardSuccess();
-		// 퍼펙트 가드는 GuardHit 몽타주를 재생하지 않으므로 넉백 속도가 Free 회전 입력처럼 해석되지 않게 막는다.
+		// 가드 성공 넉백 속도가 Free 회전 입력처럼 해석되지 않게 막는다.
 		MovementRuntime.bSuppressVelocityFacingUntilMoveInput = true;
 		if (!MovementRuntime.bHasMoveInput)
 		{
@@ -210,6 +210,12 @@ void ABAPlayerCharacter::OnDamaged(
 	if (bGuarding && !bGuardBreak)
 	{
 		KeepGuardActiveAfterGuardSuccess();
+		// GuardHit 재생 중에도 넉백 속도가 캐릭터 회전을 만들지 않게 막는다.
+		MovementRuntime.bSuppressVelocityFacingUntilMoveInput = true;
+		if (!MovementRuntime.bHasMoveInput)
+		{
+			SnapInterpolatedMoveInputTo(FVector2D::ZeroVector);
+		}
 	}
 	ApplyDamageReactionKnockback(DamageReactionType, DamageDirection, HitDirection, bGuarding, bGuardBreak);
 	PlayDamageReactionAnimation(DamageReactionType, HitDirection, bGuarding, bGuardBreak);

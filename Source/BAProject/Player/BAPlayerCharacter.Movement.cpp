@@ -96,7 +96,7 @@ bool ABAPlayerCharacter::CanMoveWhileGuarding() const
 
 	// 방어 판정은 가드 윈도우가 열릴 때만 유효하다.
 	// 이동은 별도 정책이므로, 걷는 중 가드를 누른 경우 Start부터 Walk locomotion을 유지한다.
-	// 퍼펙트 가드 넉백처럼 입력이 아닌 속도는 상체 가드 이동으로 취급하지 않는다.
+	// 가드 성공 넉백처럼 입력이 아닌 속도는 상체 가드 이동으로 취급하지 않는다.
 	return MovementRuntime.bHasMoveInput
 		|| (!MovementRuntime.bSuppressVelocityFacingUntilMoveInput && GetGroundSpeed() > 5.f);
 }
