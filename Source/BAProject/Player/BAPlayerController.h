@@ -103,6 +103,8 @@ private:
 	
 	// 강공격(우클릭) 입력을 캐릭터 공격 진입점으로 전달한다.
 	void HeavyAttack();
+	// 차징 공격을 위한 전달 함수
+	void HeavyAttackCompleted();
 
 	// 걷기 토글 상태를 전환하고 이동 상태를 다시 계산한다.
 	void ToggleWalk();

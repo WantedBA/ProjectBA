@@ -55,6 +55,10 @@ public:
 
 	// 공격 관련
 	virtual void TryAttack(EActionCommand InActionCommand); // CharacterBase 공격 진입점. 
+	
+	// 차징 공격 판정
+	void ChargeStart();
+	void HeavyAttackCompleted();
 
 	bool TryStartGuard();
 	void StopGuard();
@@ -445,6 +449,7 @@ private:
 	int32 NextDamageReactionPlaybackId = 1;
 	bool bGuardInputHeld = false;
 	bool bPerfectGuardWindowActive = false;
+	bool bIsCharging = false;
 	
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimMontage> ActiveDamageReactionMontage;

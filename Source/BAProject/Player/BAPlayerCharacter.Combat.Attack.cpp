@@ -45,6 +45,30 @@ void ABAPlayerCharacter::TryAttack(EActionCommand InActionCommand)
 	}
 }
 
+void ABAPlayerCharacter::ChargeStart()
+{
+	bIsCharging = true;
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->Montage_Pause();
+	}
+}
+
+void ABAPlayerCharacter::HeavyAttackCompleted()
+{
+	bIsCharging = false;
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		UAnimMontage* Montage = AnimInstance->GetCurrentActiveMontage();
+		if (Montage)
+		{
+			AnimInstance->Montage_Resume(Montage);
+		}
+	}
+}
+
 void ABAPlayerCharacter::OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg)
 {
 	// 정상 종료되었을 경우

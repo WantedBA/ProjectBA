@@ -760,7 +760,7 @@
         },
         {
             "Tid": 72001,
-            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_1.AM_Player_HeavyAttack_1"
+            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_Charge.AM_Player_HeavyAttack_Charge"
         },
         {
             "Tid": 72002,
