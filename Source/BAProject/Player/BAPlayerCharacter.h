@@ -120,6 +120,8 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	FVector2D GetMoveInputVector() const;
 
+	EActionDirection GetActionDirectionFromMoveInput(const FVector2D& MoveInput) const;
+
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	FVector GetMoveInputWorldDirection() const;
 
@@ -288,6 +290,7 @@ protected:
 	
 	UPROPERTY()
 	TObjectPtr<UAnimMontage> NextAttackMontage = nullptr;
+	EActionType NextAttackActionType = EActionType::None;
 	
 private:
 	// 이동 런타임
@@ -315,6 +318,9 @@ private:
 	void UpdateInterpolatedMoveInputDirection(float DeltaTime);
 	void SnapInterpolatedMoveInputTo(const FVector2D& MoveInput);
 	FVector2D GetInterpolatedMoveInputVector() const;
+	void FaceMoveInputDirection();
+	EActionDirection ResolveBufferedActionDirection(int32 ActionTid, EActionDirection BufferedDirection) const;
+	EActionDirection ResolveActionAnimationDirection(int32 ActionTid, EActionDirection ActionDirection) const;
 	FVector2D ConvertWorldDirectionToMoveInput(const FVector& WorldDirection) const;
 	FVector ConvertMoveInputToWorldDirection(const FVector2D& MoveInput) const;
 

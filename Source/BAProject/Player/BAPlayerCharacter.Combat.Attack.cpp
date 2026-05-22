@@ -1,8 +1,30 @@
 ﻿#include "BAPlayerCharacter.h"
+#include "Component/ActionComponent.h"
 #include "Component/CombatComponent.h"
 #include "Component/StatComponent.h"
 #include "Tables/ActionRows.h"
 #include "Tables/BATableManager.h"
+
+namespace
+{
+	EActionType GetAttackActionType(const EActionCommand ActionCommand)
+	{
+		switch (ActionCommand)
+		{
+		case EActionCommand::LightAttack:
+			return EActionType::LightAttack;
+		case EActionCommand::HeavyAttack:
+			return EActionType::HeavyAttack;
+		default:
+			return EActionType::None;
+		}
+	}
+
+	float GetAttackDamageMultiplier(const EActionType ActionType)
+	{
+		return ActionType == EActionType::HeavyAttack ? 1.5f : 1.f;
+	}
+}
 
 
 // 공격 입력 진입점
@@ -28,20 +50,31 @@ void ABAPlayerCharacter::TryAttack(EActionCommand InActionCommand)
 	case EBAPlayerState::Moving:
 	case EBAPlayerState::None:
 	default:
-		if (InActionCommand == EActionCommand::LightAttack)
+		const EActionType AttackActionType = GetAttackActionType(InActionCommand);
+		if (AttackActionType == EActionType::None)
 		{
-			CancelGuardForActionInterrupt();
-			CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack());
-			NextComboTransitionTid = FirstLComboTransitionTid;
-			StartAttack(FirstLightAttackMontage);
+			return;
 		}
-		else if (InActionCommand == EActionCommand::HeavyAttack)
+
+		UAnimMontage* AttackMontage = AttackActionType == EActionType::LightAttack
+			? FirstLightAttackMontage
+			: FirstHeavyAttackMontage;
+		if (!AttackMontage)
 		{
-			CancelGuardForActionInterrupt();
-			CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack() * 1.5);
-			NextComboTransitionTid = FirstRComboTransitionTid;
-			StartAttack(FirstHeavyAttackMontage);
+			return;
 		}
+
+		if (!ActionComponent || !ActionComponent->ConsumeActionStartStaminaCostByType(AttackActionType))
+		{
+			return;
+		}
+
+		CancelGuardForActionInterrupt();
+		CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack() * GetAttackDamageMultiplier(AttackActionType));
+		NextComboTransitionTid = AttackActionType == EActionType::LightAttack
+			? FirstLComboTransitionTid
+			: FirstRComboTransitionTid;
+		StartAttack(AttackMontage);
 	}
 }
 
@@ -62,6 +95,7 @@ void ABAPlayerCharacter::StartAttack(UAnimMontage* InAnimMontage)
 	NowComboTransitionTid = NextComboTransitionTid;
 	NextComboTransitionTid = 0;
 	NextAttackMontage = nullptr;
+	NextAttackActionType = EActionType::None;
 	
 	const FComboTransitionRow* NowCombo = TableManager->FindComboTransition(NowComboTransitionTid);
 	if (!NowCombo)
@@ -87,6 +121,9 @@ void ABAPlayerCharacter::StartAttack(UAnimMontage* InAnimMontage)
 void ABAPlayerCharacter::SetNextCombo(EActionCommand InActionCommand)
 {
 	static const UBATableManager* TableManager = UBATableManager::Get(this);
+	NextComboTransitionTid = 0;
+	NextAttackMontage = nullptr;
+	NextAttackActionType = EActionType::None;
 	
 	const FComboTransitionRow* NowComboTransition = 
 		TableManager->FindComboTransition(NowComboTransitionTid);
@@ -97,6 +134,12 @@ void ABAPlayerCharacter::SetNextCombo(EActionCommand InActionCommand)
 	}
 	
 	// 현재 액션과 입력 커맨드로 다음 액션 탐색
+	const EActionType AttackActionType = GetAttackActionType(InActionCommand);
+	if (AttackActionType == EActionType::None)
+	{
+		return;
+	}
+
 	if (InActionCommand == EActionCommand::LightAttack)
 	{
 		NextComboTransitionTid = NowComboTransition->NextOnL;
@@ -123,12 +166,23 @@ void ABAPlayerCharacter::SetNextCombo(EActionCommand InActionCommand)
 	
 	// TODO 비동기 로딩으로 변경
 	NextAttackMontage = NextComboTransition->Montage.LoadSynchronous();
+	NextAttackActionType = AttackActionType;
 }
 
 void ABAPlayerCharacter::OnNextComboCheck()
 {
-	if (NextAttackMontage)
+	if (NextAttackMontage && NextAttackActionType != EActionType::None)
 	{
+		if (!ActionComponent || !ActionComponent->ConsumeActionStartStaminaCostByType(NextAttackActionType))
+		{
+			NextComboTransitionTid = 0;
+			NextAttackMontage = nullptr;
+			NextAttackActionType = EActionType::None;
+			return;
+		}
+
+		FaceMoveInputDirection();
+		CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack() * GetAttackDamageMultiplier(NextAttackActionType));
 		StartAttack(NextAttackMontage);
 	}
 	else

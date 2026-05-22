@@ -29,11 +29,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionStarted, int32, ActionTid,
 // 현재 액션이 완료되거나 중단되어 런타임 상태가 정리될 때 알린다.
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionCompleted, int32, ActionTid, EActionType, ActionType);
 
-enum class EActionStaminaConsumeContext : uint8
-{
-	Start,
-	OnDemand
-};
+// 버퍼된 액션이 실제로 시작되기 직전, 현재 입력 기준으로 실행 방향을 다시 정한다.
+DECLARE_DELEGATE_RetVal_TwoParams(EActionDirection, FResolveBufferedActionDirection, int32, EActionDirection);
 
 /**
  * 공용 Action 실행 컴포넌트.
@@ -71,6 +68,8 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Action|Event")
 	FOnActionCompleted OnActionCompleted;
 
+	FResolveBufferedActionDirection ResolveBufferedActionDirection;
+
 	// 현재 Moveset 문맥에서 Command와 Direction에 맞는 액션을 찾아 시작한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	bool TryStartAction(EActionCommand Command, EActionDirection Direction = EActionDirection::Any);
@@ -83,9 +82,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	void CompleteCurrentAction();
 
-	// 현재 액션의 OnDemand 스태미너 비용을 명시적으로 소비한다.
+	// 지정 액션 타입의 Instant 스태미너 비용을 명시적으로 소비한다.
 	UFUNCTION(BlueprintCallable, Category = "Action|Stamina")
-	bool ConsumeActiveActionStaminaCost(float CostMultiplier = 1.f);
+	bool ConsumeActionStartStaminaCostByType(EActionType ActionType, float CostMultiplier = 1.f);
 
 	// 지정 액션 타입의 OnDemand 스태미너 비용을 명시적으로 소비한다.
 	UFUNCTION(BlueprintCallable, Category = "Action|Stamina")
@@ -185,12 +184,6 @@ public:
 	// 현재 액션 Tid에 대응하는 ActionData 행을 반환한다.
 	const FActionDataRow* GetActiveActionData() const;
 
-	// 현재 문맥과 가장 잘 맞는 Moveset 행을 찾는다.
-	const FMovesetRow* FindBestMoveset(EActionCommand Command, EActionDirection Direction) const;
-
-	// 스태미너, 쿨다운, 실행 중 상태를 검사해 액션 시작 가능 여부를 판단한다.
-	bool CanStartAction(const FActionDataRow& ActionData, EActionDirection Direction);
-
 protected:
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -200,10 +193,14 @@ private:
 	void BeginAction(const FActionDataRow& ActionData, EActionDirection Direction);
 	void StartCooldown(const FActionDataRow& ActionData);
 	void ApplyStaminaRecoveryRateMultiplier(const FActionDataRow& ActionData);
-	bool CanConsumeStamina(const FActionDataRow& ActionData, EActionStaminaConsumeContext ConsumeContext, float CostMultiplier = 1.f) const;
-	bool ConsumeStamina(const FActionDataRow& ActionData, EActionStaminaConsumeContext ConsumeContext, float CostMultiplier = 1.f);
+	const FMovesetRow* FindBestMoveset(EActionCommand Command, EActionDirection Direction) const;
+	bool CanStartAction(const FActionDataRow& ActionData, EActionDirection Direction);
+	bool CanConsumeStamina(const FActionDataRow& ActionData, float StaminaCost) const;
+	bool ConsumeStamina(const FActionDataRow& ActionData, float StaminaCost, bool bPauseRecovery, bool bRestartRecoveryDelay);
+	const FActionDataRow* FindCostActionDataByType(EActionType ActionType) const;
 	const FActionDataRow* FindFirstActionDataByType(EActionType ActionType) const;
-	float GetStaminaCostForContext(const FActionDataRow& ActionData, EActionStaminaConsumeContext ConsumeContext, float CostMultiplier = 1.f) const;
+	float GetStartStaminaCost(const FActionDataRow& ActionData, float CostMultiplier = 1.f) const;
+	float GetOnDemandStaminaCost(const FActionDataRow& ActionData, float CostMultiplier = 1.f) const;
 	void BufferAction(int32 ActionTid, EActionDirection Direction);
 	void ClearBufferedAction();
 	void TryStartBufferedAction();
