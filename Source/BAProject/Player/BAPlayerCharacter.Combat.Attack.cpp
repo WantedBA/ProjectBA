@@ -129,6 +129,7 @@ void ABAPlayerCharacter::OnNextComboCheck()
 {
 	if (NextAttackMontage)
 	{
+		FaceMoveInputDirection();
 		StartAttack(NextAttackMontage);
 	}
 	else

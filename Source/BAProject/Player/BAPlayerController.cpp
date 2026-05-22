@@ -10,82 +10,6 @@
 #include "UI/SkillTree/SkillTreeWidget.h"
 #include "UI/System/SubSystemUI.h"
 
-namespace
-{
-	EActionDirection GetActionDirectionFromRelativeInput(const FVector2D& RelativeInput)
-	{
-		constexpr float DirectionThreshold = 0.35f;
-		if (RelativeInput.IsNearlyZero())
-		{
-			return EActionDirection::Any;
-		}
-
-		const FVector2D SafeInput = RelativeInput.SizeSquared() > 1.f ? RelativeInput.GetSafeNormal() : RelativeInput;
-		const bool bForward = SafeInput.Y > DirectionThreshold;
-		const bool bBackward = SafeInput.Y < -DirectionThreshold;
-		const bool bRight = SafeInput.X > DirectionThreshold;
-		const bool bLeft = SafeInput.X < -DirectionThreshold;
-
-		if (bForward && bRight)
-		{
-			return EActionDirection::ForwardRight;
-		}
-		if (bForward && bLeft)
-		{
-			return EActionDirection::ForwardLeft;
-		}
-		if (bBackward && bRight)
-		{
-			return EActionDirection::BackwardRight;
-		}
-		if (bBackward && bLeft)
-		{
-			return EActionDirection::BackwardLeft;
-		}
-		if (bRight)
-		{
-			return EActionDirection::Right;
-		}
-		if (bLeft)
-		{
-			return EActionDirection::Left;
-		}
-		if (bBackward)
-		{
-			return EActionDirection::Backward;
-		}
-
-		return EActionDirection::Forward;
-	}
-
-	EActionDirection GetActionDirectionFromMoveInput(const ABAPlayerCharacter& Character, const FVector2D& MoveInput)
-	{
-		if (MoveInput.IsNearlyZero())
-		{
-			return EActionDirection::Any;
-		}
-
-		const FVector2D SafeInput = MoveInput.SizeSquared() > 1.f ? MoveInput.GetSafeNormal() : MoveInput;
-		const FRotator ControlYawRotation(0.f, Character.GetControlRotation().Yaw, 0.f);
-		const FVector ControlForward = FRotationMatrix(ControlYawRotation).GetUnitAxis(EAxis::X);
-		const FVector ControlRight = FRotationMatrix(ControlYawRotation).GetUnitAxis(EAxis::Y);
-		const FVector WorldDirection = (ControlForward * SafeInput.Y + ControlRight * SafeInput.X).GetSafeNormal();
-		if (WorldDirection.IsNearlyZero())
-		{
-			return EActionDirection::Any;
-		}
-
-		const FRotator ActorYawRotation(0.f, Character.GetActorRotation().Yaw, 0.f);
-		const FVector ActorForward = FRotationMatrix(ActorYawRotation).GetUnitAxis(EAxis::X);
-		const FVector ActorRight = FRotationMatrix(ActorYawRotation).GetUnitAxis(EAxis::Y);
-		const FVector2D ActorRelativeInput(
-			FVector::DotProduct(WorldDirection, ActorRight),
-			FVector::DotProduct(WorldDirection, ActorForward));
-
-		return GetActionDirectionFromRelativeInput(ActorRelativeInput);
-	}
-}
-
 ABAPlayerController::ABAPlayerController()
 {
 	// IMC, Input Action 설정은 BP_PlayerController에서 설정함
@@ -247,7 +171,7 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 	ControlledCharacter->SetMoveInputVector(Movement);
 	if (UActionComponent* ActionComponent = ControlledCharacter->GetActionComponent())
 	{
-		ActionComponent->UpdateBufferedActionDirection(GetActionDirectionFromMoveInput(*ControlledCharacter, Movement));
+		ActionComponent->UpdateBufferedActionDirection(ControlledCharacter->GetActionDirectionFromMoveInput(Movement));
 	}
 	ApplyMovementStateByModifier();
 }
@@ -397,7 +321,7 @@ void ABAPlayerController::TryStartDodgeAction() const
 		return;
 	}
 
-	const EActionDirection DodgeDirection = GetActionDirectionFromMoveInput(*PC, PC->GetMoveInputVector());
+	const EActionDirection DodgeDirection = PC->GetActionDirectionFromMoveInput(PC->GetMoveInputVector());
 	ActionComponent->TryStartAction(EActionCommand::Dodge, DodgeDirection);
 }
 

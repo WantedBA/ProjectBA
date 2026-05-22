@@ -560,7 +560,11 @@ void UActionComponent::TryStartBufferedAction()
 	}
 
 	const int32 ActionTidToStart = BufferedActionTid;
-	const EActionDirection DirectionToStart = BufferedActionDirection;
+	EActionDirection DirectionToStart = BufferedActionDirection;
+	if (ResolveBufferedActionDirection.IsBound())
+	{
+		DirectionToStart = ResolveBufferedActionDirection.Execute(ActionTidToStart, DirectionToStart);
+	}
 	ClearBufferedAction();
 
 	TGuardValue<bool> ConsumingGuard(bConsumingBufferedAction, true);

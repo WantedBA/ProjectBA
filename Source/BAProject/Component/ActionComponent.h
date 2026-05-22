@@ -29,6 +29,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionStarted, int32, ActionTid,
 // 현재 액션이 완료되거나 중단되어 런타임 상태가 정리될 때 알린다.
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionCompleted, int32, ActionTid, EActionType, ActionType);
 
+// 버퍼된 액션이 실제로 시작되기 직전, 현재 입력 기준으로 실행 방향을 다시 정한다.
+DECLARE_DELEGATE_RetVal_TwoParams(EActionDirection, FResolveBufferedActionDirection, int32, EActionDirection);
+
 enum class EActionStaminaConsumeContext : uint8
 {
 	Start,
@@ -70,6 +73,8 @@ public:
 	// CompleteCurrentAction에서 브로드캐스트되는 액션 종료 이벤트.
 	UPROPERTY(BlueprintAssignable, Category = "Action|Event")
 	FOnActionCompleted OnActionCompleted;
+
+	FResolveBufferedActionDirection ResolveBufferedActionDirection;
 
 	// 현재 Moveset 문맥에서 Command와 Direction에 맞는 액션을 찾아 시작한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
