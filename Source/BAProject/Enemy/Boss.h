@@ -113,6 +113,14 @@ public:
 	virtual void OnQuestActivated_Implementation(int32 tid) override;
 	virtual void OnQuestDeactivated_Implementation(int32 tid) override;
 
+	// 플레이어 사망 시 즉시 호출 — AI 정지 (Dev 모드에서는 DevResetDelay 후 FullReset 자동 호출)
+	UFUNCTION(BlueprintCallable, Category = "Boss|Quest")
+	void PauseForReset();
+
+	// HP·위치·전투 상태 완전 복구 — UI 확인 버튼 또는 Dev 타이머에서 호출
+	UFUNCTION(BlueprintCallable, Category = "Boss|Quest")
+	void FullReset();
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
@@ -139,6 +147,17 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Quest")
 	bool bStartPausedForQuest = true;
+
+	// 현재 활성화된 퀘스트 Tid (OnQuestActivated에서 저장, FullReset에서 초기화)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Quest")
+	int32 ActiveQuestTid = 0;
+
+	// Dev 전용: true면 PauseForReset 호출 후 DevResetDelay초 뒤 자동으로 FullReset 호출
+	UPROPERTY(EditAnywhere, Category = "Boss|Quest|Dev")
+	bool bDevAutoReset = true;
+
+	UPROPERTY(EditAnywhere, Category = "Boss|Quest|Dev")
+	float DevResetDelay = 2.0f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|State")
 	int32 CurrentPhase = 1;
@@ -196,4 +215,8 @@ protected:
 	float ComboMaxTrackingAngle = 90.0f;
 
 	FTimerHandle ComboTransitionHandle;
+	FTimerHandle ResetDelayHandle;
+
+	// BeginPlay에서 캐시 — FullReset 시 이 위치·회전으로 복구
+	FTransform InitialTransform;
 };

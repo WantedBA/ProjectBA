@@ -17,6 +17,7 @@
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Instance/QuestManageSubsystem.h"
 
 // Utility 패턴 선택 튜닝 상수 (밸런싱 시 한곳에서 조정)
 namespace BossPatternTuning
@@ -38,6 +39,7 @@ void ABoss::BeginPlay()
 	Super::BeginPlay();
 
 	bIsEnding = false;
+	InitialTransform = GetActorTransform();
 
 	// BP에 추가된 무기 메시 컴포넌트를 태그로 찾아 캐싱 (히트 트레이스 소켓 조회용)
 	TArray<UActorComponent*> WeaponComps = GetComponentsByTag(UStaticMeshComponent::StaticClass(), WeaponComponentTag);
@@ -358,6 +360,7 @@ void ABoss::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	bIsEnding = true;
 
+	GetWorldTimerManager().ClearTimer(ResetDelayHandle);
 	GetWorldTimerManager().ClearTimer(ComboTransitionHandle);
 	bIsComboTransitioning = false;
 	PendingComboTid = 0;
@@ -399,6 +402,8 @@ void ABoss::OnQuestActivated_Implementation(int32 tid)
 	if (IsDead())
 		return;
 
+	ActiveQuestTid = tid;
+
 	AEnemyAIController* AIC = Cast<AEnemyAIController>(GetController());
 	if (AIC == nullptr)
 		return;
@@ -424,7 +429,94 @@ void ABoss::OnQuestDeactivated_Implementation(int32 tid)
 	{
 		if (UBrainComponent* Brain = AIC->GetBrainComponent())
 		{
-			Brain->PauseLogic("WaitingForQuest");
+			Brain->PauseLogic(TEXT("WaitingForQuest"));
+		}
+	}
+}
+
+void ABoss::PauseForReset()
+{
+	// 진행 중인 콤보 타이머 중단
+	GetWorldTimerManager().ClearTimer(ComboTransitionHandle);
+	bIsComboTransitioning = false;
+	PendingComboTid = 0;
+
+	// 재생 중인 몽타주 정지
+	if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
+	{
+		AnimInst->Montage_Stop(0.2f);
+	}
+
+	// AI 즉시 정지
+	if (AAIController* AIC = Cast<AAIController>(GetController()))
+	{
+		AIC->StopMovement();
+		if (UBrainComponent* Brain = AIC->GetBrainComponent())
+		{
+			Brain->PauseLogic(TEXT("WaitingForReset"));
+		}
+	}
+
+#if !UE_BUILD_SHIPPING
+	if (bDevAutoReset)
+	{
+		GetWorldTimerManager().SetTimer(ResetDelayHandle, this, &ABoss::FullReset, DevResetDelay, false);
+	}
+#endif
+}
+
+void ABoss::FullReset()
+{
+	// 퀘스트 중단 — 트리거 ReArm + 런타임 소환 몬스터 Destroy (보스 자신은 PrePlacedMonsters라 제외됨)
+	int32 TidToAbort = ActiveQuestTid;
+	ActiveQuestTid = 0;
+	if (TidToAbort > 0)
+	{
+		if (UQuestManageSubsystem* QM = UQuestManageSubsystem::Get(this))
+		{
+			QM->AbortQuest(TidToAbort);
+		}
+	}
+
+	// HP·스태미너 전체 복구
+	if (StatComponent)
+	{
+		StatComponent->RestoreAll();
+	}
+
+	// 위치·회전 복구
+	SetActorTransform(InitialTransform);
+	SetActorEnableCollision(true);
+
+	// 재생 중인 몽타주 즉시 정지 (PauseForReset 이후 남아있을 경우 대비)
+	if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
+	{
+		AnimInst->Montage_Stop(0.0f);
+	}
+
+	// 전투 상태 초기화 (Dead 상태 가드를 우회하기 위해 직접 대입)
+	GetWorldTimerManager().ClearTimer(StateTimerHandle);
+	CurrentState = EEnemyState::Idle;
+	CurrentAttackCount = 0;
+	UpdateBlackBoardState();
+	UpdateMoveSpeed(EEnemyState::Idle);
+
+	// 보스 전용 상태 초기화
+	PatternCooldownMap.Empty();
+	PatternUseCount.Empty();
+	LastUsedPatternTid = 0;
+	CurrentPhase = 1;
+	bIsComboTransitioning = false;
+	PendingComboTid = 0;
+	bIsEnding = false;
+	SetSuperArmor(true);
+
+	// AI를 퀘스트 대기 상태로 재전환 — 다음 TriggerStart까지 정지 유지
+	if (AAIController* AIC = Cast<AAIController>(GetController()))
+	{
+		if (UBrainComponent* Brain = AIC->GetBrainComponent())
+		{
+			Brain->PauseLogic(TEXT("WaitingForQuest"));
 		}
 	}
 }

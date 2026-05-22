@@ -78,7 +78,7 @@ void UQuestManageSubsystem::StartQuest(int32 QuestTid, const TArray<FTransform>&
             if (!Enemy) continue;
             
             State.RemainingMonsters++;
-            State.SpawnedMonsters.Add(Enemy);
+            State.PrePlacedMonsters.Add(Enemy);
             
             Enemy->OnDeathEvent.AddWeakLambda(this,
                 [this, QuestTid]()

@@ -16,7 +16,8 @@ struct FQuestRuntimeState
 {
     int32 RemainingMonsters = 0;
     TArray<TWeakObjectPtr<AActor>> Activatables;
-    TArray<TWeakObjectPtr<AActor>> SpawnedMonsters;
+    TArray<TWeakObjectPtr<AActor>> SpawnedMonsters;    // 런타임 소환 → AbortQuest 시 Destroy
+    TArray<TWeakObjectPtr<AActor>> PrePlacedMonsters;  // 사전 배치(보스 등) → Destroy 제외
 };
 
 UCLASS()
