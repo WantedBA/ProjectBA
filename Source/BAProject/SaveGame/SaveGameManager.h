@@ -34,10 +34,26 @@ public:
 	// 기존 세이브가 있는지 확인
 	UFUNCTION(BlueprintCallable, Category=SaveGame)
 	bool IsSaveGameExist() const;
+
+	/** 리스폰 포인트 설정 (런타임용) */
+	UFUNCTION(BlueprintCallable, Category = SaveGame)
+	void SetRespawnPoint(const FVector& Location, const FRotator& Rotation);
+
+	/** 리스폰 위치 반환 */
+	UFUNCTION(BlueprintPure, Category = SaveGame)
+	FVector GetRespawnLocation() const { return RespawnLocation; }
+
+	/** 리스폰 회전값 반환 */
+	UFUNCTION(BlueprintPure, Category = SaveGame)
+	FRotator GetRespawnRotation() const { return RespawnRotation; }
 	
 private:
 	const FString DefaultSaveSlotName = TEXT("SaveGame");
 	
+	/** 현재 세션의 리스폰 포인트 정보 */
+	FVector RespawnLocation;
+	FRotator RespawnRotation;
+
 	// 비동기 저장 마지막 저장 보장
 	bool bIsSaving = false;
 	bool bIsSaveWaiting = false;

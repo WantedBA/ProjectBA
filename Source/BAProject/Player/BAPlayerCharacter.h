@@ -195,6 +195,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Control|Cutscene")
 	void UnlockMovementForCutscene();
 
+	/** 마지막 체크포인트에서 부활 */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void Respawn();
+
 protected:
 	// CharacterBase 훅
 	virtual void PostInitializeComponents() override;

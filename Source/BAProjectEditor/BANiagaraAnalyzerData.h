@@ -56,6 +56,16 @@ struct FNiagaraRendererAnalysisData
 
 	UPROPERTY()
 	bool bIsDistortion = false;
+
+	/** 머티리얼 상세 파라미터 (AI 분석용) */
+	UPROPERTY()
+	TMap<FString, float> ScalarParameters;
+
+	UPROPERTY()
+	TMap<FString, FLinearColor> VectorParameters;
+
+	UPROPERTY()
+	TMap<FString, FString> TextureParameters;
 };
 
 USTRUCT(BlueprintType)
@@ -95,6 +105,14 @@ struct FNiagaraEmitterAnalysisData
 
 	UPROPERTY()
 	TArray<FNiagaraRendererAnalysisData> Renderers;
+
+	/** 이미터에 사용된 모든 모듈 이름 */
+	UPROPERTY()
+	TArray<FString> ModuleNames;
+
+	/** 주요 파라미터 설정값 (AI 분석용) */
+	UPROPERTY()
+	TMap<FString, FString> ParameterValues;
 
 	UPROPERTY()
 	bool bFaceCamera = false;
