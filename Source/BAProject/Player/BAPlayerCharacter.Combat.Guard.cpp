@@ -2,13 +2,11 @@
 
 #include "Component/ActionComponent.h"
 #include "Component/ActionAnimationComponent.h"
+#include "Component/StatComponent.h"
 #include "Engine/Engine.h"
 
 namespace
 {
-	// TODO: 무기 테이블로 분리 필요. 현재는 임시로 일반 가드/가드브레이크 피해 흡수율을 플레이어 코드에 고정한다.
-	constexpr float GuardAbsorptionMultiplier = 0.5f;
-
 	// TODO: 무기 테이블로 분리 필요. 퍼펙트 가드 스태미너 비용 배율도 장비별 정책으로 옮겨야 한다.
 	constexpr float PerfectGuardStaminaCostMultiplier = 0.5f;
 }
@@ -166,7 +164,7 @@ bool ABAPlayerCharacter::IsPerfectGuardWindowActive() const
 
 float ABAPlayerCharacter::GetGuardAbsorptionMultiplier() const
 {
-	return GuardAbsorptionMultiplier;
+	return 1 - StatComponent->GetGuardDamageReductionRate();
 }
 
 float ABAPlayerCharacter::GetPerfectGuardStaminaCostMultiplier() const
