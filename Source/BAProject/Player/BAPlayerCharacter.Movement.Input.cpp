@@ -26,8 +26,19 @@ void ABAPlayerCharacter::UpdateInterpolatedMoveInputDirection(const float DeltaT
 		return;
 	}
 
+	if (MovementRuntime.bHasMoveInput)
+	{
+		MovementRuntime.bSuppressVelocityFacingUntilMoveInput = false;
+	}
+
 	if (!MovementRuntime.bHasMoveInput)
 	{
+		if (MovementRuntime.bSuppressVelocityFacingUntilMoveInput)
+		{
+			SnapInterpolatedMoveInputTo(FVector2D::ZeroVector);
+			return;
+		}
+
 		const FVector2D VelocityInput = ConvertWorldDirectionToMoveInput(GetVelocity());
 		if (!VelocityInput.IsNearlyZero())
 		{
@@ -99,6 +110,14 @@ FVector2D ABAPlayerCharacter::GetInterpolatedMoveInputVector() const
 bool ABAPlayerCharacter::IsActionMovementLocked() const
 {
 	// 상태 관리 중복됨 - 추후 통합 필요
+	if (CanMoveWhileGuarding())
+	{
+		// 가드 액션 중 이동 의도가 있으면 BAPlayerState가 Guarding이어도 이동 입력을 소비한다.
+		// 방어 판정은 여전히 GuardWindow에서만 열리고, 여기서는 하체 locomotion만 허용한다.
+		// 단, 실제 속도 제한은 GetMovementAllowedGait()에서 Walk로 강제한다.
+		return false;
+	}
+
 	return BAPlayerState != EBAPlayerState::None 
 	|| !IsAlive()
 	|| IsDamageReacting()

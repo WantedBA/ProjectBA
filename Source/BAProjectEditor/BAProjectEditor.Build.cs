@@ -17,6 +17,8 @@ public class BAProjectEditor : ModuleRules
 			"AIModule",
 			"BehaviorTreeEditor",
 			"Blutility",
+			"Niagara",
+			"NiagaraEditor",
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]

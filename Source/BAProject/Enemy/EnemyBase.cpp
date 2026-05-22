@@ -305,6 +305,14 @@ void AEnemyBase::OnEnemyAttackAniFinished(EEnemyState NewState)
 {
 	if (IsValid(this) && CurrentState != EEnemyState::Dead)
 	{
+		// [중요] 피격(Hit)이나 경직(Stagger) 상태일 때는 애니메이션 종료 노티가 상태를 덮어쓰지 않도록 한다.
+		// 퍼펙트 가드로 인한 Stagger 전환 직후 몽타주 블렌드 아웃 과정에서 이 함수가 호출되어 Idle로 풀리는 현상 방지.
+		if (CurrentState == EEnemyState::Hit || CurrentState == EEnemyState::Stagger)
+		{
+			OnAttackAnimationFinished.Broadcast(NewState);
+			return;
+		}
+
 		// 공격 성공 시 횟수 증가 및 상태 판단
 		CurrentAttackCount++;
 		
@@ -510,7 +518,7 @@ void AEnemyBase::OnStartDissolve()
 
 void AEnemyBase::Attack()
 {
-	if (IsDead() || !CanAttack())
+	if (IsDead() || CanAttack() == false)
 	{
 		return;
 	}
