@@ -114,6 +114,18 @@ struct FNiagaraEmitterAnalysisData
 	UPROPERTY()
 	TMap<FString, FString> ParameterValues;
 
+	/** 외부 데이터 연동 정보 (SkeletalMesh, Spline 등) */
+	UPROPERTY()
+	TArray<FString> DataInterfaces;
+
+	/** 다른 변수에 바인딩된 파라미터 리스트 */
+	UPROPERTY()
+	TArray<FString> BoundParameters;
+
+	/** 이미터 복잡도 점수 (0~100) */
+	UPROPERTY()
+	float ComplexityScore = 0.0f;
+
 	UPROPERTY()
 	bool bFaceCamera = false;
 
@@ -152,6 +164,10 @@ struct FNiagaraGameplayAnalysisData
 
 	UPROPERTY()
 	FString SystemName;
+
+	/** 시스템/유저 레벨 파라미터 및 변수 (AI 분석용) */
+	UPROPERTY()
+	TMap<FString, FString> SystemParameters;
 
 	UPROPERTY()
 	TArray<FNiagaraEmitterAnalysisData> Emitters;

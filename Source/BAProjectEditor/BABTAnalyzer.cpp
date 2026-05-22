@@ -75,6 +75,18 @@ FString UBABTAnalyzer::ProcessNode(
 	NodeData.NodeName = InNode->GetNodeName();
 	NodeData.NodeType = GetNodeType(InNode);
 
+	// 상세 속성 추출 (AI 분석용 고도화)
+	if (UBTDecorator* Decorator = Cast<UBTDecorator>(InNode))
+	{
+		NodeData.CustomProperties.Add(TEXT("InverseCondition"), Decorator->IsInversed() ? TEXT("True") : TEXT("False"));
+		NodeData.CustomProperties.Add(TEXT("FlowControlMode"), UEnum::GetValueAsString(Decorator->FlowControlMode));
+	}
+	else if (UBTService* Service = Cast<UBTService>(InNode))
+	{
+		NodeData.CustomProperties.Add(TEXT("Interval"), FString::SanitizeFloat(Service->Interval));
+		NodeData.CustomProperties.Add(TEXT("RandomDeviation"), FString::SanitizeFloat(Service->RandomDeviation));
+	}
+
 	// Composite processing
 	if (UBTCompositeNode* CompositeNode =
 		Cast<UBTCompositeNode>(InNode))

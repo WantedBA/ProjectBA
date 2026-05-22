@@ -1,4 +1,4 @@
-﻿// Copyright TeamBA. All Rights Reserved.
+// Copyright TeamBA. All Rights Reserved.
 
 #include "BANiagaraAnalyzer.h"
 #include "NiagaraEmitter.h"
@@ -11,7 +11,6 @@
 #include "NiagaraSystem.h"
 #include "NiagaraCommon.h"
 #include "NiagaraPlatformSet.h"
-
 #include "Materials/MaterialInstance.h"
 
 UBANiagaraAnalyzer::UBANiagaraAnalyzer()
@@ -26,6 +25,16 @@ bool UBANiagaraAnalyzer::AnalyzeNiagaraSystem(UNiagaraSystem* InSystem, FNiagara
 	}
 
 	OutData.SystemName = InSystem->GetName();
+
+	// 시스템 파라미터(User Exposed) 추출
+	const FNiagaraUserRedirectionParameterStore& UserParams = InSystem->GetExposedParameters();
+	TArray<FNiagaraVariable> OutVariables;
+	UserParams.GetParameters(OutVariables);
+
+	for (const FNiagaraVariable& Var : OutVariables)
+	{
+		OutData.SystemParameters.Add(Var.GetName().ToString(), Var.GetType().GetName());
+	}
 
 	for (const FNiagaraEmitterHandle& Handle : InSystem->GetEmitterHandles())
 	{
@@ -58,7 +67,7 @@ void UBANiagaraAnalyzer::AnalyzeEmitter(const FNiagaraEmitterHandle& InHandle, F
 		return;
 	}
 
-	// 0. 모듈 정보 분석
+	// 0. 모듈 및 파라미터 정보 분석
 	TArray<UNiagaraScript*> Scripts;
 	Scripts.Add(EmitterData->SpawnScriptProps.Script);
 	Scripts.Add(EmitterData->UpdateScriptProps.Script);
@@ -67,11 +76,44 @@ void UBANiagaraAnalyzer::AnalyzeEmitter(const FNiagaraEmitterHandle& InHandle, F
 	{
 		if (Script)
 		{
-			// 스크립트 내 모듈 이름들을 추출하여 저장
-			// 실제 모듈 리스트는 Niagara 시각화용이므로 AI 분석을 위해 핵심 이름들만 샘플링
 			OutEmitterData.ModuleNames.Add(Script->GetName());
+			
+			// 스크립트 변수 및 바인딩 추적
+			const FNiagaraParameterStore& Params = Script->GetParameters();
+			for (const FNiagaraVariable& Var : Params.GetParameters())
+			{
+				FString VarName = Var.GetName().ToString();
+				
+				// 바인딩된 변수 식별 (Data 흐름 파악)
+				if (VarName.Contains(TEXT("Bound")) || VarName.Contains(TEXT("Link")))
+				{
+					OutEmitterData.BoundParameters.Add(VarName);
+				}
+
+				if (VarName.Contains(TEXT("Spawn")) || VarName.Contains(TEXT("Rate")) || 
+					VarName.Contains(TEXT("Lifetime")) || VarName.Contains(TEXT("Size")))
+				{
+					OutEmitterData.ParameterValues.Add(VarName, Var.GetType().GetName());
+				}
+			}
+
+			// 데이터 인터페이스 분석
+			for (const FNiagaraDataInterfacePtr& DI : Script->GetResolvedDataInterfaces())
+			{
+				if (DI.Get())
+				{
+					OutEmitterData.DataInterfaces.Add(DI->GetClass()->GetName());
+				}
+			}
 		}
 	}
+
+	// 복잡도 점수 산출 (Heuristic)
+	float Score = (float)OutEmitterData.ModuleNames.Num() * 2.0f;
+	Score += (float)OutEmitterData.Renderers.Num() * 5.0f;
+	Score += OutEmitterData.SimTarget == TEXT("GPU") ? 10.0f : 20.0f; // CPU 시뮬레이션이 일반적으로 더 무거움
+	Score += (float)OutEmitterData.DataInterfaces.Num() * 15.0f;
+	OutEmitterData.ComplexityScore = FMath::Clamp(Score, 0.0f, 100.0f);
 
 	// 시뮬레이션 대상(CPU/GPU) 저장
 	OutEmitterData.SimTarget = (EmitterData->SimTarget == ENiagaraSimTarget::CPUSim) ? TEXT("CPU") : TEXT("GPU");
@@ -85,111 +127,69 @@ void UBANiagaraAnalyzer::AnalyzeEmitter(const FNiagaraEmitterHandle& InHandle, F
 	OutEmitterData.SpawnData.bHasMultiBurst = false;
 
 	// 2. 기본 파티클 속성 초기화
-	// 수명 기본값
 	OutEmitterData.LifetimeMin = 0.05f;
 	OutEmitterData.LifetimeMax = 0.35f;
 
-	// 스프라이트 크기 기본값
 	OutEmitterData.SpriteSizeMin = FVector2D::ZeroVector;
 	OutEmitterData.SpriteSizeMax = FVector2D(400.0f, 400.0f);
 
-	// 기본 속도 모드
 	OutEmitterData.VelocityMode = TEXT("Static");
 
-	// Facing/Alignment 상태 초기화
 	OutEmitterData.bFaceCamera = false;
 	OutEmitterData.bVelocityAligned = false;
 	OutEmitterData.bCustomFacing = false;
 
 	// 3. Renderer 분석
-	// 현재 이미터에 연결된 모든 Renderer 가져오기
 	const TArray<UNiagaraRendererProperties*>& Renderers = EmitterData->GetRenderers();
 
 	for (UNiagaraRendererProperties* Renderer : Renderers)
 	{
-		if (Renderer == nullptr)
+		if (Renderer == nullptr || !Renderer->GetIsEnabled())
 		{
 			continue;
 		}
 
-		// 비활성 Renderer 제외
-		if (!Renderer->GetIsEnabled())
-		{
-			continue;
-		}
-
-		// Renderer 상세 데이터 분석
 		FNiagaraRendererAnalysisData RendererData;
-
-		// 클래스 이름 기반 Renderer 타입 추출
-		RendererData.RendererType =
-			Renderer->GetClass()->GetName()
+		RendererData.RendererType = Renderer->GetClass()->GetName()
 			.Replace(TEXT("Niagara"), TEXT(""))
 			.Replace(TEXT("RendererProperties"), TEXT(""));
 
-		// 머티리얼 포인터
 		UMaterialInterface* Material = nullptr;
 
-		// Sprite Renderer 분석
 		if (UNiagaraSpriteRendererProperties* SpriteRenderer = Cast<UNiagaraSpriteRendererProperties>(Renderer))
 		{
 			Material = SpriteRenderer->Material;
-
-			// 카메라 Facing 여부
 			OutEmitterData.bFaceCamera = (SpriteRenderer->FacingMode == ENiagaraSpriteFacingMode::FaceCamera);
-
-			// Velocity 정렬 여부
 			OutEmitterData.bVelocityAligned = (SpriteRenderer->Alignment == ENiagaraSpriteAlignment::VelocityAligned);
-
-			// 사용자 지정 Facing 여부
 			OutEmitterData.bCustomFacing = (SpriteRenderer->FacingMode == ENiagaraSpriteFacingMode::CustomFacingVector);
-
-			// Sort Mode 문자열 저장
 			RendererData.SortMode = UEnum::GetValueAsString(SpriteRenderer->SortMode);
 		}
-		// Ribbon Renderer 분석
 		else if (UNiagaraRibbonRendererProperties* RibbonRenderer = Cast<UNiagaraRibbonRendererProperties>(Renderer))
 		{
 			Material = RibbonRenderer->Material;
 		}
-		// Mesh Renderer 분석
 		else if (UNiagaraMeshRendererProperties* MeshRenderer = Cast<UNiagaraMeshRendererProperties>(Renderer))
 		{
-			// 첫 번째 메시 존재 여부 검사
-			if (MeshRenderer->Meshes.IsValidIndex(0))
+			if (MeshRenderer->Meshes.IsValidIndex(0) && MeshRenderer->Meshes[0].Mesh != nullptr)
 			{
-				if (MeshRenderer->Meshes[0].Mesh != nullptr)
-				{
-					// 메시의 첫 번째 머티리얼 추출
-					Material =
-						MeshRenderer->Meshes[0]
-						.Mesh
-						->GetMaterial(0);
-				}
+				Material = MeshRenderer->Meshes[0].Mesh->GetMaterial(0);
 			}
 		}
 
-		// 머티리얼 상세 분석
 		if (Material != nullptr)
 		{
-			// 머티리얼 이름 저장
 			RendererData.MaterialName = Material->GetName();
-
-			// BlendMode 문자열 저장
 			RendererData.BlendMode = UEnum::GetValueAsString(Material->GetBlendMode());
 
-			// 왜곡 계열 머티리얼 여부 검사
 			if (RendererData.MaterialName.Contains(TEXT("Distort"), ESearchCase::IgnoreCase) ||
 				RendererData.MaterialName.Contains(TEXT("Refraction"), ESearchCase::IgnoreCase))
 			{
 				RendererData.bIsDistortion = true;
 			}
 
-			// 상세 파라미터 분석 (AI용)
 			AnalyzeMaterialParameters(Material, RendererData);
 		}
 
-		// 분석 결과 추가
 		OutEmitterData.Renderers.Add(RendererData);
 	}
 
@@ -254,16 +254,6 @@ void UBANiagaraAnalyzer::AnalyzeMaterialParameters(UMaterialInterface* InMateria
 			}
 		}
 	}
-}
-
-    // 4. 이미터 분류 수행
-    ClassifyEmitter(OutEmitterData);
-
-    // 5. Cull/Bounds 정보 저장
-    OutEmitterData.bHasCullDistance = (EmitterData->CalculateBoundsMode == ENiagaraEmitterCalculateBoundMode::Fixed);
-
-    // 6. 경고 및 품질 검사
-    CheckReadabilityWarnings(OutEmitterData);
 }
 
 void UBANiagaraAnalyzer::ClassifyEmitter(FNiagaraEmitterAnalysisData& OutEmitterData)
