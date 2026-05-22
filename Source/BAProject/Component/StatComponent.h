@@ -88,6 +88,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Stat")
 	void ConsumeStamina(float ConsumeAmount);
 
+	// 스태미너 소비 이후 회복이 바로 시작되지 않도록 지연 시간을 다시 적용한다.
+	UFUNCTION(BlueprintCallable, Category = "Stat")
+	void RestartStaminaRecoveryDelay();
+
 	// Source를 회복 일시정지 목록에 추가한다. 여러 Source가 모두 해제되어야 회복된다.
 	UFUNCTION(BlueprintCallable, Category = "Stat")
 	void PauseStaminaRecovery(FName Source);

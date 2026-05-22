@@ -132,9 +132,15 @@ void ABAPlayerCharacter::SetGuardWindowActive(const bool bActive)
 	{
 		if (ActionComponent->GetActiveActionType() == EActionType::Guard && !IsDamageReacting())
 		{
+			ActionComponent->ApplyActiveActionStaminaRecoveryRateMultiplier();
 			ActionComponent->SetGuardState(EGuardState::Guarding);
 		}
 		return;
+	}
+
+	if (ActionComponent->GetActiveActionType() == EActionType::Guard)
+	{
+		ActionComponent->ClearActiveActionStaminaRecoveryRateMultiplier();
 	}
 
 	const EGuardState GuardState = ActionComponent->GetGuardState();

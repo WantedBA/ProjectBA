@@ -87,6 +87,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Action|Stamina")
 	bool ConsumeActiveActionStaminaCost(float CostMultiplier = 1.f);
 
+	// 현재 액션 데이터에 지정된 스태미너 회복 배율을 명시적으로 적용한다.
+	UFUNCTION(BlueprintCallable, Category = "Action|Stamina")
+	void ApplyActiveActionStaminaRecoveryRateMultiplier();
+
+	// 현재 액션이 적용한 스태미너 회복 배율을 명시적으로 제거한다.
+	UFUNCTION(BlueprintCallable, Category = "Action|Stamina")
+	void ClearActiveActionStaminaRecoveryRateMultiplier();
+
 	// 피격/사망처럼 외부 상태가 현재 액션을 강제로 끊을 때 사용한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	void CancelCurrentAction();

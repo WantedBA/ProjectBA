@@ -112,9 +112,7 @@ void UActionComponent::CompleteCurrentAction()
 	bActiveActionInterruptLocked = false;
 	bActiveActionInputBufferOpen = false;
 	const bool bShouldResumeStaminaRecovery = bActiveActionPausedStaminaRecovery;
-	const bool bShouldClearStaminaRecoveryRateMultiplier = bActiveActionModifiedStaminaRecoveryRate;
 	bActiveActionPausedStaminaRecovery = false;
-	bActiveActionModifiedStaminaRecoveryRate = false;
 	ClearBufferedAction();
 
 	if (bShouldResumeStaminaRecovery && CachedStatComponent)
@@ -122,10 +120,7 @@ void UActionComponent::CompleteCurrentAction()
 		CachedStatComponent->ResumeStaminaRecovery(ActionStaminaRecoveryPauseSource, true);
 	}
 
-	if (bShouldClearStaminaRecoveryRateMultiplier && CachedStatComponent)
-	{
-		CachedStatComponent->ClearStaminaRecoveryRateMultiplier(ActionStaminaRecoveryRateMultiplierSource);
-	}
+	ClearActiveActionStaminaRecoveryRateMultiplier();
 
 	OnActionCompleted.Broadcast(CompletedActionTid, CompletedActionType);
 	RefreshTickEnabled();
@@ -135,6 +130,28 @@ bool UActionComponent::ConsumeActiveActionStaminaCost(const float CostMultiplier
 {
 	const FActionDataRow* ActionData = GetActiveActionData();
 	return ActionData && ConsumeStamina(*ActionData, EActionStaminaConsumeContext::OnDemand, CostMultiplier);
+}
+
+void UActionComponent::ApplyActiveActionStaminaRecoveryRateMultiplier()
+{
+	if (const FActionDataRow* ActionData = GetActiveActionData())
+	{
+		ApplyStaminaRecoveryRateMultiplier(*ActionData);
+	}
+}
+
+void UActionComponent::ClearActiveActionStaminaRecoveryRateMultiplier()
+{
+	if (!bActiveActionModifiedStaminaRecoveryRate)
+	{
+		return;
+	}
+
+	if (CachedStatComponent)
+	{
+		CachedStatComponent->ClearStaminaRecoveryRateMultiplier(ActionStaminaRecoveryRateMultiplierSource);
+	}
+	bActiveActionModifiedStaminaRecoveryRate = false;
 }
 
 void UActionComponent::CancelCurrentAction()
@@ -329,7 +346,11 @@ void UActionComponent::BeginAction(const FActionDataRow& ActionData, const EActi
 
 	// TODO: 스탯 컴포넌트 결합 의존성 없애기 - Delegate로 디커플링 (곽민규)
 	ConsumeStamina(ActionData, EActionStaminaConsumeContext::Start);
-	ApplyStaminaRecoveryRateMultiplier(ActionData);
+	// 가드는 Start/End가 아니라 실제 GuardWindow가 열린 동안만 회복 배율을 적용한다.
+	if (ActionData.ActionType != EActionType::Guard)
+	{
+		ApplyStaminaRecoveryRateMultiplier(ActionData);
+	}
 	StartCooldown(ActionData);
 
 	OnActionStarted.Broadcast(ActiveActionTid, ActiveActionType);
@@ -346,7 +367,9 @@ void UActionComponent::StartCooldown(const FActionDataRow& ActionData)
 
 void UActionComponent::ApplyStaminaRecoveryRateMultiplier(const FActionDataRow& ActionData)
 {
-	if (!CachedStatComponent || FMath::IsNearlyEqual(ActionData.StaminaRecoveryRateMultiplier, 1.f))
+	if (!CachedStatComponent
+		|| bActiveActionModifiedStaminaRecoveryRate
+		|| FMath::IsNearlyEqual(ActionData.StaminaRecoveryRateMultiplier, 1.f))
 	{
 		return;
 	}
@@ -403,6 +426,10 @@ bool UActionComponent::ConsumeStamina(
 	}
 
 	CachedStatComponent->ConsumeStamina(StaminaCost);
+	if (ConsumeContext == EActionStaminaConsumeContext::OnDemand)
+	{
+		CachedStatComponent->RestartStaminaRecoveryDelay();
+	}
 	return true;
 }
 
