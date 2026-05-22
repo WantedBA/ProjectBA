@@ -69,17 +69,19 @@ public:
 
 	FORCEINLINE float GetDefence() const { return Defence; }
 	FORCEINLINE void SetDefence(const float NewDefence) { Defence = NewDefence; }
+	
+	FORCEINLINE float GetGuardDamageReductionRate() const { return GuardDamageReductionRate * GuardDamageReductionRateModifier; }
 
 	FORCEINLINE float GetMaxHP() const { return MaxHP; }
 	FORCEINLINE void SetMaxHP(const float NewMaxHP) { MaxHP = NewMaxHP; }
 	FORCEINLINE float GetCurrentHP() const { return CurrentHP; }
 	FORCEINLINE void SetCurrentHP(const float NewCurrentHP) { CurrentHP = NewCurrentHP; }
 
-	FORCEINLINE float GetMaxStamina() const { return MaxStamina; }
+	FORCEINLINE float GetMaxStamina() const { return MaxStamina * MaxStaminaModifier; }
 	FORCEINLINE void SetMaxStamina(const float NewMaxStamina) { MaxStamina = NewMaxStamina; }
 	FORCEINLINE float GetCurrentStamina() const { return CurrentStamina; }
 	
-	FORCEINLINE float GetAttackSpeed() const { return AttackSpeed; }
+	FORCEINLINE float GetAttackSpeed() const { return AttackSpeed * AttackSpeedModifier; }
 	FORCEINLINE void SetAttackSpeed(const float NewAttackSpeed) { AttackSpeed = NewAttackSpeed; }
 	
 	// 스태미너를 지정량 소비하고 회복 Tick 상태를 갱신한다.
@@ -116,6 +118,13 @@ public:
 	FORCEINLINE float GetWalkSpeed() const { return WalkSpeed; }
 	FORCEINLINE float GetRunSpeed() const { return RunSpeed; }
 	FORCEINLINE float GetSprintSpeed() const { return SprintSpeed; }
+	
+	// SkillComponent에서 값을 변경하기 위한 함수들
+	void ResetModifiers();
+	void SetAttackSpeedModifier(const float NewModifier);
+	void SetMaxStaminaModifier(const float NewModifier);
+	void SetGuardDamageReductionRateModifier(const float NewModifier);
+	void SetStaminaRecoveryModifier(const float NewModifier);
 
 protected:
 	// 스태미너 회복이 필요한 동안만 활성화된다.
@@ -153,7 +162,17 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Defence")
 	float Defence;
+	
+	// 가드 시 대미지 감소율
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Defence")
+	float GuardDamageReductionRate = 0.5f;;
 
+	// 플레이어 스킬에서 스탯 변경을 적용하기 위한 modifier
+	float AttackSpeedModifier = 1.f;
+	float MaxStaminaModifier = 1.f;
+	float GuardDamageReductionRateModifier = 1.f;
+	float StaminaRecoveryModifier = 1.f;
+	
 private:
 	void RefreshStaminaRecoveryTick();
 };

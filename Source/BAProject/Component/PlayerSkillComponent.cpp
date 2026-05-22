@@ -54,13 +54,6 @@ void UPlayerSkillComponent::BeginPlay()
 	SkillTreeSubsystem->OnSkillTreeChangeCompleted.AddUniqueDynamic(this, &UPlayerSkillComponent::RefreshAllSkills);
 }
 
-
-// Called every frame
-void UPlayerSkillComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-}
-
 void UPlayerSkillComponent::RefreshAllSkills()
 {
 	// 기존 스킬 변경사항 초기화
@@ -78,8 +71,7 @@ void UPlayerSkillComponent::RefreshAllSkills()
 void UPlayerSkillComponent::ClearAllSkills()
 {
 	ActionComponent->ResetMovesetKeys();
-	
-	// TODO: StatComponent -> 스킬로 올라간 스탯 초기화
+	StatComponent->ResetModifiers();
 }
 
 void UPlayerSkillComponent::ApplySkill(int32 SkillId)
@@ -142,16 +134,37 @@ void UPlayerSkillComponent::ApplyElement(const FSkillModifierRow* SkillModifier)
 void UPlayerSkillComponent::ApplyStat(const FSkillModifierRow* SkillModifier)
 {
 	static const FName AttackSpeedTarget = FName(TEXT("AttackSpeed"));
+	static const FName MaxStaminaTarget = FName(TEXT("MaxStamina"));
+	static const FName GuardTarget = FName(TEXT("Guard"));
+	static const FName StaminaRecoveryTarget = FName(TEXT("StaminaRecovery"));
 	
+	// Target 값에 따라 StatComponent에 적용
 	if (SkillModifier->Target == AttackSpeedTarget)
 	{
-		const float NewAttackSpeed = StatComponent->GetAttackSpeed() + FCString::Atof(*SkillModifier->Value); 
-		StatComponent->SetAttackSpeed(NewAttackSpeed);
+		const float NewAttackSpeedModifier = FCString::Atof(*SkillModifier->Value); 
+		StatComponent->SetAttackSpeedModifier(NewAttackSpeedModifier);
+	}
+	else if (SkillModifier->Target == MaxStaminaTarget)
+	{
+		const float NewMaxStaminaModifier = FCString::Atof(*SkillModifier->Value); 
+		StatComponent->SetMaxStaminaModifier(NewMaxStaminaModifier);
+	}
+	else if (SkillModifier->Target == GuardTarget)
+	{
+		const float NewGuardDamageReductionRateModifier = FCString::Atof(*SkillModifier->Value); 
+		StatComponent->SetGuardDamageReductionRateModifier(NewGuardDamageReductionRateModifier);
+	}
+	else if (SkillModifier->Target == StaminaRecoveryTarget)
+	{
+		const float NewStaminaRecoveryModifier = FCString::Atof(*SkillModifier->Value); 
+		StatComponent->SetStaminaRecoveryModifier(NewStaminaRecoveryModifier);
 	}
 	else
 	{
 		// 적절한 Target 분기가 없는 경우
-		UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Invalid Stat Skill Modifier Target: %s"), *SkillModifier->Target.ToString());
+		UE_LOG(LogTemp, Error, TEXT(
+			"PlayerSkillComponent: Invalid Stat Skill Modifier Target: %s SkillId: %d"),
+			*SkillModifier->Target.ToString(), SkillModifier->SkillTid);
 	}
 }
 

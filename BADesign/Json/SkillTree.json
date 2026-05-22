@@ -260,7 +260,7 @@
             "SkillTid": 11,
             "ApplyType": "Stat",
             "Target": "AttackSpeed",
-            "Value": 0.2
+            "Value": 1.2
         },
         {
             "SkillTid": 12,
@@ -278,15 +278,21 @@
         },
         {
             "SkillTid": 15,
-            "ApplyType": "Stat"
+            "ApplyType": "Stat",
+            "Target": "MaxStamina",
+            "Value": 1.2
         },
         {
             "SkillTid": 16,
-            "ApplyType": "Stat"
+            "ApplyType": "Stat",
+            "Target": "StaminaRecovery",
+            "Value": 1.2
         },
         {
             "SkillTid": 17,
-            "ApplyType": "Stat"
+            "ApplyType": "Stat",
+            "Target": "Guard",
+            "Value": 1.5
         },
         {
             "SkillTid": 18,

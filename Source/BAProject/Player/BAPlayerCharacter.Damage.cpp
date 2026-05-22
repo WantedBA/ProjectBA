@@ -174,7 +174,6 @@ void ABAPlayerCharacter::OnDamaged(
 		ShowGuardJudgementDebugMessage(
 			bGuardBreak ? TEXT("Guard Break") : TEXT("Guard"),
 			bGuardBreak ? FColor::Red : FColor::Yellow);
-		// TODO: 무기 테이블로 분리 필요. 현재는 임시 가드 흡수 배율을 사용해 일반 가드/가드브레이크 피해를 줄인다.
 		AppliedDamage = FinalDamage * GetGuardAbsorptionMultiplier();
 	}
 
