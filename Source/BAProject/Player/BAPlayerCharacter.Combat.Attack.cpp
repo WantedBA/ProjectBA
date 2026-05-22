@@ -30,12 +30,14 @@ void ABAPlayerCharacter::TryAttack(EActionCommand InActionCommand)
 	default:
 		if (InActionCommand == EActionCommand::LightAttack)
 		{
+			CancelGuardForActionInterrupt();
 			CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack());
 			NextComboTransitionTid = FirstLComboTransitionTid;
 			StartAttack(FirstLightAttackMontage);
 		}
 		else if (InActionCommand == EActionCommand::HeavyAttack)
 		{
+			CancelGuardForActionInterrupt();
 			CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack() * 1.5);
 			NextComboTransitionTid = FirstRComboTransitionTid;
 			StartAttack(FirstHeavyAttackMontage);

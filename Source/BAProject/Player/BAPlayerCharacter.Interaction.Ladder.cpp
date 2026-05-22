@@ -24,7 +24,7 @@ void ABAPlayerCharacter::EnterLadder(AMapLadder* Ladder, const FVector& EntryLoc
 	LadderRuntime.CurrentLadder = Ladder;
 	LadderRuntime.bIsOnLadder = true;
 	ResetMovementRuntimeForLadder();
-	SetActiveGaitAndSpeed(GetStaminaAllowedGait(MovementRuntime.DesiredGait));
+	SetActiveGaitAndSpeed(GetMovementAllowedGait(MovementRuntime.DesiredGait));
 
 	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
 	{
@@ -48,7 +48,7 @@ void ABAPlayerCharacter::ExitLadder(const FVector& ExitLocation)
 	}
 
 	SetActorLocation(ExitLocation, false, nullptr, ETeleportType::TeleportPhysics);
-	SetActiveGaitAndSpeed(GetStaminaAllowedGait(MovementRuntime.DesiredGait));
+	SetActiveGaitAndSpeed(GetMovementAllowedGait(MovementRuntime.DesiredGait));
 	SyncFreeStrafeFacingMode();
 }
 
@@ -77,7 +77,7 @@ void ABAPlayerCharacter::TickLadderClimb(const float DeltaTime)
 	const bool bSprintActive = bHasVerticalInput && IsLadderSprintRequested();
 	const EMovementState LadderGait = bSprintActive
 		? EMovementState::Sprint
-		: GetStaminaAllowedGait(MovementRuntime.DesiredGait);
+		: GetMovementAllowedGait(MovementRuntime.DesiredGait);
 
 	if (MovementRuntime.ActiveGait != LadderGait)
 	{

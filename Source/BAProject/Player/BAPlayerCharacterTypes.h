@@ -214,6 +214,7 @@ struct FBAPlayerMovementRuntimeState
 	bool bHasMoveInput = false;
 	bool bHasInterpolatedMoveInput = false;
 	bool bWaitingForPhaseAnimation = false;
+	bool bSuppressVelocityFacingUntilMoveInput = false;
 	float InterpolatedMoveInputMemoryRemainingTime = 0.f;
 	float PhaseEntryLocalAngle = 0.f;
 	float PhaseElapsedTime = 0.f;

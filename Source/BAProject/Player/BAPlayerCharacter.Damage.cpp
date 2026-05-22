@@ -8,97 +8,109 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TimerManager.h"
 
+/*
+ * Damage Reaction Policy Summary
+ *
+ * 피격 처리는 "판정 결과", "스탯 반영", "리액션 연출", "상태 복귀"를 분리해서 다룬다.
+ * 전투 판정 쪽에서는 피해 대상이 가드 중인지, 퍼펙트 가드 윈도우가 열려 있는지만 전달하고
+ * 플레이어 Damage 모듈은 그 결과를 바탕으로 실제 피해량과 리액션을 결정한다.
+ *
+ * 1. 판정 우선순위
+ * - 퍼펙트 가드는 최우선인 가드 계열 판정이다. 성공하면 HP 피해 없이 가드를 유지하고 피격 리액션으로 내려가지 않는다.
+ * - 퍼펙트 가드 윈도우가 열려 있으면 일반 가드 윈도우 전이라도 가드 액션 중인 한 퍼펙트 판정 후보가 된다.
+ * - 일반 가드는 스태미너를 소비하고, 가드 피해 감소율을 적용한 HP 피해를 받는다.
+ * - 가드 스태미너가 부족하면 가드 브레이크가 된다. 피해 감소는 일반 가드와 같지만 긴 브레이크 리액션이 패널티다.
+ * - 가드 조건을 만족하지 않으면 일반 피격으로 처리한다.
+ *
+ * 2. 스탯 반영
+ * - 최종 피해량을 계산한 뒤 StatComponent에 HP 피해를 적용한다.
+ * - 가드와 퍼펙트 가드의 스태미너 소비는 가드 정책에서 관리하는 액션 비용을 따른다.
+ * - 스태미너 소비가 발생하면 회복 딜레이가 다시 적용되어야 한다.
+ *
+ * 3. 리액션과 이동
+ * - 일반 피격, 큰 피격, 넉다운, 가드 히트, 가드 브레이크는 서로 다른 리액션 상태로 구분한다.
+ * - 피격 리액션에 들어가면 현재 액션과 이동 페이즈를 끊고, Sprint도 Run으로 내려 스태미너 소모가 계속되지 않게 한다.
+ * - 가드 브레이크는 긴 무방비 리액션과 루트모션 밀림으로 처리한다.
+ * - 퍼펙트 가드를 포함한 그 외 피격/가드 히트는 Launch 넉백으로 밀림을 통일한다.
+ * - 일반 가드 히트는 짧은 리액션 후 입력이 유지되어 있으면 다시 가드 루프로 복귀한다.
+ *
+ * 4. 연속 피격과 종료
+ * - 연속 피격 시 이전 리액션 종료 타이머가 새 리액션을 종료하지 못하도록 재생 식별자를 갱신한다.
+ * - GuardHit는 블렌드아웃이 시작되면 즉시 가드 복귀를 시도해 idle 노출을 줄인다.
+ * - GuardBreak는 리액션 동안 무방비지만, 종료 시점에 입력이 유지되어 있으면 가드 재시작을 시도한다.
+ * - 사망, 입력 해제, 사다리 상태, 스태미너 부족처럼 복귀 조건을 만족하지 못하면 가드 상태를 정리한다.
+ */
 namespace
 {
-	UAnimMontage* FindMontageForDirection(
+	UAnimMontage* FindConfiguredMontage(
 		const TMap<EActionDirection, TObjectPtr<UAnimMontage>>& Montages,
 		const EActionDirection Direction)
 	{
 		if (const TObjectPtr<UAnimMontage>* Montage = Montages.Find(Direction))
 		{
-			if (Montage->Get())
-			{
-				return Montage->Get();
-			}
+			return Montage->Get();
+		}
+
+		return nullptr;
+	}
+
+	UAnimMontage* FindMontageForDirection(
+		const TMap<EActionDirection, TObjectPtr<UAnimMontage>>& Montages,
+		const EActionDirection Direction)
+	{
+		if (UAnimMontage* Montage = FindConfiguredMontage(Montages, Direction))
+		{
+			return Montage;
 		}
 
 		// 8방향 몽타주가 모두 없을 수 있어 대각선은 인접 축 방향으로 보정한다.
 		switch (Direction)
 		{
 		case EActionDirection::ForwardLeft:
-			if (const TObjectPtr<UAnimMontage>* Montage = Montages.Find(EActionDirection::Forward))
+			if (UAnimMontage* Montage = FindConfiguredMontage(Montages, EActionDirection::Forward))
 			{
-				if (Montage->Get())
-				{
-					return Montage->Get();
-				}
+				return Montage;
 			}
-			if (const TObjectPtr<UAnimMontage>* Montage = Montages.Find(EActionDirection::Left))
+			if (UAnimMontage* Montage = FindConfiguredMontage(Montages, EActionDirection::Left))
 			{
-				if (Montage->Get())
-				{
-					return Montage->Get();
-				}
+				return Montage;
 			}
 			break;
 		case EActionDirection::ForwardRight:
-			if (const TObjectPtr<UAnimMontage>* Montage = Montages.Find(EActionDirection::Forward))
+			if (UAnimMontage* Montage = FindConfiguredMontage(Montages, EActionDirection::Forward))
 			{
-				if (Montage->Get())
-				{
-					return Montage->Get();
-				}
+				return Montage;
 			}
-			if (const TObjectPtr<UAnimMontage>* Montage = Montages.Find(EActionDirection::Right))
+			if (UAnimMontage* Montage = FindConfiguredMontage(Montages, EActionDirection::Right))
 			{
-				if (Montage->Get())
-				{
-					return Montage->Get();
-				}
+				return Montage;
 			}
 			break;
 		case EActionDirection::BackwardLeft:
-			if (const TObjectPtr<UAnimMontage>* Montage = Montages.Find(EActionDirection::Backward))
+			if (UAnimMontage* Montage = FindConfiguredMontage(Montages, EActionDirection::Backward))
 			{
-				if (Montage->Get())
-				{
-					return Montage->Get();
-				}
+				return Montage;
 			}
-			if (const TObjectPtr<UAnimMontage>* Montage = Montages.Find(EActionDirection::Left))
+			if (UAnimMontage* Montage = FindConfiguredMontage(Montages, EActionDirection::Left))
 			{
-				if (Montage->Get())
-				{
-					return Montage->Get();
-				}
+				return Montage;
 			}
 			break;
 		case EActionDirection::BackwardRight:
-			if (const TObjectPtr<UAnimMontage>* Montage = Montages.Find(EActionDirection::Backward))
+			if (UAnimMontage* Montage = FindConfiguredMontage(Montages, EActionDirection::Backward))
 			{
-				if (Montage->Get())
-				{
-					return Montage->Get();
-				}
+				return Montage;
 			}
-			if (const TObjectPtr<UAnimMontage>* Montage = Montages.Find(EActionDirection::Right))
+			if (UAnimMontage* Montage = FindConfiguredMontage(Montages, EActionDirection::Right))
 			{
-				if (Montage->Get())
-				{
-					return Montage->Get();
-				}
+				return Montage;
 			}
 			break;
 		default:
 			break;
 		}
 
-		if (const TObjectPtr<UAnimMontage>* Montage = Montages.Find(EActionDirection::Any))
-		{
-			return Montage->Get();
-		}
-
-		return nullptr;
+		return FindConfiguredMontage(Montages, EActionDirection::Any);
 	}
 
 	FVector GetKnockbackDirectionFromHitDirection(const AActor& Actor, const EActionDirection HitDirection)
@@ -163,6 +175,14 @@ void ABAPlayerCharacter::OnDamaged(
 	if (bPerfectGuard)
 	{
 		HandlePerfectGuardSucceeded(ResolveDamageHitResult(DamageEvent), DamageCauser);
+		KeepGuardActiveAfterGuardSuccess();
+		// 가드 성공 넉백 속도가 Free 회전 입력처럼 해석되지 않게 막는다.
+		MovementRuntime.bSuppressVelocityFacingUntilMoveInput = true;
+		if (!MovementRuntime.bHasMoveInput)
+		{
+			SnapInterpolatedMoveInputTo(FVector2D::ZeroVector);
+		}
+		ApplyDamageReactionKnockback(DamageReactionType, DamageDirection, HitDirection, true, false);
 		return;
 	}
 
@@ -187,6 +207,16 @@ void ABAPlayerCharacter::OnDamaged(
 	}
 
 	CancelCurrentActionForDamageReaction();
+	if (bGuarding && !bGuardBreak)
+	{
+		KeepGuardActiveAfterGuardSuccess();
+		// GuardHit 재생 중에도 넉백 속도가 캐릭터 회전을 만들지 않게 막는다.
+		MovementRuntime.bSuppressVelocityFacingUntilMoveInput = true;
+		if (!MovementRuntime.bHasMoveInput)
+		{
+			SnapInterpolatedMoveInputTo(FVector2D::ZeroVector);
+		}
+	}
 	ApplyDamageReactionKnockback(DamageReactionType, DamageDirection, HitDirection, bGuarding, bGuardBreak);
 	PlayDamageReactionAnimation(DamageReactionType, HitDirection, bGuarding, bGuardBreak);
 }
@@ -232,7 +262,13 @@ bool ABAPlayerCharacter::IsGuardingAgainstDamage(const FVector& DamageDirection)
 	}
 
 	const EGuardState GuardState = ActionComponent->GetGuardState();
-	if (GuardState != EGuardState::Guarding && GuardState != EGuardState::Blocking)
+	const bool bGuardStateActive = GuardState == EGuardState::Guarding || GuardState == EGuardState::Blocking;
+	const bool bPerfectGuardActionWindowActive = bPerfectGuardWindowActive
+		&& ActionComponent->GetActiveActionType() == EActionType::Guard;
+	// GuardHit 리액션 중에는 가드 액션 몽타주가 끊겨 있어도 입력이 유지되면 방어 판정을 이어간다.
+	const bool bGuardHitMaintainsGuard = DamageReactionState == EPlayerDamageReactionState::GuardHit
+		&& ShouldResumeGuardAfterGuardReaction();
+	if (!bGuardStateActive && !bPerfectGuardActionWindowActive && !bGuardHitMaintainsGuard)
 	{
 		return false;
 	}
@@ -265,6 +301,16 @@ void ABAPlayerCharacter::CancelCurrentActionForDamageReaction()
 {
 	SetGuardWindowActive(false);
 
+	// 전력질주 중 피격 시 전력질주가 끊겨야 함
+	if (MovementRuntime.DesiredGait == EMovementState::Sprint)
+	{
+		SetMovementState(EMovementState::Run);
+	}
+	if (MovementRuntime.ActiveGait == EMovementState::Sprint)
+	{
+		SetActiveGaitAndSpeed(EMovementState::Run);
+	}
+
 	if (ActionComponent)
 	{
 		// 액션 종료 이벤트를 통해 ActionAnimationComponent가 현재 액션 몽타주를 정리한다.
@@ -288,18 +334,15 @@ void ABAPlayerCharacter::ApplyDamageReactionKnockback(
 	const bool bGuarding,
 	const bool bGuardBreak)
 {
-	if (!bUseLaunchKnockbackForDamageReaction && !bGuarding && !bGuardBreak)
+	if (bGuardBreak)
 	{
+		// GuardBreak는 긴 무방비 리액션의 루트모션으로 밀림을 표현한다.
 		return;
 	}
 
 	// 넉백 강도는 플레이어가 보유한 피격 반응 타입별 값으로 결정한다.
 	float KnockbackStrength = HitReactKnockbackStrength;
-	if (bGuardBreak)
-	{
-		KnockbackStrength = GuardBreakKnockbackStrength;
-	}
-	else if (bGuarding)
+	if (bGuarding)
 	{
 		KnockbackStrength = GuardHitKnockbackStrength;
 	}
@@ -491,23 +534,14 @@ void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)
 		SetInvincible(false);
 	}
 
-	const bool bShouldResumeGuard = FinishedDamageReactionState == EPlayerDamageReactionState::GuardHit
-		&& ShouldResumeGuardAfterGuardHit();
-	if ((FinishedDamageReactionState == EPlayerDamageReactionState::GuardHit
-			|| FinishedDamageReactionState == EPlayerDamageReactionState::GuardBreak)
-		&& ActionComponent)
+	const bool bFinishedGuardReaction = FinishedDamageReactionState == EPlayerDamageReactionState::GuardHit
+		|| FinishedDamageReactionState == EPlayerDamageReactionState::GuardBreak;
+	const bool bShouldResumeGuard = bFinishedGuardReaction && ShouldResumeGuardAfterGuardReaction();
+	if (bFinishedGuardReaction && ActionComponent)
 	{
-		if (FinishedDamageReactionState == EPlayerDamageReactionState::GuardBreak)
-		{
-			bGuardInputHeld = false;
-			ActionComponent->SetGuardState(EGuardState::None);
-			SetCombatMode(EPlayerCombatMode::None);
-		}
-		else if (!bShouldResumeGuard)
-		{
-			ActionComponent->SetGuardState(EGuardState::None);
-			SetCombatMode(EPlayerCombatMode::None);
-		}
+		// GuardBreak 리액션 중에는 무방비였으므로 종료 시 상태를 비운 뒤, 입력이 유지되어 있으면 아래에서 재시작한다.
+		ActionComponent->SetGuardState(EGuardState::None);
+		SetCombatMode(EPlayerCombatMode::None);
 	}
 	DamageReactionState = EPlayerDamageReactionState::None;
 	if (BAPlayerState == EBAPlayerState::HitReacting || BAPlayerState == EBAPlayerState::KnockedDown)
@@ -517,7 +551,7 @@ void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)
 
 	if (bShouldResumeGuard)
 	{
-		if (!ResumeGuardAfterGuardHit())
+		if (!ResumeGuardAfterGuardReaction())
 		{
 			if (ActionComponent)
 			{

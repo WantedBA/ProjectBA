@@ -26,7 +26,7 @@
             "Tid": 10011,
             "Name": "Guard",
             "Category": "Defence",
-            "StaminaCost": 15,
+            "StaminaCost": 30,
             "StaminaCostType": "OnDemand",
             "StaminaRecoveryRateMultiplier": 0.5,
             "MinRequiredStamina": 1,
@@ -351,7 +351,7 @@
             "CombatStance": "Relaxed",
             "WeaponType": "Any",
             "Montage": "/Game/Character/Player/Animation/Montages/Guard/AM_Player_Guard.AM_Player_Guard",
-            "StartSection": "Start",
+            "StartSection": "Loop",
             "PlayRate": 1,
             "BlendIn": 0.1,
             "BlendOut": 0.1

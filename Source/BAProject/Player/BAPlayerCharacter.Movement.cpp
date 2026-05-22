@@ -1,5 +1,7 @@
 #include "Player/BAPlayerCharacter.h"
 
+#include "Component/ActionAnimationComponent.h"
+#include "Component/ActionComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 // 컨트롤러가 요청한 보행 속도를 저장한다. 실제 적용은 공통 Movement 업데이트에서 결정한다.
@@ -76,6 +78,46 @@ EPlayerMovementPhase ABAPlayerCharacter::GetMovementPhase() const
 EPlayerCombatMode ABAPlayerCharacter::GetCombatMode() const
 {
 	return MovementRuntime.CombatMode;
+}
+
+// 가드 액션 중 이동 입력을 허용할지 반환한다.
+// 방어 판정은 GuardWindow에서만 열리지만, 이동 중 가드는 하체 locomotion을 유지한다.
+bool ABAPlayerCharacter::CanMoveWhileGuarding() const
+{
+	if (!ActionComponent || !IsAlive() || IsDamageReacting() || IsOnLadder())
+	{
+		return false;
+	}
+
+	if (ActionComponent->GetActiveActionType() != EActionType::Guard)
+	{
+		return false;
+	}
+
+	// 방어 판정은 가드 윈도우가 열릴 때만 유효하다.
+	// 이동은 별도 정책이므로, 걷는 중 가드를 누른 경우 Start부터 Walk locomotion을 유지한다.
+	// 가드 성공 넉백처럼 입력이 아닌 속도는 상체 가드 이동으로 취급하지 않는다.
+	return MovementRuntime.bHasMoveInput
+		|| (!MovementRuntime.bSuppressVelocityFacingUntilMoveInput && GetGroundSpeed() > 5.f);
+}
+
+// AnimBP에서 GuardFullBody/GuardUpperBody 슬롯을 고르기 위한 포즈 분기 전용 값.
+// 이동 중 가드는 Loop 단일 몽타주도 하체 locomotion 위에 상체 가드만 얹혀야 하므로 가드 윈도우 여부와 분리한다.
+bool ABAPlayerCharacter::ShouldUseUpperBodyGuardPose() const
+{
+	if (!ActionComponent || !IsAlive() || IsDamageReacting() || IsOnLadder())
+	{
+		return false;
+	}
+
+	if (ActionComponent->GetActiveActionType() != EActionType::Guard)
+	{
+		return false;
+	}
+
+	// AnimBP 슬롯 선택도 이동 허용과 같은 기준을 쓴다.
+	// 걷는 중 가드를 누르면 Start/Loop/End 전부 하체 locomotion 위에 상체 가드만 얹혀야 한다.
+	return CanMoveWhileGuarding();
 }
 
 // 현재 이동 입력이 존재하는지 반환한다.
@@ -175,6 +217,43 @@ void ABAPlayerCharacter::CompleteMovementPhaseAnimation(const EPlayerMovementPha
 	FinishCurrentMovementPhase();
 }
 
+void ABAPlayerCharacter::BindDodgeActionCallbacks()
+{
+	if (ActionComponent)
+	{
+		ActionComponent->OnActionStarted.AddDynamic(this, &ABAPlayerCharacter::HandleDodgeActionStarted);
+	}
+
+	if (ActionAnimationComponent)
+	{
+		ActionAnimationComponent->OnActionMontageEnded.AddDynamic(this, &ABAPlayerCharacter::HandleDodgeActionMontageEnded);
+	}
+}
+
+void ABAPlayerCharacter::HandleDodgeActionStarted(
+	const int32 /*ActionTid*/,
+	const EActionType ActionType)
+{
+	if (ActionType == EActionType::DodgeRoll)
+	{
+		SetBAPlayerState(EBAPlayerState::DodgeRolling);
+	}
+}
+
+void ABAPlayerCharacter::HandleDodgeActionMontageEnded(
+	const int32 /*ActionTid*/,
+	const EActionType ActionType,
+	UAnimMontage* /*Montage*/,
+	const bool bInterrupted)
+{
+	if (ActionType == EActionType::DodgeRoll
+		&& !bInterrupted
+		&& BAPlayerState == EBAPlayerState::DodgeRolling)
+	{
+		SetBAPlayerState(EBAPlayerState::None);
+	}
+}
+
 // Movement 전체를 갱신한다.
 void ABAPlayerCharacter::TickMovementRuntime(const float DeltaTime)
 {
@@ -192,7 +271,7 @@ void ABAPlayerCharacter::UpdatePhaseFromInputAndGait(const float DeltaTime)
 {
 	MovementRuntime.PhaseElapsedTime += DeltaTime;
 
-	const EMovementState AllowedGait = GetStaminaAllowedGait(MovementRuntime.DesiredGait);
+	const EMovementState AllowedGait = GetMovementAllowedGait(MovementRuntime.DesiredGait);
 	if (AllowedGait != MovementRuntime.ActiveGait)
 	{
 		SetActiveGaitAndSpeed(AllowedGait);
@@ -321,9 +400,15 @@ void ABAPlayerCharacter::SetActiveGaitAndSpeed(const EMovementState NewGait)
 	}
 }
 
-// Sprint 가능 여부를 반영해 실제 허용 Gait를 반환한다.
-EMovementState ABAPlayerCharacter::GetStaminaAllowedGait(const EMovementState RequestedGait) const
+// 가드/스태미너 정책을 반영해 실제 허용 Gait를 반환한다.
+EMovementState ABAPlayerCharacter::GetMovementAllowedGait(const EMovementState RequestedGait) const
 {
+	if (CanMoveWhileGuarding())
+	{
+		// 가드 중 이동은 허용하되 전투 템포를 위해 항상 Walk로 제한한다.
+		return EMovementState::Walk;
+	}
+
 	if (RequestedGait == EMovementState::Sprint && !IsSprintAllowedByStamina())
 	{
 		return EMovementState::Run;

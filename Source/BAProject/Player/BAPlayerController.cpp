@@ -299,6 +299,11 @@ void ABAPlayerController::ToggleWalk()
 
 void ABAPlayerController::OnSprintStarted()
 {
+	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
+	{
+		PC->CancelGuardForSprintInput();
+	}
+
 	bSprintInputHeld = true;
 	bSprintModifierHeld = false;
 	SprintDodgePressedTime = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;

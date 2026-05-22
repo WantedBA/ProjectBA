@@ -63,6 +63,14 @@ void ABAPlayerCharacter::UpdateInterpolatedFacingRotation()
 // 캐릭터 가속방향 회전 보간 처리 적용 판단
 bool ABAPlayerCharacter::ShouldUseInterpolatedFacingRotation() const
 {
+	if (MovementRuntime.CombatMode == EPlayerCombatMode::Block
+		&& MovementRuntime.LocomotionMode == EPlayerLocomotionMode::Strafe)
+	{
+		// Strafe 가드는 카메라/컨트롤러 방향을 유지한다.
+		// Free 가드는 아래 일반 Free 회전 규칙을 타서 이동 입력 방향을 바라본다.
+		return false;
+	}
+
 	if (IsActionMovementLocked())
 	{
 		return false;
