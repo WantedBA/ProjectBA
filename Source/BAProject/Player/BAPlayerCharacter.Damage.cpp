@@ -1,8 +1,10 @@
 #include "Player/BAPlayerCharacter.h"
 
+#include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 #include "Component/ActionComponent.h"
 #include "Component/StatComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TimerManager.h"
 
@@ -172,7 +174,6 @@ void ABAPlayerCharacter::OnDamaged(
 		ShowGuardJudgementDebugMessage(
 			bGuardBreak ? TEXT("Guard Break") : TEXT("Guard"),
 			bGuardBreak ? FColor::Red : FColor::Yellow);
-		// TODO: 무기 테이블로 분리 필요. 현재는 임시 가드 흡수 배율을 사용해 일반 가드/가드브레이크 피해를 줄인다.
 		AppliedDamage = FinalDamage * GetGuardAbsorptionMultiplier();
 	}
 
@@ -368,6 +369,23 @@ void ABAPlayerCharacter::PlayDamageReactionAnimation(
 	if (ActiveDamageReactionMontage)
 	{
 		ReactionDuration = PlayAnimMontage(ActiveDamageReactionMontage);
+		if (DamageReactionState == EPlayerDamageReactionState::GuardHit && ReactionDuration > 0.f)
+		{
+			if (USkeletalMeshComponent* MeshComponent = GetMesh())
+			{
+				if (UAnimInstance* AnimInstance = MeshComponent->GetAnimInstance())
+				{
+					// GuardHit가 BlendOut에 들어가면 슬롯 가중치가 빠지며 idle이 보일 수 있으므로,
+					// 완전 종료를 기다리지 않고 즉시 가드 루프로 복귀한다.
+					FOnMontageBlendingOutStarted BlendingOutDelegate;
+					BlendingOutDelegate.BindUObject(
+						this,
+						&ABAPlayerCharacter::HandleGuardHitReactionMontageBlendingOut,
+						PlaybackId);
+					AnimInstance->Montage_SetBlendingOutDelegate(BlendingOutDelegate, ActiveDamageReactionMontage);
+				}
+			}
+		}
 	}
 
 	if (ReactionDuration <= 0.f)
@@ -444,6 +462,20 @@ UAnimMontage* ABAPlayerCharacter::SelectDamageReactionMontage(
 	return FindMontageForDirection(HitReactMontages, HitDirection);
 }
 
+void ABAPlayerCharacter::HandleGuardHitReactionMontageBlendingOut(
+	UAnimMontage* Montage,
+	const bool /*bInterrupted*/,
+	const int32 PlaybackId)
+{
+	if (PlaybackId != ActiveDamageReactionPlaybackId || Montage != ActiveDamageReactionMontage)
+	{
+		return;
+	}
+
+	GetWorldTimerManager().ClearTimer(DamageReactionTimerHandle);
+	FinishDamageReaction(PlaybackId);
+}
+
 void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)
 {
 	if (PlaybackId != ActiveDamageReactionPlaybackId)
@@ -485,7 +517,7 @@ void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)
 
 	if (bShouldResumeGuard)
 	{
-		if (!TryStartGuard())
+		if (!ResumeGuardAfterGuardHit())
 		{
 			if (ActionComponent)
 			{

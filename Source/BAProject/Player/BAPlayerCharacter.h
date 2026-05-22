@@ -314,6 +314,7 @@ private:
 	float GetPerfectGuardStaminaCostMultiplier() const;
 	bool ConsumeGuardStaminaForDamage();
 	bool ShouldResumeGuardAfterGuardHit() const;
+	bool ResumeGuardAfterGuardHit();
 	void ShowGuardJudgementDebugMessage(const FString& Message, const FColor& Color) const;
 
 	// 사다리 런타임
@@ -341,6 +342,7 @@ private:
 		EActionDirection HitDirection,
 		bool bGuarding,
 		bool bGuardBreak) const;
+	void HandleGuardHitReactionMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted, int32 PlaybackId);
 	void ApplyDamageReactionKnockback(
 		EBADamageReactionType DamageReactionType,
 		const FVector& DamageDirection,
