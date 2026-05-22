@@ -396,6 +396,22 @@ UAnimInstance* UActionAnimationComponent::ResolveAnimInstance() const
 
 void UActionAnimationComponent::OrientOwnerToActionDirection(const EActionDirection Direction) const
 {
+	const AActor* Owner = GetOwner();
+	if (!Owner)
+	{
+		return;
+	}
+
+	const APawn* PawnOwner = Cast<APawn>(Owner);
+	if (PawnOwner
+		&& CachedActionComponent
+		&& CachedActionComponent->GetActiveActionType() == EActionType::DodgeRoll)
+	{
+		const FRotator ControlRotation = PawnOwner->GetControlRotation();
+		GetOwner()->SetActorRotation(FRotator(0.f, ControlRotation.Yaw, 0.f));
+		return;
+	}
+
 	if (Direction == EActionDirection::Any)
 	{
 		return;
@@ -433,13 +449,6 @@ void UActionAnimationComponent::OrientOwnerToActionDirection(const EActionDirect
 		return;
 	}
 
-	const AActor* Owner = GetOwner();
-	if (!Owner)
-	{
-		return;
-	}
-
-	const APawn* PawnOwner = Cast<APawn>(Owner);
 	const FRotator BaseRotation = PawnOwner ? PawnOwner->GetControlRotation() : Owner->GetActorRotation();
 	const FRotator YawRotation(0.f, BaseRotation.Yaw, 0.f);
 	const FVector Forward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
