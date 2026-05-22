@@ -12,7 +12,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDead);
  * 체력, 스태미너, 이동 속도, 공격/방어 스탯을 보관하고 변경 이벤트를 발행하는 컴포넌트.
  *
  * 스태미너는 소비 후 지연 시간을 거쳐 초당 비율로 회복되며, 액션/질주 같은 시스템은
- * Source 이름으로 회복을 일시정지하거나 재개할 수 있다.
+ * Source 이름으로 회복을 일시정지하거나 회복 배율을 조정할 수 있다.
  */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class BAPROJECT_API UStatComponent : public UActorComponent
@@ -94,6 +94,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Stat")
 	void ResumeStaminaRecovery(FName Source, bool bApplyDelay = true);
 
+	// Source별 스태미너 회복 배율을 적용한다. 여러 Source는 곱연산으로 함께 반영된다.
+	UFUNCTION(BlueprintCallable, Category = "Stat")
+	void SetStaminaRecoveryRateMultiplier(FName Source, float Multiplier);
+
+	// Source별 스태미너 회복 배율을 제거한다.
+	UFUNCTION(BlueprintCallable, Category = "Stat")
+	void ClearStaminaRecoveryRateMultiplier(FName Source);
+
+	// 현재 적용 중인 스태미너 회복 배율을 반환한다.
+	UFUNCTION(BlueprintPure, Category = "Stat")
+	float GetStaminaRecoveryRateMultiplier() const;
+
 	// 하나 이상의 Source가 스태미너 회복을 막고 있는지 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Stat")
 	bool IsStaminaRecoveryPaused() const { return !StaminaRecoveryPauseSources.IsEmpty(); }
@@ -125,6 +137,7 @@ protected:
 
 	float StaminaRecoveryDelayRemaining = 0.f;
 	TSet<FName> StaminaRecoveryPauseSources;
+	TMap<FName, float> StaminaRecoveryRateMultipliers;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Movement")
 	float WalkSpeed;

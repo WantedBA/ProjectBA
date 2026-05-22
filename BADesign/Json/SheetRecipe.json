@@ -3,6 +3,7 @@
     "Moveset": "Tid",
     "ActionAnimationData": "Tid",
     "ActionWindowData": "Tid",
+    "ComboTransition": "Tid",
     "1StageBossAttack": "Tid",
     "2StageBossAttack": "Tid",
     "3StageBossAttack": "Tid",
@@ -14,5 +15,6 @@
     "ZoneMonster": "ZoneMonsterTid",
     "Reward": "RewardDetailTid",
     "Skill": "SkillTid",
+    "SkillModifier": "SkillTid",
     "Text": "TextTid"
 }

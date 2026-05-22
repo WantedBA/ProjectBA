@@ -240,6 +240,35 @@ void UActionAnimationComponent::StopActiveMontage(const bool bInterrupted)
 	OnActionMontageEnded.Broadcast(StoppedActionTid, StoppedActionType, MontageToStop, bInterrupted);
 }
 
+bool UActionAnimationComponent::SetActiveMontageNextSection(const FName SectionName, const FName NextSectionName)
+{
+	UAnimInstance* AnimInstance = ResolveAnimInstance();
+	if (!AnimInstance || !ActiveMontage || SectionName.IsNone() || NextSectionName.IsNone())
+	{
+		return false;
+	}
+
+	if (!ActiveMontage->IsValidSectionName(SectionName) || !ActiveMontage->IsValidSectionName(NextSectionName))
+	{
+		return false;
+	}
+
+	AnimInstance->Montage_SetNextSection(SectionName, NextSectionName, ActiveMontage);
+	return true;
+}
+
+bool UActionAnimationComponent::JumpActiveMontageToSection(const FName SectionName)
+{
+	UAnimInstance* AnimInstance = ResolveAnimInstance();
+	if (!AnimInstance || !ActiveMontage || SectionName.IsNone() || !ActiveMontage->IsValidSectionName(SectionName))
+	{
+		return false;
+	}
+
+	AnimInstance->Montage_JumpToSection(SectionName, ActiveMontage);
+	return true;
+}
+
 const FActionAnimationDataRow* UActionAnimationComponent::FindBestAnimationData(const int32 ActionTid) const
 {
 	const UBATableManager* TableManager = UBATableManager::Get(this);

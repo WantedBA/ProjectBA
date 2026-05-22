@@ -44,6 +44,8 @@ void AEnemyBase::PostInitializeComponents()
 	{
 		StatComponent->OnDead.AddDynamic(this, &AEnemyBase::OnDeath);
 	}
+
+	OnAttackPerfectGuarded.AddUObject(this, &AEnemyBase::HandleAttackPerfectGuarded);
 }
 
 void AEnemyBase::PossessedBy(AController* NewController)
@@ -137,18 +139,19 @@ void AEnemyBase::OnDamaged(
 		StatComponent->ApplyDamage(FinalDamage);
 		if (IsDead() == false)
 		{
-			// 슈퍼 아머가 아닐 때만 피격 상태로 전환
+			// 슈퍼 아머가 아닐 때만 피격 반응(상태 전환·넉백·경로 이동 중단).
+			// 슈퍼아머 중에는 피격당해도 공격·추격이 끊기지 않는다.
 			if (bIsSuperArmor == false)
 			{
 				SetState(EEnemyState::Hit);
 				ApplyKnockback(DamageCauser, 600.f);
-			}
 
-			AAIController* AICon = Cast<AAIController>(GetController());
-			if (AICon)
-			{
-				// 피격 시 현재 경로 이동 중단
-				AICon->StopMovement();
+				AAIController* AICon = Cast<AAIController>(GetController());
+				if (AICon)
+				{
+					// 피격 시 현재 경로 이동 중단
+					AICon->StopMovement();
+				}
 			}
 		}
 	}
@@ -211,7 +214,9 @@ void AEnemyBase::UpdateMoveSpeed(EEnemyState NewState)
 		break;
 
 	case EEnemyState::Chase:
-		TargetSpeed = MaxMoveSpeed;
+		// 추격은 걷기 모션으로 — 속도 기반 BlendSpace가 Run 대신 Walk를 고르도록 낮춘다.
+		// 0.5 배율은 임시값. ABP BlendSpace의 Walk/Run 경계 속도에 맞춰 조정할 것.
+		TargetSpeed = MaxMoveSpeed * 0.5f;
 		break;
 
 	case EEnemyState::Move:
@@ -418,6 +423,16 @@ void AEnemyBase::ResetStateToIdle()
 bool AEnemyBase::CanAttack() const
 {
 	return CurrentAttackCount < MaxAttackCount && CurrentState != EEnemyState::Hit && CurrentState != EEnemyState::Stagger;
+}
+
+void AEnemyBase::HandleAttackPerfectGuarded(AActor* GuardingActor, const FHitResult& HitResult)
+{
+	if (!GuardingActor)
+	{
+		return;
+	}
+
+	HandlePerfectGuarded(HitResult.ImpactPoint);
 }
 
 void AEnemyBase::HandlePerfectGuarded(FVector ImpactLocation)

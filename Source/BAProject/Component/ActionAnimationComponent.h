@@ -123,6 +123,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Action|Animation")
 	UAnimMontage* GetActiveMontage() const { return ActiveMontage; }
 
+	UFUNCTION(BlueprintCallable, Category = "Action|Animation")
+	bool SetActiveMontageNextSection(FName SectionName, FName NextSectionName);
+
+	UFUNCTION(BlueprintCallable, Category = "Action|Animation")
+	bool JumpActiveMontageToSection(FName SectionName);
+
 	// 가장 최근 재생 요청 결과를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action|Animation")
 	EActionAnimationPlaybackResult GetLastPlaybackResult() const { return LastPlaybackResult; }
