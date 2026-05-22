@@ -6,6 +6,16 @@
 
 namespace
 {
+	bool IsActionTidOfType(
+		const UObject* WorldContextObject,
+		const int32 ActionTid,
+		const EActionType ActionType)
+	{
+		const UBATableManager* TableManager = UBATableManager::Get(WorldContextObject);
+		const FActionDataRow* ActionData = TableManager ? TableManager->FindActionData(ActionTid) : nullptr;
+		return ActionData && ActionData->ActionType == ActionType;
+	}
+
 	EActionDirection GetActionDirectionFromRelativeInput(const FVector2D& RelativeInput)
 	{
 		constexpr float DirectionThreshold = 0.35f;
@@ -184,14 +194,28 @@ EActionDirection ABAPlayerCharacter::ResolveBufferedActionDirection(
 	const int32 ActionTid,
 	const EActionDirection BufferedDirection) const
 {
-	const UBATableManager* TableManager = UBATableManager::Get(this);
-	const FActionDataRow* ActionData = TableManager ? TableManager->FindActionData(ActionTid) : nullptr;
-	if (!ActionData || ActionData->ActionType != EActionType::DodgeRoll)
+	if (!IsActionTidOfType(this, ActionTid, EActionType::DodgeRoll))
 	{
 		return BufferedDirection;
 	}
 
 	return GetActionDirectionFromMoveInput(GetMoveInputVector());
+}
+
+EActionDirection ABAPlayerCharacter::ResolveActionAnimationDirection(
+	const int32 ActionTid,
+	const EActionDirection ActionDirection) const
+{
+	if (!IsActionTidOfType(this, ActionTid, EActionType::DodgeRoll))
+	{
+		// 구르기는 입력 방향 그대로 출력
+		return ActionDirection;
+	}
+
+	// 정자세에서 구르기 입력 시 백스텝 출력
+	return ActionDirection == EActionDirection::Any
+		? EActionDirection::Backward
+		: EActionDirection::Forward;
 }
 
 bool ABAPlayerCharacter::IsActionMovementLocked() const

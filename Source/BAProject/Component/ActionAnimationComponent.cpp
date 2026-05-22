@@ -281,11 +281,7 @@ const FActionAnimationDataRow* UActionAnimationComponent::FindBestAnimationData(
 	const EActionDirection Direction = CachedActionComponent
 		? CachedActionComponent->GetActiveActionDirection()
 		: EActionDirection::Any;
-	const bool bIsDodgeRoll = CachedActionComponent
-		&& CachedActionComponent->GetActiveActionType() == EActionType::DodgeRoll;
-	const EActionDirection AnimationDirection = bIsDodgeRoll
-		? (Direction == EActionDirection::Any ? EActionDirection::Backward : EActionDirection::Forward)
-		: Direction;
+	const EActionDirection AnimationDirection = ResolveAnimationDirection(ActionTid, Direction);
 	const ECombatStance CombatStance = CachedActionComponent
 		? CachedActionComponent->GetCombatStance()
 		: ECombatStance::Relaxed;
@@ -399,6 +395,16 @@ UAnimInstance* UActionAnimationComponent::ResolveAnimInstance() const
 	return MeshComponent ? MeshComponent->GetAnimInstance() : nullptr;
 }
 
+// 액션별 방향 정책이 필요한 경우 ResolveActionAnimationDirection Delegate로 전달할 것
+EActionDirection UActionAnimationComponent::ResolveAnimationDirection(
+	const int32 ActionTid,
+	const EActionDirection ActionDirection) const
+{
+	return ResolveActionAnimationDirection.IsBound()
+		? ResolveActionAnimationDirection.Execute(ActionTid, ActionDirection)
+		: ActionDirection;
+}
+
 void UActionAnimationComponent::OrientOwnerToActionDirection(const EActionDirection Direction) const
 {
 	const AActor* Owner = GetOwner();
@@ -408,14 +414,6 @@ void UActionAnimationComponent::OrientOwnerToActionDirection(const EActionDirect
 	}
 
 	const APawn* PawnOwner = Cast<APawn>(Owner);
-	const bool bIsDodgeRoll = CachedActionComponent
-		&& CachedActionComponent->GetActiveActionType() == EActionType::DodgeRoll;
-	if (bIsDodgeRoll && Direction == EActionDirection::Any)
-	{
-		// 무입력 회피는 현재 캐릭터 방향 기준 백스텝이므로 액터 회전을 유지한다.
-		return;
-	}
-
 	if (Direction == EActionDirection::Any)
 	{
 		return;
