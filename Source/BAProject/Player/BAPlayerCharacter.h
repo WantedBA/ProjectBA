@@ -58,7 +58,8 @@ public:
 	
 	// 차징 공격 판정
 	void ChargeStart();
-	void HeavyAttackCompleted();
+	void ChargeLoop(UAnimMontage* AnimMontage, bool bArg);
+	void ChargeAttackCompleted();
 
 	bool TryStartGuard();
 	void StopGuard();

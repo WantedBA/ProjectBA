@@ -37,35 +37,59 @@ void ABAPlayerCharacter::TryAttack(EActionCommand InActionCommand)
 		}
 		else if (InActionCommand == EActionCommand::HeavyAttack)
 		{
-			CancelGuardForActionInterrupt();
-			CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack() * 1.5);
-			NextComboTransitionTid = FirstRComboTransitionTid;
-			StartAttack(FirstHeavyAttackMontage);
+			// CancelGuardForActionInterrupt();
+			// CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack() * 1.5);
+			// NextComboTransitionTid = FirstRComboTransitionTid;
+			// StartAttack(FirstHeavyAttackMontage);
+			ChargeStart();
 		}
 	}
 }
 
 void ABAPlayerCharacter::ChargeStart()
 {
-	bIsCharging = true;
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance)
+	UAnimMontage* AnimMontage1 = LoadObject<UAnimMontage>(
+		nullptr, TEXT("/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_Charge.AM_Player_HeavyAttack_Charge"));
+	PlayAnimMontage(AnimMontage1);
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
-		AnimInstance->Montage_Pause();
+		AnimInstance->RootMotionMode = ERootMotionMode::IgnoreRootMotion;
 	}
+	
+	// if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	// {
+	// 	FOnMontageEnded MontageEnded;
+	// 	MontageEnded.BindUObject(this, &ABAPlayerCharacter::ChargeLoop);
+	// 	AnimInstance->Montage_SetEndDelegate(MontageEnded, AnimMontage1);
+	// }
 }
 
-void ABAPlayerCharacter::HeavyAttackCompleted()
+// void ABAPlayerCharacter::ChargeLoop(UAnimMontage* AnimMontage, bool bArg)
+// {
+// 	UAnimMontage* AnimMontage2 = LoadObject<UAnimMontage>(
+// 		nullptr, TEXT("/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_Charging.AM_Player_Charging"));
+// 	PlayAnimMontage(AnimMontage2);
+// 	
+// 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+// 	{
+// 		// FOnMontageEnded MontageEnded;
+// 		// MontageEnded.BindUObject(this, &ABAPlayerCharacter::ChargeLoop);
+// 		// AnimInstance->Montage_SetEndDelegate(MontageEnded, AnimMontage2);
+// 	}
+// }
+
+void ABAPlayerCharacter::ChargeAttackCompleted()
 {
-	bIsCharging = false;
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance)
+	// UAnimMontage* AnimMontage3 = LoadObject<UAnimMontage>(
+	// 	nullptr, TEXT("/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_Charge.AM_Player_HeavyAttack_Charge"));
+	// PlayAnimMontage(AnimMontage3);
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
-		UAnimMontage* Montage = AnimInstance->GetCurrentActiveMontage();
-		if (Montage)
-		{
-			AnimInstance->Montage_Resume(Montage);
-		}
+		AnimInstance->RootMotionMode = ERootMotionMode::RootMotionFromMontagesOnly;
+	}
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		AnimInstance->Montage_SetNextSection(FName("Loop"), FName("Attack"));
 	}
 }
 

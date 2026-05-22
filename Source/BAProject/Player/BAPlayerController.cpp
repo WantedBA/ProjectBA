@@ -296,7 +296,7 @@ void ABAPlayerController::HeavyAttackCompleted()
 {
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
 	{
-		PC->HeavyAttackCompleted();
+		PC->ChargeAttackCompleted();
 	}
 }
 
