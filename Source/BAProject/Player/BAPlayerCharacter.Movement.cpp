@@ -222,10 +222,16 @@ void ABAPlayerCharacter::BindDodgeActionCallbacks()
 	if (ActionComponent)
 	{
 		ActionComponent->OnActionStarted.AddDynamic(this, &ABAPlayerCharacter::HandleDodgeActionStarted);
+		ActionComponent->ResolveBufferedActionDirection.BindUObject(
+			this,
+			&ABAPlayerCharacter::ResolveBufferedActionDirection);
 	}
 
 	if (ActionAnimationComponent)
 	{
+		ActionAnimationComponent->ResolveActionAnimationDirection.BindUObject(
+			this,
+			&ABAPlayerCharacter::ResolveActionAnimationDirection);
 		ActionAnimationComponent->OnActionMontageEnded.AddDynamic(this, &ABAPlayerCharacter::HandleDodgeActionMontageEnded);
 	}
 }
