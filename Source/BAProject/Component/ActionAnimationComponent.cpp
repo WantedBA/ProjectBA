@@ -410,17 +410,19 @@ void UActionAnimationComponent::OrientOwnerToActionDirection(const EActionDirect
 	const APawn* PawnOwner = Cast<APawn>(Owner);
 	const bool bIsDodgeRoll = CachedActionComponent
 		&& CachedActionComponent->GetActiveActionType() == EActionType::DodgeRoll;
-	const EActionDirection DirectionToOrient = bIsDodgeRoll && Direction == EActionDirection::Any
-		? EActionDirection::Backward
-		: Direction;
+	if (bIsDodgeRoll && Direction == EActionDirection::Any)
+	{
+		// 무입력 회피는 현재 캐릭터 방향 기준 백스텝이므로 액터 회전을 유지한다.
+		return;
+	}
 
-	if (DirectionToOrient == EActionDirection::Any)
+	if (Direction == EActionDirection::Any)
 	{
 		return;
 	}
 
 	FVector2D LocalDirection = FVector2D::ZeroVector;
-	switch (DirectionToOrient)
+	switch (Direction)
 	{
 	case EActionDirection::Forward:
 		LocalDirection = FVector2D(0.f, 1.f);
