@@ -7,6 +7,7 @@
 #include "Character/CharacterBase.h"
 #include "Component/ActionComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "GameFramework/Pawn.h"
 #include "Tables/ActionRows.h"
 #include "Tables/BATableManager.h"
 
@@ -438,7 +439,9 @@ void UActionAnimationComponent::OrientOwnerToActionDirection(const EActionDirect
 		return;
 	}
 
-	const FRotator YawRotation(0.f, Owner->GetActorRotation().Yaw, 0.f);
+	const APawn* PawnOwner = Cast<APawn>(Owner);
+	const FRotator BaseRotation = PawnOwner ? PawnOwner->GetControlRotation() : Owner->GetActorRotation();
+	const FRotator YawRotation(0.f, BaseRotation.Yaw, 0.f);
 	const FVector Forward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 	const FVector Right = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 	const FVector WorldDirection = (Forward * LocalDirection.Y + Right * LocalDirection.X).GetSafeNormal();

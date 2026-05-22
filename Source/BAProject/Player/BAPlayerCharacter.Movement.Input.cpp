@@ -165,20 +165,7 @@ EActionDirection ABAPlayerCharacter::GetActionDirectionFromMoveInput(const FVect
 		return EActionDirection::Any;
 	}
 
-	const FVector WorldDirection = ConvertMoveInputToWorldDirection(MoveInput);
-	if (WorldDirection.IsNearlyZero())
-	{
-		return EActionDirection::Any;
-	}
-
-	const FRotator ActorYawRotation(0.f, GetActorRotation().Yaw, 0.f);
-	const FVector ActorForward = FRotationMatrix(ActorYawRotation).GetUnitAxis(EAxis::X);
-	const FVector ActorRight = FRotationMatrix(ActorYawRotation).GetUnitAxis(EAxis::Y);
-	const FVector2D ActorRelativeInput(
-		FVector::DotProduct(WorldDirection, ActorRight),
-		FVector::DotProduct(WorldDirection, ActorForward));
-
-	return GetActionDirectionFromRelativeInput(ActorRelativeInput);
+	return GetActionDirectionFromRelativeInput(MoveInput);
 }
 
 void ABAPlayerCharacter::FaceMoveInputDirection()
