@@ -49,11 +49,12 @@ void ABAPlayerCharacter::TryAttack(EActionCommand InActionCommand)
 void ABAPlayerCharacter::ChargeStart()
 {
 	UAnimMontage* AnimMontage1 = LoadObject<UAnimMontage>(
-		nullptr, TEXT("/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_Charge.AM_Player_HeavyAttack_Charge"));
+		nullptr, TEXT(
+			"/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_1_Slowed.AM_Player_HeavyAttack_1_Slowed"));
 	PlayAnimMontage(AnimMontage1);
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
-		AnimInstance->RootMotionMode = ERootMotionMode::IgnoreRootMotion;
+		// AnimInstance->RootMotionMode = ERootMotionMode::IgnoreRootMotion;
 	}
 	
 	// if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
@@ -78,20 +79,20 @@ void ABAPlayerCharacter::ChargeStart()
 // 	}
 // }
 
-void ABAPlayerCharacter::ChargeAttackCompleted()
-{
-	// UAnimMontage* AnimMontage3 = LoadObject<UAnimMontage>(
-	// 	nullptr, TEXT("/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_Charge.AM_Player_HeavyAttack_Charge"));
-	// PlayAnimMontage(AnimMontage3);
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-	{
-		AnimInstance->RootMotionMode = ERootMotionMode::RootMotionFromMontagesOnly;
-	}
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-	{
-		AnimInstance->Montage_SetNextSection(FName("Loop"), FName("Attack"));
-	}
-}
+// void ABAPlayerCharacter::ChargeAttackCompleted()
+// {
+// 	// UAnimMontage* AnimMontage3 = LoadObject<UAnimMontage>(
+// 	// 	nullptr, TEXT("/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_Charge.AM_Player_HeavyAttack_Charge"));
+// 	// PlayAnimMontage(AnimMontage3);
+// 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+// 	{
+// 		AnimInstance->RootMotionMode = ERootMotionMode::RootMotionFromMontagesOnly;
+// 	}
+// 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+// 	{
+// 		AnimInstance->Montage_SetNextSection(FName("Loop"), FName("Attack"));
+// 	}
+// }
 
 void ABAPlayerCharacter::OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg)
 {
