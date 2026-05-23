@@ -398,6 +398,22 @@ void ABoss::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
+void ABoss::HandlePerfectGuarded(FVector ImpactLocation)
+{
+	// KnockDown 패턴은 퍼펙트 가드가 성공해도 보스가 스태거하지 않는다 (무적 공격 취급)
+	if (LastUsedPatternTid != 0)
+	{
+		const FBossAttackData* LastPattern = BossPatterns.FindByPredicate(
+			[this](const FBossAttackData& D) { return D.Tid == LastUsedPatternTid; });
+		if (LastPattern && LastPattern->DamageReactionType == EBADamageReactionType::KnockDown)
+		{
+			return;
+		}
+	}
+
+	Super::HandlePerfectGuarded(ImpactLocation);
+}
+
 void ABoss::HandleHPChanged(float CurrentHP, float MaxHP)
 {
 	float HPRatio = CurrentHP / MaxHP;
@@ -705,6 +721,12 @@ bool ABoss::ExecuteBossPattern(int32 PatternTid)
 	if (bIsEnding || IsDead())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("  → bIsEnding/IsDead, early return"));
+		return false;
+	}
+
+	// 퍼펙트 가드 스태거 진행 중 — 스태거 몽타주가 끝나고 Idle로 복구되면 BT가 재시도한다.
+	if (CurrentState == EEnemyState::Stagger)
+	{
 		return false;
 	}
 

@@ -110,6 +110,9 @@ public:
 	UFUNCTION()
 	void OnPatternMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
+	// KnockDown 패턴은 퍼펙트 가드 시에도 스태거하지 않는다
+	virtual void HandlePerfectGuarded(FVector ImpactLocation) override;
+
 	UFUNCTION()
 	void ExecutePendingCombo();
 
