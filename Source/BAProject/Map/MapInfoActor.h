@@ -23,4 +23,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MapInfo")
 	class UTexture2D* MapTexture;
 
+	/** 맵의 기본 리스폰 위치 (리셋 포인트가 없을 때 사용) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MapInfo|Respawn")
+	FVector DefaultSpawnLocation;
+
+	/** 맵의 기본 리스폰 회전값 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MapInfo|Respawn")
+	FRotator DefaultSpawnRotation;
 };

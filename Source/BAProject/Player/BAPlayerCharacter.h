@@ -55,6 +55,12 @@ public:
 
 	// 공격 관련
 	virtual void TryAttack(EActionCommand InActionCommand); // CharacterBase 공격 진입점. 
+	
+	// 차징 공격 판정
+	void ChargeAttackStart();
+	void ChargeLoopStart(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation);
+	void ChargeAttackCompleted();
+	void StopChargeEffect();
 
 	bool TryStartGuard();
 	void StopGuard();
@@ -70,6 +76,7 @@ public:
 	
 	virtual class UStaticMeshComponent* GetWeaponMesh() const override { return WeaponMeshComponent; }
 
+	// NextComboTransitionTid와 NextAttackMontage를 설정하는 함수
 	void SetNextCombo(EActionCommand InActionCommand);
 	void OnNextComboCheck();
 	
@@ -119,6 +126,8 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	FVector2D GetMoveInputVector() const;
+
+	EActionDirection GetActionDirectionFromMoveInput(const FVector2D& MoveInput) const;
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	FVector GetMoveInputWorldDirection() const;
@@ -192,6 +201,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Control|Cutscene")
 	void UnlockMovementForCutscene();
+
+	/** 마지막 체크포인트에서 부활 */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void Respawn();
 
 protected:
 	// CharacterBase 훅
@@ -275,12 +288,10 @@ protected:
 	
 	// 공격 관련
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	TObjectPtr<UAnimMontage> FirstLightAttackMontage;
-	const int32 FirstLComboTransitionTid = 71001;
+	int32 FirstLComboTransitionTid = 71001;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	TObjectPtr<UAnimMontage> FirstHeavyAttackMontage;
-	const int32 FirstRComboTransitionTid = 72001;
+	int32 FirstRComboTransitionTid = 72001;
 	
 	const float WeaponRadius = 20.f; // 충돌 판정 시 검 두께
 	int32 NowComboTransitionTid = 0; // 다음 콤보 결정할 때 사용
@@ -288,6 +299,7 @@ protected:
 	
 	UPROPERTY()
 	TObjectPtr<UAnimMontage> NextAttackMontage = nullptr;
+	EActionType NextAttackActionType = EActionType::None;
 	
 private:
 	// 이동 런타임
@@ -315,6 +327,9 @@ private:
 	void UpdateInterpolatedMoveInputDirection(float DeltaTime);
 	void SnapInterpolatedMoveInputTo(const FVector2D& MoveInput);
 	FVector2D GetInterpolatedMoveInputVector() const;
+	void FaceMoveInputDirection();
+	EActionDirection ResolveBufferedActionDirection(int32 ActionTid, EActionDirection BufferedDirection) const;
+	EActionDirection ResolveActionAnimationDirection(int32 ActionTid, EActionDirection ActionDirection) const;
 	FVector2D ConvertWorldDirectionToMoveInput(const FVector& WorldDirection) const;
 	FVector ConvertMoveInputToWorldDirection(const FVector2D& MoveInput) const;
 
@@ -445,6 +460,10 @@ private:
 	int32 NextDamageReactionPlaybackId = 1;
 	bool bGuardInputHeld = false;
 	bool bPerfectGuardWindowActive = false;
+	UPROPERTY(VisibleAnywhere) bool bIsBeforeCharge = false;
+	UPROPERTY(VisibleAnywhere) bool bIsCharging = false;
+	UPROPERTY(VisibleAnywhere) bool bIsChargeInputCompleted = false;
+	UPROPERTY(Transient) UAnimMontage* PausedMontage = nullptr;
 	
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimMontage> ActiveDamageReactionMontage;

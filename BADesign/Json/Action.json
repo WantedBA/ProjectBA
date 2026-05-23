@@ -158,7 +158,7 @@
             "Direction": "Backward",
             "CombatStance": "Relaxed",
             "WeaponType": "Any",
-            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Roll_Relaxed_Backward.AM_Roll_Relaxed_Backward",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Player_Dodge_Backstep.AM_Player_Dodge_Backstep",
             "PlayRate": 1,
             "BlendIn": 0.1,
             "BlendOut": 0.1,
@@ -266,7 +266,7 @@
             "Direction": "Backward",
             "CombatStance": "Relaxed",
             "WeaponType": "Any",
-            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Dodge_Relaxed_Backward.AM_Dodge_Relaxed_Backward",
+            "Montage": "/Game/Character/Player/Animation/Montages/DodgeRoll/AM_Player_Dodge_Backstep.AM_Player_Dodge_Backstep",
             "PlayRate": 1,
             "BlendIn": 0.1,
             "BlendOut": 0.1,
@@ -760,11 +760,23 @@
         },
         {
             "Tid": 72001,
-            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_1.AM_Player_HeavyAttack_1"
+            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_1.AM_Player_HeavyAttack_1",
+            "DamageCoefficient": 2
         },
         {
             "Tid": 72002,
-            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_2.AM_Player_HeavyAttack_2"
+            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_2.AM_Player_HeavyAttack_2",
+            "DamageCoefficient": 1.5
+        },
+        {
+            "Tid": 72003,
+            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_1_Slowed.AM_Player_HeavyAttack_1_Slowed",
+            "DamageCoefficient": 2
+        },
+        {
+            "Tid": 73001,
+            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_ChargeAttack.AM_Player_ChargeAttack",
+            "DamageCoefficient": 3
         }
     ]
 }

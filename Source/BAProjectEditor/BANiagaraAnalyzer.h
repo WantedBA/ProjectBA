@@ -19,6 +19,7 @@ public:
 
 private:
 	void AnalyzeEmitter(const FNiagaraEmitterHandle& InHandle, FNiagaraEmitterAnalysisData& OutEmitterData);
+	void AnalyzeMaterialParameters(UMaterialInterface* InMaterial, FNiagaraRendererAnalysisData& OutRendererData);
 	void ClassifyEmitter(FNiagaraEmitterAnalysisData& OutEmitterData);
 	void CheckReadabilityWarnings(FNiagaraEmitterAnalysisData& OutEmitterData);
 };

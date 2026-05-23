@@ -9,22 +9,60 @@ bool BANiagaraExporter::ExportToText(const FNiagaraGameplayAnalysisData& InData,
 {
 	OutContent = TEXT("========================================\n");
 	OutContent += FString::Printf(TEXT("System: %s\n"), *InData.SystemName);
-	OutContent += TEXT("Gameplay Readability Audit\n");
+	OutContent += TEXT("Gameplay Readability Audit & Deep Analysis\n");
 	OutContent += TEXT("========================================\n\n");
+
+	// 시스템 파라미터 출력
+	if (InData.SystemParameters.Num() > 0)
+	{
+		OutContent += TEXT("[System Parameters]\n");
+		for (const auto& KVP : InData.SystemParameters)
+		{
+			OutContent += FString::Printf(TEXT("  %s: %s\n"), *KVP.Key, *KVP.Value);
+		}
+		OutContent += TEXT("\n");
+	}
 
 	for (const auto& Emitter : InData.Emitters)
 	{
-		OutContent += FString::Printf(TEXT("[Emitter]\n%s\n\n"), *Emitter.EmitterName);
+		OutContent += FString::Printf(TEXT("[Emitter] %s\n"), *Emitter.EmitterName);
 
 		// 기본 상태 정보
 		OutContent += TEXT("Basic Info:\n");
 		OutContent += TEXT("  Enabled:    TRUE\n");
 		OutContent += FString::Printf(TEXT("  Category:   %s\n"), *UEnum::GetValueAsString(Emitter.Category).Replace(TEXT("ENiagaraEmitterCategory::"), TEXT("")));
 		OutContent += FString::Printf(TEXT("  Sim Target: %s\n"), *Emitter.SimTarget);
+		OutContent += FString::Printf(TEXT("  Complexity: %.1f/100.0\n"), Emitter.ComplexityScore);
 		OutContent += FString::Printf(TEXT("  Scalability: %s\n"), Emitter.bFixedBounds ? TEXT("Fixed Bounds (Safe)") : TEXT("Dynamic Bounds (Risk)"));
+		
+		// 데이터 인터페이스 및 바인딩 정보
+		if (Emitter.DataInterfaces.Num() > 0)
+		{
+			OutContent += TEXT("  Interfaces: ");
+			for (const FString& DI : Emitter.DataInterfaces) { OutContent += DI + TEXT(" "); }
+			OutContent += TEXT("\n");
+		}
+
+		if (Emitter.BoundParameters.Num() > 0)
+		{
+			OutContent += TEXT("  Bindings:   ");
+			for (const FString& BP : Emitter.BoundParameters) { OutContent += BP + TEXT(" "); }
+			OutContent += TEXT("\n");
+		}
+
+		// 사용된 모듈 출력
+		if (Emitter.ModuleNames.Num() > 0)
+		{
+			OutContent += TEXT("  Modules:    ");
+			for (int32 i = 0; i < Emitter.ModuleNames.Num(); ++i)
+			{
+				OutContent += Emitter.ModuleNames[i] + (i == Emitter.ModuleNames.Num() - 1 ? TEXT("") : TEXT(", "));
+			}
+			OutContent += TEXT("\n");
+		}
 		OutContent += TEXT("\n");
 
-		// 🔥 추가: Spawn 분석 데이터 명시
+		// Spawn 분석 데이터
 		OutContent += TEXT("Spawn Analysis:\n");
 		if (Emitter.SpawnData.BurstCount > 0)
 		{
@@ -43,14 +81,14 @@ bool BANiagaraExporter::ExportToText(const FNiagaraGameplayAnalysisData& InData,
 		}
 		OutContent += TEXT("\n");
 
-		// 🔥 추가: Particle 세부 수치 데이터 명시
+		// Particle 세부 수치
 		OutContent += TEXT("Particle Properties:\n");
 		OutContent += FString::Printf(TEXT("  Lifetime:    %.3f ~ %.3f sec\n"), Emitter.LifetimeMin, Emitter.LifetimeMax);
 		OutContent += FString::Printf(TEXT("  Max Size:    [X: %.1f, Y: %.1f]\n"), Emitter.SpriteSizeMax.X, Emitter.SpriteSizeMax.Y);
 		OutContent += FString::Printf(TEXT("  Velocity:    %s\n"), *Emitter.VelocityMode);
 		OutContent += TEXT("\n");
 
-		// 렌더러 및 머티리얼 디테일
+		// 렌더러 및 머티리얼 상세 분석 (Scalar, Vector 파라미터 포함)
 		if (Emitter.Renderers.Num() > 0)
 		{
 			OutContent += TEXT("Renderer & Material Analysis:\n");
@@ -59,7 +97,39 @@ bool BANiagaraExporter::ExportToText(const FNiagaraGameplayAnalysisData& InData,
 				OutContent += FString::Printf(TEXT("  - Type:      %s\n"), *Renderer.RendererType);
 				OutContent += FString::Printf(TEXT("    Material:  %s\n"), *Renderer.MaterialName);
 				OutContent += FString::Printf(TEXT("    BlendMode: %s\n"), *Renderer.BlendMode);
-				OutContent += FString::Printf(TEXT("    SortMode:  %s\n"), *Renderer.SortMode);
+				
+				// Scalar Parameters
+				if (Renderer.ScalarParameters.Num() > 0)
+				{
+					OutContent += TEXT("    Scalars:   ");
+					for (const auto& KVP : Renderer.ScalarParameters)
+					{
+						OutContent += FString::Printf(TEXT("%s:%.2f "), *KVP.Key, KVP.Value);
+					}
+					OutContent += TEXT("\n");
+				}
+
+				// Vector Parameters
+				if (Renderer.VectorParameters.Num() > 0)
+				{
+					OutContent += TEXT("    Vectors:   ");
+					for (const auto& KVP : Renderer.VectorParameters)
+					{
+						OutContent += FString::Printf(TEXT("%s:%s "), *KVP.Key, *KVP.Value.ToString());
+					}
+					OutContent += TEXT("\n");
+				}
+
+				// Texture Parameters
+				if (Renderer.TextureParameters.Num() > 0)
+				{
+					OutContent += TEXT("    Textures:  ");
+					for (const auto& KVP : Renderer.TextureParameters)
+					{
+						OutContent += FString::Printf(TEXT("%s:%s "), *KVP.Key, *KVP.Value);
+					}
+					OutContent += TEXT("\n");
+				}
 			}
 			OutContent += TEXT("\n");
 		}

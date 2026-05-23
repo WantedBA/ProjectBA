@@ -1,4 +1,5 @@
 ﻿#include "BAPlayerCharacter.h"
+#include "Component/ActionComponent.h"
 #include "Component/CombatComponent.h"
 #include "Component/StatComponent.h"
 #include "Tables/ActionRows.h"
@@ -31,22 +32,95 @@ void ABAPlayerCharacter::TryAttack(EActionCommand InActionCommand)
 		if (InActionCommand == EActionCommand::LightAttack)
 		{
 			CancelGuardForActionInterrupt();
-			CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack());
-			NextComboTransitionTid = FirstLComboTransitionTid;
-			StartAttack(FirstLightAttackMontage);
+			SetNextCombo(InActionCommand);
+			StartAttack(NextAttackMontage);
 		}
 		else if (InActionCommand == EActionCommand::HeavyAttack)
 		{
 			CancelGuardForActionInterrupt();
-			CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack() * 1.5);
-			NextComboTransitionTid = FirstRComboTransitionTid;
-			StartAttack(FirstHeavyAttackMontage);
+			SetNextCombo(InActionCommand);
+			StartAttack(NextAttackMontage);
 		}
 	}
 }
 
+void ABAPlayerCharacter::ChargeAttackStart()
+{
+	bIsBeforeCharge = true;
+}
+
+void ABAPlayerCharacter::ChargeLoopStart(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
+{
+	// 루프를 돌 적당한 애니메이션이 없어서 그냥 일시정지로 구현함
+	// 몽타주에 설정된 AN_ChargeStart에서 호출됨
+	bIsBeforeCharge = false;
+	
+	if (bIsChargeInputCompleted)
+	{
+		// 이 함수가 호출되기 전에 이미 우클릭이 끝난 상태
+		bIsChargeInputCompleted = false;
+		return;
+	}
+	
+	UAnimInstance* AnimInstance = MeshComp->GetAnimInstance();
+	if (!AnimInstance)
+	{
+		return;
+	}
+	UAnimMontage* Montage = Cast<UAnimMontage>(Animation);
+	if (!Montage)
+	{
+		Montage = AnimInstance->GetCurrentActiveMontage();
+		UE_LOG(LogTemp, Warning, TEXT("[ABAPlayerCharacter::ChargeLoopStart] AnimNotify에서 넘겨준 몽타주가 비어 있습니다."))
+	}
+
+	if (Montage)
+	{
+		bIsCharging = true;
+		AnimInstance->Montage_Pause(Montage);
+		PausedMontage = Montage;
+	}
+}
+
+void ABAPlayerCharacter::ChargeAttackCompleted()
+{
+	if (!bIsCharging)
+	{
+		if (bIsBeforeCharge)
+		{
+			bIsChargeInputCompleted = true;
+		}
+		return;
+	}
+	
+	bIsCharging = false;
+	
+	if (!PausedMontage)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PausedMontage is nullptr when ChargeAttackCompleted is called"));
+		return;
+	}
+	
+	GetMesh()->GetAnimInstance()->Montage_Resume(PausedMontage);
+	StopChargeEffect();
+}
+
+void ABAPlayerCharacter::StopChargeEffect()
+{
+	// 차징 중 중간에 끊기거나, 정상적으로 차징이 완료되어 후딜 실행 중일 때
+	// ChargeLoopStart 뒷부분에 차징 중 표시할 이펙트 작성하고, 여기서 중단하면 됩니다
+	PausedMontage = nullptr;
+}
+
 void ABAPlayerCharacter::OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg)
 {
+	// 몽타주가 중간에 끊긴 경우
+	if (bIsCharging)
+	{
+		StopChargeEffect();
+		bIsCharging = false;
+	}
+	
 	// 정상 종료되었을 경우
 	if (!bArg)
 	{
@@ -70,6 +144,9 @@ void ABAPlayerCharacter::StartAttack(UAnimMontage* InAnimMontage)
 		return;
 	}
 	
+	// 대미지 설정
+	CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack() * NowCombo->DamageCoefficient);
+	
 	// 재생 속도 : 테이블에 정의된 몽타주 재생 속도 * 공격 속도
 	const float MontagePlayRate = NowCombo->PlayRate * StatComponent->GetAttackSpeed();
 	CombatComponent->ExecuteAttack(InAnimMontage, MontagePlayRate);
@@ -77,6 +154,9 @@ void ABAPlayerCharacter::StartAttack(UAnimMontage* InAnimMontage)
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
 		SetBAPlayerState(EBAPlayerState::Attacking);
+		
+		// 스태미나 소모
+		ActionComponent->ConsumeActionStartStaminaCostByType(NextAttackActionType);
 		
 		FOnMontageEnded MontageEnded;
 		MontageEnded.BindUObject(this, &ABAPlayerCharacter::OnAttackMontageEnded);
@@ -88,28 +168,44 @@ void ABAPlayerCharacter::SetNextCombo(EActionCommand InActionCommand)
 {
 	static const UBATableManager* TableManager = UBATableManager::Get(this);
 	
-	const FComboTransitionRow* NowComboTransition = 
-		TableManager->FindComboTransition(NowComboTransitionTid);
-	if (!NowComboTransition)
+	// 현재 실행 중인 액션이 없을 경우 기본값으로 세팅
+	if (!NowComboTransitionTid)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[ABAPlayerCharacter::SetNextCombo] Failed to find now action animation data for tid: %d"), NowComboTransitionTid);
-		return;
+		if (InActionCommand == EActionCommand::LightAttack)
+		{
+			NextComboTransitionTid = FirstLComboTransitionTid;
+		}
+		else if (InActionCommand == EActionCommand::HeavyAttack)
+		{
+			NextComboTransitionTid = FirstRComboTransitionTid;
+		}
 	}
-	
-	// 현재 액션과 입력 커맨드로 다음 액션 탐색
-	if (InActionCommand == EActionCommand::LightAttack)
+	else
 	{
-		NextComboTransitionTid = NowComboTransition->NextOnL;
-	}
-	else if (InActionCommand == EActionCommand::HeavyAttack)
-	{
-		NextComboTransitionTid = NowComboTransition->NextOnR;
-	}
-	
-	// 다음 콤보가 없는 경우
-	if (NextComboTransitionTid == 0)
-	{
-		return;
+		// 현재 실행 중인 액션
+		const FComboTransitionRow* NowComboTransition = 
+			TableManager->FindComboTransition(NowComboTransitionTid);
+		if (!NowComboTransition)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[ABAPlayerCharacter::SetNextCombo] Failed to find now action animation data for tid: %d"), NowComboTransitionTid);
+			return;
+		}
+		
+		// 현재 액션과 입력 커맨드로 다음 액션 탐색
+		if (InActionCommand == EActionCommand::LightAttack)
+		{
+			NextComboTransitionTid = NowComboTransition->NextOnL;
+		}
+		else if (InActionCommand == EActionCommand::HeavyAttack)
+		{
+			NextComboTransitionTid = NowComboTransition->NextOnR;
+		}
+		
+		// 다음 콤보가 없는 경우
+		if (NextComboTransitionTid == 0)
+		{
+			return;
+		}
 	}
 	
 	const FComboTransitionRow* NextComboTransition = 
@@ -119,6 +215,16 @@ void ABAPlayerCharacter::SetNextCombo(EActionCommand InActionCommand)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[ABAPlayerCharacter::SetNextCombo] Failed to find next combo animation data for tid: %d, now: %d"), NextComboTransitionTid, NowComboTransitionTid);
 		return;
+	}
+	
+	// 스태미나 소모값 확인을 위한 정보 저장
+	if (InActionCommand == EActionCommand::LightAttack)
+	{
+		NextAttackActionType = EActionType::LightAttack;
+	}
+	else if (InActionCommand == EActionCommand::HeavyAttack)
+	{
+		NextAttackActionType = EActionType::HeavyAttack;
 	}
 	
 	// TODO 비동기 로딩으로 변경
