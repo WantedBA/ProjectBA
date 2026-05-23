@@ -2,16 +2,17 @@
 
 #include "BANiagaraAnalyzer.h"
 #include "NiagaraEmitter.h"
+#include "NiagaraCommon.h"
+#include "NiagaraSystem.h"
 #include "NiagaraScript.h"
+#include "NiagaraPlatformSet.h"
+#include "NiagaraDataInterface.h"
+#include "NiagaraParameterStore.h"
 #include "NiagaraRendererProperties.h"
+#include "NiagaraMeshRendererProperties.h"
 #include "NiagaraSpriteRendererProperties.h"
 #include "NiagaraRibbonRendererProperties.h"
-#include "NiagaraMeshRendererProperties.h"
 #include "Materials/MaterialInterface.h"
-#include "NiagaraSystem.h"
-#include "NiagaraCommon.h"
-#include "NiagaraPlatformSet.h"
-#include "Materials/MaterialInstance.h"
 
 UBANiagaraAnalyzer::UBANiagaraAnalyzer()
 {
@@ -79,8 +80,8 @@ void UBANiagaraAnalyzer::AnalyzeEmitter(const FNiagaraEmitterHandle& InHandle, F
 			OutEmitterData.ModuleNames.Add(Script->GetName());
 			
 			// 스크립트 변수 및 바인딩 추적
-			const FNiagaraParameterStore& Params = Script->GetParameters();
-			for (const FNiagaraVariable& Var : Params.GetParameters())
+			const FNiagaraParameterStore& Params = Script->RapidIterationParameters;
+			for (const FNiagaraVariable& Var : Params.ReadParameterVariables())
 			{
 				FString VarName = Var.GetName().ToString();
 				
@@ -98,12 +99,15 @@ void UBANiagaraAnalyzer::AnalyzeEmitter(const FNiagaraEmitterHandle& InHandle, F
 			}
 
 			// 데이터 인터페이스 분석
-			for (const FNiagaraDataInterfacePtr& DI : Script->GetResolvedDataInterfaces())
+			const TArray<UNiagaraDataInterface*>& DataInterfaces = Params.GetDataInterfaces();
+			for (UNiagaraDataInterface* DI : DataInterfaces)
 			{
-				if (DI.Get())
+				if (DI == nullptr)
 				{
-					OutEmitterData.DataInterfaces.Add(DI->GetClass()->GetName());
+					continue;
 				}
+
+				OutEmitterData.DataInterfaces.Add(DI->GetClass()->GetName());
 			}
 		}
 	}
