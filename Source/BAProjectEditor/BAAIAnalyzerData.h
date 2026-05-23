@@ -38,6 +38,10 @@ struct FBAAIAnalyzerNodeData
 	UPROPERTY()
 	TArray<FString> AttachedServiceIds;
 
+	/** 노드별 상세 속성 (AI 분석용) */
+	UPROPERTY()
+	TMap<FString, FString> CustomProperties;
+
 	FBAAIAnalyzerNodeData()
 		: NodeType(EBAAIAnalyzerNodeType::Task)
 	{

@@ -134,7 +134,6 @@ void ABAPlayerCharacter::OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bA
 
 void ABAPlayerCharacter::StartAttack(UAnimMontage* InAnimMontage)
 {
-	
 	const UBATableManager* TableManager = UBATableManager::Get(this);
 	
 	NowComboTransitionTid = NextComboTransitionTid;

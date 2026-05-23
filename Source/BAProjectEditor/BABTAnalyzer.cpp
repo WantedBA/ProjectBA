@@ -10,7 +10,8 @@
 #include "BehaviorTree/BlackboardData.h"
 
 UBABTAnalyzer::UBABTAnalyzer()
-{}
+{
+}
 
 bool UBABTAnalyzer::AnalyzeBehaviorTree(UBehaviorTree* InTree, FBAAIAnalyzerTreeData& OutData)
 {
@@ -48,20 +49,15 @@ bool UBABTAnalyzer::AnalyzeBehaviorTree(UBehaviorTree* InTree, FBAAIAnalyzerTree
 	return true;
 }
 
-FString UBABTAnalyzer::ProcessNode(
-	UBTNode* InNode,
-	FBAAIAnalyzerTreeData& OutData)
+FString UBABTAnalyzer::ProcessNode(UBTNode* InNode, FBAAIAnalyzerTreeData& OutData)
 {
-	if (!InNode)
+	if (InNode == nullptr)
 	{
 		return FString();
 	}
 
 	// Stable ID
-	const FString NodeId = FString::Printf(
-		TEXT("%s_%d"),
-		*InNode->GetNodeName(),
-		InNode->GetExecutionIndex());
+	const FString NodeId = FString::Printf(TEXT("%s_%d"), *InNode->GetNodeName(), InNode->GetExecutionIndex());
 
 	// Prevent recursive duplication
 	if (OutData.Nodes.Contains(NodeId))
@@ -75,45 +71,58 @@ FString UBABTAnalyzer::ProcessNode(
 	NodeData.NodeName = InNode->GetNodeName();
 	NodeData.NodeType = GetNodeType(InNode);
 
-	// Composite processing
-	if (UBTCompositeNode* CompositeNode =
-		Cast<UBTCompositeNode>(InNode))
+	// 상세 속성 추출 (AI 분석용 고도화)
+	if (UBTDecorator* Decorator = Cast<UBTDecorator>(InNode))
 	{
-		for (int32 ChildIndex = 0;
-			ChildIndex < CompositeNode->Children.Num();
-			++ChildIndex)
+		NodeData.CustomProperties.Add(TEXT("InverseCondition"), Decorator->IsInversed() ? TEXT("True") : TEXT("False"));
+		NodeData.CustomProperties.Add(TEXT("FlowAbortMode"), UEnum::GetValueAsString(Decorator->GetFlowAbortMode()));
+	}
+	else if (UBTService* Service = Cast<UBTService>(InNode))
+	{
+		if (const FFloatProperty* IntervalProp = FindFProperty<FFloatProperty>(Service->GetClass(), TEXT("Interval")))
 		{
-			FBTCompositeChild& Child =
-				CompositeNode->Children[ChildIndex];
+			const float Interval = IntervalProp->GetPropertyValue_InContainer(Service);
+
+			NodeData.CustomProperties.Add(TEXT("Interval"), FString::SanitizeFloat(Interval));
+		}
+
+		if (const FFloatProperty* RandomDeviationProp = FindFProperty<FFloatProperty>(Service->GetClass(), TEXT("RandomDeviation")))
+		{
+			const float RandomDeviation = RandomDeviationProp->GetPropertyValue_InContainer(Service);
+
+			NodeData.CustomProperties.Add(TEXT("RandomDeviation"), FString::SanitizeFloat(RandomDeviation));
+		}
+	}
+
+	// Composite processing
+	if (UBTCompositeNode* CompositeNode = Cast<UBTCompositeNode>(InNode))
+	{
+		for (int32 ChildIndex = 0; ChildIndex < CompositeNode->Children.Num(); ++ChildIndex)
+		{
+			FBTCompositeChild& Child = CompositeNode->Children[ChildIndex];
 
 			// Child node
-			if (UBTNode* ChildNode =
-				CompositeNode->GetChildNode(ChildIndex))
+			if (UBTNode* ChildNode = CompositeNode->GetChildNode(ChildIndex))
 			{
-				NodeData.ChildrenIds.Add(
-					ProcessNode(ChildNode, OutData));
+				NodeData.ChildrenIds.Add(ProcessNode(ChildNode, OutData));
 			}
 
 			// Decorators attached to child
-			for (UBTDecorator* Decorator :
-				Child.Decorators)
+			for (UBTDecorator* Decorator : Child.Decorators)
 			{
 				if (Decorator)
 				{
-					NodeData.AttachedDecoratorIds.Add(
-						ProcessNode(Decorator, OutData));
+					NodeData.AttachedDecoratorIds.Add(ProcessNode(Decorator, OutData));
 				}
 			}
 		}
 
 		// Services attached to composite
-		for (UBTService* Service :
-			CompositeNode->Services)
+		for (UBTService* Service : CompositeNode->Services)
 		{
 			if (Service)
 			{
-				NodeData.AttachedServiceIds.Add(
-					ProcessNode(Service, OutData));
+				NodeData.AttachedServiceIds.Add(ProcessNode(Service, OutData));
 			}
 		}
 	}
@@ -123,10 +132,9 @@ FString UBABTAnalyzer::ProcessNode(
 	return NodeId;
 }
 
-EBAAIAnalyzerNodeType UBABTAnalyzer::GetNodeType(
-	UBTNode* InNode)
+EBAAIAnalyzerNodeType UBABTAnalyzer::GetNodeType(UBTNode* InNode)
 {
-	if (!InNode)
+	if (InNode == nullptr)
 	{
 		return EBAAIAnalyzerNodeType::Unknown;
 	}

@@ -92,7 +92,7 @@ private:
 	// 이동 입력을 정규화해 캐릭터에 전달하고 액션 버퍼 방향을 갱신한다.
 	void Move(const FInputActionValue& Value);
 
-	// 이동 입력이 끝났을 때 입력 벡터와 액션 버퍼 방향을 초기화한다.
+	// 이동 입력이 끝났을 때 입력 벡터를 초기화한다.
 	void OnMoveCompleted();
 
 	// 카메라 yaw/pitch 입력을 컨트롤러 회전에 적용한다.

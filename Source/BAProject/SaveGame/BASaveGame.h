@@ -40,4 +40,12 @@ public:
 
 	UPROPERTY(SaveGame)
 	FQuestSaveData QuestData;
+
+	/** 마지막으로 휴식한 체크포인트 위치 */
+	UPROPERTY(SaveGame)
+	FVector RespawnLocation;
+
+	/** 마지막으로 휴식한 체크포인트 회전값 */
+	UPROPERTY(SaveGame)
+	FRotator RespawnRotation;
 };
