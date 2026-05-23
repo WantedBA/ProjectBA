@@ -1,4 +1,5 @@
 ﻿#include "BAPlayerCharacter.h"
+#include "Component/ActionComponent.h"
 #include "Component/CombatComponent.h"
 #include "Component/StatComponent.h"
 #include "Tables/ActionRows.h"
@@ -60,8 +61,6 @@ void ABAPlayerCharacter::ChargeLoopStart(USkeletalMeshComponent* MeshComp, UAnim
 		bIsChargeInputCompleted = false;
 		return;
 	}
-	bIsCharging = true;
-	
 	
 	UAnimInstance* AnimInstance = MeshComp->GetAnimInstance();
 	if (!AnimInstance)
@@ -77,12 +76,9 @@ void ABAPlayerCharacter::ChargeLoopStart(USkeletalMeshComponent* MeshComp, UAnim
 
 	if (Montage)
 	{
+		bIsCharging = true;
 		AnimInstance->Montage_Pause(Montage);
 		PausedMontage = Montage;
-		
-		FOnMontageEnded MontageEnded;
-		MontageEnded.BindUObject(this, &ABAPlayerCharacter::StopChargeEffect);
-		AnimInstance->Montage_SetEndDelegate(MontageEnded, Montage);
 	}
 }
 
@@ -106,24 +102,25 @@ void ABAPlayerCharacter::ChargeAttackCompleted()
 	}
 	
 	GetMesh()->GetAnimInstance()->Montage_Resume(PausedMontage);
-	PausedMontage = nullptr;
-	
-	StopChargeEffect(PausedMontage, true);
+	StopChargeEffect();
 }
 
-void ABAPlayerCharacter::StopChargeEffect(UAnimMontage* AnimMontage, bool bArg)
+void ABAPlayerCharacter::StopChargeEffect()
 {
-	if (!bArg)
-	{
-		return;
-	}
-	
 	// 차징 중 중간에 끊기거나, 정상적으로 차징이 완료되어 후딜 실행 중일 때
 	// ChargeLoopStart 뒷부분에 차징 중 표시할 이펙트 작성하고, 여기서 중단하면 됩니다
+	PausedMontage = nullptr;
 }
 
 void ABAPlayerCharacter::OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg)
 {
+	// 몽타주가 중간에 끊긴 경우
+	if (bIsCharging)
+	{
+		StopChargeEffect();
+		bIsCharging = false;
+	}
+	
 	// 정상 종료되었을 경우
 	if (!bArg)
 	{
@@ -157,6 +154,9 @@ void ABAPlayerCharacter::StartAttack(UAnimMontage* InAnimMontage)
 	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 	{
 		SetBAPlayerState(EBAPlayerState::Attacking);
+		
+		// 스태미나 소모
+		ActionComponent->ConsumeActionStartStaminaCostByType(NextAttackActionType);
 		
 		FOnMontageEnded MontageEnded;
 		MontageEnded.BindUObject(this, &ABAPlayerCharacter::OnAttackMontageEnded);
@@ -215,6 +215,16 @@ void ABAPlayerCharacter::SetNextCombo(EActionCommand InActionCommand)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[ABAPlayerCharacter::SetNextCombo] Failed to find next combo animation data for tid: %d, now: %d"), NextComboTransitionTid, NowComboTransitionTid);
 		return;
+	}
+	
+	// 스태미나 소모값 확인을 위한 정보 저장
+	if (InActionCommand == EActionCommand::LightAttack)
+	{
+		NextAttackActionType = EActionType::LightAttack;
+	}
+	else if (InActionCommand == EActionCommand::HeavyAttack)
+	{
+		NextAttackActionType = EActionType::HeavyAttack;
 	}
 	
 	// TODO 비동기 로딩으로 변경

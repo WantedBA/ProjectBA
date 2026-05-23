@@ -60,7 +60,7 @@ public:
 	void ChargeAttackStart();
 	void ChargeLoopStart(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation);
 	void ChargeAttackCompleted();
-	void StopChargeEffect(UAnimMontage* AnimMontage, bool bArg);
+	void StopChargeEffect();
 
 	bool TryStartGuard();
 	void StopGuard();
