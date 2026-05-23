@@ -3,6 +3,7 @@
 작성일: 2026-05-22  
 작업 브랜치: `fix/dodge-chain-direction`  
 기준 브랜치: `develop`
+최근 업데이트: 2026-05-22 / `Feature/attack stamina cost (#91)` 반영
 
 ## 현재 결정사항
 
@@ -15,6 +16,10 @@
 - 회피는 이동 입력이 있을 때와 없을 때를 다르게 취급한다.
   - 이동 입력 있음: 컨트롤러 yaw 기준 입력 방향으로 캐릭터를 회전하고, 전방 구르기 몽타주를 재생한다.
   - 이동 입력 없음: 캐릭터 현재 정면 기준으로 뒤로 백스텝한다.
+- 공격 스태미너 비용은 `ActionData.StaminaCost`와 `ActionData.StaminaCostType`을 사용한다.
+  - `Instant`: 액션 시작 비용.
+  - `OnDemand`: 가드 피격/퍼펙트 가드 같은 명시 소비 비용.
+  - 별도 소비 컨텍스트 enum은 두지 않는다.
 
 ## 완료된 작업
 
@@ -77,6 +82,30 @@
 - 관련 커밋:
   - `e20addf7` 회피 애니메이션 방향 정책을 플레이어 도메인으로 분리
 
+### 공격 스태미너 소비
+
+- `EActionStaminaConsumeContext`를 제거하고 `ActionData.StaminaCostType`만 비용 종류의 기준으로 사용하도록 정리했다.
+- `ActionComponent`에서 사용하지 않던 `ConsumeActiveActionStaminaCost`를 제거했다.
+- 외부에서 직접 쓸 필요가 없던 `FindBestMoveset`, `CanStartAction`을 `private`로 내렸다.
+- 공격은 기존 레거시 콤보 재생 경로를 유지하면서 `ActionComponent`의 비용 소비 API만 사용한다.
+- `ConsumeActionStartStaminaCostByType`을 추가했다.
+  - `StaminaCostType == Instant` 비용만 소비한다.
+  - LightAttack은 기존 데이터의 `StaminaCost 15`, HeavyAttack은 `StaminaCost 30`을 사용한다.
+- `ConsumeActionStaminaCostByType`은 `OnDemand` 소비 전용으로 유지한다.
+- 첫 공격은 몽타주가 유효하고 스태미너가 충분할 때만 시작한다.
+- 콤보 공격은 입력 시점에 비용을 빼지 않고, `OnNextComboCheck`에서 실제 다음 콤보가 재생되기 직전에 비용을 소비한다.
+- 다음 콤보 재생 직전에 스태미너가 부족하면 예약된 다음 콤보를 비우고 현재 공격만 마무리한다.
+- 다음 콤보가 Light/Heavy인지 `NextAttackActionType`으로 보관해서 비용과 데미지 배율을 맞춘다.
+- 관련 파일:
+  - `Source/BAProject/Component/ActionComponent.h`
+  - `Source/BAProject/Component/ActionComponent.cpp`
+  - `Source/BAProject/Player/BAPlayerCharacter.Combat.Attack.cpp`
+  - `Source/BAProject/Player/BAPlayerCharacter.h`
+- 관련 커밋/PR:
+  - `add04d12` 액션 스태미너 소비 흐름을 정리
+  - `da415a7b` 공격 콤보에 스태미너 비용을 적용
+  - `a946a60e` Feature/attack stamina cost (#91)
+
 ## 현재 동작 요약
 
 ### 회피
@@ -96,44 +125,44 @@
 - 이동 입력이 있는 상태에서 공격하면 이동 방향 기준으로 공격 방향이 잡힌다.
 - 게임패드 기준으로 왼쪽 스틱 이동 방향 + 공격 버튼 조합이 의도된 조작이다.
 - 공격 버퍼 방향 정책은 추가 변경하지 않는다.
+- 첫 Light/Heavy 공격은 시작 직전에 `Instant` 스태미너 비용을 소비한다.
+- 콤보 Light/Heavy 공격은 `OnNextComboCheck`에서 실제 다음 몽타주 재생 직전에 `Instant` 스태미너 비용을 소비한다.
+- 스태미너가 부족하면 첫 공격은 시작하지 않고, 다음 콤보는 예약을 취소한다.
+- 현재 공격 비용 데이터:
+  - LightAttack: `StaminaCost 15`, `StaminaCostType Instant`
+  - HeavyAttack: `StaminaCost 30`, `StaminaCostType Instant`
 
 ## 검증 상태
 
 - 변경된 C++ 파일들은 `BAProjectEditor` 빌드에서 컴파일을 통과했다.
 - 에디터가 실행 중이면 `UnrealEditor-BAProject.dll`을 잡고 있어서 링크 단계가 실패할 수 있다.
 - 마지막 확인 시 `ActionAnimationComponent` 내부에 `DodgeRoll`/`Backstep` 문자열은 남아있지 않았다.
+- 공격 스태미너 작업은 `BAProjectEditor` 빌드 성공을 확인했다.
 
 ## 남은 작업
 
-### 1. 공격 스태미너 소모
-
-- 공격도 스태미너를 소모해야 하는데 처리가 누락되어 있다.
-- 먼저 `ActionData`의 `StaminaCost`, `StaminaCostType`을 그대로 사용할지 검토한다.
-- 필요하면 공격별 비용을 `BADesign/Excel/Action.xlsx`와 `BADesign/Json/Action.json`에 추가하고 DataTable을 갱신한다.
-- 구현 후 공격 시작 시점 또는 히트/커밋 시점 중 어느 타이밍에 소모할지 결정해야 한다.
-
-### 2. 사망 몽타주
+### 1. 사망 몽타주
 
 - 사망 몽타주 재생 추가.
 - 사망 시 게임 리셋 타이밍 정리.
 - UI 재생/리트라이 흐름 연결.
 - 코드와 에디터 에셋 변경은 커밋을 분리하는 것이 좋다.
 
-### 3. 낙하, 착지, 낙사
+### 2. 낙하, 착지, 낙사
 
 - 낙하 상태 판정.
 - 착지 이벤트 처리.
 - 낙하 데미지 또는 낙사 조건 추가.
 - 착지/낙사 애니메이션과 상태 전환 연결.
 
-### 4. 카메라
+### 3. 카메라
 
 - 카메라 에임 조정.
 - 공격 시 카메라 셰이크.
 - 피격 시 카메라 셰이크.
 - 가드/가드 성공/가드 피격 시 카메라 셰이크.
 
-### 5. 게임패드 입력
+### 4. 게임패드 입력
 
 - 게임패드용 IMC 추가.
 - Input Action 추가 또는 기존 Input Action에 게임패드 매핑 추가.
@@ -141,10 +170,9 @@
 
 ## 다음 작업 추천 순서
 
-1. 공격 스태미너 소모
-2. 사망 몽타주와 리셋/UI 흐름
-3. 낙하, 착지, 낙사
-4. 카메라 에임 및 셰이크
-5. 게임패드 IMC/Input Action
+1. 사망 몽타주와 리셋/UI 흐름
+2. 낙하, 착지, 낙사
+3. 카메라 에임 및 셰이크
+4. 게임패드 IMC/Input Action
 
-공격 방향은 현재 상태가 의도에 맞으므로 다음 작업에서 건드리지 않는다.
+공격 방향과 공격 스태미너 비용은 현재 상태가 의도에 맞으므로 다음 작업에서 건드리지 않는다.
