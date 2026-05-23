@@ -6,6 +6,22 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "DrawDebugHelpers.h"
 
+FVector UANS_BossAreaAttack::GetOrigin(AActor* Owner) const
+{
+	if (OriginComponentTag != NAME_None)
+	{
+		TArray<UActorComponent*> Comps = Owner->GetComponentsByTag(USceneComponent::StaticClass(), OriginComponentTag);
+		if (Comps.Num() > 0)
+		{
+			if (USceneComponent* SceneComp = Cast<USceneComponent>(Comps[0]))
+			{
+				return SceneComp->GetComponentLocation();
+			}
+		}
+	}
+	return Owner->GetActorLocation();
+}
+
 void UANS_BossAreaAttack::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
@@ -23,7 +39,8 @@ void UANS_BossAreaAttack::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSeq
 		Damage = CombatComp->GetCurrentDamage();
 	}
 
-	FVector Origin = Owner->GetActorLocation();
+	FVector Origin = GetOrigin(Owner);
+	FVector VFXOrigin = Origin + Owner->GetActorRotation().RotateVector(VFXSpawnOffset);
 	AController* InstigatorController = Owner->GetInstigatorController();
 
 	TArray<FHitResult> OutHits;
@@ -51,6 +68,14 @@ void UANS_BossAreaAttack::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSeq
 		{
 			continue;
 		}
+
+		// 캡슐 표면이 아닌 Actor 중심 기준으로 반경 재검증 (SphereTrace는 콜리전 표면 기준이라 캡슐 반경만큼 범위가 넓어짐)
+		const float DistSq = FVector::DistSquared(Victim->GetActorLocation(), Origin);
+		if (DistSq > Radius * Radius)
+		{
+			continue;
+		}
+
 		HitActors.Add(Victim);
 
 		FVector DamageDirection = (Victim->GetActorLocation() - Origin).GetSafeNormal();
@@ -70,13 +95,6 @@ void UANS_BossAreaAttack::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSeq
 		Victim->TakeDamage(Damage, DamageEvent, InstigatorController, Owner);
 	}
 
-#if ENABLE_DRAW_DEBUG
-	if (bShowDebugRadius)
-	{
-		DrawDebugSphere(Owner->GetWorld(), Origin, Radius, 32, FColor::Orange, false, TotalDuration, 0, 2.0f);
-	}
-#endif
-
 	// VFX 스폰. 스케일을 Radius에 맞게 자동 조정한다.
 	ActiveVFXList.Reset();
 	const float VFXScale = (VFXBaseRadius > 0.0f) ? (Radius / VFXBaseRadius) : 1.0f;
@@ -91,7 +109,7 @@ void UANS_BossAreaAttack::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSeq
 		UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			Owner,
 			VFX,
-			Origin,
+			VFXOrigin,
 			Owner->GetActorRotation(),
 			FVector(VFXScale),
 			true,  // bAutoDestroy: NotifyEnd 이후 파티클이 자연 소멸하면 자동 제거
@@ -104,6 +122,22 @@ void UANS_BossAreaAttack::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSeq
 			ActiveVFXList.Add(NiagaraComp);
 		}
 	}
+}
+
+void UANS_BossAreaAttack::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime, const FAnimNotifyEventReference& EventReference)
+{
+	Super::NotifyTick(MeshComp, Animation, FrameDeltaTime, EventReference);
+
+#if ENABLE_DRAW_DEBUG
+	if (bShowDebugRadius)
+	{
+		AActor* Owner = MeshComp ? MeshComp->GetOwner() : nullptr;
+		if (Owner)
+		{
+			DrawDebugSphere(Owner->GetWorld(), GetOrigin(Owner), Radius, 24, FColor::Orange, false, -1.f, 0, 2.f);
+		}
+	}
+#endif
 }
 
 void UANS_BossAreaAttack::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
