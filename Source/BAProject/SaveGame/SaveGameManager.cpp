@@ -46,12 +46,21 @@ void USaveGameManager::LoadGame()
 	// 불러온 데이터 적용
 	GetGameInstance()->GetSubsystem<USkillTreeSubsystem>()->ApplySaveData(SaveGame->SkillTreeData);
 	
+	RespawnLocation = SaveGame->RespawnLocation;
+	RespawnRotation = SaveGame->RespawnRotation;
+
 	UE_LOG(LogTemp, Log, TEXT("Save game loaded successfully"));
 }
 
 bool USaveGameManager::IsSaveGameExist() const
 {
 	return UGameplayStatics::DoesSaveGameExist(DefaultSaveSlotName, 0);
+}
+
+void USaveGameManager::SetRespawnPoint(const FVector& Location, const FRotator& Rotation)
+{
+	RespawnLocation = Location;
+	RespawnRotation = Rotation;
 }
 
 void USaveGameManager::AsyncSaveStart(UBASaveGame* SaveGame)
@@ -104,6 +113,9 @@ UBASaveGame* USaveGameManager::CreateSaveGame()
 	SaveGameInstance->SkillTreeData = GetGameInstance()->GetSubsystem<USkillTreeSubsystem>()->MakeSaveData();
 	SaveGameInstance->QuestData.QuestTids = GetGameInstance()->GetSubsystem<UQuestManageSubsystem>()->MakeQuestSaveData();
 	
+	SaveGameInstance->RespawnLocation = RespawnLocation;
+	SaveGameInstance->RespawnRotation = RespawnRotation;
+
 	return SaveGameInstance;
 }
 
