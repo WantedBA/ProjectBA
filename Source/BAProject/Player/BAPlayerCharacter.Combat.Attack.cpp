@@ -79,6 +79,10 @@ void ABAPlayerCharacter::ChargeLoopStart(USkeletalMeshComponent* MeshComp, UAnim
 	{
 		AnimInstance->Montage_Pause(Montage);
 		PausedMontage = Montage;
+		
+		FOnMontageEnded MontageEnded;
+		MontageEnded.BindUObject(this, &ABAPlayerCharacter::StopChargeEffect);
+		AnimInstance->Montage_SetEndDelegate(MontageEnded, Montage);
 	}
 }
 
@@ -103,6 +107,19 @@ void ABAPlayerCharacter::ChargeAttackCompleted()
 	
 	GetMesh()->GetAnimInstance()->Montage_Resume(PausedMontage);
 	PausedMontage = nullptr;
+	
+	StopChargeEffect(PausedMontage, true);
+}
+
+void ABAPlayerCharacter::StopChargeEffect(UAnimMontage* AnimMontage, bool bArg)
+{
+	if (!bArg)
+	{
+		return;
+	}
+	
+	// 차징 중 중간에 끊기거나, 정상적으로 차징이 완료되어 후딜 실행 중일 때
+	// ChargeLoopStart 뒷부분에 차징 중 표시할 이펙트 작성하고, 여기서 중단하면 됩니다
 }
 
 void ABAPlayerCharacter::OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg)
