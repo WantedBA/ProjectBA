@@ -19,6 +19,10 @@
 #include "Instance/UserDataSubsystem.h"
 #include "Materials/MaterialInterface.h"
 #include "Tables/BATableManager.h"
+#include "Kismet/GameplayStatics.h"
+#include "Map/MapInfoActor.h"
+#include "GameFramework/PlayerStart.h"
+#include "SaveGame/SaveGameManager.h"
 
 namespace
 {
@@ -136,6 +140,35 @@ void ABAPlayerCharacter::BeginPlay()
 	if (CombatComponent)
 	{
 		CombatComponent->SetShowDebugTrace(true);
+	}
+
+	// 초기 리스폰 지점 설정 (Fallback)
+	if (USaveGameManager* SaveManager = GetGameInstance()->GetSubsystem<USaveGameManager>())
+	{
+		if (SaveManager->GetRespawnLocation().IsNearlyZero())
+		{
+			FVector DefaultLoc = GetActorLocation();
+			FRotator DefaultRot = GetActorRotation();
+
+			// 1순위: MapInfoActor에서 기본값 가져오기
+			if (AMapInfoActor* MapInfo = Cast<AMapInfoActor>(UGameplayStatics::GetActorOfClass(GetWorld(), AMapInfoActor::StaticClass())))
+			{
+				if (!MapInfo->DefaultSpawnLocation.IsZero())
+				{
+					DefaultLoc = MapInfo->DefaultSpawnLocation;
+					DefaultRot = MapInfo->DefaultSpawnRotation;
+				}
+			}
+			// 2순위: PlayerStart 액터 찾기
+			else if (AActor* PlayerStart = UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass()))
+			{
+				DefaultLoc = PlayerStart->GetActorLocation();
+				DefaultRot = PlayerStart->GetActorRotation();
+			}
+
+			SaveManager->SetRespawnPoint(DefaultLoc, DefaultRot);
+			UE_LOG(LogTemp, Log, TEXT("Initial Respawn Point Set to: %s"), *DefaultLoc.ToString());
+		}
 	}
 }
 

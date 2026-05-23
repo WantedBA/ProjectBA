@@ -296,7 +296,6 @@ FVector UInteractorComponent::GetInteractionLocation(AActor* Object) const
 	// 인터페이스가 정의한 위치 우선
 	const FVector Loc = IInteractable::Execute_GetInteractionLocation(Object);
 	if (!Loc.IsNearlyZero()) return Loc;
-	// fallback: Actor 위치
 	return Object->GetActorLocation();
 }
 

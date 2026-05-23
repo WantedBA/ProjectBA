@@ -113,6 +113,7 @@ void AMapResetPoint::Interact_Implementation(AActor* Interactor)
 		{
 			if (USaveGameManager* SaveManager = GI->GetSubsystem<USaveGameManager>())
 			{
+				SaveManager->SetRespawnPoint(GetActorLocation(), GetActorRotation());
 				SaveManager->SaveGame();
 			}
 		}
