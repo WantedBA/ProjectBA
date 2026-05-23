@@ -250,6 +250,9 @@ struct BAPROJECT_API FComboTransitionRow : public FBARowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ComboTransition")
 	int32 NextOnR = 0;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Action|ComboTransition")
+	float DamageCoefficient = 1.f;
+	
 	virtual void PostRead() override
 	{
 		bTid = Tid;

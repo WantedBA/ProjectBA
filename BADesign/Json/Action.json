@@ -760,11 +760,23 @@
         },
         {
             "Tid": 72001,
-            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_Charge.AM_Player_HeavyAttack_Charge"
+            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_1.AM_Player_HeavyAttack_1",
+            "DamageCoefficient": 2
         },
         {
             "Tid": 72002,
-            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_2.AM_Player_HeavyAttack_2"
+            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_2.AM_Player_HeavyAttack_2",
+            "DamageCoefficient": 1.5
+        },
+        {
+            "Tid": 72003,
+            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_1_Slowed.AM_Player_HeavyAttack_1_Slowed",
+            "DamageCoefficient": 2
+        },
+        {
+            "Tid": 73001,
+            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_ChargeAttack.AM_Player_ChargeAttack",
+            "DamageCoefficient": 3
         }
     ]
 }
