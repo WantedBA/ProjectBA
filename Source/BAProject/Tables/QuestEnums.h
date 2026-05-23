@@ -9,6 +9,7 @@ UENUM(BlueprintType)
 enum class EQuestType : uint8
 {
 	ZoneKill = 0,
+	BossKill = 1,
 };
 
 UENUM(BlueprintType)

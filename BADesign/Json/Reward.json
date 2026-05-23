@@ -13,6 +13,20 @@
             "RewardType": 1,
             "TargetTid": 0,
             "Count": 3
+        },
+        {
+            "RewardDetailTid": 3,
+            "RewardTid": 502,
+            "RewardType": 0,
+            "TargetTid": 0,
+            "Count": 10
+        },
+        {
+            "RewardDetailTid": 4,
+            "RewardTid": 502,
+            "RewardType": 1,
+            "TargetTid": 0,
+            "Count": 1
         }
     ]
 }

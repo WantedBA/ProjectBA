@@ -17,13 +17,14 @@
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Instance/QuestManageSubsystem.h"
 
 // Utility 패턴 선택 튜닝 상수 (밸런싱 시 한곳에서 조정)
 namespace BossPatternTuning
 {
 	static constexpr float RepeatPenalty    = 0.3f;    // 직전 패턴 재선택 시 점수 배율
 	static constexpr float StrongAttackBias = 1.0f;    // 강공 점수 배율 (1.0 = 무영향, 밸런싱용)
-	static constexpr float FrontHalfAngle   = 60.0f;   // 정면 판정 반각 (|angle| 이하 = Front)
+	static constexpr float FrontHalfAngle   = 80.0f;   // 정면 판정 반각 (|angle| 이하 = Front)
 	static constexpr float BackHalfAngle    = 135.0f;  // 후방 판정 (|angle| 이상 = Back)
 }
 
@@ -38,6 +39,7 @@ void ABoss::BeginPlay()
 	Super::BeginPlay();
 
 	bIsEnding = false;
+	InitialTransform = GetActorTransform();
 
 	// BP에 추가된 무기 메시 컴포넌트를 태그로 찾아 캐싱 (히트 트레이스 소켓 조회용)
 	TArray<UActorComponent*> WeaponComps = GetComponentsByTag(UStaticMeshComponent::StaticClass(), WeaponComponentTag);
@@ -201,7 +203,27 @@ int32 ABoss::ChooseBestPattern()
 		}
 	}
 
-	// TODO: 105 패리 스탠스 / 104 차징 광역 — 실행부 구현 + 트리거 조건 정의 후 여기에 추가
+	// ForceAtHPPercent — HP가 임계값 이하이고 한 번도 실행 안 된 패턴 강제 선택
+	if (StatComponent)
+	{
+		const float MaxHP = StatComponent->GetMaxHP();
+		if (MaxHP > 0.f)
+		{
+			const int32 HPPercent = FMath::RoundToInt(StatComponent->GetCurrentHP() / MaxHP * 100.f);
+			for (const FBossAttackData& Pattern : BossPatterns)
+			{
+				if (Pattern.ForceAtHPPercent > 0
+					&& HPPercent <= Pattern.ForceAtHPPercent
+					&& IsPatternAvailable(Pattern.Tid)
+					&& PatternUseCount.FindRef(Pattern.Tid) == 0)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("[ChooseBestPattern] HP%d<=%d%% 강제 발동 Tid=%d"),
+						HPPercent, Pattern.ForceAtHPPercent, Pattern.Tid);
+					return Pattern.Tid;
+				}
+			}
+		}
+	}
 
 	// === 2단계: 나머지 패턴 가중 랜덤 ===
 	// 게이트를 통과한 후보의 점수를 확률 가중치로 한 룰렛 선택.
@@ -249,8 +271,9 @@ float ABoss::CalculatePatternScore(const FBossAttackData& PatternData, AActor* T
 
 	// --- 게이트: 하나라도 실패하면 후보에서 제외 (0점) ---
 
-	// (Step 2 한정) 특수 패턴은 실행부 미구현 — Step 5·6에서 이 가드 해제
-	if (PatternData.PatternType != EBossPatternType::Normal)
+	// AI가 직접 선택 가능한 타입만 통과
+	if (PatternData.PatternType != EBossPatternType::Normal &&
+		PatternData.PatternType != EBossPatternType::ChargeAoE)
 	{
 		return 0.0f;
 	}
@@ -358,9 +381,13 @@ void ABoss::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	bIsEnding = true;
 
+	GetWorldTimerManager().ClearTimer(ResetDelayHandle);
 	GetWorldTimerManager().ClearTimer(ComboTransitionHandle);
+	GetWorldTimerManager().ClearTimer(ChargingStunMinDurationHandle);
 	bIsComboTransitioning = false;
 	PendingComboTid = 0;
+	bIsCharging = false;
+	bChargingStunActive = false;
 
 	PatternCooldownMap.Empty();
 	PendingCooldownRemove.Empty();
@@ -369,6 +396,19 @@ void ABoss::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	LoadedMontageMap.Empty();
 
 	Super::EndPlay(EndPlayReason);
+}
+
+void ABoss::HandlePerfectGuarded(FVector ImpactLocation)
+{
+	// 일반 공격(IsStrongAttack=false)에만 퍼펙트 가드 스태거 허용, 강공은 불가
+	const FBossAttackData* LastPattern = BossPatterns.FindByPredicate(
+		[this](const FBossAttackData& D) { return D.Tid == LastUsedPatternTid; });
+	if (!LastPattern || LastPattern->bIsStrongAttack)
+	{
+		return;
+	}
+
+	Super::HandlePerfectGuarded(ImpactLocation);
 }
 
 void ABoss::HandleHPChanged(float CurrentHP, float MaxHP)
@@ -399,6 +439,8 @@ void ABoss::OnQuestActivated_Implementation(int32 tid)
 	if (IsDead())
 		return;
 
+	ActiveQuestTid = tid;
+
 	AEnemyAIController* AIC = Cast<AEnemyAIController>(GetController());
 	if (AIC == nullptr)
 		return;
@@ -424,7 +466,98 @@ void ABoss::OnQuestDeactivated_Implementation(int32 tid)
 	{
 		if (UBrainComponent* Brain = AIC->GetBrainComponent())
 		{
-			Brain->PauseLogic("WaitingForQuest");
+			Brain->PauseLogic(TEXT("WaitingForQuest"));
+		}
+	}
+}
+
+void ABoss::PauseForReset()
+{
+	// 진행 중인 콤보 타이머 중단
+	GetWorldTimerManager().ClearTimer(ComboTransitionHandle);
+	bIsComboTransitioning = false;
+	PendingComboTid = 0;
+
+	// 재생 중인 몽타주 정지
+	if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
+	{
+		AnimInst->Montage_Stop(0.2f);
+	}
+
+	// AI 즉시 정지
+	if (AAIController* AIC = Cast<AAIController>(GetController()))
+	{
+		AIC->StopMovement();
+		if (UBrainComponent* Brain = AIC->GetBrainComponent())
+		{
+			Brain->PauseLogic(TEXT("WaitingForReset"));
+		}
+	}
+
+#if !UE_BUILD_SHIPPING
+	if (bDevAutoReset)
+	{
+		GetWorldTimerManager().SetTimer(ResetDelayHandle, this, &ABoss::FullReset, DevResetDelay, false);
+	}
+#endif
+}
+
+void ABoss::FullReset()
+{
+	// 퀘스트 중단 — 트리거 ReArm + 런타임 소환 몬스터 Destroy (보스 자신은 PrePlacedMonsters라 제외됨)
+	int32 TidToAbort = ActiveQuestTid;
+	ActiveQuestTid = 0;
+	if (TidToAbort > 0)
+	{
+		if (UQuestManageSubsystem* QM = UQuestManageSubsystem::Get(this))
+		{
+			QM->AbortQuest(TidToAbort);
+		}
+	}
+
+	// HP·스태미너 전체 복구
+	if (StatComponent)
+	{
+		StatComponent->RestoreAll();
+	}
+
+	// 위치·회전 복구
+	SetActorTransform(InitialTransform);
+	SetActorEnableCollision(true);
+
+	// 재생 중인 몽타주 즉시 정지 (PauseForReset 이후 남아있을 경우 대비)
+	if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
+	{
+		AnimInst->Montage_Stop(0.0f);
+	}
+
+	// 전투 상태 초기화 (Dead 상태 가드를 우회하기 위해 직접 대입)
+	GetWorldTimerManager().ClearTimer(StateTimerHandle);
+	CurrentState = EEnemyState::Idle;
+	CurrentAttackCount = 0;
+	UpdateBlackBoardState();
+	UpdateMoveSpeed(EEnemyState::Idle);
+
+	// 보스 전용 상태 초기화
+	PatternCooldownMap.Empty();
+	PatternUseCount.Empty();
+	LastUsedPatternTid = 0;
+	CurrentPhase = 1;
+	bIsComboTransitioning = false;
+	PendingComboTid = 0;
+	bIsEnding = false;
+	bIsCharging = false;
+	ChargingDamageAccumulated = 0.f;
+	bChargingStunActive = false;
+	GetWorldTimerManager().ClearTimer(ChargingStunMinDurationHandle);
+	SetSuperArmor(true);
+
+	// AI를 퀘스트 대기 상태로 재전환 — 다음 TriggerStart까지 정지 유지
+	if (AAIController* AIC = Cast<AAIController>(GetController()))
+	{
+		if (UBrainComponent* Brain = AIC->GetBrainComponent())
+		{
+			Brain->PauseLogic(TEXT("WaitingForQuest"));
 		}
 	}
 }
@@ -537,6 +670,7 @@ void ABoss::LoadBossPatterns(int32 StageType)
 			NewData.DamageReactionType  = static_cast<EBADamageReactionType>(Pair.Value->DamageReactionType);
 			NewData.NextComboTid        = Pair.Value->NextComboTid;
 			NewData.ComboTransitionTime = Pair.Value->ComboTransitionTime;
+			NewData.ForceAtHPPercent    = Pair.Value->ForceAtHPPercent;
 
 			BossPatterns.Add(NewData);
 		}
@@ -587,6 +721,12 @@ bool ABoss::ExecuteBossPattern(int32 PatternTid)
 		return false;
 	}
 
+	// 퍼펙트 가드 스태거 진행 중 — 스태거 몽타주가 끝나고 Idle로 복구되면 BT가 재시도한다.
+	if (CurrentState == EEnemyState::Stagger)
+	{
+		return false;
+	}
+
 	// 패턴 데이터 1회 조회 — 몽타주/쿨타임/사용횟수/전투 데이터에 모두 사용
 	const FBossAttackData* PatternData = BossPatterns.FindByPredicate(
 		[PatternTid](const FBossAttackData& Data) { return Data.Tid == PatternTid; });
@@ -625,6 +765,12 @@ bool ABoss::ExecuteBossPattern(int32 PatternTid)
 
 	SetState(EEnemyState::Attack);
 
+	if (PatternData->PatternType == EBossPatternType::ChargeAoE)
+	{
+		bIsCharging = true;
+		ChargingDamageAccumulated = 0.f;
+	}
+
 	if (CombatComponent == nullptr)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("  → CombatComponent NULL"));
@@ -657,6 +803,16 @@ void ABoss::OnPatternMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	UE_LOG(LogTemp, Warning, TEXT("[ABoss::OnPatternMontageEnded] Montage=%s, bInterrupted=%d, CurrentState=%d"),
 		Montage ? *Montage->GetName() : TEXT("NULL"), (int32)bInterrupted, (int32)GetCurrentState());
+
+	// 차징 스턴 진행 중 — TriggerChargingStun이 Montage_Stop으로 발생시킨 인터럽트.
+	// 상태 전환은 OnChargingStunMontageEnded에서 처리하므로 여기서는 아무것도 하지 않는다.
+	if (bChargingStunActive)
+	{
+		return;
+	}
+
+	// 차징 몽타주가 스턴 없이 정상 완료된 경우
+	bIsCharging = false;
 
 	const EEnemyState State = GetCurrentState();
 
@@ -695,16 +851,26 @@ void ABoss::OnPatternMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 			}
 		}
 
+		UE_LOG(LogTemp, Warning, TEXT("  → ComboCheck: LastUsedTid=%d NextTid=%d TransitionTime=%.2f"),
+			LastUsedPatternTid, NextTid, TransitionTime);
+
 		if (NextTid > 0)
 		{
 			PendingComboTid = NextTid;
 			bIsComboTransitioning = true;
 
-			GetWorldTimerManager().SetTimer(
-				ComboTransitionHandle,
-				this, &ABoss::ExecutePendingCombo,
-				TransitionTime, false
-			);
+			if (TransitionTime > 0.f)
+			{
+				GetWorldTimerManager().SetTimer(
+					ComboTransitionHandle,
+					this, &ABoss::ExecutePendingCombo,
+					TransitionTime, false
+				);
+			}
+			else
+			{
+				ExecutePendingCombo();
+			}
 			return;
 		}
 	}
@@ -724,6 +890,103 @@ void ABoss::ExecutePendingCombo()
 		PendingComboTid = 0;
 		ExecuteBossPattern(Tid);
 	}
+}
+
+float ABoss::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
+	AController* EventInstigator, AActor* DamageCauser)
+{
+	const float Actual = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (bIsCharging && Actual > 0.f)
+	{
+		ChargingDamageAccumulated += Actual;
+		if (ChargingDamageAccumulated >= ChargingStunThreshold)
+		{
+			TriggerChargingStun();
+		}
+	}
+
+	return Actual;
+}
+
+void ABoss::OnEnemyAttackAniFinished(EEnemyState NewState)
+{
+	// 차징 스턴 진행 중 — AN_EnemyAttackEnd 등 외부 경로로 들어오는 상태 전환을 차단.
+	// OnChargingStunMontageEnded에서 bChargingStunActive를 false로 먼저 끄고 호출하므로
+	// 스턴 종료 시점의 호출은 정상 통과한다.
+	if (bChargingStunActive)
+	{
+		return;
+	}
+	Super::OnEnemyAttackAniFinished(NewState);
+}
+
+void ABoss::TriggerChargingStun()
+{
+	bIsCharging = false;
+	bChargingStunActive = true;
+	ChargingStunStartTime = GetWorld()->GetTimeSeconds();
+	GetWorldTimerManager().ClearTimer(ChargingStunMinDurationHandle);
+
+	// 차징 몽타주 중단 → OnPatternMontageEnded(bInterrupted=true) 발생하지만
+	// bChargingStunActive 가드로 Idle 전환을 막는다.
+	if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
+	{
+		AnimInst->Montage_Stop(0.1f);
+	}
+
+	GetWorldTimerManager().ClearTimer(ComboTransitionHandle);
+	bIsComboTransitioning = false;
+	PendingComboTid = 0;
+
+	if (ChargingStunMontage == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ABoss] ChargingStunMontage 미할당 — 바로 Idle 전환"));
+		bChargingStunActive = false;
+		OnEnemyAttackAniFinished(EEnemyState::Idle);
+		return;
+	}
+
+	const float Duration = PlayAnimMontage(ChargingStunMontage);
+	if (Duration > 0.f)
+	{
+		if (UAnimInstance* AnimInst = GetMesh()->GetAnimInstance())
+		{
+			FOnMontageEnded EndDelegate;
+			EndDelegate.BindUObject(this, &ABoss::OnChargingStunMontageEnded);
+			AnimInst->Montage_SetEndDelegate(EndDelegate, ChargingStunMontage);
+		}
+	}
+	else
+	{
+		bChargingStunActive = false;
+		OnEnemyAttackAniFinished(EEnemyState::Idle);
+	}
+}
+
+void ABoss::OnChargingStunMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	const float Elapsed = GetWorld()->GetTimeSeconds() - ChargingStunStartTime;
+	const float Remaining = MinChargingStunDuration - Elapsed;
+
+	if (Remaining > 0.f)
+	{
+		GetWorldTimerManager().SetTimer(
+			ChargingStunMinDurationHandle,
+			this, &ABoss::FinishChargingStun,
+			Remaining, false
+		);
+	}
+	else
+	{
+		FinishChargingStun();
+	}
+}
+
+void ABoss::FinishChargingStun()
+{
+	bChargingStunActive = false;
+	OnEnemyAttackAniFinished(EEnemyState::Idle);
 }
 
 void ABoss::TrackPlayerDuringComboTransition(float DeltaTime)
