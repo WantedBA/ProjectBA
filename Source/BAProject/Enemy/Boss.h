@@ -72,6 +72,10 @@ struct BAPROJECT_API FBossAttackData
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float ComboTransitionTime = 0.2f;
+
+	// HP%가 이 값 이하이고 한 번도 실행 안 됐으면 강제 선택 (0 = 비활성)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	int32 ForceAtHPPercent = 0;
 };
 
 UCLASS()
@@ -128,12 +132,24 @@ protected:
 	virtual void PostInitializeComponents() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual bool IsPersistentAggro() const override { return true; }
+	virtual void OnEnemyAttackAniFinished(EEnemyState NewState) override;
 
 private:
+	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
+		AController* EventInstigator, AActor* DamageCauser) override;
+
 	void LoadBossPatterns(int32 StageType);
 
 	// Utility 점수 계산. 조건 게이트를 통과 못 하면 0 반환.
 	float CalculatePatternScore(const FBossAttackData& PatternData, AActor* Target);
+
+	// 차징 중 임계값 초과 시 호출 — 차징 몽타주 중단 후 스턴 재생
+	void TriggerChargingStun();
+
+	UFUNCTION()
+	void OnChargingStunMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	void FinishChargingStun();
 
 	// 플레이어가 보스 정면 기준 어느 구역(정면/측면/후방)에 있는지
 	EBossPatternZone GetPlayerZone(AActor* Target) const;
@@ -164,6 +180,18 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Debug")
 	bool bShowAIDebug = true;
+
+	// 차징 중 누적 데미지가 이 값 이상이면 차징이 무너지고 스턴 몽타주 재생
+	UPROPERTY(EditAnywhere, Category = "Boss|Charging")
+	float ChargingStunThreshold = 200.f;
+
+	// 차징 무너졌을 때 재생할 스턴 몽타주 (BP에서 할당)
+	UPROPERTY(EditAnywhere, Category = "Boss|Charging")
+	TObjectPtr<UAnimMontage> ChargingStunMontage;
+
+	// 스턴 최소 보장 시간(초). 몽타주가 짧아도 이 시간이 될 때까지 Idle 전환을 대기
+	UPROPERTY(EditAnywhere, Category = "Boss|Charging")
+	float MinChargingStunDuration = 3.0f;
 
 	// 회전 몽타주 — 캡슐을 실제로 돌리려면 애니메이션에 Enable Root Motion(회전) 필수
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Turn")
@@ -216,6 +244,13 @@ protected:
 
 	FTimerHandle ComboTransitionHandle;
 	FTimerHandle ResetDelayHandle;
+
+	bool bIsCharging = false;
+	float ChargingDamageAccumulated = 0.f;
+	// TriggerChargingStun 진행 중 — OnPatternMontageEnded가 Idle로 빠지는 것을 막는 가드
+	bool bChargingStunActive = false;
+	float ChargingStunStartTime = 0.f;
+	FTimerHandle ChargingStunMinDurationHandle;
 
 	// BeginPlay에서 캐시 — FullReset 시 이 위치·회전으로 복구
 	FTransform InitialTransform;
