@@ -130,15 +130,8 @@ void ABAPlayerCharacter::BeginPlay()
 		OnStaminaChanged(StatComponent->GetCurrentStamina(), StatComponent->GetMaxStamina());
 	}
 
-	if (ActionComponent)
-	{
-		ActionComponent->OnActionStarted.AddDynamic(this, &ABAPlayerCharacter::HandleActionStarted);
-	}
-	
-	if (ActionAnimationComponent)
-	{
-		ActionAnimationComponent->OnActionMontageEnded.AddDynamic(this, &ABAPlayerCharacter::HandleActionMontageEnded);
-	}
+	// PlayerCharacter BeginPlay의 델리게이트 콜백 바인딩 진입점을 단일화한다.
+	BindActionCallbacks();
 	
 	if (CombatComponent)
 	{
@@ -251,7 +244,21 @@ void ABAPlayerCharacter::InitializeFromTable()
 	GetCharacterMovement()->MaxWalkSpeed = SpeedSettings.RunSpeed;
 }
 
-void ABAPlayerCharacter::HandleActionStarted(const int32 ActionTid, const EActionType ActionType)
+// 공통 액션 콜백만 직접 등록하고, 액션별 예외 처리는 각 도메인 cpp에서 바인딩한다.
+void ABAPlayerCharacter::BindActionCallbacks()
+{
+	if (ActionComponent)
+	{
+		ActionComponent->OnActionStarted.AddDynamic(this, &ABAPlayerCharacter::HandleActionStarted);
+	}
+
+	BindGuardActionCallbacks();
+	BindDodgeActionCallbacks();
+}
+
+// 액션별 예외 처리는 가드/구르기 등 각 도메인 콜백에서 처리한다.
+// 이 공통 콜백은 액션이 이동을 잠그는 경우 Movement 런타임만 정리한다.
+void ABAPlayerCharacter::HandleActionStarted(const int32 /*ActionTid*/, const EActionType /*ActionType*/)
 {
 	if (!ActionComponent || !ActionComponent->IsMovementLockedByAction())
 	{
@@ -266,25 +273,4 @@ void ABAPlayerCharacter::HandleActionStarted(const int32 ActionTid, const EActio
 	MovementRuntime.Phase = EPlayerMovementPhase::None;
 	MovementRuntime.PhaseElapsedTime = 0.f;
 	MovementRuntime.bWaitingForPhaseAnimation = false;
-	
-	if (ActionType == EActionType::DodgeRoll)
-	{
-		SetBAPlayerState(EBAPlayerState::DodgeRolling);
-	}
-}
-
-void ABAPlayerCharacter::HandleActionMontageEnded(int32 ActionTid, EActionType ActionType, UAnimMontage* Montage,
-	bool bInterrupted)
-{
-	if (ActionType == EActionType::Guard && !IsDamageReacting())
-	{
-		SetGuardWindowActive(false);
-		SetBAPlayerState(EBAPlayerState::None);
-		SetCombatMode(EPlayerCombatMode::None);
-	}
-
-	if (ActionType == EActionType::DodgeRoll && !bInterrupted && (BAPlayerState == EBAPlayerState::DodgeRolling))
-	{
-		SetBAPlayerState(EBAPlayerState::None);
-	}
 }

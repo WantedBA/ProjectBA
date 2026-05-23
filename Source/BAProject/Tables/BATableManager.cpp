@@ -40,10 +40,7 @@ void UBATableManager::LoadAllTables()
 	const FString TablePath = FString(TablePath::LoadTablePath);
 	
 	// Action
-	if (!LoadTable(ActionDataTable, *(TablePath + TEXT("DT_Action_ActionData.DT_Action_ActionData"))))
-	{
-		LoadTable(ActionDataTable, *(TablePath + TEXT("DT_Player_ActionData.DT_Player_ActionData")));
-	}
+	LoadTable(ActionDataTable, *(TablePath + TEXT("DT_Action_ActionData.DT_Action_ActionData")));
 	LoadTable(MovesetTable, *(TablePath + TEXT("DT_Action_Moveset.DT_Action_Moveset")));
 	LoadTable(ActionAnimationDataTable, *(TablePath + TEXT("DT_Action_ActionAnimationData.DT_Action_ActionAnimationData")));
 	LoadTable(ActionWindowDataTable, *(TablePath + TEXT("DT_Action_ActionWindowData.DT_Action_ActionWindowData")));

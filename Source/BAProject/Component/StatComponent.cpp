@@ -13,6 +13,34 @@ UStatComponent::UStatComponent()
 	CurrentHP = MaxHP;
 }
 
+void UStatComponent::ResetModifiers()
+{
+	AttackSpeedModifier = 1.f;
+	MaxStaminaModifier = 1.f;
+	GuardDamageReductionRateModifier = 1.f;
+	StaminaRecoveryModifier = 1.f;
+}
+
+void UStatComponent::SetAttackSpeedModifier(const float NewModifier)
+{
+	AttackSpeedModifier = NewModifier;
+}
+
+void UStatComponent::SetMaxStaminaModifier(const float NewModifier)
+{
+	MaxStaminaModifier = NewModifier;
+}
+
+void UStatComponent::SetGuardDamageReductionRateModifier(const float NewModifier)
+{
+	GuardDamageReductionRateModifier = NewModifier;
+}
+
+void UStatComponent::SetStaminaRecoveryModifier(const float NewModifier)
+{
+	StaminaRecoveryModifier = NewModifier;
+}
+
 void UStatComponent::TickComponent
 (
 	float DeltaTime,
@@ -23,7 +51,7 @@ void UStatComponent::TickComponent
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// 현재 스테미너가 꽉 찼거나 회복률이 0일 경우 타이머 초기화
-	if (MaxStamina <= 0.f || StaminaRecoveryPerSecond <= 0.f || CurrentStamina >= MaxStamina)
+	if (GetMaxStamina() <= 0.f || StaminaRecoveryPerSecond <= 0.f || CurrentStamina >= GetMaxStamina())
 	{
 		StaminaRecoveryDelayRemaining = 0.f;
 		RefreshStaminaRecoveryTick();
@@ -44,7 +72,7 @@ void UStatComponent::TickComponent
 	}
 
 	// 초당 회복률을 실제 초당 회복량으로 바꾼 뒤, 이번 프레임 시간과 회복 배율만큼만 회복
-	const float RecoveryAmountPerSecond = MaxStamina * StaminaRecoveryPerSecond / 100.f;
+	const float RecoveryAmountPerSecond = GetMaxStamina() * StaminaRecoveryPerSecond * StaminaRecoveryModifier / 100.f;
 	const float RecoveryAmountThisFrame = RecoveryAmountPerSecond * GetStaminaRecoveryRateMultiplier() * DeltaTime;
 	SetCurrentStamina(CurrentStamina + RecoveryAmountThisFrame);
 }
@@ -52,13 +80,13 @@ void UStatComponent::TickComponent
 void UStatComponent::RestoreAll()
 {
 	CurrentHP = MaxHP;
-	CurrentStamina = MaxStamina;
+	CurrentStamina = GetMaxStamina();
 	StaminaRecoveryDelayRemaining = 0.f;
 	StaminaRecoveryPauseSources.Reset();
 	StaminaRecoveryRateMultipliers.Reset();
 
 	OnHPChanged.Broadcast(CurrentHP, MaxHP);
-	OnStaminaChanged.Broadcast(CurrentStamina, MaxStamina);
+	OnStaminaChanged.Broadcast(CurrentStamina, GetMaxStamina());
 
 	RefreshStaminaRecoveryTick();
 }
@@ -111,7 +139,7 @@ void UStatComponent::InitializeStats
 	MaxHP = InMaxHP;
 	CurrentHP = MaxHP;
 	MaxStamina = InMaxStamina;
-	CurrentStamina = MaxStamina;
+	CurrentStamina = GetMaxStamina();
 	StaminaRecoveryPerSecond = InStaminaRecoveryPerSecond;
 	StaminaRecoveryDelay = InStaminaRecoveryDelay;
 	StaminaRecoveryDelayRemaining = 0.f;
@@ -138,6 +166,16 @@ void UStatComponent::ConsumeStamina(const float ConsumeAmount)
 	RefreshStaminaRecoveryTick();
 }
 
+void UStatComponent::RestartStaminaRecoveryDelay()
+{
+	if (CurrentStamina < MaxStamina)
+	{
+		StaminaRecoveryDelayRemaining = StaminaRecoveryDelay;
+	}
+
+	RefreshStaminaRecoveryTick();
+}
+
 void UStatComponent::PauseStaminaRecovery(const FName Source)
 {
 	const FName SafeSource = Source.IsNone() ? DefaultStaminaRecoveryPauseSource : Source;
@@ -155,7 +193,7 @@ void UStatComponent::ResumeStaminaRecovery(const FName Source, const bool bApply
 		return;
 	}
 
-	if (!IsStaminaRecoveryPaused() && bApplyDelay && CurrentStamina < MaxStamina)
+	if (!IsStaminaRecoveryPaused() && bApplyDelay && CurrentStamina < GetMaxStamina())
 	{
 		StaminaRecoveryDelayRemaining = StaminaRecoveryDelay;
 	}
@@ -191,16 +229,16 @@ float UStatComponent::GetStaminaRecoveryRateMultiplier() const
 void UStatComponent::SetCurrentStamina(const float NewCurrentStamina)
 {
 	const float OldStamina = CurrentStamina;
-	CurrentStamina = FMath::Clamp(NewCurrentStamina, 0.f, MaxStamina);
+	CurrentStamina = FMath::Clamp(NewCurrentStamina, 0.f, GetMaxStamina());
 
 	// 스테미너 수치가 변경된 경우
 	if (OldStamina != CurrentStamina)
 	{
-		OnStaminaChanged.Broadcast(CurrentStamina, MaxStamina);
+		OnStaminaChanged.Broadcast(CurrentStamina, GetMaxStamina());
 	}
 
 	// 스테미너 다 찼으면 타이머 초기화
-	if (CurrentStamina >= MaxStamina)
+	if (CurrentStamina >= GetMaxStamina())
 	{
 		StaminaRecoveryDelayRemaining = 0.f;
 	}
@@ -211,9 +249,9 @@ void UStatComponent::SetCurrentStamina(const float NewCurrentStamina)
 void UStatComponent::RefreshStaminaRecoveryTick()
 {
 	const bool bCanRecover =
-		MaxStamina > 0.f
+		GetMaxStamina() > 0.f
 		&& StaminaRecoveryPerSecond > 0.f
-		&& CurrentStamina < MaxStamina
+		&& CurrentStamina < GetMaxStamina()
 		&& !IsStaminaRecoveryPaused()
 		&& GetStaminaRecoveryRateMultiplier() > 0.f;
 

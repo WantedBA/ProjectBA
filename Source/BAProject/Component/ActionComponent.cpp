@@ -10,6 +10,16 @@ namespace
 	constexpr int32 ActionComponentInvalidActionTid = 0;
 	const FName ActionStaminaRecoveryPauseSource(TEXT("Action"));
 	const FName ActionStaminaRecoveryRateMultiplierSource(TEXT("Action"));
+
+	bool IsGuardInterruptActionType(const EActionType ActionType)
+	{
+		return ActionType == EActionType::DodgeRoll
+			|| ActionType == EActionType::LightAttack
+			|| ActionType == EActionType::HeavyAttack
+			|| ActionType == EActionType::Backstep
+			|| ActionType == EActionType::Sprint
+			|| ActionType == EActionType::UseConsumable;
+	}
 }
 
 UActionComponent::UActionComponent()
@@ -112,9 +122,7 @@ void UActionComponent::CompleteCurrentAction()
 	bActiveActionInterruptLocked = false;
 	bActiveActionInputBufferOpen = false;
 	const bool bShouldResumeStaminaRecovery = bActiveActionPausedStaminaRecovery;
-	const bool bShouldClearStaminaRecoveryRateMultiplier = bActiveActionModifiedStaminaRecoveryRate;
 	bActiveActionPausedStaminaRecovery = false;
-	bActiveActionModifiedStaminaRecoveryRate = false;
 	ClearBufferedAction();
 
 	if (bShouldResumeStaminaRecovery && CachedStatComponent)
@@ -122,19 +130,56 @@ void UActionComponent::CompleteCurrentAction()
 		CachedStatComponent->ResumeStaminaRecovery(ActionStaminaRecoveryPauseSource, true);
 	}
 
-	if (bShouldClearStaminaRecoveryRateMultiplier && CachedStatComponent)
-	{
-		CachedStatComponent->ClearStaminaRecoveryRateMultiplier(ActionStaminaRecoveryRateMultiplierSource);
-	}
+	ClearActiveActionStaminaRecoveryRateMultiplier();
 
 	OnActionCompleted.Broadcast(CompletedActionTid, CompletedActionType);
 	RefreshTickEnabled();
 }
 
-bool UActionComponent::ConsumeActiveActionStaminaCost(const float CostMultiplier)
+bool UActionComponent::ConsumeActionStartStaminaCostByType(const EActionType ActionType, const float CostMultiplier)
 {
-	const FActionDataRow* ActionData = GetActiveActionData();
-	return ActionData && ConsumeStamina(*ActionData, EActionStaminaConsumeContext::OnDemand, CostMultiplier);
+	const FActionDataRow* ActionData = FindCostActionDataByType(ActionType);
+	if (!ActionData)
+	{
+		LastStartResult = EActionStartResult::ActionDataNotFound;
+		return false;
+	}
+
+	return ConsumeStamina(*ActionData, GetStartStaminaCost(*ActionData, CostMultiplier), false, true);
+}
+
+bool UActionComponent::ConsumeActionStaminaCostByType(const EActionType ActionType, const float CostMultiplier)
+{
+	const FActionDataRow* ActionData = FindCostActionDataByType(ActionType);
+	if (!ActionData)
+	{
+		LastStartResult = EActionStartResult::ActionDataNotFound;
+		return false;
+	}
+
+	return ConsumeStamina(*ActionData, GetOnDemandStaminaCost(*ActionData, CostMultiplier), false, true);
+}
+
+void UActionComponent::ApplyActiveActionStaminaRecoveryRateMultiplier()
+{
+	if (const FActionDataRow* ActionData = GetActiveActionData())
+	{
+		ApplyStaminaRecoveryRateMultiplier(*ActionData);
+	}
+}
+
+void UActionComponent::ClearActiveActionStaminaRecoveryRateMultiplier()
+{
+	if (!bActiveActionModifiedStaminaRecoveryRate)
+	{
+		return;
+	}
+
+	if (CachedStatComponent)
+	{
+		CachedStatComponent->ClearStaminaRecoveryRateMultiplier(ActionStaminaRecoveryRateMultiplierSource);
+	}
+	bActiveActionModifiedStaminaRecoveryRate = false;
 }
 
 void UActionComponent::CancelCurrentAction()
@@ -247,9 +292,24 @@ const FMovesetRow* UActionComponent::FindBestMoveset(
 		{
 			continue;
 		}
-		if (Row->CombatStance != CombatStance || Row->GuardState != GuardState)
+		if (Row->CombatStance != CombatStance)
 		{
 			continue;
+		}
+		if (Row->GuardState != GuardState)
+		{
+			const FActionDataRow* RowActionData = TableManager->FindActionData(Row->ActionTid);
+			// 가드 중 특수 행동은 별도 GuardState Moveset을 만들지 않아도 기본 Row를 재사용한다.
+			// 이 예외가 없으면 CanStartAction까지 도달하기 전에 Moveset 검색 단계에서 막힌다.
+			const bool bCanUseDefaultGuardStateForInterrupt =
+				ActiveActionType == EActionType::Guard
+				&& Row->GuardState == EGuardState::None
+				&& RowActionData
+				&& IsGuardInterruptActionType(RowActionData->ActionType);
+			if (!bCanUseDefaultGuardStateForInterrupt)
+			{
+				continue;
+			}
 		}
 		if (Row->WeaponType != EActionWeaponType::Any && Row->WeaponType != WeaponType)
 		{
@@ -288,7 +348,13 @@ bool UActionComponent::CanStartAction(const FActionDataRow& ActionData, const EA
 		const FActionDataRow* ActiveActionData = GetActiveActionData();
 		const bool bCanInterruptActiveAction =
 			ActiveActionData && ActiveActionData->bCanBeInterrupted && !bActiveActionInterruptLocked;
-		if (!bCanInterruptActiveAction)
+		// 가드는 입력 유지형 방어 액션이라 구르기, 공격, 스프린트 같은 특수 행동으로 즉시 빠져나갈 수 있어야 한다.
+		// 데이터의 bCanBeInterrupted를 넓게 열면 모든 액션이 끼어들 수 있어 허용 타입만 예외로 둔다.
+		const bool bCanActionInterruptGuard =
+			ActiveActionType == EActionType::Guard
+			&& IsGuardInterruptActionType(ActionData.ActionType)
+			&& !bActiveActionInterruptLocked;
+		if (!bCanInterruptActiveAction && !bCanActionInterruptGuard)
 		{
 			LastStartResult = EActionStartResult::AlreadyRunning;
 			return false;
@@ -303,7 +369,7 @@ bool UActionComponent::CanStartAction(const FActionDataRow& ActionData, const EA
 
 	if (CachedStatComponent)
 	{
-		if (!CanConsumeStamina(ActionData, EActionStaminaConsumeContext::Start))
+		if (!CanConsumeStamina(ActionData, GetStartStaminaCost(ActionData)))
 		{
 			LastStartResult = EActionStartResult::NotEnoughStamina;
 			return false;
@@ -315,7 +381,14 @@ bool UActionComponent::CanStartAction(const FActionDataRow& ActionData, const EA
 
 void UActionComponent::BeginAction(const FActionDataRow& ActionData, const EActionDirection Direction)
 {
+	const bool bInterruptingGuard = ActiveActionType == EActionType::Guard
+		&& ActionData.ActionType != EActionType::Guard;
+
 	CompleteCurrentAction();
+	if (bInterruptingGuard)
+	{
+		GuardState = EGuardState::None;
+	}
 
 	ActiveActionTid = ActionData.Tid;
 	ActiveActionType = ActionData.ActionType;
@@ -328,8 +401,12 @@ void UActionComponent::BeginAction(const FActionDataRow& ActionData, const EActi
 	LastStartResult = EActionStartResult::Success;
 
 	// TODO: 스탯 컴포넌트 결합 의존성 없애기 - Delegate로 디커플링 (곽민규)
-	ConsumeStamina(ActionData, EActionStaminaConsumeContext::Start);
-	ApplyStaminaRecoveryRateMultiplier(ActionData);
+	ConsumeStamina(ActionData, GetStartStaminaCost(ActionData), true, false);
+	// 가드는 Start/End가 아니라 가드 윈도우(GuardWindow)가 열린 동안만 회복 배율을 적용한다.
+	if (ActionData.ActionType != EActionType::Guard)
+	{
+		ApplyStaminaRecoveryRateMultiplier(ActionData);
+	}
 	StartCooldown(ActionData);
 
 	OnActionStarted.Broadcast(ActiveActionTid, ActiveActionType);
@@ -346,7 +423,9 @@ void UActionComponent::StartCooldown(const FActionDataRow& ActionData)
 
 void UActionComponent::ApplyStaminaRecoveryRateMultiplier(const FActionDataRow& ActionData)
 {
-	if (!CachedStatComponent || FMath::IsNearlyEqual(ActionData.StaminaRecoveryRateMultiplier, 1.f))
+	if (!CachedStatComponent
+		|| bActiveActionModifiedStaminaRecoveryRate
+		|| FMath::IsNearlyEqual(ActionData.StaminaRecoveryRateMultiplier, 1.f))
 	{
 		return;
 	}
@@ -359,8 +438,7 @@ void UActionComponent::ApplyStaminaRecoveryRateMultiplier(const FActionDataRow& 
 
 bool UActionComponent::CanConsumeStamina(
 	const FActionDataRow& ActionData,
-	const EActionStaminaConsumeContext ConsumeContext,
-	const float CostMultiplier) const
+	const float StaminaCost) const
 {
 	if (!CachedStatComponent)
 	{
@@ -369,63 +447,102 @@ bool UActionComponent::CanConsumeStamina(
 
 	const float RequiredStamina = FMath::Max(
 		ActionData.MinRequiredStamina,
-		GetStaminaCostForContext(ActionData, ConsumeContext, CostMultiplier));
+		FMath::Max(0.f, StaminaCost));
 
 	return CachedStatComponent->GetCurrentStamina() >= RequiredStamina;
 }
 
 bool UActionComponent::ConsumeStamina(
 	const FActionDataRow& ActionData,
-	const EActionStaminaConsumeContext ConsumeContext,
-	const float CostMultiplier)
+	const float StaminaCost,
+	const bool bPauseRecovery,
+	const bool bRestartRecoveryDelay)
 {
 	if (!CachedStatComponent)
 	{
 		return true;
 	}
 
-	const float StaminaCost = GetStaminaCostForContext(ActionData, ConsumeContext, CostMultiplier);
-	if (StaminaCost <= 0.f)
+	const float SafeStaminaCost = FMath::Max(0.f, StaminaCost);
+	if (SafeStaminaCost <= 0.f)
 	{
 		return true;
 	}
 
-	if (!CanConsumeStamina(ActionData, ConsumeContext, CostMultiplier))
+	if (!CanConsumeStamina(ActionData, SafeStaminaCost))
 	{
 		LastStartResult = EActionStartResult::NotEnoughStamina;
 		return false;
 	}
 
-	if (ConsumeContext == EActionStaminaConsumeContext::Start)
+	if (bPauseRecovery)
 	{
 		CachedStatComponent->PauseStaminaRecovery(ActionStaminaRecoveryPauseSource);
 		bActiveActionPausedStaminaRecovery = true;
 	}
 
-	CachedStatComponent->ConsumeStamina(StaminaCost);
+	CachedStatComponent->ConsumeStamina(SafeStaminaCost);
+	if (bRestartRecoveryDelay)
+	{
+		CachedStatComponent->RestartStaminaRecoveryDelay();
+	}
 	return true;
 }
 
-float UActionComponent::GetStaminaCostForContext(
+const FActionDataRow* UActionComponent::FindCostActionDataByType(const EActionType ActionType) const
+{
+	if (const FActionDataRow* ActiveActionData = GetActiveActionData();
+		ActiveActionData && ActiveActionData->ActionType == ActionType)
+	{
+		return ActiveActionData;
+	}
+
+	// GuardHit처럼 액션 인스턴스보다 판정 상태가 오래 유지되는 경우에도 같은 ActionData 비용 규칙을 사용한다.
+	return FindFirstActionDataByType(ActionType);
+}
+
+const FActionDataRow* UActionComponent::FindFirstActionDataByType(const EActionType ActionType) const
+{
+	const UBATableManager* TableManager = UBATableManager::Get(this);
+	if (!TableManager)
+	{
+		return nullptr;
+	}
+
+	const FActionDataRow* BestActionData = nullptr;
+	for (const TPair<int32, FActionDataRow*>& Pair : TableManager->GetActionDataTable())
+	{
+		const FActionDataRow* ActionData = Pair.Value;
+		if (!ActionData || ActionData->ActionType != ActionType)
+		{
+			continue;
+		}
+
+		if (!BestActionData || ActionData->Tid < BestActionData->Tid)
+		{
+			BestActionData = ActionData;
+		}
+	}
+
+	return BestActionData;
+}
+
+float UActionComponent::GetStartStaminaCost(
 	const FActionDataRow& ActionData,
-	const EActionStaminaConsumeContext ConsumeContext,
 	const float CostMultiplier) const
 {
-	const float SafeCostMultiplier = FMath::Max(0.f, CostMultiplier);
-	switch (ActionData.StaminaCostType)
-	{
-	case EActionStaminaCostType::Instant:
-		return ConsumeContext == EActionStaminaConsumeContext::Start
-			? FMath::Max(0.f, ActionData.StaminaCost) * SafeCostMultiplier
-			: 0.f;
-	case EActionStaminaCostType::OnDemand:
-		return ConsumeContext == EActionStaminaConsumeContext::OnDemand
-			? FMath::Max(0.f, ActionData.StaminaCost) * SafeCostMultiplier
-			: 0.f;
-	case EActionStaminaCostType::PerSecond:
-	default:
-		return 0.f;
-	}
+	return ActionData.StaminaCostType == EActionStaminaCostType::Instant
+		? FMath::Max(0.f, ActionData.StaminaCost) * FMath::Max(0.f, CostMultiplier)
+		: 0.f;
+}
+
+float UActionComponent::GetOnDemandStaminaCost(
+	const FActionDataRow& ActionData,
+	const float CostMultiplier) const
+{
+	return ActionData.StaminaCostType == EActionStaminaCostType::OnDemand
+		? FMath::Max(0.f, ActionData.StaminaCost) * FMath::Max(0.f, CostMultiplier)
+		: 0.f;
 }
 
 void UActionComponent::BufferAction(const int32 ActionTid, const EActionDirection Direction)
@@ -452,7 +569,11 @@ void UActionComponent::TryStartBufferedAction()
 	}
 
 	const int32 ActionTidToStart = BufferedActionTid;
-	const EActionDirection DirectionToStart = BufferedActionDirection;
+	EActionDirection DirectionToStart = BufferedActionDirection;
+	if (ResolveBufferedActionDirection.IsBound())
+	{
+		DirectionToStart = ResolveBufferedActionDirection.Execute(ActionTidToStart, DirectionToStart);
+	}
 	ClearBufferedAction();
 
 	TGuardValue<bool> ConsumingGuard(bConsumingBufferedAction, true);

@@ -58,6 +58,7 @@ public:
 
 	bool TryStartGuard();
 	void StopGuard();
+	void CancelGuardForSprintInput();
 	void ConsumePerfectGuardStaminaCost();
 	void SetGuardWindowActive(bool bActive);
 	void SetPerfectGuardWindowActive(bool bActive);
@@ -107,11 +108,19 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Animation|Combat")
 	EPlayerCombatMode GetCombatMode() const;
 
+	UFUNCTION(BlueprintPure, Category = "Animation|Combat")
+	bool CanMoveWhileGuarding() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Combat")
+	bool ShouldUseUpperBodyGuardPose() const;
+
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	bool HasMoveInput() const;
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	FVector2D GetMoveInputVector() const;
+
+	EActionDirection GetActionDirectionFromMoveInput(const FVector2D& MoveInput) const;
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	FVector GetMoveInputWorldDirection() const;
@@ -236,11 +245,24 @@ protected:
 	UFUNCTION()
 	void OnStaminaChanged(float CurrentStamina, float MaxStamina);
 
+	void BindActionCallbacks();
+	void BindGuardActionCallbacks();
+	void BindDodgeActionCallbacks();
+
 	UFUNCTION()
 	void HandleActionStarted(int32 ActionTid, EActionType ActionType);
 
 	UFUNCTION()
-	void HandleActionMontageEnded(int32 ActionTid, EActionType ActionType, UAnimMontage* Montage, bool bInterrupted);
+	void HandleGuardInterruptingActionStarted(int32 ActionTid, EActionType ActionType);
+
+	UFUNCTION()
+	void HandleDodgeActionStarted(int32 ActionTid, EActionType ActionType);
+
+	UFUNCTION()
+	void HandleGuardActionMontageEnded(int32 ActionTid, EActionType ActionType, UAnimMontage* Montage, bool bInterrupted);
+
+	UFUNCTION()
+	void HandleDodgeActionMontageEnded(int32 ActionTid, EActionType ActionType, UAnimMontage* Montage, bool bInterrupted);
 
 	// 피격 반응을 C++ 기본 처리 이후 블루프린트 연출로 확장한다.
 	UFUNCTION(BlueprintImplementableEvent, Category = "Combat|DamageReaction", meta = (DisplayName = "OnDamageReaction"))
@@ -268,6 +290,7 @@ protected:
 	
 	UPROPERTY()
 	TObjectPtr<UAnimMontage> NextAttackMontage = nullptr;
+	EActionType NextAttackActionType = EActionType::None;
 	
 private:
 	// 이동 런타임
@@ -276,7 +299,7 @@ private:
 	void BeginMovementPhase(EPlayerMovementPhase NewPhase);
 	void FinishCurrentMovementPhase();
 	void SetActiveGaitAndSpeed(EMovementState NewGait);
-	EMovementState GetStaminaAllowedGait(EMovementState RequestedGait) const;
+	EMovementState GetMovementAllowedGait(EMovementState RequestedGait) const;
 	const FBAPlayerMovementPhaseSettings& GetPhaseSettings(EMovementState Gait) const;
 	float GetSpeedForGait(EMovementState Gait) const;
 	bool IsPhaseEnabledForGait(EPlayerMovementPhase Phase, EMovementState Gait) const;
@@ -295,6 +318,9 @@ private:
 	void UpdateInterpolatedMoveInputDirection(float DeltaTime);
 	void SnapInterpolatedMoveInputTo(const FVector2D& MoveInput);
 	FVector2D GetInterpolatedMoveInputVector() const;
+	void FaceMoveInputDirection();
+	EActionDirection ResolveBufferedActionDirection(int32 ActionTid, EActionDirection BufferedDirection) const;
+	EActionDirection ResolveActionAnimationDirection(int32 ActionTid, EActionDirection ActionDirection) const;
 	FVector2D ConvertWorldDirectionToMoveInput(const FVector& WorldDirection) const;
 	FVector ConvertMoveInputToWorldDirection(const FVector2D& MoveInput) const;
 
@@ -308,12 +334,14 @@ private:
 	void UnlockSprintAfterRecovery();
 
 	// 가드
+	void CancelGuardForActionInterrupt();
 	void ConfigureGuardMontageSections();
-	bool RequestGuardMontageEnd();
 	float GetGuardAbsorptionMultiplier() const;
 	float GetPerfectGuardStaminaCostMultiplier() const;
 	bool ConsumeGuardStaminaForDamage();
-	bool ShouldResumeGuardAfterGuardHit() const;
+	void KeepGuardActiveAfterGuardSuccess();
+	bool ShouldResumeGuardAfterGuardReaction() const;
+	bool ResumeGuardAfterGuardReaction();
 	void ShowGuardJudgementDebugMessage(const FString& Message, const FColor& Color) const;
 
 	// 사다리 런타임
@@ -341,6 +369,7 @@ private:
 		EActionDirection HitDirection,
 		bool bGuarding,
 		bool bGuardBreak) const;
+	void HandleGuardHitReactionMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted, int32 PlaybackId);
 	void ApplyDamageReactionKnockback(
 		EBADamageReactionType DamageReactionType,
 		const FVector& DamageDirection,
@@ -372,7 +401,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction")
 	float DamageReactionFallbackDuration = 0.6f;
 
-	// 피격 몽타주의 루트모션을 우선 사용한다. 루트모션이 없는 임시 반응에서만 Launch 넉백을 켠다.
+	// Deprecated: 피격/가드 히트 Launch 넉백은 항상 적용한다. 직렬화된 BP 설정 호환을 위해 필드는 유지한다.
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
 	bool bUseLaunchKnockbackForDamageReaction = false;
 
@@ -386,7 +415,7 @@ private:
 	float KnockDownKnockbackStrength = 650.f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
-	float GuardHitKnockbackStrength = 120.f;
+	float GuardHitKnockbackStrength = 360.f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
 	float GuardBreakKnockbackStrength = 650.f;
@@ -410,13 +439,7 @@ private:
 	TMap<EActionDirection, TObjectPtr<UAnimMontage>> GuardBreakReactMontages;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Montage")
-	FName GuardStartSection = TEXT("Start");
-
-	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Montage")
 	FName GuardLoopSection = TEXT("Loop");
-
-	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Montage")
-	FName GuardEndSection = TEXT("End");
 
 	// 런타임 상태
 	FBAPlayerMovementRuntimeState MovementRuntime;
