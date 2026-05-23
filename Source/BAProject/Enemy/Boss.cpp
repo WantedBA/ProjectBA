@@ -400,15 +400,12 @@ void ABoss::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void ABoss::HandlePerfectGuarded(FVector ImpactLocation)
 {
-	// KnockDown 패턴은 퍼펙트 가드가 성공해도 보스가 스태거하지 않는다 (무적 공격 취급)
-	if (LastUsedPatternTid != 0)
+	// 일반 공격(IsStrongAttack=false)에만 퍼펙트 가드 스태거 허용, 강공은 불가
+	const FBossAttackData* LastPattern = BossPatterns.FindByPredicate(
+		[this](const FBossAttackData& D) { return D.Tid == LastUsedPatternTid; });
+	if (!LastPattern || LastPattern->bIsStrongAttack)
 	{
-		const FBossAttackData* LastPattern = BossPatterns.FindByPredicate(
-			[this](const FBossAttackData& D) { return D.Tid == LastUsedPatternTid; });
-		if (LastPattern && LastPattern->DamageReactionType == EBADamageReactionType::KnockDown)
-		{
-			return;
-		}
+		return;
 	}
 
 	Super::HandlePerfectGuarded(ImpactLocation);
