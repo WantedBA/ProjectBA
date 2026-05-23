@@ -35,5 +35,9 @@ public:
 	// 보스 등장/퇴장 시 위젯 가시성 제어
 	UFUNCTION(BlueprintCallable, Category = "BA|UI|Boss")
 	void SetAppearance(bool bVisible);
+
+	// 보스전이 시작될 때 이름과 초기 체력을 설정 및 연출
+	UFUNCTION(BlueprintCallable, Category = "BA|UI|Boss")
+	void InitializeBossBar(FText Name, float MaxHP);
 	
 };

@@ -6,6 +6,20 @@
 #include "LayerBase.h"
 #include "Blueprint/UserWidget.h"
 #include "UI/MainHUD.h"
+#include "UI/NotifyLayer.h"
+#include "UI/System/UISettings.h"
+
+#include "Engine/Engine.h"
+#include "Engine/World.h"
+
+
+void USubSystemUI::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+
+	// 월드 델리게이트에 함수 등록
+	FWorldDelegates::OnPostWorldInitialization.AddUObject(this, &USubSystemUI::HandleWorldInit);
+}
 
 void USubSystemUI::PushUI(ULayerBase* InWidget)
 {
@@ -13,6 +27,13 @@ void USubSystemUI::PushUI(ULayerBase* InWidget)
 	if (!InWidget)
 	{
 		return;
+	}
+
+	// Notify 저장
+	if (UNotifyLayer* Notify = Cast<UNotifyLayer>(InWidget))
+	{
+		CachedNotifyLayer = Notify;
+		UE_LOG(LogTemp, Warning, TEXT(">>> Success: CachedNotifyLayer is Set!"));
 	}
 
 	if (UMainHUD* HUD = Cast<UMainHUD>(InWidget))
@@ -110,6 +131,40 @@ void USubSystemUI::OnWidgetCloseAnimationFinished(ULayerBase* Widget)
 		// 화면에서 지우고 메모리 정리
 		Widget->RemoveFromParent();
 		UE_LOG(LogTemp, Log, TEXT("[%s] 삭제 완료"), *Widget->GetName());
+	}
+}
+
+void USubSystemUI::HandleWorldInit(UWorld* World, const UWorld::InitializationValues IValues)
+{
+	// 실제 플레이 시에만 실행
+	if (World && World->IsGameWorld())
+	{
+		// 프로젝트 세팅에 등록된 설정값 가져오기
+		const UUISettings* Settings = GetDefault<UUISettings>();
+
+		if (Settings && Settings->DefaultNotifyLayerClass)
+			{
+				// 위젯 생성
+				if (!CachedNotifyLayer || !CachedNotifyLayer->IsInViewport())
+					{
+						PushUIByClass(Settings->DefaultNotifyLayerClass);
+					}
+			}
+
+		// 페이드 인 연출
+		if (CachedNotifyLayer)
+			{
+				FTimerHandle TimerHandle;
+				World->GetTimerManager().SetTimer(TimerHandle, [this]()
+					{
+						if (CachedNotifyLayer)
+						{
+							CachedNotifyLayer->PlayFadeEffect(true);
+
+							CachedNotifyLayer->ShowSplashMessageByTid(10001);
+						}
+					}, 0.1f, false);
+			}
 	}
 }
 

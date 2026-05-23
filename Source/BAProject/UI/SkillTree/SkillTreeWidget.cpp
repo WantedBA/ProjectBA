@@ -7,6 +7,8 @@
 #include "Instance/SkillTreeSubsystem.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
+#include "UI/System/SubSystemUI.h"
+#include "UI/MainHUD.h"
 
 #include "Tables/BATableManager.h"
 #include "Tables/SkillRows.h"
@@ -32,6 +34,18 @@ void USkillTreeWidget::NativeDestruct()
 void USkillTreeWidget::OnPopped()
 {
 	Super::OnPopped();
+
+	// 스킬트리가 닫힐 때 툴팁이 뜬 상태라면 강제로 숨김
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (USubSystemUI* UISubsystem = GI->GetSubsystem<USubSystemUI>())
+		{
+			if (UMainHUD* MainHUD = UISubsystem->GetMainHUD())
+			{
+				MainHUD->HideTooltip();
+			}
+		}
+	}
 	
 	// 팝업이 닫힐 때, 스킬트리 서브시스템에서 스킬트리 변경사항 브로드캐스팅
 	GetGameInstance()->GetSubsystem<USkillTreeSubsystem>()->OnSkillTreeChangeCompleted.Broadcast();
@@ -82,16 +96,27 @@ void USkillTreeWidget::CreateSkillLines()
 						// 부모 자식 연결
 						NewLine->SetSkillNodes(ParentNode, ChildNode);
 
-						// 화면에 루트 캔버스 추가 (Order 조절)
-						if (UCanvasPanel* RootCanvas = Cast<UCanvasPanel>(GetRootWidget()))
+						if(LineCanvas)
 						{
-							UCanvasPanelSlot* LineSlot = RootCanvas->AddChildToCanvas(NewLine);
+							UCanvasPanelSlot* LineSlot = LineCanvas->AddChildToCanvas(NewLine);
 							if (LineSlot)
 							{
-								LineSlot->SetZOrder(9);
+								LineSlot->SetZOrder(0);
 								LineSlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
 								LineSlot->SetOffsets(FMargin(0.0f, 0.0f, 0.0f, 0.0f));
 							}
+						
+
+						//// 화면에 루트 캔버스 추가 (Order 조절)
+						//if (UCanvasPanel* RootCanvas = Cast<UCanvasPanel>(GetRootWidget()))
+						//{
+						//	UCanvasPanelSlot* LineSlot = RootCanvas->AddChildToCanvas(NewLine);
+						//	if (LineSlot)
+						//	{
+						//		LineSlot->SetZOrder(1);
+						//		LineSlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
+						//		LineSlot->SetOffsets(FMargin(0.0f, 0.0f, 0.0f, 0.0f));
+						//	}
 						}
 						// 관리 리스트에 추가
 						SkillLines.Add(NewLine);

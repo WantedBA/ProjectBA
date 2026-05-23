@@ -18,6 +18,11 @@
 #include "Animation/AnimMontage.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
+#include "UI/System/SubSystemUI.h"
+#include "UI/MainHUD.h"
+#include "Component/StatComponent.h"
+
+
 // Utility 패턴 선택 튜닝 상수 (밸런싱 시 한곳에서 조정)
 namespace BossPatternTuning
 {
@@ -161,6 +166,15 @@ void ABoss::InitializeFromTable(int32 InTid)
 	}
 
 	LoadBossPatterns(Row->StageType);
+
+	// Boss Name 캐싱
+	if (const FMonsterRows* MonsterRow = UBATableManager::Get(this)->FindMonster(MonsterTid))
+	{
+		if (const FTextRows* TextRow = UBATableManager::Get(this)->FindText(MonsterRow->NameTextTid))
+		{
+			CachedBossName = FText::FromString(TextRow->KoreanText);
+		}
+	}
 }
 
 int32 ABoss::ChooseBestPattern()
@@ -392,6 +406,19 @@ void ABoss::HandleHPChanged(float CurrentHP, float MaxHP)
 		// 페이즈 전환 시 로직 (예: 광폭화, 패턴 추가 등)
 		UE_LOG(LogTemp, Warning, TEXT("Boss Phase Changed: %d"), CurrentPhase);
 	}
+
+	// UI 업데이트 브릿지
+	if (!CachedBossName.IsEmpty() && !bIsEnding)
+	{
+		if (USubSystemUI* UISub = GetGameInstance()->GetSubsystem<USubSystemUI>())
+		{
+			if (UMainHUD* HUD = UISub->GetMainHUD())
+			{
+				HUD->UpdateBossStatus(CachedBossName, CurrentHP, MaxHP);
+			}
+		}
+	}
+	
 }
 
 void ABoss::OnQuestActivated_Implementation(int32 tid)
@@ -412,6 +439,15 @@ void ABoss::OnQuestActivated_Implementation(int32 tid)
 	if (UBrainComponent* Brain = AIC->GetBrainComponent())
 	{
 		Brain->ResumeLogic(TEXT("WaitingForQuest"));
+	}
+
+	// UI 체력바 띄우기
+	if (USubSystemUI* UISub = GetGameInstance()->GetSubsystem<USubSystemUI>())
+	{
+		if (UMainHUD* HUD = UISub->GetMainHUD())
+		{
+			HUD->InitBossStatus(CachedBossName, StatComponent->GetCurrentHP(), StatComponent->GetMaxHP());
+		}
 	}
 }
 

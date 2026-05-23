@@ -25,6 +25,21 @@ void UMainHUD::UpdatePlayerHP(float Current, float Max)
 	}
 }
 
+void UMainHUD::InitBossStatus(FText Name, float Current, float Max)
+{
+	if (BossHPBar)
+	{
+		// 팝업이 안 되어 있다면 활성화
+		if (BossHPBar->GetVisibility() != ESlateVisibility::Visible)
+		{
+			BossHPBar->SetAppearance(true);
+		}
+
+		// BossHPBar에 연출 실행
+		BossHPBar->InitializeBossBar(Name, Max);
+	}
+}
+
 void UMainHUD::UpdateBossStatus(FText Name, float Current, float Max)
 {
 	if (BossHPBar)

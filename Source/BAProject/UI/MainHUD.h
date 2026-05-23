@@ -55,6 +55,10 @@ public:
 	// 값 업데이트
 	void UpdatePlayerHP(float Current, float Max);
 
+	// 보스 등장 시 연출을 포함한 초기화 함수
+	UFUNCTION(BlueprintCallable, Category = "BA|UI|Boss")
+	void InitBossStatus(FText Name, float Current, float Max);
+
 	// 보스 데이터 업데이트 및 표시
 	UFUNCTION(BlueprintCallable, Category = "BA|UI|Boss")
 	void UpdateBossStatus(FText Name, float Current, float Max);

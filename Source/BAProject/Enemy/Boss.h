@@ -189,6 +189,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|State")
 	int32 LastUsedPatternTid = 0;
 
+	// UI Boss 이름 저장
+	UPROPERTY()
+	FText CachedBossName;
+
 	TArray<int32> PendingCooldownRemove;
 
 	bool bIsComboTransitioning = false;

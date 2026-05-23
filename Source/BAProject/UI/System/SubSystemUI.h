@@ -15,6 +15,9 @@ UCLASS(BlueprintType, Blueprintable)
 class BAPROJECT_API USubSystemUI : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
+
+public:
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	
 public:
 	// 위젯 출력 및 스택 추가 함수
@@ -25,6 +28,10 @@ public:
 	// 클래스 타입을 넘겨주면 내부에서 생성 해주는 자동화 함수
 	UFUNCTION(BlueprintCallable, Category = "BA|UI", meta = (DisplayName = "Push UI By Class"))
 	class ULayerBase* PushUIByClass(TSubclassOf<ULayerBase> InWidgetClass);
+
+	// 알림 레이어 전용 함수 
+	UFUNCTION(BlueprintCallable, Category = "BA|UI")
+	class UNotifyLayer* GetNotifyLayer() const { return CachedNotifyLayer; }
 
 	template<typename T>
 	T* PushUI()
@@ -51,6 +58,9 @@ protected:
 	UFUNCTION()
 	void OnWidgetCloseAnimationFinished(ULayerBase* Widget);
 
+	// 맵이 시작될 때마다 실행될 함수
+	void HandleWorldInit(UWorld* World, const UWorld::InitializationValues IValues);
+
 	// 모든 팝업 뒤에 적용할 블러 위젯
 	UPROPERTY()
 	class UUserWidget* GlobalBlurWidget;
@@ -60,6 +70,12 @@ protected:
 
 	UPROPERTY()
 	class UMainHUD* CachedMainHUD;
+
+	UPROPERTY()
+	class UNotifyLayer* CachedNotifyLayer;
+
+	UPROPERTY(EditAnywhere, Category = "BA|UI")
+	TSubclassOf<UNotifyLayer> NotifyLayerClass;
 
 private:
 	// 스택 상황에 따라 마우스 커서와 입력 모드 결정

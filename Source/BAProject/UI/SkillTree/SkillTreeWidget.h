@@ -60,5 +60,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "BA|SkillTree")
 	TSubclassOf<class USkillConnectionLine> SkillLineClass;
 
+	UPROPERTY(meta = (BindWidget))
+	class UCanvasPanel* LineCanvas;
+
 	
 };
