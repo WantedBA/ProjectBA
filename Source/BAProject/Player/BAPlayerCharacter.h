@@ -57,8 +57,8 @@ public:
 	virtual void TryAttack(EActionCommand InActionCommand); // CharacterBase 공격 진입점. 
 	
 	// 차징 공격 판정
-	void ChargeStart();
-	void ChargeLoop(UAnimMontage* AnimMontage, bool bArg);
+	void ChargeAttackStart();
+	void ChargeLoopStart(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation);
 	void ChargeAttackCompleted();
 
 	bool TryStartGuard();
@@ -451,6 +451,8 @@ private:
 	bool bGuardInputHeld = false;
 	bool bPerfectGuardWindowActive = false;
 	bool bIsCharging = false;
+	UPROPERTY(Transient)
+	UAnimMontage* PausedMontage = nullptr;
 	
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimMontage> ActiveDamageReactionMontage;
