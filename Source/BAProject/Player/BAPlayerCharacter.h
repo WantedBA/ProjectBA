@@ -189,6 +189,16 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Action")
 	bool CanAcceptActionInput() const;
 
+	UFUNCTION(BlueprintCallable, Category = "Combat|Death")
+	void DropWeaponForDeath();
+
+	UFUNCTION(BlueprintPure, Category = "Combat|Death")
+	bool CanDropWeaponForDeath() const;
+
+	// 다운/에어본 사망처럼 바닥에 완전히 누운 뒤 죽음 처리를 마무리해야 할 때 호출한다.
+	UFUNCTION(BlueprintCallable, Category = "Combat|Death")
+	void FinishDeferredDeath(EActionDirection DeathDirection = EActionDirection::Any);
+
 	// 사다리 상호작용
 	UFUNCTION(BlueprintCallable, Category = "Interaction|Ladder")
 	void EnterLadder(AMapLadder* Ladder, const FVector& EntryLocation, const FRotator& FaceRotation);
@@ -303,6 +313,12 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Combat|Guard", meta = (DisplayName = "OnPerfectGuardSucceeded"))
 	void K2_OnPerfectGuardSucceeded(const FHitResult& HitResult, AActor* DamageCauser);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Combat|Death", meta = (DisplayName = "OnDeathMontageStarted"))
+	void K2_OnDeathMontageStarted(EActionDirection DeathDirection, UAnimMontage* DeathMontage);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Combat|Death", meta = (DisplayName = "OnDeathMontageEnded"))
+	void K2_OnDeathMontageEnded(bool bInterrupted);
 	
 	// 공격 관련
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
@@ -403,7 +419,29 @@ private:
 		EActionDirection HitDirection,
 		bool bGuarding,
 		bool bGuardBreak) const;
+	const TMap<EActionDirection, TObjectPtr<UAnimMontage>>* GetDeathMontageMapForDamageReaction(
+		EBADamageReactionType DamageReactionType) const;
+	UAnimMontage* SelectDeathMontage(EActionDirection HitDirection) const;
+	void DropWeaponAndDie();
+	bool ShouldDeferDeathUntilDamageReaction() const;
+	void StartDeferredDamageReactionDeath();
+	void FinalizeDeferredDamageReactionDeath();
+	void FinalizeDropWeaponAndDie(EActionDirection DeathDirection);
+	void PrepareDeathState();
+	void StopMontagesForDeath();
+	bool ShouldDropWeaponOnDeath() const;
+	bool ShouldDropWeaponImmediatelyOnDeath() const;
+	void DetachWeaponForDeath();
+	void ConfigureDroppedWeaponCollision();
+	void ConfigureDroppedWeaponWeight();
+	void ApplyDroppedWeaponPhysics();
+	FVector CalculateDeathWeaponDropImpulse() const;
+	void PlayDeathMontage(EActionDirection DeathDirection);
+	void FreezeMontageAtFinalFrame(UAnimMontage* MontageToPause);
+	void HandleDeathMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted);
+	void HandleDeathMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 	void HandleGuardHitReactionMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted, int32 PlaybackId);
+	void HandleDeferredDeathReactionMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted, int32 PlaybackId);
 	void ApplyDamageReactionKnockback(
 		EBADamageReactionType DamageReactionType,
 		const FVector& DamageDirection,
@@ -458,6 +496,9 @@ private:
 	float KnockDownKnockbackStrength = 650.f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
+	float KnockDownLaunchVerticalSpeed = 260.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
 	float GuardHitKnockbackStrength = 360.f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
@@ -481,6 +522,42 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")
 	TMap<EActionDirection, TObjectPtr<UAnimMontage>> GuardBreakReactMontages;
 
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|Montage", meta = (DisplayName = "Hit React Death Montages"))
+	TMap<EActionDirection, TObjectPtr<UAnimMontage>> DeathMontages;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|Montage")
+	TMap<EActionDirection, TObjectPtr<UAnimMontage>> LargeHitDeathMontages;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|Montage", meta = (ClampMin = "0.0"))
+	float DeathMontageStopBlendOut = 0.1f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|WeaponDrop")
+	bool bDropWeaponOnDeath = true;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|WeaponDrop", meta = (ClampMin = "0.0"))
+	float DroppedWeaponMassKg = 35.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|WeaponDrop", meta = (ClampMin = "0.0"))
+	float DroppedWeaponLinearDamping = 2.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|WeaponDrop", meta = (ClampMin = "0.0"))
+	float DroppedWeaponAngularDamping = 12.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|WeaponDrop", meta = (ClampMin = "0.0"))
+	float DroppedWeaponMaxAngularSpeedDeg = 180.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|WeaponDrop")
+	float DroppedWeaponForwardImpulse = 0.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|WeaponDrop")
+	float DroppedWeaponRightImpulse = 0.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|WeaponDrop")
+	float DroppedWeaponUpwardImpulse = 0.f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|WeaponDrop")
+	FVector DroppedWeaponAngularImpulse = FVector::ZeroVector;
+
 	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Montage")
 	FName GuardLoopSection = TEXT("Loop");
 
@@ -493,6 +570,13 @@ private:
 	FTimerHandle DamageReactionTimerHandle;
 	int32 ActiveDamageReactionPlaybackId = 0;
 	int32 NextDamageReactionPlaybackId = 1;
+	EActionDirection LastDamageHitDirection = EActionDirection::Any;
+	EBADamageReactionType LastDamageReactionType = EBADamageReactionType::HitReact;
+	FVector LastDamageDirection = FVector::ZeroVector;
+	float LastDamageLaunchHorizontalSpeed = 0.f;
+	float LastDamageLaunchVerticalSpeed = 0.f;
+	bool bDeathFinalizationDeferred = false;
+	bool bWeaponDroppedForDeath = false;
 	bool bGuardInputHeld = false;
 	bool bPerfectGuardWindowActive = false;
 	bool bLockOnForcedStrafeActive = false;
@@ -504,4 +588,7 @@ private:
 	
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimMontage> ActiveDamageReactionMontage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimMontage> ActiveDeathMontage;
 };

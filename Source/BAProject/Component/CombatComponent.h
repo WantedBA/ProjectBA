@@ -43,7 +43,9 @@ public:
 		float InDamage,
 		FName InStartSocket = NAME_None,
 		FName InEndSocket = NAME_None,
-		EBADamageReactionType InDamageReactionType = EBADamageReactionType::HitReact);
+		EBADamageReactionType InDamageReactionType = EBADamageReactionType::HitReact,
+		float InLaunchHorizontalSpeed = 0.f,
+		float InLaunchVerticalSpeed = 0.f);
 
 	// 전역 시간 배율을 짧게 낮춰 타격감을 만든다.
 	void TriggerHitStop(float Duration);
@@ -99,6 +101,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	EBADamageReactionType CurrentDamageReactionType = EBADamageReactionType::HitReact;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Launch", meta = (ClampMin = "0.0"))
+	float CurrentLaunchHorizontalSpeed = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Launch", meta = (ClampMin = "0.0"))
+	float CurrentLaunchVerticalSpeed = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Socket")
 	FName StartSocketName = TEXT("Sword_Start");

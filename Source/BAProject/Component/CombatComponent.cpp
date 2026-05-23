@@ -105,11 +105,15 @@ void UCombatComponent::SetAttackData(
 	float InDamage,
 	FName InStartSocket,
 	FName InEndSocket,
-	EBADamageReactionType InDamageReactionType)
+	EBADamageReactionType InDamageReactionType,
+	float InLaunchHorizontalSpeed,
+	float InLaunchVerticalSpeed)
 {
 	CurrentRadius = InRadius;
 	CurrentDamage = InDamage;
 	CurrentDamageReactionType = InDamageReactionType;
+	CurrentLaunchHorizontalSpeed = FMath::Max(0.f, InLaunchHorizontalSpeed);
+	CurrentLaunchVerticalSpeed = FMath::Max(0.f, InLaunchVerticalSpeed);
 	
 	if (InStartSocket != NAME_None)
 	{
@@ -270,6 +274,8 @@ void UCombatComponent::ApplyDamage(AActor* Victim, const FHitResult& HitResult)
 	FBADamageEvent DamageEvent;
 	DamageEvent.DamageReactionType = CurrentDamageReactionType;
 	DamageEvent.HitResult = HitResult;
+	DamageEvent.LaunchHorizontalSpeed = CurrentLaunchHorizontalSpeed;
+	DamageEvent.LaunchVerticalSpeed = CurrentLaunchVerticalSpeed;
 
 	FVector DamageDirection = FVector::ZeroVector;
 	if (OwnerActor)

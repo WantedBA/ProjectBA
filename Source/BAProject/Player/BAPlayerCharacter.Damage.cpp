@@ -167,6 +167,8 @@ void ABAPlayerCharacter::OnDamaged(
 	const FBADamageEvent* BADamageEvent = DamageEvent.IsOfType(FBADamageEvent::ClassID)
 		? static_cast<const FBADamageEvent*>(&DamageEvent)
 		: nullptr;
+	LastDamageLaunchHorizontalSpeed = BADamageEvent ? BADamageEvent->LaunchHorizontalSpeed : 0.f;
+	LastDamageLaunchVerticalSpeed = BADamageEvent ? BADamageEvent->LaunchVerticalSpeed : 0.f;
 
 	const bool bGuarding = BADamageEvent ? BADamageEvent->bVictimGuarding : IsGuardingAgainstDamage(DamageDirection);
 	const bool bPerfectGuard = bGuarding && (BADamageEvent
@@ -199,6 +201,9 @@ void ABAPlayerCharacter::OnDamaged(
 
 	if (StatComponent)
 	{
+		LastDamageHitDirection = HitDirection;
+		LastDamageReactionType = DamageReactionType;
+		LastDamageDirection = DamageDirection;
 		StatComponent->ApplyDamage(AppliedDamage);
 		if (StatComponent->IsDead())
 		{
@@ -219,28 +224,6 @@ void ABAPlayerCharacter::OnDamaged(
 	}
 	ApplyDamageReactionKnockback(DamageReactionType, DamageDirection, HitDirection, bGuarding, bGuardBreak);
 	PlayDamageReactionAnimation(DamageReactionType, HitDirection, bGuarding, bGuardBreak);
-}
-
-void ABAPlayerCharacter::OnDeath()
-{
-	Super::OnDeath();
-
-	GetWorldTimerManager().ClearTimer(DamageReactionTimerHandle);
-	DamageReactionState = EPlayerDamageReactionState::None;
-	ActiveDamageReactionMontage = nullptr;
-	ActiveDamageReactionPlaybackId = 0;
-	bGuardInputHeld = false;
-	SetGuardWindowActive(false);
-	SetBAPlayerState(EBAPlayerState::Dead);
-
-	if (ActionComponent)
-	{
-		ActionComponent->CancelCurrentAction();
-	}
-
-	// 3초 후 리스폰 시퀀스 시작 (소울라이크 사망 연출 고려)
-	FTimerHandle RespawnTimerHandle;
-	GetWorldTimerManager().SetTimer(RespawnTimerHandle, this, &ABAPlayerCharacter::Respawn, 3.0f, false);
 }
 
 bool ABAPlayerCharacter::IsDamageReacting() const
@@ -346,13 +329,19 @@ void ABAPlayerCharacter::ApplyDamageReactionKnockback(
 
 	// 넉백 강도는 플레이어가 보유한 피격 반응 타입별 값으로 결정한다.
 	float KnockbackStrength = HitReactKnockbackStrength;
+	float KnockbackZ = DamageReactionKnockbackZ;
 	if (bGuarding)
 	{
 		KnockbackStrength = GuardHitKnockbackStrength;
 	}
 	else if (DamageReactionType == EBADamageReactionType::KnockDown)
 	{
-		KnockbackStrength = KnockDownKnockbackStrength;
+		KnockbackStrength = LastDamageLaunchHorizontalSpeed > 0.f
+			? LastDamageLaunchHorizontalSpeed
+			: KnockDownKnockbackStrength;
+		KnockbackZ = LastDamageLaunchVerticalSpeed > 0.f
+			? LastDamageLaunchVerticalSpeed
+			: KnockDownLaunchVerticalSpeed;
 	}
 	else if (DamageReactionType == EBADamageReactionType::LargeHitReact)
 	{
@@ -379,8 +368,8 @@ void ABAPlayerCharacter::ApplyDamageReactionKnockback(
 	}
 
 	FVector LaunchVelocity = KnockbackDirection * KnockbackStrength;
-	LaunchVelocity.Z = DamageReactionKnockbackZ;
-	LaunchCharacter(LaunchVelocity, true, false);
+	LaunchVelocity.Z = KnockbackZ;
+	LaunchCharacter(LaunchVelocity, true, DamageReactionType == EBADamageReactionType::KnockDown);
 }
 
 void ABAPlayerCharacter::PlayDamageReactionAnimation(
@@ -416,7 +405,22 @@ void ABAPlayerCharacter::PlayDamageReactionAnimation(
 	if (ActiveDamageReactionMontage)
 	{
 		ReactionDuration = PlayAnimMontage(ActiveDamageReactionMontage);
-		if (DamageReactionState == EPlayerDamageReactionState::GuardHit && ReactionDuration > 0.f)
+		if (ReactionDuration > 0.f && bDeathFinalizationDeferred)
+		{
+			if (USkeletalMeshComponent* MeshComponent = GetMesh())
+			{
+				if (UAnimInstance* AnimInstance = MeshComponent->GetAnimInstance())
+				{
+					FOnMontageBlendingOutStarted BlendingOutDelegate;
+					BlendingOutDelegate.BindUObject(
+						this,
+						&ABAPlayerCharacter::HandleDeferredDeathReactionMontageBlendingOut,
+						PlaybackId);
+					AnimInstance->Montage_SetBlendingOutDelegate(BlendingOutDelegate, ActiveDamageReactionMontage);
+				}
+			}
+		}
+		else if (DamageReactionState == EPlayerDamageReactionState::GuardHit && ReactionDuration > 0.f)
 		{
 			if (USkeletalMeshComponent* MeshComponent = GetMesh())
 			{
@@ -523,6 +527,20 @@ void ABAPlayerCharacter::HandleGuardHitReactionMontageBlendingOut(
 	FinishDamageReaction(PlaybackId);
 }
 
+void ABAPlayerCharacter::HandleDeferredDeathReactionMontageBlendingOut(
+	UAnimMontage* Montage,
+	const bool /*bInterrupted*/,
+	const int32 PlaybackId)
+{
+	if (PlaybackId != ActiveDamageReactionPlaybackId || Montage != ActiveDamageReactionMontage)
+	{
+		return;
+	}
+
+	GetWorldTimerManager().ClearTimer(DamageReactionTimerHandle);
+	FinishDeferredDeath(LastDamageHitDirection);
+}
+
 void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)
 {
 	if (PlaybackId != ActiveDamageReactionPlaybackId)
@@ -531,6 +549,12 @@ void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)
 	}
 
 	const EPlayerDamageReactionState FinishedDamageReactionState = DamageReactionState;
+	if (bDeathFinalizationDeferred)
+	{
+		FinishDeferredDeath(LastDamageHitDirection);
+		return;
+	}
+
 	ActiveDamageReactionPlaybackId = 0;
 	ActiveDamageReactionMontage = nullptr;
 	if (DamageReactionState == EPlayerDamageReactionState::KnockDown)

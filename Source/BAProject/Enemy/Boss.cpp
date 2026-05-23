@@ -668,6 +668,8 @@ void ABoss::LoadBossPatterns(int32 StageType)
 			NewData.IdealRange          = Pair.Value->IdealRange;
 			NewData.Attack              = Pair.Value->Attack;
 			NewData.DamageReactionType  = static_cast<EBADamageReactionType>(Pair.Value->DamageReactionType);
+			NewData.LaunchHorizontalSpeed = Pair.Value->LaunchHorizontalSpeed;
+			NewData.LaunchVerticalSpeed = Pair.Value->LaunchVerticalSpeed;
 			NewData.NextComboTid        = Pair.Value->NextComboTid;
 			NewData.ComboTransitionTime = Pair.Value->ComboTransitionTime;
 			NewData.ForceAtHPPercent    = Pair.Value->ForceAtHPPercent;
@@ -780,7 +782,14 @@ bool ABoss::ExecuteBossPattern(int32 PatternTid)
 	// 타격 소켓은 CombatComponent에 설정된 StartSocketName/EndSocketName을 그대로 사용한다.
 	// 소켓 인자를 생략(NAME_None)하면 SetAttackData가 기존 소켓 이름을 덮어쓰지 않는다.
 	// IdealRange는 AI 위치 선정용 거리라 타격 반경으로 쓰면 안 된다 → 검 두께(WeaponHitRadius) 사용.
-	CombatComponent->SetAttackData(WeaponHitRadius, PatternData->Attack, NAME_None, NAME_None, PatternData->DamageReactionType);
+	CombatComponent->SetAttackData(
+		WeaponHitRadius,
+		PatternData->Attack,
+		NAME_None,
+		NAME_None,
+		PatternData->DamageReactionType,
+		PatternData->LaunchHorizontalSpeed,
+		PatternData->LaunchVerticalSpeed);
 
 	CombatComponent->ExecuteAttack(MontageToPlay);
 
