@@ -19,7 +19,7 @@
  * 락온 성공 결과
  * - OnTargetLocked 델리게이트가 HandleLockOnTargetLocked()를 호출한다.
  * - bForceStrafeWhileLockedOn이 true면 현재 locomotion을 저장하고 Strafe로 고정한다.
- * - GetMovementAllowedGait()는 락온 중 Sprint 요청을 Run으로 낮춘다.
+ * - Sprint 입력은 Free와 같은 규칙으로 허용한다.
  *
  * 락온 해제 결과
  * - OnTargetUnlocked 델리게이트가 HandleLockOnTargetUnlocked()를 호출한다.
@@ -31,7 +31,7 @@
  * - 화면 중앙 높이를 조정할 때는 LockOnAdditionalControllerPitchOffset 값을 바꾼다.
  *
  * 타겟 사망 결과
- * - EnemyBase가 사망 시 TargetComponent::SetCanBeCaptured(false)를 호출한다.
+ * - EnemyBase가 사망 시 일정 지연 후 TargetComponent::SetCanBeCaptured(false)를 호출한다.
  * - WeightedTargetHandler는 StateInvalidation을 받고 다음 타겟을 찾거나 락온을 해제한다.
  */
 

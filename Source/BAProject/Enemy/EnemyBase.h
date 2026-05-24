@@ -100,6 +100,7 @@ protected:
 
 	virtual void OnDamaged(float FinalDamage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 	void HandleAttackPerfectGuarded(AActor* GuardingActor, const FHitResult& HitResult);
+	void ScheduleLockOnTargetingReleaseOnDeath();
 	void ReleaseLockOnTargetingOnDeath();
 
 	// 시각 연출 이벤트
@@ -120,6 +121,7 @@ protected:
 	bool bInitAI = false;
 	float MaxMoveSpeed;
 	FTimerHandle StateTimerHandle;
+	FTimerHandle LockOnReleaseDelayTimerHandle;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Debug")
 	bool bShowDebugState = true;
@@ -129,6 +131,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|LockOn")
 	bool bDisableLockOnCaptureOnDeath = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|LockOn", meta = (ClampMin = "0.0", Units = "s"))
+	float LockOnReleaseDelayOnDeath = 0.75f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy|Components")
 	TObjectPtr<UStatComponent> StatComponent;

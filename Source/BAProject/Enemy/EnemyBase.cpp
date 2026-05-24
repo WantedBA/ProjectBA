@@ -334,7 +334,7 @@ void AEnemyBase::OnDeath()
 {
 	Super::OnDeath();
 	SetState(EEnemyState::Dead);
-	ReleaseLockOnTargetingOnDeath();
+	ScheduleLockOnTargetingReleaseOnDeath();
 
 	SetActorEnableCollision(false);
 
@@ -349,6 +349,27 @@ void AEnemyBase::OnDeath()
 	PlayAnimMontage(DeadMontage);
 
 	K2_OnDeadVisuals();
+}
+
+void AEnemyBase::ScheduleLockOnTargetingReleaseOnDeath()
+{
+	if (!bDisableLockOnCaptureOnDeath)
+	{
+		return;
+	}
+
+	if (!GetWorld() || LockOnReleaseDelayOnDeath <= 0.f)
+	{
+		ReleaseLockOnTargetingOnDeath();
+		return;
+	}
+
+	GetWorldTimerManager().SetTimer(
+		LockOnReleaseDelayTimerHandle,
+		this,
+		&AEnemyBase::ReleaseLockOnTargetingOnDeath,
+		LockOnReleaseDelayOnDeath,
+		false);
 }
 
 void AEnemyBase::ReleaseLockOnTargetingOnDeath()

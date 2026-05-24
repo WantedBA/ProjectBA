@@ -418,11 +418,6 @@ EMovementState ABAPlayerCharacter::GetMovementAllowedGait(const EMovementState R
 		return EMovementState::Walk;
 	}
 
-	if (IsLockOnTargetLocked() && RequestedGait == EMovementState::Sprint)
-	{
-		return EMovementState::Run;
-	}
-
 	if (RequestedGait == EMovementState::Sprint && !IsSprintAllowedByStamina())
 	{
 		return EMovementState::Run;
