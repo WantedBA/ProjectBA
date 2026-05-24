@@ -112,6 +112,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "LockOn")
 	bool IsLockOnTargetLocked() const;
 
+	UFUNCTION(BlueprintCallable, Category = "LockOn")
+	void ToggleLockOnTargeting();
+
+	UFUNCTION(BlueprintCallable, Category = "LockOn")
+	void SwitchLockOnTargetInput(const FVector2D& SwitchInput);
+
 	// Start, Loop, Stop, Turn 등 현재 재생해야 하는 이동 페이즈를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	EPlayerMovementPhase GetMovementPhase() const;
@@ -344,6 +350,7 @@ private:
 	void FaceMoveInputDirection();
 	EActionDirection ResolveBufferedActionDirection(int32 ActionTid, EActionDirection BufferedDirection) const;
 	EActionDirection ResolveActionAnimationDirection(int32 ActionTid, EActionDirection ActionDirection) const;
+	EActionDirection ResolveActionOrientationDirection(int32 ActionTid, EActionDirection ActionDirection) const;
 	FVector2D ConvertWorldDirectionToMoveInput(const FVector& WorldDirection) const;
 	FVector ConvertMoveInputToWorldDirection(const FVector2D& MoveInput) const;
 

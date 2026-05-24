@@ -84,9 +84,8 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category="Input")
 	TObjectPtr<UInputAction> InteractAction;
 	
-	// 락온 개발 전 임시 버튼
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	TObjectPtr<UInputAction> ToggleStrafeAction;
+	TObjectPtr<UInputAction> LockOnAction;
 	
 	// Input handlers
 	// 이동 입력을 정규화해 캐릭터에 전달하고 액션 버퍼 방향을 갱신한다.
@@ -134,8 +133,8 @@ private:
 	// 사다리 상태면 이탈하고, 아니면 현재 상호작용 대상을 실행한다.
 	void OnInteract();
 
-	// 임시 기능
-	void ToggleStrafe();
+	// 락온 대상을 탐색하거나 현재 락온을 해제한다.
+	void OnLockOnStarted();
 	
 	// 스킬트리 열기
 	void ToggleSkillTree();

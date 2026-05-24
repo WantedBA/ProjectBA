@@ -232,6 +232,9 @@ void ABAPlayerCharacter::BindDodgeActionCallbacks()
 		ActionAnimationComponent->ResolveActionAnimationDirection.BindUObject(
 			this,
 			&ABAPlayerCharacter::ResolveActionAnimationDirection);
+		ActionAnimationComponent->ResolveActionOrientationDirection.BindUObject(
+			this,
+			&ABAPlayerCharacter::ResolveActionOrientationDirection);
 		ActionAnimationComponent->OnActionMontageEnded.AddDynamic(this, &ABAPlayerCharacter::HandleDodgeActionMontageEnded);
 	}
 }
