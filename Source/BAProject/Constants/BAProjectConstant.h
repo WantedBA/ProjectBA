@@ -36,3 +36,8 @@ namespace SocketName
 	constexpr const TCHAR* WeaponSocketName = TEXT("Socket");
 	constexpr const TCHAR* RightHandTargetSocketName = TEXT("HandGrip_R");
 }
+
+namespace BossConfig
+{
+	constexpr float MinComboGapTime = 0.3f;
+}

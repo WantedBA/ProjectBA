@@ -769,6 +769,7 @@ bool ABoss::ExecuteBossPattern(int32 PatternTid)
 	{
 		bIsCharging = true;
 		ChargingDamageAccumulated = 0.f;
+		SetChargeOutline(true);
 	}
 
 	if (CombatComponent == nullptr)
@@ -813,6 +814,7 @@ void ABoss::OnPatternMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 
 	// 차징 몽타주가 스턴 없이 정상 완료된 경우
 	bIsCharging = false;
+	SetChargeOutline(false);
 
 	const EEnemyState State = GetCurrentState();
 
@@ -859,18 +861,12 @@ void ABoss::OnPatternMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 			PendingComboTid = NextTid;
 			bIsComboTransitioning = true;
 
-			if (TransitionTime > 0.f)
-			{
-				GetWorldTimerManager().SetTimer(
-					ComboTransitionHandle,
-					this, &ABoss::ExecutePendingCombo,
-					TransitionTime, false
-				);
-			}
-			else
-			{
-				ExecutePendingCombo();
-			}
+			const float ActualDelay = FMath::Max(TransitionTime, BossConfig::MinComboGapTime);
+			GetWorldTimerManager().SetTimer(
+				ComboTransitionHandle,
+				this, &ABoss::ExecutePendingCombo,
+				ActualDelay, false
+			);
 			return;
 		}
 	}
@@ -921,9 +917,22 @@ void ABoss::OnEnemyAttackAniFinished(EEnemyState NewState)
 	Super::OnEnemyAttackAniFinished(NewState);
 }
 
+void ABoss::SetChargeOutline(bool bEnabled)
+{
+	TArray<UPrimitiveComponent*> Primitives;
+	GetComponents<UPrimitiveComponent>(Primitives);
+	for (UPrimitiveComponent* P : Primitives)
+	{
+		P->SetRenderCustomDepth(bEnabled);
+		if (bEnabled)
+			P->SetCustomDepthStencilValue(BossChargeStencilValue);
+	}
+}
+
 void ABoss::TriggerChargingStun()
 {
 	bIsCharging = false;
+	SetChargeOutline(false);
 	bChargingStunActive = true;
 	ChargingStunStartTime = GetWorld()->GetTimeSeconds();
 	GetWorldTimerManager().ClearTimer(ChargingStunMinDurationHandle);

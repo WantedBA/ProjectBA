@@ -154,6 +154,9 @@ private:
 
 	void FinishChargingStun();
 
+	void SetChargeOutline(bool bEnabled);
+	static constexpr int32 BossChargeStencilValue = 2;
+
 	// 플레이어가 보스 정면 기준 어느 구역(정면/측면/후방)에 있는지
 	EBossPatternZone GetPlayerZone(AActor* Target) const;
 
