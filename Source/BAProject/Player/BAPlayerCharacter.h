@@ -319,6 +319,13 @@ protected:
 	TObjectPtr<UAnimMontage> NextAttackMontage = nullptr;
 	EActionType NextAttackActionType = EActionType::None;
 	
+	// 최대 차징 시간
+	UPROPERTY(EditAnywhere, Category="Combat")
+	float MaxChargeTime = 1.5f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat")
+	FTimerHandle ChargeAttackTimerHandle;
+	
 private:
 	// 이동 런타임
 	void TickMovementRuntime(float DeltaTime);
