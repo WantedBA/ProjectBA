@@ -18,6 +18,7 @@ class AMapLadder;
 class USpringArmComponent;
 class UStatComponent;
 class UStaticMeshComponent;
+class UTargetComponent;
 
 /**
  * 플레이어 캐릭터 본체.
@@ -107,6 +108,15 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	EPlayerLocomotionMode GetLocomotionMode() const;
+
+	UFUNCTION(BlueprintPure, Category = "LockOn")
+	bool IsLockOnTargetLocked() const;
+
+	UFUNCTION(BlueprintCallable, Category = "LockOn")
+	void ToggleLockOnTargeting();
+
+	UFUNCTION(BlueprintCallable, Category = "LockOn")
+	void SwitchLockOnTargetInput(const FVector2D& SwitchInput);
 
 	// Start, Loop, Stop, Turn 등 현재 재생해야 하는 이동 페이즈를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
@@ -259,6 +269,14 @@ protected:
 	void BindActionCallbacks();
 	void BindGuardActionCallbacks();
 	void BindDodgeActionCallbacks();
+	void BindLockOnTargetCallbacks();
+	void ConfigureLockOnCameraDefaults();
+
+	UFUNCTION()
+	void HandleLockOnTargetLocked(UTargetComponent* Target, FName Socket);
+
+	UFUNCTION()
+	void HandleLockOnTargetUnlocked(UTargetComponent* UnlockedTarget, FName Socket);
 
 	UFUNCTION()
 	void HandleActionStarted(int32 ActionTid, EActionType ActionType);
@@ -301,6 +319,13 @@ protected:
 	TObjectPtr<UAnimMontage> NextAttackMontage = nullptr;
 	EActionType NextAttackActionType = EActionType::None;
 	
+	// 최대 차징 시간
+	UPROPERTY(EditAnywhere, Category="Combat")
+	float MaxChargeTime = 1.5f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat")
+	FTimerHandle ChargeAttackTimerHandle;
+	
 private:
 	// 이동 런타임
 	void TickMovementRuntime(float DeltaTime);
@@ -308,6 +333,7 @@ private:
 	void BeginMovementPhase(EPlayerMovementPhase NewPhase);
 	void FinishCurrentMovementPhase();
 	void SetActiveGaitAndSpeed(EMovementState NewGait);
+	void UpdateMaxWalkSpeed(float DeltaTime);
 	EMovementState GetMovementAllowedGait(EMovementState RequestedGait) const;
 	const FBAPlayerMovementPhaseSettings& GetPhaseSettings(EMovementState Gait) const;
 	float GetSpeedForGait(EMovementState Gait) const;
@@ -320,8 +346,13 @@ private:
 	void ApplyBufferedMoveInput();
 	bool IsActionMovementLocked() const;
 	void SyncFreeStrafeFacingMode();
-	void UpdateInterpolatedFacingRotation();
+	void EnterLockOnStrafeMode();
+	bool ShouldDelayLockOnStrafeMode() const;
+	void ApplyPendingLockOnStrafeMode();
+	void RestoreLocomotionModeAfterLockOn();
+	void UpdateInterpolatedFacingRotation(float DeltaTime);
 	bool ShouldUseInterpolatedFacingRotation() const;
+	bool ShouldBlendMovementFacingRotation() const;
 	void UseMovementDirectionFacing(UCharacterMovementComponent& MovementComponent);
 	void UseControllerYawFacing(UCharacterMovementComponent& MovementComponent);
 	void UpdateInterpolatedMoveInputDirection(float DeltaTime);
@@ -330,6 +361,7 @@ private:
 	void FaceMoveInputDirection();
 	EActionDirection ResolveBufferedActionDirection(int32 ActionTid, EActionDirection BufferedDirection) const;
 	EActionDirection ResolveActionAnimationDirection(int32 ActionTid, EActionDirection ActionDirection) const;
+	EActionDirection ResolveActionOrientationDirection(int32 ActionTid, EActionDirection ActionDirection) const;
 	FVector2D ConvertWorldDirectionToMoveInput(const FVector& WorldDirection) const;
 	FVector ConvertMoveInputToWorldDirection(const FVector2D& MoveInput) const;
 
@@ -403,6 +435,15 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Interaction|Ladder", meta = (ShowOnlyInnerProperties))
 	FBAPlayerLadderSettings LadderSettings;
 
+	UPROPERTY(EditAnywhere, Category = "LockOn|Movement")
+	bool bForceStrafeWhileLockedOn = true;
+
+	UPROPERTY(EditAnywhere, Category = "LockOn|Camera")
+	bool bAutoCalibrateLockOnControllerPitch = true;
+
+	UPROPERTY(EditAnywhere, Category = "LockOn|Camera", meta = (Units = "deg"))
+	float LockOnAdditionalControllerPitchOffset = 0.f;
+
 	// 피격 반응 설정
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction", meta = (ClampMin = "0.0", ClampMax = "360.0"))
 	float GuardDamageBlockAngle = 120.f;
@@ -454,12 +495,15 @@ private:
 	FBAPlayerMovementRuntimeState MovementRuntime;
 	FBAPlayerSprintRuntimeState SprintRuntime;
 	FBAPlayerLadderRuntimeState LadderRuntime;
+	EPlayerLocomotionMode LocomotionModeBeforeLockOn = EPlayerLocomotionMode::Free;
 	EPlayerDamageReactionState DamageReactionState = EPlayerDamageReactionState::None;
 	FTimerHandle DamageReactionTimerHandle;
 	int32 ActiveDamageReactionPlaybackId = 0;
 	int32 NextDamageReactionPlaybackId = 1;
 	bool bGuardInputHeld = false;
 	bool bPerfectGuardWindowActive = false;
+	bool bLockOnForcedStrafeActive = false;
+	bool bPendingLockOnStrafeAfterDodge = false;
 	UPROPERTY(VisibleAnywhere) bool bIsBeforeCharge = false;
 	UPROPERTY(VisibleAnywhere) bool bIsCharging = false;
 	UPROPERTY(VisibleAnywhere) bool bIsChargeInputCompleted = false;

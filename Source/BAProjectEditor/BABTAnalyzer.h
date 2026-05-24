@@ -19,6 +19,9 @@ public:
 	bool AnalyzeBehaviorTree(UBehaviorTree* InTree, FBAAIAnalyzerTreeData& OutData);
 
 private:
-	FString ProcessNode(UBTNode* InNode, FBAAIAnalyzerTreeData& OutData);
+	FString ProcessNode(UBTNode* InNode, FBAAIAnalyzerTreeData& OutData, const FString& ParentId, int32 Depth, int32 ChildIndex);
 	EBAAIAnalyzerNodeType GetNodeType(UBTNode* InNode);
+	EBAAICompositeLogic GetCompositeLogic(UBTNode* InNode);
+	FString ExtractSemanticIntent(UBTNode* InNode);
+	FString ExtractBlackboardAccessType(const FString& PropertyName, UBTNode* Node);
 };
