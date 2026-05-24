@@ -95,30 +95,3 @@ void ABAPlayerCharacter::UseControllerYawFacing(UCharacterMovementComponent& Mov
 	MovementComponent.BrakingDecelerationWalking = LocomotionSettings.StrafeBrakingDecelerationWalking;
 	MovementComponent.GroundFriction = LocomotionSettings.StrafeGroundFriction;
 }
-
-void ABAPlayerCharacter::EnterLockOnStrafeMode()
-{
-	if (!bForceStrafeWhileLockedOn)
-	{
-		return;
-	}
-
-	if (!bLockOnForcedStrafeActive)
-	{
-		LocomotionModeBeforeLockOn = MovementRuntime.LocomotionMode;
-		bLockOnForcedStrafeActive = true;
-	}
-
-	SetLocomotionMode(EPlayerLocomotionMode::Strafe);
-}
-
-void ABAPlayerCharacter::RestoreLocomotionModeAfterLockOn()
-{
-	if (!bLockOnForcedStrafeActive)
-	{
-		return;
-	}
-
-	bLockOnForcedStrafeActive = false;
-	SetLocomotionMode(LocomotionModeBeforeLockOn);
-}
