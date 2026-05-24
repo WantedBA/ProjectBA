@@ -5,6 +5,7 @@
 #include "Instance/QuestManageSubsystem.h"
 #include "SaveGame/SaveGameManager.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PlayerController.h"
 
 // HP 변경을 UserDataSubsystem에 전달해 UI/HUD가 최신 체력 값을 보게 한다.
 void ABAPlayerCharacter::OnHealthChanged(float CurrentHP, float MaxHP)
@@ -42,15 +43,21 @@ void ABAPlayerCharacter::Respawn()
 			if (!RespawnLoc.IsZero())
 			{
 				SetActorLocationAndRotation(RespawnLoc, RespawnRot, false, nullptr, ETeleportType::TeleportPhysics);
+
+				if (APlayerController* PC = Cast<APlayerController>(GetController()))
+				{
+					PC->SetControlRotation(RespawnRot);
+				}
 			}
 
 			// 2. 상태 초기화
 			CharacterState = ECharacterState::Alive;
 			SetBAPlayerState(EBAPlayerState::None);
-			
+
 			if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 			{
 				MoveComp->SetMovementMode(MOVE_Walking);
+				MoveComp->StopMovementImmediately();
 			}
 
 			// 3. 스탯 복구
