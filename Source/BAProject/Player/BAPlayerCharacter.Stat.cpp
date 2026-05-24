@@ -52,7 +52,7 @@ void ABAPlayerCharacter::Respawn()
 
 			// 2. 상태 초기화
 			CharacterState = ECharacterState::Alive;
-			SetBAPlayerState(EBAPlayerState::None);
+			SetBAPlayerState(EBAPlayerState::Respawning);
 
 			if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 			{
@@ -60,7 +60,30 @@ void ABAPlayerCharacter::Respawn()
 				MoveComp->StopMovementImmediately();
 			}
 
-			// 3. 스탯 복구
+			// 3. 애니메이션 재생
+			if (RespawnMontage)
+			{
+				const float Duration = PlayAnimMontage(RespawnMontage);
+				if (Duration > 0.f)
+				{
+					if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+					{
+						FOnMontageEnded EndedDelegate;
+						EndedDelegate.BindUObject(this, &ABAPlayerCharacter::HandleRespawnMontageEnded);
+						AnimInstance->Montage_SetEndDelegate(EndedDelegate, RespawnMontage);
+					}
+				}
+				else
+				{
+					SetBAPlayerState(EBAPlayerState::None);
+				}
+			}
+			else
+			{
+				SetBAPlayerState(EBAPlayerState::None);
+			}
+
+			// 4. 스탯 복구
 			if (StatComponent)
 			{
 				StatComponent->RestoreAll();
@@ -74,5 +97,13 @@ void ABAPlayerCharacter::Respawn()
 
 			UE_LOG(LogTemp, Log, TEXT("Player Respawned at %s"), *RespawnLoc.ToString());
 		}
+	}
+}
+
+void ABAPlayerCharacter::HandleRespawnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (BAPlayerState == EBAPlayerState::Respawning)
+	{
+		SetBAPlayerState(EBAPlayerState::None);
 	}
 }

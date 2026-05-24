@@ -41,6 +41,7 @@ enum class EBAPlayerState : uint8
 	DodgeRolling,
 	HitReacting,
 	KnockedDown,
+	Respawning,
 	Dead
 };
 
@@ -424,6 +425,9 @@ private:
 		bool bGuardBreak);
 	void FinishDamageReaction(int32 PlaybackId);
 
+	UFUNCTION()
+	void HandleRespawnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
 	// 이동 설정
 	UPROPERTY(EditAnywhere, Category = "Movement", meta = (ShowOnlyInnerProperties))
 	FBAPlayerMovementSpeedSettings SpeedSettings;
@@ -495,6 +499,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Montage")
 	FName GuardLoopSection = TEXT("Loop");
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Respawn|Montage")
+	TObjectPtr<UAnimMontage> RespawnMontage;
 
 	// 런타임 상태
 	FBAPlayerMovementRuntimeState MovementRuntime;

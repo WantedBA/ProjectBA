@@ -18,6 +18,7 @@ void ABAPlayerCharacter::TryAttack(EActionCommand InActionCommand)
 	case EBAPlayerState::Dead:
 	case EBAPlayerState::HitReacting:
 	case EBAPlayerState::KnockedDown:
+	case EBAPlayerState::Respawning:
 		return;
 		break;
 	// 다음 공격 저장
