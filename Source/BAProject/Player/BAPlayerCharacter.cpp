@@ -6,6 +6,7 @@
 #include "Component/StatComponent.h"
 #include "EngineUtils.h"
 #endif
+#include "NiagaraComponent.h"
 #include "Component/ActionAnimationComponent.h"
 #include "Component/ActionComponent.h"
 #include "Component/CombatComponent.h"
@@ -56,6 +57,10 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	{
 		WeaponMeshComponent->SetStaticMesh(GreatSwordMesh.Object);
 	}
+	
+	WeaponNiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("WeaponNiagaraComponent"));
+	WeaponNiagaraComponent->SetupAttachment(WeaponMeshComponent);
+	WeaponNiagaraComponent->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
 
 	// 스탯 컴포넌트 생성
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));

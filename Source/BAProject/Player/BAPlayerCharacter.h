@@ -6,6 +6,7 @@
 #include "Tables/ActionEnums.h"
 #include "BAPlayerCharacter.generated.h"
 
+class UNiagaraComponent;
 class UCombatComponent;
 class UPlayerSkillComponent;
 class UAnimMontage;
@@ -179,6 +180,12 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Action")
 	UActionAnimationComponent* GetActionAnimationComponent() const { return ActionAnimationComponent; }
 
+	UFUNCTION()
+	void ResetWeaponNiagaraComponent();
+	
+	UFUNCTION()
+	UNiagaraComponent* GetWeaponNiagaraComponent() const { return WeaponNiagaraComponent; }
+	
 	// 피격 반응 상태 조회
 	UFUNCTION(BlueprintPure, Category = "Combat|DamageReaction")
 	bool IsDamageReacting() const;
@@ -258,6 +265,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Weapon")
 	TObjectPtr<UStaticMeshComponent> WeaponMeshComponent;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Components")
+	TObjectPtr<UNiagaraComponent> WeaponNiagaraComponent;
 
 	// 스탯 및 액션 콜백
 	UFUNCTION()
