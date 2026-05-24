@@ -238,11 +238,15 @@
     "SkillModifier": [
         {
             "SkillTid": 6,
-            "ApplyType": "Element"
+            "ApplyType": "Element",
+            "Target": "WeaponNiagara",
+            "Value": "/Game/Assets/MeleeWeaponAura_VFX/VFX/V4/NS_StylizedWeapon_V4_05.NS_StylizedWeapon_V4_05",
+            "Value2": "/Game/SwordTrailVFX/VFX/NS_Trail_03.NS_Trail_03"
         },
         {
             "SkillTid": 7,
-            "ApplyType": "Element"
+            "ApplyType": "Element",
+            "Target": "WeaponNiagara"
         },
         {
             "SkillTid": 8,

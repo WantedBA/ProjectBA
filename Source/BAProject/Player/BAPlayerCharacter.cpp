@@ -59,9 +59,9 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 		WeaponMeshComponent->SetStaticMesh(GreatSwordMesh.Object);
 	}
 	
-	PlayerWeaponElementalComponent = CreateDefaultSubobject<UPlayerWeaponVFX>(TEXT("PlayerWeaponElementalComponent"));
-	PlayerWeaponElementalComponent->SetupAttachment(WeaponMeshComponent);
-	PlayerWeaponElementalComponent->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
+	PlayerWeaponVFX = CreateDefaultSubobject<UPlayerWeaponVFX>(TEXT("PlayerWeaponVFX"));
+	PlayerWeaponVFX->SetupAttachment(WeaponMeshComponent);
+	PlayerWeaponVFX->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
 
 	// 스탯 컴포넌트 생성
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));

@@ -262,7 +262,7 @@ protected:
 	TObjectPtr<UStaticMeshComponent> WeaponMeshComponent;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Components")
-	TObjectPtr<UPlayerWeaponVFX> PlayerWeaponElementalComponent;
+	TObjectPtr<UPlayerWeaponVFX> PlayerWeaponVFX;
 
 	// 스탯 및 액션 콜백
 	UFUNCTION()

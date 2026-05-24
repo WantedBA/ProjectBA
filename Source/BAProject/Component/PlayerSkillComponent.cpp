@@ -4,6 +4,7 @@
 #include "Component/PlayerSkillComponent.h"
 
 #include "ActionComponent.h"
+#include "NiagaraSystem.h"
 #include "PlayerWeaponVFX.h"
 #include "Instance/SkillTreeSubsystem.h"
 #include "Player/BAPlayerCharacter.h"
@@ -107,6 +108,7 @@ void UPlayerSkillComponent::ApplySkill(int32 SkillId)
 		ApplyAction(SkillModifier);
 		break;
 	case ESkillApplyType::Element:
+		ApplyElement(SkillModifier);
 		break;
 	case ESkillApplyType::Stat:
 		ApplyStat(SkillModifier);
@@ -137,7 +139,29 @@ void UPlayerSkillComponent::ApplyAction(const FSkillModifierRow* SkillModifier)
 
 void UPlayerSkillComponent::ApplyElement(const FSkillModifierRow* SkillModifier)
 {
+	static const FName WeaponNiagaraTarget = FName(TEXT("WeaponNiagara"));
 	
+	if (SkillModifier->Target == WeaponNiagaraTarget)
+	{
+		// 무기 기본 효과 설정
+		if (UNiagaraSystem* WeaponNiagaraSystem = LoadObject<UNiagaraSystem>(nullptr, *SkillModifier->Value))
+		{
+			WeaponNiagaraComponent->SetWeaponNiagaraAsset(WeaponNiagaraSystem);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Failed to load Weapon Niagara System: %s"), *SkillModifier->Value);
+		}
+		// 무기 트레일 효과 설정
+		if (UNiagaraSystem* WeaponTrailNiagaraSystem = LoadObject<UNiagaraSystem>(nullptr, *SkillModifier->Value2))
+		{
+			WeaponNiagaraComponent->SetTrailNiagaraAsset(WeaponTrailNiagaraSystem);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Failed to load Weapon Trail Niagara System: %s"), *SkillModifier->Value2);
+		}
+	}
 }
 
 void UPlayerSkillComponent::ApplyStat(const FSkillModifierRow* SkillModifier)

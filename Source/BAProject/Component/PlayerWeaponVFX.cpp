@@ -5,8 +5,38 @@
 
 UPlayerWeaponVFX::UPlayerWeaponVFX()
 {
-	WeaponNiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("WeaponNiagaraComponent"));
-	TrailNiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("TrailNiagaraComponent"));
+}
+
+void UPlayerWeaponVFX::OnRegister()
+{
+	Super::OnRegister();
+	
+	if (IsTemplate())
+	{
+		return;
+	}
+
+	AActor* Owner = GetOwner();
+	if (!Owner)
+	{
+		return;
+	}
+
+	if (!WeaponNiagaraComponent)
+	{
+		WeaponNiagaraComponent = NewObject<UNiagaraComponent>(Owner, TEXT("WeaponNiagaraComponent"));
+		WeaponNiagaraComponent->SetAutoActivate(false);
+		WeaponNiagaraComponent->AttachToComponent(this, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+		WeaponNiagaraComponent->RegisterComponent();
+	}
+
+	if (!TrailNiagaraComponent)
+	{
+		TrailNiagaraComponent = NewObject<UNiagaraComponent>(Owner, TEXT("TrailNiagaraComponent"));
+		TrailNiagaraComponent->SetAutoActivate(false);
+		TrailNiagaraComponent->AttachToComponent(this, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+		TrailNiagaraComponent->RegisterComponent();
+	}
 }
 
 void UPlayerWeaponVFX::ResetElement()
@@ -24,8 +54,27 @@ void UPlayerWeaponVFX::SetWeaponNiagaraAsset(UNiagaraSystem* NiagaraAsset)
 	WeaponNiagaraComponent->Activate();
 }
 
-void UPlayerWeaponVFX::SetTrailNiagaraAsset(UNiagaraSystem* NiagaraAsset)
+void UPlayerWeaponVFX::SetTrailNiagaraAsset(UNiagaraSystem* NiagaraAsset, bool bActivate)
 {
 	TrailNiagaraComponent->SetAsset(NiagaraAsset);
+	if (bActivate)
+	{
+		TrailNiagaraComponent->Activate();
+		bIsTrailNiagaraAlwaysActivated = true;
+	}
+	else
+	{
+		TrailNiagaraComponent->Deactivate();
+		bIsTrailNiagaraAlwaysActivated = false;
+	}
+}
+
+void UPlayerWeaponVFX::ActivateTrailNiagara()
+{
 	TrailNiagaraComponent->Activate();
+}
+
+void UPlayerWeaponVFX::DeactivateTrailNiagara()
+{
+	TrailNiagaraComponent->Deactivate();
 }
