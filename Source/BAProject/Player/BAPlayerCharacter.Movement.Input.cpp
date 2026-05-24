@@ -208,14 +208,34 @@ EActionDirection ABAPlayerCharacter::ResolveActionAnimationDirection(
 {
 	if (!IsActionTidOfType(this, ActionTid, EActionType::DodgeRoll))
 	{
-		// 구르기는 입력 방향 그대로 출력
 		return ActionDirection;
+	}
+
+	if (MovementRuntime.LocomotionMode == EPlayerLocomotionMode::Strafe)
+	{
+		return ActionDirection == EActionDirection::Any
+			? EActionDirection::Backward
+			: ActionDirection;
 	}
 
 	// 정자세에서 구르기 입력 시 백스텝 출력
 	return ActionDirection == EActionDirection::Any
 		? EActionDirection::Backward
 		: EActionDirection::Forward;
+}
+
+EActionDirection ABAPlayerCharacter::ResolveActionOrientationDirection(
+	const int32 ActionTid,
+	const EActionDirection ActionDirection) const
+{
+	if (!IsActionTidOfType(this, ActionTid, EActionType::DodgeRoll))
+	{
+		return ActionDirection;
+	}
+
+	return MovementRuntime.LocomotionMode == EPlayerLocomotionMode::Strafe
+		? EActionDirection::Any
+		: ActionDirection;
 }
 
 bool ABAPlayerCharacter::IsActionMovementLocked() const
