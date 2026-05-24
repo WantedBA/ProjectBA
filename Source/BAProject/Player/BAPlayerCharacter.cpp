@@ -59,7 +59,7 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 		WeaponMeshComponent->SetStaticMesh(GreatSwordMesh.Object);
 	}
 	
-	PlayerWeaponVFX = CreateDefaultSubobject<UPlayerWeaponVFX>(TEXT("WeaponNiagaraComponent"));
+	PlayerWeaponVFX = CreateDefaultSubobject<UPlayerWeaponVFX>(TEXT("PlayerWeaponVFX"));
 	PlayerWeaponVFX->SetupAttachment(WeaponMeshComponent);
 	PlayerWeaponVFX->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
 
