@@ -59,5 +59,5 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UStatComponent> StatComponent = nullptr;
 	UPROPERTY(Transient)
-	TObjectPtr<UPlayerWeaponVFX> WeaponNiagaraComponent = nullptr;
+	TObjectPtr<UPlayerWeaponVFX> WeaponVFXComponent = nullptr;
 };

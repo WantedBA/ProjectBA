@@ -52,10 +52,10 @@ void UPlayerSkillComponent::BeginPlay()
 	{
 		UE_LOG(LogTemp, Error, TEXT("[PlayerSkillComponent::BeginPlay] StatComponent not found."));
 	}
-	WeaponNiagaraComponent = Cast<UPlayerWeaponVFX>(GetOwner()->GetComponentByClass(UPlayerWeaponVFX::StaticClass()));
-	if (!WeaponNiagaraComponent)
+	WeaponVFXComponent = Cast<UPlayerWeaponVFX>(GetOwner()->GetComponentByClass(UPlayerWeaponVFX::StaticClass()));
+	if (!WeaponVFXComponent)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[PlayerSkillComponent::BeginPlay] PlayerWeaponElementalComponent not found."));
+		UE_LOG(LogTemp, Error, TEXT("[PlayerSkillComponent::BeginPlay] WeaponVFXComponent not found."));
 	}
 	
 	// 스킬트리 창이 닫힐 때 스킬 새로고침 바인딩
@@ -80,7 +80,7 @@ void UPlayerSkillComponent::ClearAllSkills()
 {
 	ActionComponent->ResetMovesetKeys();
 	StatComponent->ResetModifiers();
-	WeaponNiagaraComponent->ResetElement();
+	WeaponVFXComponent->ResetElement();
 }
 
 void UPlayerSkillComponent::ApplySkill(int32 SkillId)
@@ -139,14 +139,14 @@ void UPlayerSkillComponent::ApplyAction(const FSkillModifierRow* SkillModifier)
 
 void UPlayerSkillComponent::ApplyElement(const FSkillModifierRow* SkillModifier)
 {
-	static const FName WeaponNiagaraTarget = FName(TEXT("WeaponNiagara"));
+	static const FName WeaponNiagaraTarget = FName(TEXT("WeaponVFX"));
 	
 	if (SkillModifier->Target == WeaponNiagaraTarget)
 	{
 		// 무기 기본 효과 설정
 		if (UNiagaraSystem* WeaponNiagaraSystem = LoadObject<UNiagaraSystem>(nullptr, *SkillModifier->Value))
 		{
-			WeaponNiagaraComponent->SetWeaponNiagaraAsset(WeaponNiagaraSystem);
+			WeaponVFXComponent->SetWeaponNiagaraAsset(WeaponNiagaraSystem);
 		}
 		else
 		{
@@ -155,7 +155,7 @@ void UPlayerSkillComponent::ApplyElement(const FSkillModifierRow* SkillModifier)
 		// 무기 트레일 효과 설정
 		if (UNiagaraSystem* WeaponTrailNiagaraSystem = LoadObject<UNiagaraSystem>(nullptr, *SkillModifier->Value2))
 		{
-			WeaponNiagaraComponent->SetTrailNiagaraAsset(WeaponTrailNiagaraSystem);
+			WeaponVFXComponent->SetTrailNiagaraAsset(WeaponTrailNiagaraSystem);
 		}
 		else
 		{
