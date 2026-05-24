@@ -381,6 +381,11 @@ void ABAPlayerController::ToggleStrafe()
 		return;
 	}
 
+	if (PC->IsLockOnTargetLocked())
+	{
+		return;
+	}
+
 	const EPlayerLocomotionMode NextMode =
 		PC->GetLocomotionMode() == EPlayerLocomotionMode::Strafe
 			? EPlayerLocomotionMode::Free

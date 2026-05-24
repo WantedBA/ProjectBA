@@ -3,6 +3,7 @@
 #include "Component/ActionAnimationComponent.h"
 #include "Component/ActionComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "LockOnTargetComponent.h"
 
 // 컨트롤러가 요청한 보행 속도를 저장한다. 실제 적용은 공통 Movement 업데이트에서 결정한다.
 void ABAPlayerCharacter::SetMovementState(const EMovementState NewState)
@@ -66,6 +67,12 @@ EMovementState ABAPlayerCharacter::GetDesiredMovementState() const
 EPlayerLocomotionMode ABAPlayerCharacter::GetLocomotionMode() const
 {
 	return MovementRuntime.LocomotionMode;
+}
+
+bool ABAPlayerCharacter::IsLockOnTargetLocked() const
+{
+	const ULockOnTargetComponent* LockOnTargetComponent = FindComponentByClass<ULockOnTargetComponent>();
+	return LockOnTargetComponent && LockOnTargetComponent->IsTargetLocked();
 }
 
 // 현재 공통 Movement Phase를 반환한다.
@@ -413,6 +420,11 @@ EMovementState ABAPlayerCharacter::GetMovementAllowedGait(const EMovementState R
 	{
 		// 가드 중 이동은 허용하되 전투 템포를 위해 항상 Walk로 제한한다.
 		return EMovementState::Walk;
+	}
+
+	if (IsLockOnTargetLocked() && RequestedGait == EMovementState::Sprint)
+	{
+		return EMovementState::Run;
 	}
 
 	if (RequestedGait == EMovementState::Sprint && !IsSprintAllowedByStamina())

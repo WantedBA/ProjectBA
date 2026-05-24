@@ -17,8 +17,11 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Instance/UserDataSubsystem.h"
+#include "LockOnTargetComponent.h"
+#include "LockOnTargetExtensions/ControllerRotationExtension.h"
 #include "Materials/MaterialInterface.h"
 #include "Tables/BATableManager.h"
+#include "TargetComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Map/MapInfoActor.h"
 #include "GameFramework/PlayerStart.h"
@@ -136,6 +139,8 @@ void ABAPlayerCharacter::BeginPlay()
 
 	// PlayerCharacter BeginPlay의 델리게이트 콜백 바인딩 진입점을 단일화한다.
 	BindActionCallbacks();
+	BindLockOnTargetCallbacks();
+	ConfigureLockOnCameraDefaults();
 	
 	if (CombatComponent)
 	{
@@ -287,6 +292,49 @@ void ABAPlayerCharacter::BindActionCallbacks()
 
 	BindGuardActionCallbacks();
 	BindDodgeActionCallbacks();
+}
+
+void ABAPlayerCharacter::BindLockOnTargetCallbacks()
+{
+	ULockOnTargetComponent* LockOnTargetComponent = FindComponentByClass<ULockOnTargetComponent>();
+	if (!LockOnTargetComponent)
+	{
+		return;
+	}
+
+	LockOnTargetComponent->OnTargetLocked.AddDynamic(this, &ABAPlayerCharacter::HandleLockOnTargetLocked);
+	LockOnTargetComponent->OnTargetUnlocked.AddDynamic(this, &ABAPlayerCharacter::HandleLockOnTargetUnlocked);
+}
+
+void ABAPlayerCharacter::ConfigureLockOnCameraDefaults()
+{
+	if (!bAutoCalibrateLockOnControllerPitch)
+	{
+		return;
+	}
+
+	ULockOnTargetComponent* LockOnTargetComponent = FindComponentByClass<ULockOnTargetComponent>();
+	UControllerRotationExtension* RotationExtension = LockOnTargetComponent
+		? Cast<UControllerRotationExtension>(LockOnTargetComponent->FindExtensionByClass(UControllerRotationExtension::StaticClass()))
+		: nullptr;
+
+	if (!RotationExtension)
+	{
+		return;
+	}
+
+	const float CameraRelativePitch = Camera ? Camera->GetRelativeRotation().Pitch : 0.f;
+	RotationExtension->PitchOffset = -CameraRelativePitch + LockOnAdditionalControllerPitchOffset;
+}
+
+void ABAPlayerCharacter::HandleLockOnTargetLocked(UTargetComponent* /*Target*/, FName /*Socket*/)
+{
+	EnterLockOnStrafeMode();
+}
+
+void ABAPlayerCharacter::HandleLockOnTargetUnlocked(UTargetComponent* /*UnlockedTarget*/, FName /*Socket*/)
+{
+	RestoreLocomotionModeAfterLockOn();
 }
 
 // 액션별 예외 처리는 가드/구르기 등 각 도메인 콜백에서 처리한다.

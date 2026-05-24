@@ -100,6 +100,7 @@ protected:
 
 	virtual void OnDamaged(float FinalDamage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 	void HandleAttackPerfectGuarded(AActor* GuardingActor, const FHitResult& HitResult);
+	void ReleaseLockOnTargetingOnDeath();
 
 	// 시각 연출 이벤트
 	UFUNCTION(BlueprintImplementableEvent, Category = "Enemy|Visuals", meta = (DisplayName = "OnHitVisuals"))
@@ -125,6 +126,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Debug")
 	bool bShowDebugRanges = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|LockOn")
+	bool bDisableLockOnCaptureOnDeath = true;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy|Components")
 	TObjectPtr<UStatComponent> StatComponent;

@@ -11,6 +11,7 @@
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
+#include "TargetComponent.h"
 
 AEnemyBase::AEnemyBase()
 {
@@ -333,6 +334,7 @@ void AEnemyBase::OnDeath()
 {
 	Super::OnDeath();
 	SetState(EEnemyState::Dead);
+	ReleaseLockOnTargetingOnDeath();
 
 	SetActorEnableCollision(false);
 
@@ -347,6 +349,19 @@ void AEnemyBase::OnDeath()
 	PlayAnimMontage(DeadMontage);
 
 	K2_OnDeadVisuals();
+}
+
+void AEnemyBase::ReleaseLockOnTargetingOnDeath()
+{
+	if (!bDisableLockOnCaptureOnDeath)
+	{
+		return;
+	}
+
+	if (UTargetComponent* TargetComponent = FindComponentByClass<UTargetComponent>())
+	{
+		TargetComponent->SetCanBeCaptured(false);
+	}
 }
 
 void AEnemyBase::SetState(EEnemyState NewState)
