@@ -1,6 +1,7 @@
 ﻿#include "BAPlayerCharacter.h"
 #include "Component/ActionComponent.h"
 #include "Component/CombatComponent.h"
+#include "Component/PlayerWeaponVFX.h"
 #include "Component/StatComponent.h"
 #include "Tables/ActionRows.h"
 #include "Tables/BATableManager.h"
@@ -151,6 +152,12 @@ void ABAPlayerCharacter::OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bA
 	if (bArg && BAPlayerState != EBAPlayerState::Attacking)
 	{
 		NowComboTransitionTid = 0;
+	}
+
+	// Collision의 NotifyEnd가 호출되지 않았을 수 있음
+	if (PlayerWeaponVFX)
+	{
+		PlayerWeaponVFX->DeactivateTrailNiagara();
 	}
 }
 
