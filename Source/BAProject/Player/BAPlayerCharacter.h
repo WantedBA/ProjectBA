@@ -39,6 +39,7 @@ enum class EBAPlayerState : uint8
 	DodgeRolling,
 	HitReacting,
 	KnockedDown,
+	Respawning,
 	Dead
 };
 
@@ -319,6 +320,13 @@ protected:
 	TObjectPtr<UAnimMontage> NextAttackMontage = nullptr;
 	EActionType NextAttackActionType = EActionType::None;
 	
+	// 최대 차징 시간
+	UPROPERTY(EditAnywhere, Category="Combat")
+	float MaxChargeTime = 1.5f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat")
+	FTimerHandle ChargeAttackTimerHandle;
+	
 private:
 	// 이동 런타임
 	void TickMovementRuntime(float DeltaTime);
@@ -412,6 +420,9 @@ private:
 		bool bGuardBreak);
 	void FinishDamageReaction(int32 PlaybackId);
 
+	UFUNCTION()
+	void HandleRespawnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
 	// 이동 설정
 	UPROPERTY(EditAnywhere, Category = "Movement", meta = (ShowOnlyInnerProperties))
 	FBAPlayerMovementSpeedSettings SpeedSettings;
@@ -483,6 +494,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Montage")
 	FName GuardLoopSection = TEXT("Loop");
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Respawn|Montage")
+	TObjectPtr<UAnimMontage> RespawnMontage;
 
 	// 런타임 상태
 	FBAPlayerMovementRuntimeState MovementRuntime;
