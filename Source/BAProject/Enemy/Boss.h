@@ -72,6 +72,10 @@ struct BAPROJECT_API FBossAttackData
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float ComboTransitionTime = 0.2f;
+
+	// HP%가 이 값 이하이고 한 번도 실행 안 됐으면 강제 선택 (0 = 비활성)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	int32 ForceAtHPPercent = 0;
 };
 
 UCLASS()
@@ -106,12 +110,23 @@ public:
 	UFUNCTION()
 	void OnPatternMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
+	// KnockDown 패턴은 퍼펙트 가드 시에도 스태거하지 않는다
+	virtual void HandlePerfectGuarded(FVector ImpactLocation) override;
+
 	UFUNCTION()
 	void ExecutePendingCombo();
 
 	//Quest 인터페이스
 	virtual void OnQuestActivated_Implementation(int32 tid) override;
 	virtual void OnQuestDeactivated_Implementation(int32 tid) override;
+
+	// 플레이어 사망 시 즉시 호출 — AI 정지 (Dev 모드에서는 DevResetDelay 후 FullReset 자동 호출)
+	UFUNCTION(BlueprintCallable, Category = "Boss|Quest")
+	void PauseForReset();
+
+	// HP·위치·전투 상태 완전 복구 — UI 확인 버튼 또는 Dev 타이머에서 호출
+	UFUNCTION(BlueprintCallable, Category = "Boss|Quest")
+	void FullReset();
 
 protected:
 	virtual void BeginPlay() override;
@@ -120,12 +135,24 @@ protected:
 	virtual void PostInitializeComponents() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual bool IsPersistentAggro() const override { return true; }
+	virtual void OnEnemyAttackAniFinished(EEnemyState NewState) override;
 
 private:
+	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
+		AController* EventInstigator, AActor* DamageCauser) override;
+
 	void LoadBossPatterns(int32 StageType);
 
 	// Utility 점수 계산. 조건 게이트를 통과 못 하면 0 반환.
 	float CalculatePatternScore(const FBossAttackData& PatternData, AActor* Target);
+
+	// 차징 중 임계값 초과 시 호출 — 차징 몽타주 중단 후 스턴 재생
+	void TriggerChargingStun();
+
+	UFUNCTION()
+	void OnChargingStunMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	void FinishChargingStun();
 
 	// 플레이어가 보스 정면 기준 어느 구역(정면/측면/후방)에 있는지
 	EBossPatternZone GetPlayerZone(AActor* Target) const;
@@ -140,11 +167,34 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Quest")
 	bool bStartPausedForQuest = true;
 
+	// 현재 활성화된 퀘스트 Tid (OnQuestActivated에서 저장, FullReset에서 초기화)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Quest")
+	int32 ActiveQuestTid = 0;
+
+	// Dev 전용: true면 PauseForReset 호출 후 DevResetDelay초 뒤 자동으로 FullReset 호출
+	UPROPERTY(EditAnywhere, Category = "Boss|Quest|Dev")
+	bool bDevAutoReset = true;
+
+	UPROPERTY(EditAnywhere, Category = "Boss|Quest|Dev")
+	float DevResetDelay = 2.0f;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|State")
 	int32 CurrentPhase = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Debug")
 	bool bShowAIDebug = true;
+
+	// 차징 중 누적 데미지가 이 값 이상이면 차징이 무너지고 스턴 몽타주 재생
+	UPROPERTY(EditAnywhere, Category = "Boss|Charging")
+	float ChargingStunThreshold = 200.f;
+
+	// 차징 무너졌을 때 재생할 스턴 몽타주 (BP에서 할당)
+	UPROPERTY(EditAnywhere, Category = "Boss|Charging")
+	TObjectPtr<UAnimMontage> ChargingStunMontage;
+
+	// 스턴 최소 보장 시간(초). 몽타주가 짧아도 이 시간이 될 때까지 Idle 전환을 대기
+	UPROPERTY(EditAnywhere, Category = "Boss|Charging")
+	float MinChargingStunDuration = 3.0f;
 
 	// 회전 몽타주 — 캡슐을 실제로 돌리려면 애니메이션에 Enable Root Motion(회전) 필수
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Turn")
@@ -196,4 +246,15 @@ protected:
 	float ComboMaxTrackingAngle = 90.0f;
 
 	FTimerHandle ComboTransitionHandle;
+	FTimerHandle ResetDelayHandle;
+
+	bool bIsCharging = false;
+	float ChargingDamageAccumulated = 0.f;
+	// TriggerChargingStun 진행 중 — OnPatternMontageEnded가 Idle로 빠지는 것을 막는 가드
+	bool bChargingStunActive = false;
+	float ChargingStunStartTime = 0.f;
+	FTimerHandle ChargingStunMinDurationHandle;
+
+	// BeginPlay에서 캐시 — FullReset 시 이 위치·회전으로 복구
+	FTransform InitialTransform;
 };

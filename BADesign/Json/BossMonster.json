@@ -20,7 +20,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 0,
             "KnockbackForce": 250,
-            "Knockbackup": 50
+            "Knockbackup": 50,
+            "ForceAtHPPercent": 0
         },
         {
             "Tid": 101,
@@ -42,7 +43,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 1,
             "KnockbackForce": 450,
-            "Knockbackup": 100
+            "Knockbackup": 100,
+            "ForceAtHPPercent": 0
         },
         {
             "Tid": 102,
@@ -64,7 +66,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 2,
             "KnockbackForce": 600,
-            "Knockbackup": 300
+            "Knockbackup": 300,
+            "ForceAtHPPercent": 0
         },
         {
             "Tid": 103,
@@ -82,33 +85,34 @@
             "MontagePath": "/Game/Assets/Enemy/1stBoss/AM_1stBossChargedCombo.AM_1stBossChargedCombo",
             "IdealRange": 220,
             "Attack": 40,
-            "NextComboTid": 0,
             "ComboTransitionTime": 0,
-            "DamageReactionType": 1,
+            "DamageReactionType": 2,
             "KnockbackForce": 1,
-            "Knockbackup": 1
+            "Knockbackup": 1,
+            "ForceAtHPPercent": 0
         },
         {
             "Tid": 104,
             "PatternType": 1,
             "IsStrongAttack": 1,
             "MinHPPercent": 0,
-            "MaxHPPercent": 100,
+            "MaxHPPercent": 70,
             "MinDistance": 0,
             "MaxDistance": 0,
             "RequiredZone": 0,
             "MaxUseCount": 2,
             "BaseWeight": 1,
-            "ScoreMultiplier": 1.5,
+            "ScoreMultiplier": 1.2,
             "CoolTime": 25,
             "MontagePath": "/Game/Assets/Enemy/1stBoss/AM_1stBossChargedArea.AM_1stBossChargedArea",
             "IdealRange": 300,
             "Attack": 160,
-            "NextComboTid": 0,
+            "NextComboTid": 108,
             "ComboTransitionTime": 0,
             "DamageReactionType": 2,
             "KnockbackForce": 2,
-            "Knockbackup": 2
+            "Knockbackup": 2,
+            "ForceAtHPPercent": 50
         },
         {
             "Tid": 105,
@@ -128,9 +132,10 @@
             "Attack": 80,
             "NextComboTid": 0,
             "ComboTransitionTime": 0,
-            "DamageReactionType": 1,
+            "DamageReactionType": 2,
             "KnockbackForce": 450,
-            "Knockbackup": 100
+            "Knockbackup": 100,
+            "ForceAtHPPercent": 0
         },
         {
             "Tid": 106,
@@ -152,7 +157,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 0,
             "KnockbackForce": 250,
-            "Knockbackup": 50
+            "Knockbackup": 50,
+            "ForceAtHPPercent": 0
         },
         {
             "Tid": 107,
@@ -174,7 +180,31 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 0,
             "KnockbackForce": 250,
-            "Knockbackup": 50
+            "Knockbackup": 50,
+            "ForceAtHPPercent": 0
+        },
+        {
+            "Tid": 108,
+            "PatternType": 3,
+            "IsStrongAttack": 1,
+            "MinHPPercent": 0,
+            "MaxHPPercent": 100,
+            "MinDistance": 0,
+            "MaxDistance": 0,
+            "RequiredZone": 0,
+            "MaxUseCount": 0,
+            "BaseWeight": 0,
+            "ScoreMultiplier": 0,
+            "CoolTime": 0,
+            "MontagePath": "/Game/Assets/Enemy/1stBoss/AM_1stBossChargedAreaAttack.AM_1stBossChargedAreaAttack",
+            "IdealRange": 9999,
+            "Attack": 350,
+            "NextComboTid": 0,
+            "ComboTransitionTime": 0,
+            "DamageReactionType": 2,
+            "KnockbackForce": 2,
+            "Knockbackup": 2,
+            "ForceAtHPPercent": 0
         }
     ],
     "2StageBossAttack": [
@@ -198,7 +228,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 0,
             "KnockbackForce": 250,
-            "Knockbackup": 50
+            "Knockbackup": 50,
+            "ForceAtHPPercent": 50
         },
         {
             "Tid": 101,
@@ -220,7 +251,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 1,
             "KnockbackForce": 450,
-            "Knockbackup": 100
+            "Knockbackup": 100,
+            "ForceAtHPPercent": 100
         },
         {
             "Tid": 102,
@@ -242,7 +274,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 2,
             "KnockbackForce": 600,
-            "Knockbackup": 300
+            "Knockbackup": 300,
+            "ForceAtHPPercent": 300
         },
         {
             "Tid": 103,
@@ -264,7 +297,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 1,
             "KnockbackForce": 1,
-            "Knockbackup": 1
+            "Knockbackup": 1,
+            "ForceAtHPPercent": 1
         },
         {
             "Tid": 104,
@@ -286,7 +320,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 2,
             "KnockbackForce": 2,
-            "Knockbackup": 2
+            "Knockbackup": 2,
+            "ForceAtHPPercent": 2
         },
         {
             "Tid": 105,
@@ -308,7 +343,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 1,
             "KnockbackForce": 450,
-            "Knockbackup": 100
+            "Knockbackup": 100,
+            "ForceAtHPPercent": 100
         },
         {
             "Tid": 106,
@@ -330,7 +366,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 0,
             "KnockbackForce": 250,
-            "Knockbackup": 50
+            "Knockbackup": 50,
+            "ForceAtHPPercent": 50
         },
         {
             "Tid": 107,
@@ -352,7 +389,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 0,
             "KnockbackForce": 250,
-            "Knockbackup": 50
+            "Knockbackup": 50,
+            "ForceAtHPPercent": 50
         }
     ],
     "3StageBossAttack": [
@@ -376,7 +414,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 0,
             "KnockbackForce": 250,
-            "Knockbackup": 50
+            "Knockbackup": 50,
+            "ForceAtHPPercent": 50
         },
         {
             "Tid": 101,
@@ -398,7 +437,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 1,
             "KnockbackForce": 450,
-            "Knockbackup": 100
+            "Knockbackup": 100,
+            "ForceAtHPPercent": 100
         },
         {
             "Tid": 102,
@@ -420,7 +460,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 2,
             "KnockbackForce": 600,
-            "Knockbackup": 300
+            "Knockbackup": 300,
+            "ForceAtHPPercent": 300
         },
         {
             "Tid": 103,
@@ -442,7 +483,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 1,
             "KnockbackForce": 1,
-            "Knockbackup": 1
+            "Knockbackup": 1,
+            "ForceAtHPPercent": 1
         },
         {
             "Tid": 104,
@@ -464,7 +506,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 2,
             "KnockbackForce": 2,
-            "Knockbackup": 2
+            "Knockbackup": 2,
+            "ForceAtHPPercent": 2
         },
         {
             "Tid": 105,
@@ -486,7 +529,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 1,
             "KnockbackForce": 450,
-            "Knockbackup": 100
+            "Knockbackup": 100,
+            "ForceAtHPPercent": 100
         },
         {
             "Tid": 106,
@@ -508,7 +552,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 0,
             "KnockbackForce": 250,
-            "Knockbackup": 50
+            "Knockbackup": 50,
+            "ForceAtHPPercent": 50
         },
         {
             "Tid": 107,
@@ -530,7 +575,8 @@
             "ComboTransitionTime": 0,
             "DamageReactionType": 0,
             "KnockbackForce": 250,
-            "Knockbackup": 50
+            "Knockbackup": 50,
+            "ForceAtHPPercent": 50
         }
     ]
 }

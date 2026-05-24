@@ -165,10 +165,10 @@ void UCombatComponent::ProcessHitCheck()
 	// 무기의 중심점과 방향 계산
 	FVector CurrentMid = (CurrentStart + CurrentEnd) * 0.5f;
 	FVector PrevMid = (PrevStartLocation + PrevEndLocation) * 0.5f;
-	
+
 	// 무기의 길이 계산
 	float WeaponLength = FVector::Dist(CurrentStart, CurrentEnd);
-	
+
 	// BoxTrace를 위한 설정 (두께는 CurrentRadius, 길이는 WeaponLength)
 	// X축이 무기 방향이라고 가정
 	FVector HalfSize = FVector(WeaponLength * 0.5f, CurrentRadius, CurrentRadius);

@@ -296,13 +296,7 @@ FVector UInteractorComponent::GetInteractionLocation(AActor* Object) const
 	// 인터페이스가 정의한 위치 우선
 	const FVector Loc = IInteractable::Execute_GetInteractionLocation(Object);
 	if (!Loc.IsNearlyZero()) return Loc;
-	// fallback: AActor 또는 컴포넌트 owner의 위치
-	if (AActor* A = Cast<AActor>(Object)) return A->GetActorLocation();
-	if (UActorComponent* C = Object->GetComponentByClass<UActorComponent>())
-	{
-		if (AActor* O = C->GetOwner()) return O->GetActorLocation();
-	}
-	return FVector::ZeroVector;
+	return Object->GetActorLocation();
 }
 
 APlayerController* UInteractorComponent::GetOwnerController() const
