@@ -113,7 +113,9 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
-	GetCharacterMovement()->MaxWalkSpeed = SpeedSettings.RunSpeed;
+	MovementRuntime.CurrentMaxWalkSpeed = SpeedSettings.RunSpeed;
+	MovementRuntime.TargetMaxWalkSpeed = SpeedSettings.RunSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = MovementRuntime.CurrentMaxWalkSpeed;
 }
 
 // 데이터 초기화와 스탯 변경 이벤트 바인딩을 수행한다.
@@ -276,7 +278,9 @@ void ABAPlayerCharacter::InitializeFromTable()
 		SprintCostSettings.bHasActionData = false;
 	}
 
-	GetCharacterMovement()->MaxWalkSpeed = SpeedSettings.RunSpeed;
+	MovementRuntime.CurrentMaxWalkSpeed = SpeedSettings.RunSpeed;
+	MovementRuntime.TargetMaxWalkSpeed = SpeedSettings.RunSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = MovementRuntime.CurrentMaxWalkSpeed;
 }
 
 // 공통 액션 콜백만 직접 등록하고, 액션별 예외 처리는 각 도메인 cpp에서 바인딩한다.

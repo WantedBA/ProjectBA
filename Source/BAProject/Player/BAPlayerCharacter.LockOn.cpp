@@ -20,6 +20,8 @@
  * - OnTargetLocked 델리게이트가 HandleLockOnTargetLocked()를 호출한다.
  * - bForceStrafeWhileLockedOn이 true면 현재 locomotion을 저장하고 Strafe로 고정한다.
  * - Sprint 입력은 Free와 같은 규칙으로 허용한다.
+ * - Run/Sprint 전환 시 MaxWalkSpeed는 SpeedUpInterpRate/SlowDownInterpRate로 보간된다.
+ * - Strafe Run에서 Sprint로 넘어갈 때 캐릭터 yaw는 StrafeSprintFacingRotationRateYaw로 보간된다.
  *
  * 락온 해제 결과
  * - OnTargetUnlocked 델리게이트가 HandleLockOnTargetUnlocked()를 호출한다.

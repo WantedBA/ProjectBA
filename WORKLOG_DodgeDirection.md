@@ -137,6 +137,9 @@
 - 락온 성공 시 현재 locomotion을 저장하고 Strafe로 전환한다.
 - 락온 해제 시 락온 때문에 바뀐 경우에만 이전 locomotion으로 복구한다.
 - 락온 중 Sprint 요청은 Free 상태와 같은 규칙으로 허용한다.
+- Run/Sprint 전환 시 실제 `MaxWalkSpeed`는 즉시 바뀌지 않고 보간된다.
+- 보간 속도는 `BP_PlayerCharacter`의 `Movement > Speed Up Interp Rate`, `Slow Down Interp Rate`로 조정한다.
+- Strafe Run에서 Sprint로 넘어갈 때 캐릭터 yaw는 `Strafe Sprint Facing Rotation Rate Yaw`로 이동 방향을 향해 보간된다.
 - Strafe 상태의 회피는 입력 방향 애니메이션을 그대로 사용한다.
 - Free 상태의 회피는 기존처럼 입력 방향으로 캐릭터를 돌리고 전방 구르기 몽타주를 재생한다.
 - `ControllerRotationExtension`이 컨트롤러 회전을 타겟 방향으로 돌린다.
@@ -178,6 +181,8 @@
 - 락온 중 Look 입력은 `SwitchTargetYaw/Pitch`로 전달되어 입력 방향의 다른 타겟을 찾는다.
 - 락온 성공 시 Strafe로 전환하고, 락온 해제 시 이전 locomotion으로 돌아간다.
 - 락온 중 Sprint 요청은 Free 상태와 같은 규칙으로 Sprint에 진입한다.
+- Strafe Run에서 Sprint로 바뀔 때 이동 속도는 보간되어 snapped 느낌을 줄인다.
+- Strafe Run에서 Sprint로 바뀔 때 캐릭터 방향도 보간되어 BR/BL 입력에서 즉시 꺾이지 않는다.
 - 카메라 높이는 `BP_PlayerCharacter`의 `LockOn Additional Controller Pitch Offset`으로 조정한다.
 
 ## 검증 상태

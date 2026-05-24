@@ -326,6 +326,7 @@ private:
 	void BeginMovementPhase(EPlayerMovementPhase NewPhase);
 	void FinishCurrentMovementPhase();
 	void SetActiveGaitAndSpeed(EMovementState NewGait);
+	void UpdateMaxWalkSpeed(float DeltaTime);
 	EMovementState GetMovementAllowedGait(EMovementState RequestedGait) const;
 	const FBAPlayerMovementPhaseSettings& GetPhaseSettings(EMovementState Gait) const;
 	float GetSpeedForGait(EMovementState Gait) const;
@@ -340,8 +341,9 @@ private:
 	void SyncFreeStrafeFacingMode();
 	void EnterLockOnStrafeMode();
 	void RestoreLocomotionModeAfterLockOn();
-	void UpdateInterpolatedFacingRotation();
+	void UpdateInterpolatedFacingRotation(float DeltaTime);
 	bool ShouldUseInterpolatedFacingRotation() const;
+	bool ShouldBlendMovementFacingRotation() const;
 	void UseMovementDirectionFacing(UCharacterMovementComponent& MovementComponent);
 	void UseControllerYawFacing(UCharacterMovementComponent& MovementComponent);
 	void UpdateInterpolatedMoveInputDirection(float DeltaTime);
