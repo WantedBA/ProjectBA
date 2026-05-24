@@ -18,6 +18,8 @@
 #include "Animation/AnimMontage.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Instance/QuestManageSubsystem.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
 
 // Utility 패턴 선택 튜닝 상수 (밸런싱 시 한곳에서 조정)
 namespace BossPatternTuning
@@ -926,6 +928,25 @@ void ABoss::SetChargeOutline(bool bEnabled)
 		P->SetRenderCustomDepth(bEnabled);
 		if (bEnabled)
 			P->SetCustomDepthStencilValue(BossChargeStencilValue);
+	}
+
+	if (bEnabled)
+	{
+		if (ChargingVFX && !ChargingVFXComp)
+		{
+			ChargingVFXComp = UNiagaraFunctionLibrary::SpawnSystemAttached(
+				ChargingVFX, GetMesh(), NAME_None,
+				FVector::ZeroVector, FRotator::ZeroRotator,
+				EAttachLocation::KeepRelativeOffset, false
+			);
+		}
+		if (ChargingVFXComp)
+			ChargingVFXComp->Activate(true);
+	}
+	else
+	{
+		if (ChargingVFXComp)
+			ChargingVFXComp->Deactivate();
 	}
 }
 

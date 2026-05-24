@@ -178,6 +178,12 @@ protected:
 	TObjectPtr<UAnimMontage> AttackMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat|Effects")
+	TObjectPtr<class UNiagaraSystem> HitVFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat|Effects")
+	TObjectPtr<class UNiagaraSystem> HeavyHitVFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat|Effects")
 	TObjectPtr<class UNiagaraSystem> PerfectDefenseVFX;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat|Effects")

@@ -7,6 +7,8 @@
 #include "Boss.generated.h"
 
 class UStaticMeshComponent;
+class UNiagaraSystem;
+class UNiagaraComponent;
 
 // 보스 공격 패턴 1개의 런타임 데이터. BossMonster 테이블 행을 LoadBossPatterns에서 매핑.
 USTRUCT(BlueprintType)
@@ -187,6 +189,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Debug")
 	bool bShowAIDebug = true;
 
+	UPROPERTY(EditAnywhere, Category = "Boss|Charging")
+	TObjectPtr<UNiagaraSystem> ChargingVFX;
+
 	// 차징 중 누적 데미지가 이 값 이상이면 차징이 무너지고 스턴 몽타주 재생
 	UPROPERTY(EditAnywhere, Category = "Boss|Charging")
 	float ChargingStunThreshold = 200.f;
@@ -253,6 +258,7 @@ protected:
 
 	bool bIsCharging = false;
 	float ChargingDamageAccumulated = 0.f;
+	TObjectPtr<UNiagaraComponent> ChargingVFXComp;
 	// TriggerChargingStun 진행 중 — OnPatternMontageEnded가 Idle로 빠지는 것을 막는 가드
 	bool bChargingStunActive = false;
 	float ChargingStunStartTime = 0.f;
