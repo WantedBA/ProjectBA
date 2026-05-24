@@ -142,6 +142,7 @@
 - Strafe Run에서 Sprint로 넘어갈 때 캐릭터 yaw는 `Strafe Sprint Facing Rotation Rate Yaw`로 이동 방향을 향해 보간된다.
 - Strafe 상태의 회피는 입력 방향 애니메이션을 그대로 사용한다.
 - Free 상태의 회피는 기존처럼 입력 방향으로 캐릭터를 돌리고 전방 구르기 몽타주를 재생한다.
+- 구르기 중 락온되면 Strafe 전환은 구르기 몽타주 종료 뒤로 지연된다.
 - `ControllerRotationExtension`이 컨트롤러 회전을 타겟 방향으로 돌린다.
 - `ConfigureLockOnCameraDefaults()`는 카메라 상대 Pitch를 기준으로 `PitchOffset`을 보정한다.
 - 화면 높이 조정은 `BP_PlayerCharacter`의 `LockOn Additional Controller Pitch Offset`으로 한다.
@@ -183,6 +184,7 @@
 - 락온 중 Sprint 요청은 Free 상태와 같은 규칙으로 Sprint에 진입한다.
 - Strafe Run에서 Sprint로 바뀔 때 이동 속도는 보간되어 snapped 느낌을 줄인다.
 - Strafe Run에서 Sprint로 바뀔 때 캐릭터 방향도 보간되어 BR/BL 입력에서 즉시 꺾이지 않는다.
+- 회피 중 락온을 시작해도 회피 방향은 유지되고, Strafe 전환은 회피 종료 뒤 적용된다.
 - 카메라 높이는 `BP_PlayerCharacter`의 `LockOn Additional Controller Pitch Offset`으로 조정한다.
 
 ## 검증 상태

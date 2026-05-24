@@ -19,6 +19,7 @@
  * 락온 성공 결과
  * - OnTargetLocked 델리게이트가 HandleLockOnTargetLocked()를 호출한다.
  * - bForceStrafeWhileLockedOn이 true면 현재 locomotion을 저장하고 Strafe로 고정한다.
+ * - 구르기 중 락온되면 구르기 방향 보존을 위해 Strafe 전환만 몽타주 종료 뒤로 미룬다.
  * - Sprint 입력은 Free와 같은 규칙으로 허용한다.
  * - Run/Sprint 전환 시 MaxWalkSpeed는 SpeedUpInterpRate/SlowDownInterpRate로 보간된다.
  * - Strafe Run에서 Sprint로 넘어갈 때 캐릭터 yaw는 StrafeSprintFacingRotationRateYaw로 보간된다.
@@ -119,11 +120,47 @@ void ABAPlayerCharacter::EnterLockOnStrafeMode()
 		bLockOnForcedStrafeActive = true;
 	}
 
+	if (ShouldDelayLockOnStrafeMode())
+	{
+		bPendingLockOnStrafeAfterDodge = true;
+		return;
+	}
+
+	bPendingLockOnStrafeAfterDodge = false;
+	SetLocomotionMode(EPlayerLocomotionMode::Strafe);
+}
+
+bool ABAPlayerCharacter::ShouldDelayLockOnStrafeMode() const
+{
+	return BAPlayerState == EBAPlayerState::DodgeRolling;
+}
+
+void ABAPlayerCharacter::ApplyPendingLockOnStrafeMode()
+{
+	if (!bPendingLockOnStrafeAfterDodge)
+	{
+		return;
+	}
+
+	if (!bLockOnForcedStrafeActive || !IsLockOnTargetLocked())
+	{
+		bPendingLockOnStrafeAfterDodge = false;
+		return;
+	}
+
+	if (ShouldDelayLockOnStrafeMode())
+	{
+		return;
+	}
+
+	bPendingLockOnStrafeAfterDodge = false;
 	SetLocomotionMode(EPlayerLocomotionMode::Strafe);
 }
 
 void ABAPlayerCharacter::RestoreLocomotionModeAfterLockOn()
 {
+	bPendingLockOnStrafeAfterDodge = false;
+
 	if (!bLockOnForcedStrafeActive)
 	{
 		return;

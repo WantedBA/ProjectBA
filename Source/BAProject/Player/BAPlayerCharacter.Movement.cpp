@@ -261,6 +261,11 @@ void ABAPlayerCharacter::HandleDodgeActionMontageEnded(
 	{
 		SetBAPlayerState(EBAPlayerState::None);
 	}
+
+	if (ActionType == EActionType::DodgeRoll)
+	{
+		ApplyPendingLockOnStrafeMode();
+	}
 }
 
 // Movement 전체를 갱신한다.

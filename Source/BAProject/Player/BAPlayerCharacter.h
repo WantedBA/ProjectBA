@@ -340,6 +340,8 @@ private:
 	bool IsActionMovementLocked() const;
 	void SyncFreeStrafeFacingMode();
 	void EnterLockOnStrafeMode();
+	bool ShouldDelayLockOnStrafeMode() const;
+	void ApplyPendingLockOnStrafeMode();
 	void RestoreLocomotionModeAfterLockOn();
 	void UpdateInterpolatedFacingRotation(float DeltaTime);
 	bool ShouldUseInterpolatedFacingRotation() const;
@@ -494,6 +496,7 @@ private:
 	bool bGuardInputHeld = false;
 	bool bPerfectGuardWindowActive = false;
 	bool bLockOnForcedStrafeActive = false;
+	bool bPendingLockOnStrafeAfterDodge = false;
 	UPROPERTY(VisibleAnywhere) bool bIsBeforeCharge = false;
 	UPROPERTY(VisibleAnywhere) bool bIsCharging = false;
 	UPROPERTY(VisibleAnywhere) bool bIsChargeInputCompleted = false;
