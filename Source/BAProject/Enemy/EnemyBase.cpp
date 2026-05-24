@@ -35,6 +35,8 @@ AEnemyBase::AEnemyBase()
 	MaxAttackCount = 3;
 	AlertDuration = 3.0f;
 	bShowDebugRanges = true;
+
+	GetMesh()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 }
 
 void AEnemyBase::PostInitializeComponents()

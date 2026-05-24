@@ -15,6 +15,27 @@ enum class EBAAIAnalyzerNodeType : uint8
 	Service     UMETA(DisplayName = "Service")
 };
 
+UENUM(BlueprintType)
+enum class EBAAICompositeLogic : uint8
+{
+	Unknown,
+	Sequence,
+	Selector,
+	SimpleParallel
+};
+
+USTRUCT(BlueprintType)
+struct FBAAIAnalyzerDecoratorLink
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FString DecoratorId;
+
+	UPROPERTY()
+	int32 ChildIndex = INDEX_NONE;
+};
+
 USTRUCT(BlueprintType)
 struct FBAAIAnalyzerNodeData
 {
@@ -24,28 +45,34 @@ struct FBAAIAnalyzerNodeData
 	FString NodeId;
 
 	UPROPERTY()
+	FString ParentNodeId;
+
+	UPROPERTY()
+	int32 Depth = 0;
+
+	UPROPERTY()
+	int32 ChildIndex = INDEX_NONE;
+
+	UPROPERTY()
 	FString NodeName;
 
 	UPROPERTY()
 	EBAAIAnalyzerNodeType NodeType;
 
 	UPROPERTY()
+	EBAAICompositeLogic CompositeLogic = EBAAICompositeLogic::Unknown;
+
+	UPROPERTY()
 	TArray<FString> ChildrenIds;
 
 	UPROPERTY()
-	TArray<FString> AttachedDecoratorIds;
+	TArray<FBAAIAnalyzerDecoratorLink> AttachedDecorators;
 
 	UPROPERTY()
 	TArray<FString> AttachedServiceIds;
 
-	/** 노드별 상세 속성 (AI 분석용) */
 	UPROPERTY()
 	TMap<FString, FString> CustomProperties;
-
-	FBAAIAnalyzerNodeData()
-		: NodeType(EBAAIAnalyzerNodeType::Task)
-	{
-	}
 };
 
 USTRUCT(BlueprintType)
@@ -58,8 +85,6 @@ struct FBAAIAnalyzerBlackboardKeyData
 
 	UPROPERTY()
 	FString KeyType;
-
-	FBAAIAnalyzerBlackboardKeyData() {}
 };
 
 USTRUCT(BlueprintType)

@@ -22,4 +22,9 @@ private:
 	void AnalyzeMaterialParameters(UMaterialInterface* InMaterial, FNiagaraRendererAnalysisData& OutRendererData);
 	void ClassifyEmitter(FNiagaraEmitterAnalysisData& OutEmitterData);
 	void CheckReadabilityWarnings(FNiagaraEmitterAnalysisData& OutEmitterData);
+
+	ENiagaraTemporalBehavior DetectTemporalBehavior(const FNiagaraEmitterAnalysisData& Data);
+	ENiagaraGameplayRole DetectGameplayRole(const FNiagaraEmitterAnalysisData& Data);
+	ENiagaraColorSemantic DetectColorSemantic(const FNiagaraRendererAnalysisData& Renderer);
+	static ENiagaraMotionPattern DetectMotionPattern(const FString& Name);
 };
