@@ -80,6 +80,12 @@ void ABAPlayerCharacter::ChargeLoopStart(USkeletalMeshComponent* MeshComp, UAnim
 		bIsCharging = true;
 		AnimInstance->Montage_Pause(Montage);
 		PausedMontage = Montage;
+		
+
+		
+		GetWorldTimerManager().ClearTimer(ChargeAttackTimerHandle);
+		GetWorldTimerManager().SetTimer(
+			ChargeAttackTimerHandle, this, &ABAPlayerCharacter::ChargeAttackCompleted, MaxChargeTime, false);
 	}
 }
 
@@ -102,12 +108,24 @@ void ABAPlayerCharacter::ChargeAttackCompleted()
 		return;
 	}
 	
+	// 차징 시간
+	float FinalChargeTime = GetWorldTimerManager().GetTimerElapsed(ChargeAttackTimerHandle);
+	UE_LOG(LogTemp, Log, TEXT("ChargeAttackCompleted - FinalChargeTime: %f"), FinalChargeTime);
+	
+	// 차징 공격 대미지 설정
+	UBATableManager* TableManager = UBATableManager::Get(this);
+	const FComboTransitionRow* NowCombo = TableManager->FindComboTransition(NowComboTransitionTid);
+	CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack() * NowCombo->DamageCoefficient 
+		* (1.f + FinalChargeTime));
+	
 	GetMesh()->GetAnimInstance()->Montage_Resume(PausedMontage);
 	StopChargeEffect();
 }
 
 void ABAPlayerCharacter::StopChargeEffect()
 {
+	GetWorldTimerManager().ClearTimer(ChargeAttackTimerHandle);
+	
 	// 차징 중 중간에 끊기거나, 정상적으로 차징이 완료되어 후딜 실행 중일 때
 	// ChargeLoopStart 뒷부분에 차징 중 표시할 이펙트 작성하고, 여기서 중단하면 됩니다
 	PausedMontage = nullptr;
@@ -115,7 +133,7 @@ void ABAPlayerCharacter::StopChargeEffect()
 
 void ABAPlayerCharacter::OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg)
 {
-	// 몽타주가 중간에 끊긴 경우
+	// 차징 공격 중간에 외부에서 끊긴 경우
 	if (bIsCharging)
 	{
 		StopChargeEffect();
@@ -126,6 +144,12 @@ void ABAPlayerCharacter::OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bA
 	if (!bArg)
 	{
 		SetBAPlayerState(EBAPlayerState::None);
+		NowComboTransitionTid = 0;
+	}
+	
+	// 공격 몽타주가 중간에 끊긴 경우
+	if (bArg && BAPlayerState != EBAPlayerState::Attacking)
+	{
 		NowComboTransitionTid = 0;
 	}
 }
