@@ -4,7 +4,9 @@
 #include "Component/PlayerSkillComponent.h"
 
 #include "ActionComponent.h"
+#include "PlayerWeaponNiagaraComponent.h"
 #include "Instance/SkillTreeSubsystem.h"
+#include "Player/BAPlayerCharacter.h"
 
 // Sets default values for this component's properties
 UPlayerSkillComponent::UPlayerSkillComponent()
@@ -49,6 +51,11 @@ void UPlayerSkillComponent::BeginPlay()
 	{
 		UE_LOG(LogTemp, Error, TEXT("[PlayerSkillComponent::BeginPlay] StatComponent not found."));
 	}
+	WeaponNiagaraComponent = Cast<UPlayerWeaponNiagaraComponent>(GetOwner()->GetComponentByClass(UPlayerWeaponNiagaraComponent::StaticClass()));
+	if (!WeaponNiagaraComponent)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[PlayerSkillComponent::BeginPlay] WeaponNiagaraComponent not found."));
+	}
 	
 	// 스킬트리 창이 닫힐 때 스킬 새로고침 바인딩
 	SkillTreeSubsystem->OnSkillTreeChangeCompleted.AddUniqueDynamic(this, &UPlayerSkillComponent::RefreshAllSkills);
@@ -72,6 +79,7 @@ void UPlayerSkillComponent::ClearAllSkills()
 {
 	ActionComponent->ResetMovesetKeys();
 	StatComponent->ResetModifiers();
+	WeaponNiagaraComponent->ResetElement();
 }
 
 void UPlayerSkillComponent::ApplySkill(int32 SkillId)

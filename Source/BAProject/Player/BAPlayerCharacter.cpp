@@ -12,6 +12,7 @@
 #include "Component/CombatComponent.h"
 #include "Component/InteractorComponent.h"
 #include "Component/PlayerSkillComponent.h"
+#include "Component/PlayerWeaponNiagaraComponent.h"
 #include "Component/StatComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Constants/BAProjectConstant.h"
@@ -58,7 +59,7 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 		WeaponMeshComponent->SetStaticMesh(GreatSwordMesh.Object);
 	}
 	
-	WeaponNiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("WeaponNiagaraComponent"));
+	WeaponNiagaraComponent = CreateDefaultSubobject<UPlayerWeaponNiagaraComponent>(TEXT("WeaponNiagaraComponent"));
 	WeaponNiagaraComponent->SetupAttachment(WeaponMeshComponent);
 	WeaponNiagaraComponent->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
 
