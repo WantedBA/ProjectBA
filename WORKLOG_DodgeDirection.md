@@ -3,7 +3,7 @@
 작성일: 2026-05-22  
 작업 브랜치: `fix/dodge-chain-direction`  
 기준 브랜치: `develop`
-최근 업데이트: 2026-05-22 / `Feature/attack stamina cost (#91)` 반영
+최근 업데이트: 2026-05-24 / 락온 입력, 타겟 전환, Strafe 회피 반영
 
 ## 현재 결정사항
 
@@ -106,6 +106,43 @@
   - `da415a7b` 공격 콤보에 스태미너 비용을 적용
   - `a946a60e` Feature/attack stamina cost (#91)
 
+### 락온 플러그인 포팅
+
+- `LockOnTarget` 플러그인을 프로젝트 플러그인으로 추가했다.
+- UE 5.6 기준으로 컴파일되도록 포팅했다.
+- `BAProject` 모듈에서 `LockOnTarget` 의존성을 사용한다.
+
+### 락온 대상 상태 처리
+
+- 적 사망 시 `TargetComponent::SetCanBeCaptured(false)`를 호출한다.
+- 현재 락온 대상이 죽으면 플러그인의 `StateInvalidation` 흐름이 실행된다.
+- `WeightedTargetHandler`는 주변 타겟을 다시 찾고, 실패하면 락온을 해제한다.
+- 일반 몬스터와 보스 BP에 락온 타겟 컴포넌트가 붙어 있다.
+
+### 락온 입력과 타겟 전환
+
+- 임시 `ToggleStrafe` 입력 경로를 제거했다.
+- `LockOnAction` 입력은 `ABAPlayerController::OnLockOnStarted()`로 들어온다.
+- 컨트롤러는 `ABAPlayerCharacter::ToggleLockOnTargeting()`만 호출한다.
+- 캐릭터는 `ULockOnTargetComponent::EnableTargeting()`을 호출한다.
+- `EnableTargeting()`은 타겟이 없으면 탐색하고, 이미 락온 중이면 해제한다.
+- `IA_LockOn`은 `IMC_Default`에서 Middle Mouse Button으로 매핑한다.
+- 락온 중 `LookAction` 입력은 카메라 회전으로 쓰지 않고 `SwitchLockOnTargetInput()`으로 들어간다.
+- `SwitchLockOnTargetInput()`은 플러그인의 `SwitchTargetYaw()`와 `SwitchTargetPitch()`를 호출한다.
+- 플러그인은 입력 버퍼가 임계값을 넘으면 `WeightedTargetHandler`로 입력 방향의 다음 후보를 찾는다.
+
+### 락온 이동과 카메라
+
+- 락온 성공 시 현재 locomotion을 저장하고 Strafe로 전환한다.
+- 락온 해제 시 락온 때문에 바뀐 경우에만 이전 locomotion으로 복구한다.
+- 락온 중 Sprint 요청은 Run으로 낮춘다.
+- Strafe 상태의 회피는 입력 방향 애니메이션을 그대로 사용한다.
+- Free 상태의 회피는 기존처럼 입력 방향으로 캐릭터를 돌리고 전방 구르기 몽타주를 재생한다.
+- `ControllerRotationExtension`이 컨트롤러 회전을 타겟 방향으로 돌린다.
+- `ConfigureLockOnCameraDefaults()`는 카메라 상대 Pitch를 기준으로 `PitchOffset`을 보정한다.
+- 화면 높이 조정은 `BP_PlayerCharacter`의 `LockOn Additional Controller Pitch Offset`으로 한다.
+- 현재 테스트 기준 `-10` 값이 원하는 화면 높이에 가깝다.
+
 ## 현재 동작 요약
 
 ### 회피
@@ -114,10 +151,11 @@
 - 이동 입력이 없는 경우 액션 방향은 `Any`다.
 - 버퍼된 회피는 재생 직전 `BAPlayerCharacter::ResolveBufferedActionDirection`에서 현재 이동 입력을 다시 읽는다.
 - `BAPlayerCharacter::ResolveActionAnimationDirection`에서 회피 애니메이션 검색 방향을 결정한다.
-  - `Any` -> `Backward`
-  - 그 외 방향 -> `Forward`
-- `ActionAnimationComponent::OrientOwnerToActionDirection`은 `Any`면 회전하지 않는다.
-  - 그래서 무입력 회피는 현재 캐릭터 방향 기준 백스텝이 된다.
+  - Free 상태: `Any` -> `Backward`, 그 외 방향 -> `Forward`
+  - Strafe 상태: `Any` -> `Backward`, 그 외 방향 -> 입력 방향 유지
+- `ActionAnimationComponent::ResolveActionOrientationDirection`에서 회피 전 캐릭터 회전 방향을 별도로 정한다.
+  - Free 상태: 입력 방향으로 캐릭터를 돌린다.
+  - Strafe 상태: 캐릭터를 돌리지 않고 타겟을 바라보는 상태를 유지한다.
 
 ### 공격
 
@@ -132,12 +170,23 @@
   - LightAttack: `StaminaCost 15`, `StaminaCostType Instant`
   - HeavyAttack: `StaminaCost 30`, `StaminaCostType Instant`
 
+### 락온
+
+- Middle Mouse Button 입력은 `IA_LockOn`과 `LockOnAction`을 통해 C++ 입력 경로로 들어온다.
+- 락온 입력은 타겟이 없으면 탐색하고, 타겟이 있으면 해제한다.
+- 락온 중 Look 입력은 `SwitchTargetYaw/Pitch`로 전달되어 입력 방향의 다른 타겟을 찾는다.
+- 락온 성공 시 Strafe로 전환하고, 락온 해제 시 이전 locomotion으로 돌아간다.
+- 락온 중 Sprint 요청은 Run으로 낮춘다.
+- 카메라 높이는 `BP_PlayerCharacter`의 `LockOn Additional Controller Pitch Offset`으로 조정한다.
+
 ## 검증 상태
 
 - 변경된 C++ 파일들은 `BAProjectEditor` 빌드에서 컴파일을 통과했다.
 - 에디터가 실행 중이면 `UnrealEditor-BAProject.dll`을 잡고 있어서 링크 단계가 실패할 수 있다.
 - 마지막 확인 시 `ActionAnimationComponent` 내부에 `DodgeRoll`/`Backstep` 문자열은 남아있지 않았다.
 - 공격 스태미너 작업은 `BAProjectEditor` 빌드 성공을 확인했다.
+- 락온 작업은 `BAProjectEditor Win64 Development`와 `BAProject Win64 Development` 빌드 성공을 확인했다.
+- PIE에서 Middle Mouse Button 락온/해제, 타겟 전환, 락온 카메라 높이 `-10` 값을 확인했다.
 
 ## 남은 작업
 
@@ -162,17 +211,33 @@
 - 피격 시 카메라 셰이크.
 - 가드/가드 성공/가드 피격 시 카메라 셰이크.
 
-### 4. 게임패드 입력
+### 4. 일반 몬스터 피격 화면 깜빡임
+
+- 일반 몬스터 공격에 맞을 때 화면이 깜빡이는 문제를 확인한다.
+- 카메라, 포스트프로세스, 피격 연출, UI 피드백 중 어느 경로에서 발생하는지 분리한다.
+- 재현 조건을 먼저 고정한 뒤 원인을 좁힌다.
+
+### 5. Strafe 백스탭
+
+- 백스탭 애니메이션을 migrate한다.
+- 백스탭 몽타주를 루트모션 기준으로 연결한다.
+- Strafe 상태에서 `S` 입력을 누른 채 회피를 요청하면 뒷구르기가 아니라 백스탭이 나가야 한다.
+- 현재 Strafe 회피는 입력 방향 애니메이션을 고르도록 정리되어 있으므로, 남은 작업은 `Backward` 방향 데이터와 몽타주 연결이다.
+
+### 6. 게임패드 입력
 
 - 게임패드용 IMC 추가.
 - Input Action 추가 또는 기존 Input Action에 게임패드 매핑 추가.
 - 키보드/마우스 테스트 입력과 게임패드 기준 조작이 충돌하지 않는지 확인.
+- 락온 중 오른쪽 스틱 X/Y 입력이 타겟 전환으로 연결되는지 확인한다.
 
 ## 다음 작업 추천 순서
 
 1. 사망 몽타주와 리셋/UI 흐름
 2. 낙하, 착지, 낙사
-3. 카메라 에임 및 셰이크
-4. 게임패드 IMC/Input Action
+3. 일반 몬스터 피격 화면 깜빡임
+4. Strafe 백스탭
+5. 카메라 에임 및 셰이크
+6. 게임패드 IMC/Input Action
 
 공격 방향과 공격 스태미너 비용은 현재 상태가 의도에 맞으므로 다음 작업에서 건드리지 않는다.
