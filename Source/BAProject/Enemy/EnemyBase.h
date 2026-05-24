@@ -181,7 +181,13 @@ protected:
 	TObjectPtr<class UNiagaraSystem> HitVFX;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat|Effects")
+	float HitVFXScale = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat|Effects")
 	TObjectPtr<class UNiagaraSystem> HeavyHitVFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat|Effects")
+	float HeavyHitVFXScale = 1.5f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat|Effects")
 	TObjectPtr<class UNiagaraSystem> PerfectDefenseVFX;
