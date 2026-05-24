@@ -31,6 +31,16 @@ EBTNodeResult::Type UBTTask_MoveToRange::ExecuteTask(UBehaviorTreeComponent& Own
         return EBTNodeResult::Failed;
     }
 
+    APawn* BossPawn = AIController->GetPawn();
+    if (BossPawn)
+    {
+        const float CurrentDistance = FVector::Dist(BossPawn->GetActorLocation(), TargetActor->GetActorLocation());
+        if (CurrentDistance <= ImmediateAttackRange)
+        {
+            return EBTNodeResult::Succeeded;
+        }
+    }
+
     // 추격 이동 시작 — 보스 상태를 Chase로 올려 MaxWalkSpeed를 100%로 복구한다.
     // (공격 후 Idle(10%)/Alert(40%)로 떨어진 속도가 그대로면 추격이 기어가듯 느려진다)
     if (AEnemyBase* Enemy = Cast<AEnemyBase>(AIController->GetPawn()))
@@ -58,6 +68,12 @@ EBTNodeResult::Type UBTTask_MoveToRange::ExecuteTask(UBehaviorTreeComponent& Own
     if (Result == EPathFollowingRequestResult::Failed)
     {
         return EBTNodeResult::Failed;
+    }
+
+    // 이미 AcceptanceRadius 안에 있으면 이동 없이 바로 성공
+    if (Result == EPathFollowingRequestResult::AlreadyAtGoal)
+    {
+        return EBTNodeResult::Succeeded;
     }
 
     return EBTNodeResult::InProgress;
@@ -99,17 +115,13 @@ void UBTTask_MoveToRange::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
         return;
     }
 
-    // 안전망: path follow가 끝났는데(=path 종료) 아직 IdealRange 밖이면 path 재요청
-    // 타겟이 도망갔거나, AlreadyAtGoal로 시작했거나, NavMesh path 끝점이 IdealRange보다 멀어서 stuck일 때 복구
+    // NavMesh 최근접 지점에 도달해 이동이 끝난 경우 → 도착으로 처리하고 BT 진행
+    // (재요청 시 동일 지점 반복 → 무한 루프 유발이므로 제거)
     UPathFollowingComponent* PathFollow = AIController->GetPathFollowingComponent();
     if (PathFollow && PathFollow->GetStatus() == EPathFollowingStatus::Idle)
     {
-        FAIMoveRequest Request;
-        Request.SetGoalActor(TargetActor);
-        Request.SetAcceptanceRadius(IdealRange);
-        Request.SetUsePathfinding(true);
-        Request.SetProjectGoalLocation(true);
-
-        AIController->MoveTo(Request);
+        AIController->StopMovement();
+        FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+        return;
     }
 }

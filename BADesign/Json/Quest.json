@@ -6,6 +6,13 @@
             "NameTextTid": 20001,
             "DescTextTid": 20002,
             "RewardTid": 501
+        },
+        {
+            "QuestTid": 2001,
+            "QuestType": 1,
+            "NameTextTid": 20003,
+            "DescTextTid": 20004,
+            "RewardTid": 502
         }
     ],
     "ZoneMonster": [

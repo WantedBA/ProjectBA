@@ -10,9 +10,10 @@
 UENUM(BlueprintType)
 enum class EBossPatternType : uint8
 {
-	Normal      = 0,   // 일반 패턴 (103 차징콤보·106 후방·107 측면 포함)
-	ChargeAoE   = 1,   // 104 차징 광역
-	ParryStance = 2    // 105 패리 스탠스
+	Normal         = 0,   // 일반 패턴
+	ChargeAoE      = 1,   // 차징 바람넣기 — AI가 직접 선택
+	ParryStance    = 2,   // 패리 스탠스
+	ChargingAttack = 3,   // 차징 완료 후 공격 — 콤보 체인으로만 실행, AI 선택 불가
 };
 
 /** 패턴 발동에 요구되는 플레이어 위치 구역. 행의 RequiredZone(int32) 값에 대응. */
@@ -102,6 +103,10 @@ struct BAPROJECT_API F1StageBossAttackRows : public FBARowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
 	float ComboTransitionTime = 0.2f;
 
+	// 보스 HP%가 이 값 이하이고 해당 패턴이 한 번도 실행되지 않았으면 강제 선택 (0 = 비활성)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
+	int32 ForceAtHPPercent = 0;
+
 	virtual void PostRead() override
 	{
 		bTid = Tid;
@@ -172,6 +177,10 @@ struct BAPROJECT_API F2StageBossAttackRows : public FBARowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
 	float ComboTransitionTime = 0.2f;
 
+	// 보스 HP%가 이 값 이하이고 해당 패턴이 한 번도 실행되지 않았으면 강제 선택 (0 = 비활성)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
+	int32 ForceAtHPPercent = 0;
+
 	virtual void PostRead() override
 	{
 		bTid = Tid;
@@ -241,6 +250,10 @@ struct BAPROJECT_API F3StageBossAttackRows : public FBARowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
 	float ComboTransitionTime = 0.2f;
+
+	// 보스 HP%가 이 값 이하이고 해당 패턴이 한 번도 실행되지 않았으면 강제 선택 (0 = 비활성)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
+	int32 ForceAtHPPercent = 0;
 
 	virtual void PostRead() override
 	{
