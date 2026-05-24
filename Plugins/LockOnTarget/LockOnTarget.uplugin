@@ -1,0 +1,37 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.6.2",
+	"FriendlyName": "LockOnTarget",
+	"Description": "Lock On Target system",
+	"Category": "Gameplay",
+	"CreatedBy": "Ivan Baktenkov J1blCblu",
+	"CreatedByURL": "https://github.com/J1blCblu",
+	"DocsURL": "https://github.com/J1blCblu/LockOnTarget/wiki",
+	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/d58106fca28446ec88caad16c5a35fe8",
+	"SupportURL": "https://github.com/J1blCblu/LockOnTarget/issues",
+	"EngineVersion": "5.6.0",
+	"CanContainContent": true,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "LockOnTarget",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault",
+			"PlatformAllowList": [
+				"Win64",
+				"Linux"
+			]
+		},
+		{
+			"Name": "LockOnTargetDev",
+			"Type": "DeveloperTool",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "LockOnTargetEditor",
+			"Type": "Editor",
+			"LoadingPhase": "PostEngineInit"
+		}
+	]
+}

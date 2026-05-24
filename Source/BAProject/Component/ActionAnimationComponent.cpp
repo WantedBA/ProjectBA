@@ -161,7 +161,7 @@ bool UActionAnimationComponent::PlayActionAnimation(const int32 ActionTid, const
 	}
 
 	StopActiveMontage(true);
-	OrientOwnerToActionDirection(CachedActionComponent->GetActiveActionDirection());
+	OrientOwnerToActionDirection(ResolveOrientationDirection(ActionTid, CachedActionComponent->GetActiveActionDirection()));
 
 	const float PlayRate = AnimationData->PlayRate > 0.f ? AnimationData->PlayRate : 1.f;
 	const FMontageBlendSettings BlendInSettings(FMath::Max(0.f, AnimationData->BlendIn));
@@ -402,6 +402,15 @@ EActionDirection UActionAnimationComponent::ResolveAnimationDirection(
 {
 	return ResolveActionAnimationDirection.IsBound()
 		? ResolveActionAnimationDirection.Execute(ActionTid, ActionDirection)
+		: ActionDirection;
+}
+
+EActionDirection UActionAnimationComponent::ResolveOrientationDirection(
+	const int32 ActionTid,
+	const EActionDirection ActionDirection) const
+{
+	return ResolveActionOrientationDirection.IsBound()
+		? ResolveActionOrientationDirection.Execute(ActionTid, ActionDirection)
 		: ActionDirection;
 }
 

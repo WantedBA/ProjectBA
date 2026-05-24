@@ -124,14 +124,13 @@ void ABAPlayerController::SetupInputComponent()
 			&ABAPlayerController::OnInteract);
 	}
 	
-	// 임시 기능
-	if (ensureMsgf(ToggleStrafeAction, TEXT("ToggleStrafeAction is not configured on %s"), *GetName()))
+	if (ensureMsgf(LockOnAction, TEXT("LockOnAction is not configured on %s"), *GetName()))
 	{
 		EnhancedInputComponent->BindAction(
-			ToggleStrafeAction,
+			LockOnAction,
 			ETriggerEvent::Started,
 			this,
-			&ABAPlayerController::ToggleStrafe
+			&ABAPlayerController::OnLockOnStarted
 		);
 	}
 	
@@ -192,6 +191,12 @@ void ABAPlayerController::OnMoveCompleted()
 void ABAPlayerController::Look(const FInputActionValue& Value)
 {
 	const FVector2D Rotation = Value.Get<FVector2D>();
+	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()); PC && PC->IsLockOnTargetLocked())
+	{
+		PC->SwitchLockOnTargetInput(Rotation);
+		return;
+	}
+
 	AddYawInput(Rotation.X);
 	AddPitchInput(Rotation.Y);
 }
@@ -373,7 +378,7 @@ void ABAPlayerController::OnInteract()
 	}
 }
 
-void ABAPlayerController::ToggleStrafe()
+void ABAPlayerController::OnLockOnStarted()
 {
 	ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
 	if (!PC)
@@ -381,12 +386,7 @@ void ABAPlayerController::ToggleStrafe()
 		return;
 	}
 
-	const EPlayerLocomotionMode NextMode =
-		PC->GetLocomotionMode() == EPlayerLocomotionMode::Strafe
-			? EPlayerLocomotionMode::Free
-			: EPlayerLocomotionMode::Strafe;
-
-	PC->SetLocomotionMode(NextMode);
+	PC->ToggleLockOnTargeting();
 }
 
 void ABAPlayerController::ToggleSkillTree()
