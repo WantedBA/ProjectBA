@@ -6,7 +6,7 @@
 #include "Tables/ActionEnums.h"
 #include "BAPlayerCharacter.generated.h"
 
-class UPlayerWeaponNiagaraComponent;
+class UPlayerWeaponVFX;
 class UNiagaraComponent;
 class UCombatComponent;
 class UPlayerSkillComponent;
@@ -262,7 +262,7 @@ protected:
 	TObjectPtr<UStaticMeshComponent> WeaponMeshComponent;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Components")
-	TObjectPtr<UPlayerWeaponNiagaraComponent> WeaponNiagaraComponent;
+	TObjectPtr<UPlayerWeaponVFX> PlayerWeaponElementalComponent;
 
 	// 스탯 및 액션 콜백
 	UFUNCTION()

@@ -4,7 +4,7 @@
 #include "Component/PlayerSkillComponent.h"
 
 #include "ActionComponent.h"
-#include "PlayerWeaponNiagaraComponent.h"
+#include "PlayerWeaponVFX.h"
 #include "Instance/SkillTreeSubsystem.h"
 #include "Player/BAPlayerCharacter.h"
 
@@ -51,10 +51,10 @@ void UPlayerSkillComponent::BeginPlay()
 	{
 		UE_LOG(LogTemp, Error, TEXT("[PlayerSkillComponent::BeginPlay] StatComponent not found."));
 	}
-	WeaponNiagaraComponent = Cast<UPlayerWeaponNiagaraComponent>(GetOwner()->GetComponentByClass(UPlayerWeaponNiagaraComponent::StaticClass()));
+	WeaponNiagaraComponent = Cast<UPlayerWeaponVFX>(GetOwner()->GetComponentByClass(UPlayerWeaponVFX::StaticClass()));
 	if (!WeaponNiagaraComponent)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[PlayerSkillComponent::BeginPlay] WeaponNiagaraComponent not found."));
+		UE_LOG(LogTemp, Error, TEXT("[PlayerSkillComponent::BeginPlay] PlayerWeaponElementalComponent not found."));
 	}
 	
 	// 스킬트리 창이 닫힐 때 스킬 새로고침 바인딩
@@ -137,6 +137,7 @@ void UPlayerSkillComponent::ApplyAction(const FSkillModifierRow* SkillModifier)
 
 void UPlayerSkillComponent::ApplyElement(const FSkillModifierRow* SkillModifier)
 {
+	
 }
 
 void UPlayerSkillComponent::ApplyStat(const FSkillModifierRow* SkillModifier)

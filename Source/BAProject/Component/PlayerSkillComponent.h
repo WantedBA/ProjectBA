@@ -8,7 +8,7 @@
 #include "PlayerSkillComponent.generated.h"
 
 
-class UPlayerWeaponNiagaraComponent;
+class UPlayerWeaponVFX;
 struct FSkillModifierRow;
 class UActionComponent;
 class UBATableManager;
@@ -59,5 +59,5 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UStatComponent> StatComponent = nullptr;
 	UPROPERTY(Transient)
-	TObjectPtr<UPlayerWeaponNiagaraComponent> WeaponNiagaraComponent = nullptr;
+	TObjectPtr<UPlayerWeaponVFX> WeaponNiagaraComponent = nullptr;
 };
