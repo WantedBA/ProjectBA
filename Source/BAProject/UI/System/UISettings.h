@@ -9,12 +9,18 @@
 /**
  * 
  */
+class UDeathWidget;
+class UNotifyLayer;
+
 UCLASS(Config = Game, DefaultConfig, meta=(DisplayName="BA UI System Settings"))
 class BAPROJECT_API UUISettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 	
 public:
-	UPROPERTY(COnfig, EditAnywhere, BlueprintReadOnly, Category = "Default UI")
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Default UI")
 	TSubclassOf<class UNotifyLayer> DefaultNotifyLayerClass;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Default UI")
+	TSubclassOf<class UDeathWidget> DeathWidgetClass;
 };

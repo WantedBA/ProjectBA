@@ -27,7 +27,7 @@ public:
 
 	// 클래스 타입을 넘겨주면 내부에서 생성 해주는 자동화 함수
 	UFUNCTION(BlueprintCallable, Category = "BA|UI", meta = (DisplayName = "Push UI By Class"))
-	class ULayerBase* PushUIByClass(TSubclassOf<ULayerBase> InWidgetClass);
+	class ULayerBase* PushUIByClass(TSubclassOf<ULayerBase> InWidgetClass, class UWorld* InWorld = nullptr);
 
 	// 알림 레이어 전용 함수 
 	UFUNCTION(BlueprintCallable, Category = "BA|UI")
@@ -50,6 +50,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "BA|UI")
 	class UMainHUD* GetMainHUD() const { return CachedMainHUD; }
 
+	// 맵 이동 시 모든 UI 비우기
+	UFUNCTION(BlueprintCallable, Category = "BA|UI")
+	void ClearAllUI();
+
+
 protected:
 	// 인터페이스(IStackElem) 타입으로 쌓을 스택 바구니
 	TStack<IStackElem*> UIStack;
@@ -58,8 +63,15 @@ protected:
 	UFUNCTION()
 	void OnWidgetCloseAnimationFinished(ULayerBase* Widget);
 
+	// 플레이어 사망 시 실행 함수
+	UFUNCTION()
+	void HandlePlayerDeath();
+
 	// 맵이 시작될 때마다 실행될 함수
 	void HandleWorldInit(UWorld* World, const UWorld::InitializationValues IValues);
+
+	// 월드 변경 시 기존 UI 정보 비우기
+	void CleanupUI();
 
 	// 모든 팝업 뒤에 적용할 블러 위젯
 	UPROPERTY()
