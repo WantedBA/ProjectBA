@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Animation/AnimEnums.h"
 #include "Character/CharacterBase.h"
 #include "Player/BAPlayerCharacterTypes.h"
 #include "Tables/ActionEnums.h"
@@ -17,6 +18,7 @@ class UCharacterMovementComponent;
 class UActionComponent;
 class UActionAnimationComponent;
 class UInteractorComponent;
+class UAnimInstance;
 class AMapLadder;
 class USpringArmComponent;
 class UStatComponent;
@@ -452,11 +454,15 @@ private:
 	UAnimMontage* SelectDeathMontage(EActionDirection HitDirection) const;
 	void DropWeaponAndDie();
 	bool ShouldDeferDeathUntilDamageReaction() const;
+	bool ShouldDeferMovementDisableForDeathMontage() const;
 	void StartDeferredDamageReactionDeath();
 	void FinalizeDeferredDamageReactionDeath();
 	void FinalizeDropWeaponAndDie(EActionDirection DeathDirection);
+	void FinalizeDeathAfterMontage();
 	void PrepareDeathState();
 	void StopMontagesForDeath();
+	void ApplyDeathMontageRootMotionMode();
+	void RestoreDeathMontageRootMotionMode();
 	bool ShouldDropWeaponOnDeath() const;
 	bool ShouldDropWeaponImmediatelyOnDeath() const;
 	void DetachWeaponForDeath();
@@ -692,6 +698,7 @@ private:
 	float LastDamageLaunchHorizontalSpeed = 0.f;
 	float LastDamageLaunchVerticalSpeed = 0.f;
 	bool bDeathFinalizationDeferred = false;
+	bool bDeathMovementDisableDeferred = false;
 	bool bWeaponDroppedForDeath = false;
 	bool bGuardInputHeld = false;
 	bool bPerfectGuardWindowActive = false;
@@ -721,4 +728,10 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimMontage> ActiveDeathMontage;
+
+	UPROPERTY(Transient)
+	TWeakObjectPtr<UAnimInstance> DeathRootMotionModeAnimInstance;
+
+	TEnumAsByte<ERootMotionMode::Type> PreviousDeathRootMotionMode = ERootMotionMode::NoRootMotionExtraction;
+	bool bDeathRootMotionModeOverridden = false;
 };

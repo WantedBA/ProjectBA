@@ -17,7 +17,8 @@
  *
  * 1. 진입 흐름
  * - OnDeath는 DropWeaponAndDie만 호출한다. 실제 분기는 DropWeaponAndDie 안에서 처리한다.
- * - Hit/LargeHit 사망은 바로 사망 상태를 정리하고 사망 몽타주를 재생한다.
+ * - Hit 사망은 바로 사망 상태를 정리하고 사망 몽타주를 재생한다.
+ * - LargeHit 사망은 사망 상태만 먼저 잠그고, Movement disable은 사망 몽타주 blend-out 이후로 늦춘다.
  * - KnockDown/Airborne 사망은 별도 사망 몽타주를 재생하지 않는다. 이미 재생 중인 피격 리액션을 끝까지 사용한다.
  * - FinishDeferredDeath는 지연 사망을 마무리하는 공개 진입점이다. 애니메이션 노티파이나 blend-out 콜백에서 같은 흐름을 재사용한다.
  *
@@ -30,6 +31,7 @@
  * 3. 상태 정리
  * - PrepareDeathState는 가드, 액션, 전투 모드, 피격 상태를 정리하고 BAPlayerState를 Dead로 바꾼다.
  * - StopMontagesForDeath는 새 사망 몽타주를 재생해야 하는 경우에만 기존 몽타주를 끊는다.
+ * - LargeHit 사망 몽타주는 RootMotionFromMontagesOnly로 재생하고, 고정 후 이동 컴포넌트를 끈다.
  * - 지연 사망에서는 기존 피격 리액션 몽타주를 끊지 않는다. 먼저 마지막 프레임을 고정한 뒤 사망 상태만 정리한다.
  *
  * 4. 마지막 자세 고정
@@ -41,7 +43,7 @@
  * 5. 무기 드롭
  * - bDropWeaponOnDeath가 꺼져 있으면 사망해도 무기를 떨어뜨리지 않는다.
  * - HitReact 사망은 사망 몽타주 시작 전에 무기를 떨어뜨린다.
- * - KnockDown/Airborne 같은 지연 사망은 마지막 자세를 고정한 뒤 무기를 떨어뜨린다.
+ * - LargeHit/KnockDown/Airborne 같은 지연 사망은 마지막 자세를 고정한 뒤 무기를 떨어뜨린다.
  * - 떨어진 무기는 WorldStatic만 막는다. Pawn, 적, 다른 물리 오브젝트는 무시해서 메쉬에 끼지 않게 한다.
  * - mass/damping 값은 무기의 무게감을 바꾸고, impulse 값은 사망 순간 튀는 방향을 바꾼다.
  */
@@ -142,6 +144,11 @@ bool ABAPlayerCharacter::ShouldDeferDeathUntilDamageReaction() const
 		&& LastDamageReactionType == EBADamageReactionType::KnockDown;
 }
 
+bool ABAPlayerCharacter::ShouldDeferMovementDisableForDeathMontage() const
+{
+	return LastDamageReactionType == EBADamageReactionType::LargeHitReact;
+}
+
 void ABAPlayerCharacter::StartDeferredDamageReactionDeath()
 {
 	bDeathFinalizationDeferred = true;
@@ -185,14 +192,52 @@ void ABAPlayerCharacter::FinalizeDeferredDamageReactionDeath()
 
 void ABAPlayerCharacter::FinalizeDropWeaponAndDie(const EActionDirection DeathDirection)
 {
-	Super::OnDeath();
+	const bool bDeferMovementDisable = ShouldDeferMovementDisableForDeathMontage();
+	if (bDeferMovementDisable)
+	{
+		CharacterState = ECharacterState::Dead;
+		bDeathMovementDisableDeferred = true;
+	}
+	else
+	{
+		Super::OnDeath();
+	}
+
 	PrepareDeathState();
 	StopMontagesForDeath();
+	if (bDeferMovementDisable)
+	{
+		ApplyDeathMontageRootMotionMode();
+		bDeathMovementDisableDeferred = true;
+	}
+
 	if (ShouldDropWeaponImmediatelyOnDeath())
 	{
 		DropWeaponForDeath();
 	}
 	PlayDeathMontage(DeathDirection);
+	if (!ActiveDeathMontage)
+	{
+		FinalizeDeathAfterMontage();
+	}
+}
+
+void ABAPlayerCharacter::FinalizeDeathAfterMontage()
+{
+	RestoreDeathMontageRootMotionMode();
+
+	if (!bDeathMovementDisableDeferred)
+	{
+		return;
+	}
+
+	bDeathMovementDisableDeferred = false;
+	Super::OnDeath();
+
+	if (!ShouldDropWeaponImmediatelyOnDeath())
+	{
+		DropWeaponForDeath();
+	}
 }
 
 void ABAPlayerCharacter::PrepareDeathState()
@@ -204,6 +249,7 @@ void ABAPlayerCharacter::PrepareDeathState()
 	ActiveDamageReactionPlaybackId = 0;
 	ActiveDeathMontage = nullptr;
 	bDeathFinalizationDeferred = false;
+	bDeathMovementDisableDeferred = false;
 	bWeaponDroppedForDeath = false;
 	bGuardInputHeld = false;
 	SetGuardWindowActive(false);
@@ -233,6 +279,42 @@ void ABAPlayerCharacter::StopMontagesForDeath()
 			AnimInstance->Montage_Stop(FMath::Max(0.f, DeathMontageStopBlendOut));
 		}
 	}
+}
+
+void ABAPlayerCharacter::ApplyDeathMontageRootMotionMode()
+{
+	if (bDeathRootMotionModeOverridden)
+	{
+		return;
+	}
+
+	USkeletalMeshComponent* MeshComponent = GetMesh();
+	UAnimInstance* AnimInstance = MeshComponent ? MeshComponent->GetAnimInstance() : nullptr;
+	if (!AnimInstance)
+	{
+		return;
+	}
+
+	PreviousDeathRootMotionMode = AnimInstance->RootMotionMode;
+	DeathRootMotionModeAnimInstance = AnimInstance;
+	bDeathRootMotionModeOverridden = true;
+	AnimInstance->SetRootMotionMode(ERootMotionMode::RootMotionFromMontagesOnly);
+}
+
+void ABAPlayerCharacter::RestoreDeathMontageRootMotionMode()
+{
+	if (!bDeathRootMotionModeOverridden)
+	{
+		return;
+	}
+
+	if (UAnimInstance* AnimInstance = DeathRootMotionModeAnimInstance.Get())
+	{
+		AnimInstance->SetRootMotionMode(PreviousDeathRootMotionMode);
+	}
+
+	DeathRootMotionModeAnimInstance = nullptr;
+	bDeathRootMotionModeOverridden = false;
 }
 
 bool ABAPlayerCharacter::ShouldDropWeaponOnDeath() const
@@ -433,6 +515,7 @@ void ABAPlayerCharacter::HandleDeathMontageBlendingOut(UAnimMontage* Montage, co
 	}
 
 	FreezeMontageAtFinalFrame(Montage);
+	FinalizeDeathAfterMontage();
 }
 
 void ABAPlayerCharacter::HandleDeathMontageEnded(UAnimMontage* Montage, const bool bInterrupted)
@@ -442,6 +525,7 @@ void ABAPlayerCharacter::HandleDeathMontageEnded(UAnimMontage* Montage, const bo
 		return;
 	}
 
+	FinalizeDeathAfterMontage();
 	ActiveDeathMontage = nullptr;
 	K2_OnDeathMontageEnded(bInterrupted);
 }

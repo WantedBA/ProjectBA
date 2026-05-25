@@ -12,14 +12,14 @@ namespace
 {
 	constexpr float KnockDownAreaDirectionContactTolerance = 80.f;
 
-	FVector GetFlatSafeDirection(const FVector& Direction)
+	FVector GetAreaFlatSafeDirection(const FVector& Direction)
 	{
 		FVector FlatDirection = Direction;
 		FlatDirection.Z = 0.f;
 		return FlatDirection.GetSafeNormal();
 	}
 
-	float GetCharacterCapsuleRadius(const AActor* Actor)
+	float GetAreaCharacterCapsuleRadius(const AActor* Actor)
 	{
 		const ACharacter* Character = Cast<ACharacter>(Actor);
 		const UCapsuleComponent* CapsuleComponent = Character ? Character->GetCapsuleComponent() : nullptr;
@@ -38,7 +38,7 @@ namespace
 
 		const FVector OwnerToVictim = Victim->GetActorLocation() - Owner->GetActorLocation();
 		const FVector OriginToVictim = Victim->GetActorLocation() - Origin;
-		const float CombinedCapsuleRadius = GetCharacterCapsuleRadius(Owner) + GetCharacterCapsuleRadius(Victim);
+		const float CombinedCapsuleRadius = GetAreaCharacterCapsuleRadius(Owner) + GetAreaCharacterCapsuleRadius(Victim);
 		const float ContactDistance = CombinedCapsuleRadius > 0.f
 			? CombinedCapsuleRadius + KnockDownAreaDirectionContactTolerance
 			: KnockDownAreaDirectionContactTolerance;
@@ -62,7 +62,7 @@ namespace
 			return FVector::ZeroVector;
 		}
 
-		const FVector OwnerForward = Owner ? GetFlatSafeDirection(Owner->GetActorForwardVector()) : FVector::ZeroVector;
+		const FVector OwnerForward = Owner ? GetAreaFlatSafeDirection(Owner->GetActorForwardVector()) : FVector::ZeroVector;
 		if (DamageReactionType == EBADamageReactionType::KnockDown
 			&& ShouldUseOwnerForwardForKnockDownAreaDirection(Owner, Victim, Origin)
 			&& !OwnerForward.IsNearlyZero())
@@ -70,7 +70,7 @@ namespace
 			return OwnerForward;
 		}
 
-		FVector DamageDirection = GetFlatSafeDirection(Victim->GetActorLocation() - Origin);
+		FVector DamageDirection = GetAreaFlatSafeDirection(Victim->GetActorLocation() - Origin);
 		if (DamageDirection.IsNearlyZero())
 		{
 			DamageDirection = OwnerForward;

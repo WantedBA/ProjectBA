@@ -164,7 +164,7 @@ void ABAPlayerCharacter::StopChargeEffect()
 
 void ABAPlayerCharacter::OnAttackMontageEnded(
 	UAnimMontage* AnimMontage,
-	const bool /*bInterrupted*/,
+	const bool bInterrupted,
 	const int32 PlaybackId)
 {
 	// 차징 공격 중간에 외부에서 끊긴 경우
@@ -186,7 +186,7 @@ void ABAPlayerCharacter::OnAttackMontageEnded(
 	}
 	
 	// 공격 몽타주가 중간에 끊긴 경우
-	if (bArg && BAPlayerState != EBAPlayerState::Attacking)
+	if (bInterrupted && BAPlayerState != EBAPlayerState::Attacking)
 	{
 		NowComboTransitionTid = 0;
 	}
