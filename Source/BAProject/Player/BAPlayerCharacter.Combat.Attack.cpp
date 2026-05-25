@@ -274,44 +274,24 @@ void ABAPlayerCharacter::SetNextCombo(EActionCommand InActionCommand)
 	}
 	else
 	{
-		// 현재 실행 중인 액션이 없을 경우 기본값으로 세팅
-		if (!NowComboTransitionTid)
+		// 현재 실행 중인 액션
+		const FComboTransitionRow* NowComboTransition = 
+			TableManager->FindComboTransition(NowComboTransitionTid);
+		
+		// 현재 액션과 입력 커맨드로 다음 액션 탐색
+		if (InActionCommand == EActionCommand::LightAttack)
 		{
-			if (InActionCommand == EActionCommand::LightAttack)
-			{
-				NextComboTransitionTid = FirstLComboTransitionTid;
-			}
-			else if (InActionCommand == EActionCommand::HeavyAttack)
-			{
-				NextComboTransitionTid = FirstRComboTransitionTid;
-			}
+			NextComboTransitionTid = NowComboTransition->NextOnL;
 		}
-		else
+		else if (InActionCommand == EActionCommand::HeavyAttack)
 		{
-			// 현재 실행 중인 액션
-			const FComboTransitionRow* NowComboTransition = 
-				TableManager->FindComboTransition(NowComboTransitionTid);
-			if (!NowComboTransition)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("[ABAPlayerCharacter::SetNextCombo] Failed to find now action animation data for tid: %d"), NowComboTransitionTid);
-				return;
-			}
-			
-			// 현재 액션과 입력 커맨드로 다음 액션 탐색
-			if (InActionCommand == EActionCommand::LightAttack)
-			{
-				NextComboTransitionTid = NowComboTransition->NextOnL;
-			}
-			else if (InActionCommand == EActionCommand::HeavyAttack)
-			{
-				NextComboTransitionTid = NowComboTransition->NextOnR;
-			}
-			
-			// 다음 콤보가 없는 경우
-			if (NextComboTransitionTid == 0)
-			{
-				return;
-			}
+			NextComboTransitionTid = NowComboTransition->NextOnR;
+		}
+		
+		// 다음 콤보가 없는 경우
+		if (NextComboTransitionTid == 0)
+		{
+			return;
 		}
 	}
 	

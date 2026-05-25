@@ -739,6 +739,11 @@
     ],
     "ComboTransition": [
         {
+            "Tid": 0,
+            "NextOnL": 71001,
+            "NextOnR": 72001
+        },
+        {
             "Tid": 71001,
             "Montage": "/Game/Character/Player/Animation/Montages/LightAttack/AM_Player_LightAttack_1.AM_Player_LightAttack_1",
             "NextOnL": 71002

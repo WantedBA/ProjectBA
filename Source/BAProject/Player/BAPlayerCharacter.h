@@ -378,14 +378,6 @@ protected:
 	void K2_OnLandingRecoveryEnded();
 	
 	// 공격 관련
-	// 첫 약공격 콤보 전이 TID
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	int32 FirstLComboTransitionTid = 71001;
-	
-	// 첫 강공격 콤보 전이 TID
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	int32 FirstRComboTransitionTid = 72001;
-	
 	const float WeaponRadius = 20.f; // 충돌 판정 시 검 두께
 	int32 NowComboTransitionTid = 0; // 다음 콤보 결정할 때 사용
 	int32 NextComboTransitionTid = 0; // 결정된 다음 콤보 저장
