@@ -4,7 +4,10 @@
 #include "Component/PlayerSkillComponent.h"
 
 #include "ActionComponent.h"
+#include "NiagaraSystem.h"
+#include "PlayerWeaponVFX.h"
 #include "Instance/SkillTreeSubsystem.h"
+#include "Player/BAPlayerCharacter.h"
 
 // Sets default values for this component's properties
 UPlayerSkillComponent::UPlayerSkillComponent()
@@ -49,6 +52,11 @@ void UPlayerSkillComponent::BeginPlay()
 	{
 		UE_LOG(LogTemp, Error, TEXT("[PlayerSkillComponent::BeginPlay] StatComponent not found."));
 	}
+	WeaponVFXComponent = Cast<UPlayerWeaponVFX>(GetOwner()->GetComponentByClass(UPlayerWeaponVFX::StaticClass()));
+	if (!WeaponVFXComponent)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[PlayerSkillComponent::BeginPlay] WeaponVFXComponent not found."));
+	}
 	
 	// 스킬트리 창이 닫힐 때 스킬 새로고침 바인딩
 	SkillTreeSubsystem->OnSkillTreeChangeCompleted.AddUniqueDynamic(this, &UPlayerSkillComponent::RefreshAllSkills);
@@ -72,6 +80,7 @@ void UPlayerSkillComponent::ClearAllSkills()
 {
 	ActionComponent->ResetMovesetKeys();
 	StatComponent->ResetModifiers();
+	WeaponVFXComponent->ResetElement();
 }
 
 void UPlayerSkillComponent::ApplySkill(int32 SkillId)
@@ -99,6 +108,7 @@ void UPlayerSkillComponent::ApplySkill(int32 SkillId)
 		ApplyAction(SkillModifier);
 		break;
 	case ESkillApplyType::Element:
+		ApplyElement(SkillModifier);
 		break;
 	case ESkillApplyType::Stat:
 		ApplyStat(SkillModifier);
@@ -129,6 +139,29 @@ void UPlayerSkillComponent::ApplyAction(const FSkillModifierRow* SkillModifier)
 
 void UPlayerSkillComponent::ApplyElement(const FSkillModifierRow* SkillModifier)
 {
+	static const FName WeaponNiagaraTarget = FName(TEXT("WeaponVFX"));
+	
+	if (SkillModifier->Target == WeaponNiagaraTarget)
+	{
+		// 무기 기본 효과 설정
+		if (UNiagaraSystem* WeaponNiagaraSystem = LoadObject<UNiagaraSystem>(nullptr, *SkillModifier->Value))
+		{
+			WeaponVFXComponent->SetWeaponNiagaraAsset(WeaponNiagaraSystem);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Failed to load Weapon Niagara System: %s"), *SkillModifier->Value);
+		}
+		// 무기 트레일 효과 설정
+		if (UNiagaraSystem* WeaponTrailNiagaraSystem = LoadObject<UNiagaraSystem>(nullptr, *SkillModifier->Value2))
+		{
+			WeaponVFXComponent->SetTrailNiagaraAsset(WeaponTrailNiagaraSystem);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Failed to load Weapon Trail Niagara System: %s"), *SkillModifier->Value2);
+		}
+	}
 }
 
 void UPlayerSkillComponent::ApplyStat(const FSkillModifierRow* SkillModifier)

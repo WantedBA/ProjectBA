@@ -1,16 +1,19 @@
 #include "Player/BAPlayerCharacter.h"
 
 #include "Camera/CameraComponent.h"
+#include "Player/BADamageCameraShake.h"
 #if !UE_BUILD_SHIPPING
 #include "Enemy/EnemyBase.h"
 #include "Component/StatComponent.h"
 #include "EngineUtils.h"
 #endif
+#include "NiagaraComponent.h"
 #include "Component/ActionAnimationComponent.h"
 #include "Component/ActionComponent.h"
 #include "Component/CombatComponent.h"
 #include "Component/InteractorComponent.h"
 #include "Component/PlayerSkillComponent.h"
+#include "Component/PlayerWeaponVFX.h"
 #include "Component/StatComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Constants/BAProjectConstant.h"
@@ -56,6 +59,10 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	{
 		WeaponMeshComponent->SetStaticMesh(GreatSwordMesh.Object);
 	}
+	
+	PlayerWeaponVFX = CreateDefaultSubobject<UPlayerWeaponVFX>(TEXT("PlayerWeaponVFX"));
+	PlayerWeaponVFX->SetupAttachment(WeaponMeshComponent);
+	PlayerWeaponVFX->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
 
 	// 스탯 컴포넌트 생성
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));
@@ -116,6 +123,7 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	MovementRuntime.CurrentMaxWalkSpeed = SpeedSettings.RunSpeed;
 	MovementRuntime.TargetMaxWalkSpeed = SpeedSettings.RunSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = MovementRuntime.CurrentMaxWalkSpeed;
+	DamageReactionCameraShakeClass = UBADamageCameraShake::StaticClass();
 }
 
 // 데이터 초기화와 스탯 변경 이벤트 바인딩을 수행한다.
@@ -129,8 +137,8 @@ void ABAPlayerCharacter::BeginPlay()
 
 	if (StatComponent)
 	{
-		StatComponent->OnHPChanged.AddDynamic(this, &ABAPlayerCharacter::OnHealthChanged);
-		StatComponent->OnStaminaChanged.AddDynamic(this, &ABAPlayerCharacter::OnStaminaChanged);
+		StatComponent->OnHPChanged.AddUniqueDynamic(this, &ABAPlayerCharacter::OnHealthChanged);
+		StatComponent->OnStaminaChanged.AddUniqueDynamic(this, &ABAPlayerCharacter::OnStaminaChanged);
 
 		OnHealthChanged(StatComponent->GetCurrentHP(), StatComponent->GetMaxHP());
 		OnStaminaChanged(StatComponent->GetCurrentStamina(), StatComponent->GetMaxStamina());
@@ -284,7 +292,7 @@ void ABAPlayerCharacter::BindActionCallbacks()
 {
 	if (ActionComponent)
 	{
-		ActionComponent->OnActionStarted.AddDynamic(this, &ABAPlayerCharacter::HandleActionStarted);
+		ActionComponent->OnActionStarted.AddUniqueDynamic(this, &ABAPlayerCharacter::HandleActionStarted);
 	}
 
 	BindGuardActionCallbacks();
@@ -295,7 +303,18 @@ void ABAPlayerCharacter::BindActionCallbacks()
 // 이 공통 콜백은 액션이 이동을 잠그는 경우 Movement 런타임만 정리한다.
 void ABAPlayerCharacter::HandleActionStarted(const int32 /*ActionTid*/, const EActionType /*ActionType*/)
 {
-	if (!ActionComponent || !ActionComponent->IsMovementLockedByAction())
+	if (!ActionComponent)
+	{
+		return;
+	}
+
+	if (IsDamageReacting())
+	{
+		ActionComponent->CancelCurrentAction();
+		return;
+	}
+
+	if (!ActionComponent->IsMovementLockedByAction())
 	{
 		return;
 	}

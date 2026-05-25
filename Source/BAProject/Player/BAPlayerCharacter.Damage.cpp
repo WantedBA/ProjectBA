@@ -1,12 +1,7 @@
 #include "Player/BAPlayerCharacter.h"
 
-#include "Animation/AnimInstance.h"
-#include "Animation/AnimMontage.h"
 #include "Component/ActionComponent.h"
 #include "Component/StatComponent.h"
-#include "Components/SkeletalMeshComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
-#include "TimerManager.h"
 
 /*
  * Damage Reaction Policy Summary
@@ -38,110 +33,13 @@
  * - 연속 피격 시 이전 리액션 종료 타이머가 새 리액션을 종료하지 못하도록 재생 식별자를 갱신한다.
  * - GuardHit는 블렌드아웃이 시작되면 즉시 가드 복귀를 시도해 idle 노출을 줄인다.
  * - GuardBreak는 리액션 동안 무방비지만, 종료 시점에 입력이 유지되어 있으면 가드 재시작을 시도한다.
+ * - KnockDown/Airborne은 런치 후 지면에 닿은 뒤 바로 idle로 돌아가지 않는다.
+ * - 처음 0.5초는 입력 탈출을 받지 않고, 0.5초부터 1.5초까지만 이동/구르기 탈출을 받는다.
+ * - 이동 입력은 기립 몽타주를 절반만 재생한 뒤 locomotion으로 복귀한다.
+ * - 구르기 입력은 기립 몽타주 없이 즉시 구르기로 탈출한다.
+ * - 입력 탈출 창을 지나면 0.5초 더 누운 자세를 유지하고, 아무 입력이 없으면 전체 2초 뒤 기립한다.
  * - 사망, 입력 해제, 사다리 상태, 스태미너 부족처럼 복귀 조건을 만족하지 못하면 가드 상태를 정리한다.
  */
-namespace
-{
-	UAnimMontage* FindConfiguredMontage(
-		const TMap<EActionDirection, TObjectPtr<UAnimMontage>>& Montages,
-		const EActionDirection Direction)
-	{
-		if (const TObjectPtr<UAnimMontage>* Montage = Montages.Find(Direction))
-		{
-			return Montage->Get();
-		}
-
-		return nullptr;
-	}
-
-	UAnimMontage* FindMontageForDirection(
-		const TMap<EActionDirection, TObjectPtr<UAnimMontage>>& Montages,
-		const EActionDirection Direction)
-	{
-		if (UAnimMontage* Montage = FindConfiguredMontage(Montages, Direction))
-		{
-			return Montage;
-		}
-
-		// 8방향 몽타주가 모두 없을 수 있어 대각선은 인접 축 방향으로 보정한다.
-		switch (Direction)
-		{
-		case EActionDirection::ForwardLeft:
-			if (UAnimMontage* Montage = FindConfiguredMontage(Montages, EActionDirection::Forward))
-			{
-				return Montage;
-			}
-			if (UAnimMontage* Montage = FindConfiguredMontage(Montages, EActionDirection::Left))
-			{
-				return Montage;
-			}
-			break;
-		case EActionDirection::ForwardRight:
-			if (UAnimMontage* Montage = FindConfiguredMontage(Montages, EActionDirection::Forward))
-			{
-				return Montage;
-			}
-			if (UAnimMontage* Montage = FindConfiguredMontage(Montages, EActionDirection::Right))
-			{
-				return Montage;
-			}
-			break;
-		case EActionDirection::BackwardLeft:
-			if (UAnimMontage* Montage = FindConfiguredMontage(Montages, EActionDirection::Backward))
-			{
-				return Montage;
-			}
-			if (UAnimMontage* Montage = FindConfiguredMontage(Montages, EActionDirection::Left))
-			{
-				return Montage;
-			}
-			break;
-		case EActionDirection::BackwardRight:
-			if (UAnimMontage* Montage = FindConfiguredMontage(Montages, EActionDirection::Backward))
-			{
-				return Montage;
-			}
-			if (UAnimMontage* Montage = FindConfiguredMontage(Montages, EActionDirection::Right))
-			{
-				return Montage;
-			}
-			break;
-		default:
-			break;
-		}
-
-		return FindConfiguredMontage(Montages, EActionDirection::Any);
-	}
-
-	FVector GetKnockbackDirectionFromHitDirection(const AActor& Actor, const EActionDirection HitDirection)
-	{
-		const FVector Forward = Actor.GetActorForwardVector();
-		const FVector Right = Actor.GetActorRightVector();
-
-		switch (HitDirection)
-		{
-		case EActionDirection::Forward:
-			return -Forward;
-		case EActionDirection::Backward:
-			return Forward;
-		case EActionDirection::Left:
-			return Right;
-		case EActionDirection::Right:
-			return -Right;
-		case EActionDirection::ForwardLeft:
-			return (-Forward + Right).GetSafeNormal();
-		case EActionDirection::ForwardRight:
-			return (-Forward - Right).GetSafeNormal();
-		case EActionDirection::BackwardLeft:
-			return (Forward + Right).GetSafeNormal();
-		case EActionDirection::BackwardRight:
-			return (Forward - Right).GetSafeNormal();
-		case EActionDirection::Any:
-		default:
-			return -Forward;
-		}
-	}
-}
 
 void ABAPlayerCharacter::PostInitializeComponents()
 {
@@ -149,7 +47,7 @@ void ABAPlayerCharacter::PostInitializeComponents()
 
 	if (StatComponent)
 	{
-		StatComponent->OnDead.AddDynamic(this, &ABAPlayerCharacter::OnDeath);
+		StatComponent->OnDead.AddUniqueDynamic(this, &ABAPlayerCharacter::OnDeath);
 	}
 }
 
@@ -167,6 +65,8 @@ void ABAPlayerCharacter::OnDamaged(
 	const FBADamageEvent* BADamageEvent = DamageEvent.IsOfType(FBADamageEvent::ClassID)
 		? static_cast<const FBADamageEvent*>(&DamageEvent)
 		: nullptr;
+	LastDamageLaunchHorizontalSpeed = BADamageEvent ? BADamageEvent->LaunchHorizontalSpeed : 0.f;
+	LastDamageLaunchVerticalSpeed = BADamageEvent ? BADamageEvent->LaunchVerticalSpeed : 0.f;
 
 	const bool bGuarding = BADamageEvent ? BADamageEvent->bVictimGuarding : IsGuardingAgainstDamage(DamageDirection);
 	const bool bPerfectGuard = bGuarding && (BADamageEvent
@@ -199,6 +99,9 @@ void ABAPlayerCharacter::OnDamaged(
 
 	if (StatComponent)
 	{
+		LastDamageHitDirection = HitDirection;
+		LastDamageReactionType = DamageReactionType;
+		LastDamageDirection = DamageDirection;
 		StatComponent->ApplyDamage(AppliedDamage);
 		if (StatComponent->IsDead())
 		{
@@ -221,28 +124,6 @@ void ABAPlayerCharacter::OnDamaged(
 	PlayDamageReactionAnimation(DamageReactionType, HitDirection, bGuarding, bGuardBreak);
 }
 
-void ABAPlayerCharacter::OnDeath()
-{
-	Super::OnDeath();
-
-	GetWorldTimerManager().ClearTimer(DamageReactionTimerHandle);
-	DamageReactionState = EPlayerDamageReactionState::None;
-	ActiveDamageReactionMontage = nullptr;
-	ActiveDamageReactionPlaybackId = 0;
-	bGuardInputHeld = false;
-	SetGuardWindowActive(false);
-	SetBAPlayerState(EBAPlayerState::Dead);
-
-	if (ActionComponent)
-	{
-		ActionComponent->CancelCurrentAction();
-	}
-
-	// 3초 후 리스폰 시퀀스 시작 (소울라이크 사망 연출 고려)
-	FTimerHandle RespawnTimerHandle;
-	GetWorldTimerManager().SetTimer(RespawnTimerHandle, this, &ABAPlayerCharacter::Respawn, 3.0f, false);
-}
-
 bool ABAPlayerCharacter::IsDamageReacting() const
 {
 	return DamageReactionState != EPlayerDamageReactionState::None;
@@ -255,7 +136,7 @@ EPlayerDamageReactionState ABAPlayerCharacter::GetDamageReactionState() const
 
 bool ABAPlayerCharacter::CanAcceptActionInput() const
 {
-	return IsAlive() && !IsDamageReacting() && !IsOnLadder() && BAPlayerState != EBAPlayerState::Respawning;
+	return IsAlive() && !IsDamageReacting() && !bKnockDownGetUpInProgress && !IsOnLadder() && BAPlayerState != EBAPlayerState::Respawning;
 }
 
 bool ABAPlayerCharacter::IsGuardingAgainstDamage(const FVector& DamageDirection) const
@@ -294,274 +175,4 @@ bool ABAPlayerCharacter::IsGuardingAgainstDamage(const FVector& DamageDirection)
 	const float HalfAngleRadians = FMath::DegreesToRadians(FMath::Clamp(GuardDamageBlockAngle, 0.f, 360.f) * 0.5f);
 	const float MinDot = FMath::Cos(HalfAngleRadians);
 	return FVector::DotProduct(Forward, SourceDirection) >= MinDot;
-}
-
-bool ABAPlayerCharacter::ShouldPlayGuardBreakReaction() const
-{
-	return ActionComponent && ActionComponent->GetGuardState() == EGuardState::GuardBroken;
-}
-
-void ABAPlayerCharacter::CancelCurrentActionForDamageReaction()
-{
-	SetGuardWindowActive(false);
-
-	// 전력질주 중 피격 시 전력질주가 끊겨야 함
-	if (MovementRuntime.DesiredGait == EMovementState::Sprint)
-	{
-		SetMovementState(EMovementState::Run);
-	}
-	if (MovementRuntime.ActiveGait == EMovementState::Sprint)
-	{
-		SetActiveGaitAndSpeed(EMovementState::Run);
-	}
-
-	if (ActionComponent)
-	{
-		// 액션 종료 이벤트를 통해 ActionAnimationComponent가 현재 액션 몽타주를 정리한다.
-		ActionComponent->CancelCurrentAction();
-	}
-
-	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
-	{
-		MovementComponent->StopMovementImmediately();
-	}
-
-	MovementRuntime.Phase = EPlayerMovementPhase::None;
-	MovementRuntime.PhaseElapsedTime = 0.f;
-	MovementRuntime.bWaitingForPhaseAnimation = false;
-}
-
-void ABAPlayerCharacter::ApplyDamageReactionKnockback(
-	const EBADamageReactionType DamageReactionType,
-	const FVector& DamageDirection,
-	const EActionDirection HitDirection,
-	const bool bGuarding,
-	const bool bGuardBreak)
-{
-	if (bGuardBreak)
-	{
-		// GuardBreak는 긴 무방비 리액션의 루트모션으로 밀림을 표현한다.
-		return;
-	}
-
-	// 넉백 강도는 플레이어가 보유한 피격 반응 타입별 값으로 결정한다.
-	float KnockbackStrength = HitReactKnockbackStrength;
-	if (bGuarding)
-	{
-		KnockbackStrength = GuardHitKnockbackStrength;
-	}
-	else if (DamageReactionType == EBADamageReactionType::KnockDown)
-	{
-		KnockbackStrength = KnockDownKnockbackStrength;
-	}
-	else if (DamageReactionType == EBADamageReactionType::LargeHitReact)
-	{
-		KnockbackStrength = LargeHitReactKnockbackStrength;
-	}
-
-	if (KnockbackStrength <= 0.f)
-	{
-		return;
-	}
-
-	FVector KnockbackDirection = DamageDirection;
-	KnockbackDirection.Z = 0.f;
-	if (!KnockbackDirection.Normalize())
-	{
-		KnockbackDirection = GetKnockbackDirectionFromHitDirection(*this, HitDirection);
-		KnockbackDirection.Z = 0.f;
-		KnockbackDirection.Normalize();
-	}
-
-	if (KnockbackDirection.IsNearlyZero())
-	{
-		return;
-	}
-
-	FVector LaunchVelocity = KnockbackDirection * KnockbackStrength;
-	LaunchVelocity.Z = DamageReactionKnockbackZ;
-	LaunchCharacter(LaunchVelocity, true, false);
-}
-
-void ABAPlayerCharacter::PlayDamageReactionAnimation(
-	const EBADamageReactionType DamageReactionType,
-	const EActionDirection HitDirection,
-	const bool bGuarding,
-	const bool bGuardBreak)
-{
-	const int32 PlaybackId = NextDamageReactionPlaybackId++;
-	ActiveDamageReactionPlaybackId = PlaybackId;
-	DamageReactionState = ResolveDamageReactionState(DamageReactionType, bGuarding, bGuardBreak);
-	SetBAPlayerState(DamageReactionState == EPlayerDamageReactionState::KnockDown
-		? EBAPlayerState::KnockedDown
-		: EBAPlayerState::HitReacting);
-
-	if (DamageReactionState == EPlayerDamageReactionState::KnockDown)
-	{
-		SetInvincible(true);
-	}
-
-	// 연속 피격 시 이전 종료 타이머가 새 반응 상태를 해제하지 못하게 식별자를 갱신한다.
-	GetWorldTimerManager().ClearTimer(DamageReactionTimerHandle);
-
-	ActiveDamageReactionMontage = SelectDamageReactionMontage(
-		DamageReactionType,
-		HitDirection,
-		bGuarding,
-		bGuardBreak);
-
-	K2_OnDamageReaction(DamageReactionType, HitDirection, bGuarding, bGuardBreak);
-
-	float ReactionDuration = DamageReactionFallbackDuration;
-	if (ActiveDamageReactionMontage)
-	{
-		ReactionDuration = PlayAnimMontage(ActiveDamageReactionMontage);
-		if (DamageReactionState == EPlayerDamageReactionState::GuardHit && ReactionDuration > 0.f)
-		{
-			if (USkeletalMeshComponent* MeshComponent = GetMesh())
-			{
-				if (UAnimInstance* AnimInstance = MeshComponent->GetAnimInstance())
-				{
-					// GuardHit가 BlendOut에 들어가면 슬롯 가중치가 빠지며 idle이 보일 수 있으므로,
-					// 완전 종료를 기다리지 않고 즉시 가드 루프로 복귀한다.
-					FOnMontageBlendingOutStarted BlendingOutDelegate;
-					BlendingOutDelegate.BindUObject(
-						this,
-						&ABAPlayerCharacter::HandleGuardHitReactionMontageBlendingOut,
-						PlaybackId);
-					AnimInstance->Montage_SetBlendingOutDelegate(BlendingOutDelegate, ActiveDamageReactionMontage);
-				}
-			}
-		}
-	}
-
-	if (ReactionDuration <= 0.f)
-	{
-		FinishDamageReaction(PlaybackId);
-		return;
-	}
-
-	GetWorldTimerManager().SetTimer(
-		DamageReactionTimerHandle,
-		FTimerDelegate::CreateUObject(this, &ABAPlayerCharacter::FinishDamageReaction, PlaybackId),
-		ReactionDuration,
-		false);
-}
-
-EPlayerDamageReactionState ABAPlayerCharacter::ResolveDamageReactionState(
-	const EBADamageReactionType DamageReactionType,
-	const bool bGuarding,
-	const bool bGuardBreak) const
-{
-	if (bGuardBreak)
-	{
-		return EPlayerDamageReactionState::GuardBreak;
-	}
-
-	if (bGuarding)
-	{
-		return EPlayerDamageReactionState::GuardHit;
-	}
-
-	if (DamageReactionType == EBADamageReactionType::KnockDown)
-	{
-		return EPlayerDamageReactionState::KnockDown;
-	}
-
-	if (DamageReactionType == EBADamageReactionType::LargeHitReact)
-	{
-		return EPlayerDamageReactionState::LargeHitReact;
-	}
-
-	return EPlayerDamageReactionState::HitReact;
-}
-
-UAnimMontage* ABAPlayerCharacter::SelectDamageReactionMontage(
-	const EBADamageReactionType DamageReactionType,
-	const EActionDirection HitDirection,
-	const bool bGuarding,
-	const bool bGuardBreak) const
-{
-	if (bGuardBreak)
-	{
-		return FindMontageForDirection(GuardBreakReactMontages, HitDirection);
-	}
-
-	if (bGuarding)
-	{
-		return FindMontageForDirection(GuardHitReactMontages, HitDirection);
-	}
-
-	if (DamageReactionType == EBADamageReactionType::KnockDown)
-	{
-		if (UAnimMontage* KnockDownMontage = FindMontageForDirection(KnockDownReactMontages, HitDirection))
-		{
-			return KnockDownMontage;
-		}
-		return FindMontageForDirection(LargeHitReactMontages, HitDirection);
-	}
-
-	if (DamageReactionType == EBADamageReactionType::LargeHitReact)
-	{
-		return FindMontageForDirection(LargeHitReactMontages, HitDirection);
-	}
-
-	return FindMontageForDirection(HitReactMontages, HitDirection);
-}
-
-void ABAPlayerCharacter::HandleGuardHitReactionMontageBlendingOut(
-	UAnimMontage* Montage,
-	const bool /*bInterrupted*/,
-	const int32 PlaybackId)
-{
-	if (PlaybackId != ActiveDamageReactionPlaybackId || Montage != ActiveDamageReactionMontage)
-	{
-		return;
-	}
-
-	GetWorldTimerManager().ClearTimer(DamageReactionTimerHandle);
-	FinishDamageReaction(PlaybackId);
-}
-
-void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)
-{
-	if (PlaybackId != ActiveDamageReactionPlaybackId)
-	{
-		return;
-	}
-
-	const EPlayerDamageReactionState FinishedDamageReactionState = DamageReactionState;
-	ActiveDamageReactionPlaybackId = 0;
-	ActiveDamageReactionMontage = nullptr;
-	if (DamageReactionState == EPlayerDamageReactionState::KnockDown)
-	{
-		SetInvincible(false);
-	}
-
-	const bool bFinishedGuardReaction = FinishedDamageReactionState == EPlayerDamageReactionState::GuardHit
-		|| FinishedDamageReactionState == EPlayerDamageReactionState::GuardBreak;
-	const bool bShouldResumeGuard = bFinishedGuardReaction && ShouldResumeGuardAfterGuardReaction();
-	if (bFinishedGuardReaction && ActionComponent)
-	{
-		// GuardBreak 리액션 중에는 무방비였으므로 종료 시 상태를 비운 뒤, 입력이 유지되어 있으면 아래에서 재시작한다.
-		ActionComponent->SetGuardState(EGuardState::None);
-		SetCombatMode(EPlayerCombatMode::None);
-	}
-	DamageReactionState = EPlayerDamageReactionState::None;
-	if (BAPlayerState == EBAPlayerState::HitReacting || BAPlayerState == EBAPlayerState::KnockedDown)
-	{
-		SetBAPlayerState(EBAPlayerState::None);
-	}
-
-	if (bShouldResumeGuard)
-	{
-		if (!ResumeGuardAfterGuardReaction())
-		{
-			if (ActionComponent)
-			{
-				ActionComponent->SetGuardState(EGuardState::None);
-			}
-			SetCombatMode(EPlayerCombatMode::None);
-		}
-	}
 }

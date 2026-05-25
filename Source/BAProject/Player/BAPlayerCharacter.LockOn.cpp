@@ -72,8 +72,8 @@ void ABAPlayerCharacter::BindLockOnTargetCallbacks()
 		return;
 	}
 
-	LockOnTargetComponent->OnTargetLocked.AddDynamic(this, &ABAPlayerCharacter::HandleLockOnTargetLocked);
-	LockOnTargetComponent->OnTargetUnlocked.AddDynamic(this, &ABAPlayerCharacter::HandleLockOnTargetUnlocked);
+	LockOnTargetComponent->OnTargetLocked.AddUniqueDynamic(this, &ABAPlayerCharacter::HandleLockOnTargetLocked);
+	LockOnTargetComponent->OnTargetUnlocked.AddUniqueDynamic(this, &ABAPlayerCharacter::HandleLockOnTargetUnlocked);
 }
 
 void ABAPlayerCharacter::ConfigureLockOnCameraDefaults()

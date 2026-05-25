@@ -70,6 +70,12 @@ struct BAPROJECT_API FBossAttackData
 	EBADamageReactionType DamageReactionType = EBADamageReactionType::HitReact;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	float LaunchHorizontalSpeed = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	float LaunchVerticalSpeed = 0.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int32 NextComboTid = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)

@@ -1,19 +1,24 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Animation/AnimEnums.h"
 #include "Character/CharacterBase.h"
 #include "Player/BAPlayerCharacterTypes.h"
 #include "Tables/ActionEnums.h"
 #include "BAPlayerCharacter.generated.h"
 
+class UPlayerWeaponVFX;
+class UNiagaraComponent;
 class UCombatComponent;
 class UPlayerSkillComponent;
 class UAnimMontage;
+class UCameraShakeBase;
 class UCameraComponent;
 class UCharacterMovementComponent;
 class UActionComponent;
 class UActionAnimationComponent;
 class UInteractorComponent;
+class UAnimInstance;
 class AMapLadder;
 class USpringArmComponent;
 class UStatComponent;
@@ -73,7 +78,7 @@ public:
 	virtual bool IsGuardingAgainstDamage(const FVector& DamageDirection) const override;
 	virtual bool IsPerfectGuardWindowActive() const override;
 
-	void OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg);
+	void OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bInterrupted, int32 PlaybackId);
 	void StartAttack(UAnimMontage* InAnimMontage);
 	
 	virtual class UStaticMeshComponent* GetWeaponMesh() const override { return WeaponMeshComponent; }
@@ -190,6 +195,20 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Action")
 	bool CanAcceptActionInput() const;
 
+	bool RequestKnockDownGetUpEscape();
+	bool RequestKnockDownGetUpDodgeEscape(EActionDirection DodgeDirection);
+	void SetKnockDownGetUpDodgeInputHeld(bool bHeld, EActionDirection DodgeDirection);
+
+	UFUNCTION(BlueprintCallable, Category = "Combat|Death")
+	void DropWeaponForDeath();
+
+	UFUNCTION(BlueprintPure, Category = "Combat|Death")
+	bool CanDropWeaponForDeath() const;
+
+	// 다운/에어본 사망처럼 바닥에 완전히 누운 뒤 죽음 처리를 마무리해야 할 때 호출한다.
+	UFUNCTION(BlueprintCallable, Category = "Combat|Death")
+	void FinishDeferredDeath(EActionDirection DeathDirection = EActionDirection::Any);
+
 	// 사다리 상호작용
 	UFUNCTION(BlueprintCallable, Category = "Interaction|Ladder")
 	void EnterLadder(AMapLadder* Ladder, const FVector& EntryLocation, const FRotator& FaceRotation);
@@ -259,6 +278,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Weapon")
 	TObjectPtr<UStaticMeshComponent> WeaponMeshComponent;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Components")
+	TObjectPtr<UPlayerWeaponVFX> PlayerWeaponVFX;
 
 	// 스탯 및 액션 콜백
 	UFUNCTION()
@@ -304,11 +326,19 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Combat|Guard", meta = (DisplayName = "OnPerfectGuardSucceeded"))
 	void K2_OnPerfectGuardSucceeded(const FHitResult& HitResult, AActor* DamageCauser);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Combat|Death", meta = (DisplayName = "OnDeathMontageStarted"))
+	void K2_OnDeathMontageStarted(EActionDirection DeathDirection, UAnimMontage* DeathMontage);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Combat|Death", meta = (DisplayName = "OnDeathMontageEnded"))
+	void K2_OnDeathMontageEnded(bool bInterrupted);
 	
 	// 공격 관련
+	// 첫 약공격 콤보 전이 TID
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	int32 FirstLComboTransitionTid = 71001;
 	
+	// 첫 강공격 콤보 전이 TID
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	int32 FirstRComboTransitionTid = 72001;
 	
@@ -319,6 +349,10 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UAnimMontage> NextAttackMontage = nullptr;
 	EActionType NextAttackActionType = EActionType::None;
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimMontage> ActiveAttackMontage = nullptr;
+	int32 ActiveAttackPlaybackId = 0;
+	int32 NextAttackPlaybackId = 1;
 	
 	// 최대 차징 시간
 	UPROPERTY(EditAnywhere, Category="Combat")
@@ -328,6 +362,10 @@ protected:
 	FTimerHandle ChargeAttackTimerHandle;
 	
 private:
+	// 공격 런타임
+	void ClearAttackRuntimeState();
+	bool IsActiveAttackMontagePlaying() const;
+
 	// 이동 런타임
 	void TickMovementRuntime(float DeltaTime);
 	void UpdatePhaseFromInputAndGait(float DeltaTime);
@@ -411,11 +449,55 @@ private:
 		EActionDirection HitDirection,
 		bool bGuarding,
 		bool bGuardBreak) const;
+	const TMap<EActionDirection, TObjectPtr<UAnimMontage>>* GetDeathMontageMapForDamageReaction(
+		EBADamageReactionType DamageReactionType) const;
+	UAnimMontage* SelectDeathMontage(EActionDirection HitDirection) const;
+	void DropWeaponAndDie();
+	bool ShouldDeferDeathUntilDamageReaction() const;
+	bool ShouldDeferMovementDisableForDeathMontage() const;
+	void StartDeferredDamageReactionDeath();
+	void FinalizeDeferredDamageReactionDeath();
+	void FinalizeDropWeaponAndDie(EActionDirection DeathDirection);
+	void FinalizeDeathAfterMontage();
+	void PrepareDeathState();
+	void StopMontagesForDeath();
+	void ApplyDeathMontageRootMotionMode();
+	void RestoreDeathMontageRootMotionMode();
+	bool ShouldDropWeaponOnDeath() const;
+	bool ShouldDropWeaponImmediatelyOnDeath() const;
+	void DetachWeaponForDeath();
+	void ConfigureDroppedWeaponCollision();
+	void ConfigureDroppedWeaponWeight();
+	void ApplyDroppedWeaponPhysics();
+	FVector CalculateDeathWeaponDropImpulse() const;
+	void PlayDeathMontage(EActionDirection DeathDirection);
+	void FreezeMontageAtFinalFrame(UAnimMontage* MontageToPause);
+	void HandleDeathMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted);
+	void HandleDeathMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 	void HandleGuardHitReactionMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted, int32 PlaybackId);
+	void HandleDeferredDeathReactionMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted, int32 PlaybackId);
+	void HandleKnockDownReactionMontageBlendingOut(UAnimMontage* Montage, bool bInterrupted, int32 PlaybackId);
+	void ResetKnockDownRecovery();
+	void ScheduleKnockDownRecoveryStart(int32 PlaybackId, float ReactionDuration);
+	void TryBeginKnockDownRecoveryWait(int32 PlaybackId);
+	void BeginKnockDownRecoveryWait();
+	bool TryStartKnockDownGetUpEscape(bool bQueueDodge, EActionDirection DodgeDirection);
+	void OpenKnockDownGetUpEscapeWindow();
+	void CloseKnockDownGetUpEscapeWindow();
+	void EscapeKnockDownGetUpImmediately();
+	void RefreshKnockDownGetUpForMoveInput();
+	void StartKnockDownGetUp();
+	void FinishKnockDownGetUp();
+	void HandleKnockDownGetUpMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	void LogKnockDownGetUpDebugMessage(const FString& Message) const;
 	void ApplyDamageReactionKnockback(
 		EBADamageReactionType DamageReactionType,
 		const FVector& DamageDirection,
 		EActionDirection HitDirection,
+		bool bGuarding,
+		bool bGuardBreak);
+	void PlayDamageReactionCameraShake(
+		EBADamageReactionType DamageReactionType,
 		bool bGuarding,
 		bool bGuardBreak);
 	void FinishDamageReaction(int32 PlaybackId);
@@ -439,59 +521,160 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Interaction|Ladder", meta = (ShowOnlyInnerProperties))
 	FBAPlayerLadderSettings LadderSettings;
 
+	// 락온 성공 시 Strafe 고정 여부
 	UPROPERTY(EditAnywhere, Category = "LockOn|Movement")
 	bool bForceStrafeWhileLockedOn = true;
 
+	// 카메라 상대 Pitch 기준 락온 PitchOffset 자동 보정 여부
 	UPROPERTY(EditAnywhere, Category = "LockOn|Camera")
 	bool bAutoCalibrateLockOnControllerPitch = true;
 
+	// 락온 타겟 화면 높이 보정 PitchOffset
 	UPROPERTY(EditAnywhere, Category = "LockOn|Camera", meta = (Units = "deg"))
 	float LockOnAdditionalControllerPitchOffset = 0.f;
 
 	// 피격 반응 설정
+	// 가드 정면 판정 좌우 허용 각도
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction", meta = (ClampMin = "0.0", ClampMax = "360.0"))
 	float GuardDamageBlockAngle = 120.f;
 
+	// 피격 몽타주 없음/재생 실패 시 기본 리액션 시간
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction")
 	float DamageReactionFallbackDuration = 0.6f;
 
-	// Deprecated: 피격/가드 히트 Launch 넉백은 항상 적용한다. 직렬화된 BP 설정 호환을 위해 필드는 유지한다.
+	// 일반 피격 수평 넉백 세기
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
-	bool bUseLaunchKnockbackForDamageReaction = false;
+	float HitReactKnockbackStrength = 500.f;
 
-	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
-	float HitReactKnockbackStrength = 250.f;
-
+	// 큰 피격 수평 넉백 세기
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
 	float LargeHitReactKnockbackStrength = 500.f;
 
+	// KnockDown Launch 없음 fallback 수평 넉백 세기
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
 	float KnockDownKnockbackStrength = 650.f;
 
+	// KnockDown Launch 없음 fallback 수직 런치 세기
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
+	float KnockDownLaunchVerticalSpeed = 260.f;
+
+	// 일반 가드 성공 수평 넉백 세기
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
 	float GuardHitKnockbackStrength = 360.f;
 
-	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
-	float GuardBreakKnockbackStrength = 650.f;
-
+	// KnockDown 제외 피격/가드 넉백 기본 Z 속도
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
 	float DamageReactionKnockbackZ = 20.f;
 
+	// 일반 피격 방향별 리액션 몽타주
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")
 	TMap<EActionDirection, TObjectPtr<UAnimMontage>> HitReactMontages;
 
+	// 큰 피격 방향별 리액션 몽타주
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")
 	TMap<EActionDirection, TObjectPtr<UAnimMontage>> LargeHitReactMontages;
 
+	// KnockDown/Airborne 방향별 리액션 몽타주
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")
 	TMap<EActionDirection, TObjectPtr<UAnimMontage>> KnockDownReactMontages;
 
+	// 가드 성공 방향별 짧은 리액션 몽타주
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")
 	TMap<EActionDirection, TObjectPtr<UAnimMontage>> GuardHitReactMontages;
 
+	// 가드 브레이크 방향별 긴 리액션 몽타주
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")
 	TMap<EActionDirection, TObjectPtr<UAnimMontage>> GuardBreakReactMontages;
 
+	// KnockDown 일반 기립/이동 탈출 기립 몽타주
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Recovery")
+	TObjectPtr<UAnimMontage> KnockDownGetUpMontage;
+
+	// 누운 자세 고정 최소 리액션 몽타주 시간
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Recovery", meta = (ClampMin = "0.0"))
+	float KnockDownRecoveryMinMontageTime = 1.3f;
+
+	// 누운 자세 고정 후 입력 탈출 창 시작 시간
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Recovery", meta = (ClampMin = "0.0"))
+	float KnockDownGetUpEscapeInputStartDelay = 0.1f;
+
+	// 누운 자세 고정 후 입력 탈출 창 종료 시간
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Recovery", meta = (ClampMin = "0.0"))
+	float KnockDownGetUpEscapeInputEndDelay = 2.f;
+
+	// 입력 탈출 창 종료 후 자동 기립 추가 대기 시간
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Recovery", meta = (ClampMin = "0.0"))
+	float KnockDownGetUpNoInputDelayAfterEscapeWindow = 0.5f;
+
+	// 이동 탈출 시 재생할 기립 몽타주 비율
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Recovery", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float KnockDownGetUpMoveInputMontageFraction = 0.5f;
+
+	// 이동 탈출 기립 몽타주 중단 blend-out 시간
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Recovery", meta = (ClampMin = "0.0"))
+	float KnockDownGetUpStopBlendOut = 0.1f;
+
+	// KnockDown/GetUp 타이밍 로그 출력 여부
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Recovery|Debug")
+	bool bLogKnockDownGetUpDebug = true;
+
+	// 피격 카메라 셰이크 클래스
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Camera")
+	TSubclassOf<UCameraShakeBase> DamageReactionCameraShakeClass;
+
+	// 피격 카메라 셰이크 강도 배율
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Camera", meta = (ClampMin = "0.0"))
+	float DamageReactionCameraShakeScale = 1.f;
+
+	// 일반 피격 사망 방향별 몽타주
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|Montage", meta = (DisplayName = "Hit React Death Montages"))
+	TMap<EActionDirection, TObjectPtr<UAnimMontage>> DeathMontages;
+
+	// 큰 피격 사망 방향별 몽타주
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|Montage")
+	TMap<EActionDirection, TObjectPtr<UAnimMontage>> LargeHitDeathMontages;
+
+	// 사망 몽타주 중단/마지막 자세 고정 전 blend-out 시간
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|Montage", meta = (ClampMin = "0.0"))
+	float DeathMontageStopBlendOut = 0.1f;
+
+	// 사망 시 장착 무기 드랍 여부
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|WeaponDrop")
+	bool bDropWeaponOnDeath = true;
+
+	// 드랍 무기 물리 질량
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|WeaponDrop", meta = (ClampMin = "0.0"))
+	float DroppedWeaponMassKg = 35.f;
+
+	// 드랍 무기 직선 이동 감쇠
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|WeaponDrop", meta = (ClampMin = "0.0"))
+	float DroppedWeaponLinearDamping = 2.f;
+
+	// 드랍 무기 회전 감쇠
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|WeaponDrop", meta = (ClampMin = "0.0"))
+	float DroppedWeaponAngularDamping = 12.f;
+
+	// 드랍 무기 최대 회전 속도 제한
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|WeaponDrop", meta = (ClampMin = "0.0"))
+	float DroppedWeaponMaxAngularSpeedDeg = 180.f;
+
+	// 사망 시 무기 전방 impulse
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|WeaponDrop")
+	float DroppedWeaponForwardImpulse = 0.f;
+
+	// 사망 시 무기 우측 impulse
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|WeaponDrop")
+	float DroppedWeaponRightImpulse = 0.f;
+
+	// 사망 시 무기 상향 impulse
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|WeaponDrop")
+	float DroppedWeaponUpwardImpulse = 0.f;
+
+	// 사망 시 무기 회전 impulse
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|WeaponDrop")
+	FVector DroppedWeaponAngularImpulse = FVector::ZeroVector;
+
+	// 가드 몽타주 반복 섹션 이름
 	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Montage")
 	FName GuardLoopSection = TEXT("Loop");
 
@@ -505,12 +688,33 @@ private:
 	EPlayerLocomotionMode LocomotionModeBeforeLockOn = EPlayerLocomotionMode::Free;
 	EPlayerDamageReactionState DamageReactionState = EPlayerDamageReactionState::None;
 	FTimerHandle DamageReactionTimerHandle;
+	FTimerHandle KnockDownRecoveryStartTimerHandle;
+	FTimerHandle KnockDownGetUpTimerHandle;
 	int32 ActiveDamageReactionPlaybackId = 0;
 	int32 NextDamageReactionPlaybackId = 1;
+	EActionDirection LastDamageHitDirection = EActionDirection::Any;
+	EBADamageReactionType LastDamageReactionType = EBADamageReactionType::HitReact;
+	FVector LastDamageDirection = FVector::ZeroVector;
+	float LastDamageLaunchHorizontalSpeed = 0.f;
+	float LastDamageLaunchVerticalSpeed = 0.f;
+	bool bDeathFinalizationDeferred = false;
+	bool bDeathMovementDisableDeferred = false;
+	bool bWeaponDroppedForDeath = false;
 	bool bGuardInputHeld = false;
 	bool bPerfectGuardWindowActive = false;
 	bool bLockOnForcedStrafeActive = false;
 	bool bPendingLockOnStrafeAfterDodge = false;
+	bool bKnockDownWaitingForGetUp = false;
+	bool bKnockDownGetUpInProgress = false;
+	bool bKnockDownGetUpEscapeWindowOpen = false;
+	bool bKnockDownGetUpQueuedByMoveInput = false;
+	bool bKnockDownGetUpQueuedDodgeInput = false;
+	bool bKnockDownGetUpDodgeInputHeld = false;
+	bool bKnockDownGetUpMoveInputShortcut = false;
+	EActionDirection KnockDownGetUpQueuedDodgeDirection = EActionDirection::Any;
+	EActionDirection KnockDownGetUpHeldDodgeDirection = EActionDirection::Any;
+	float KnockDownReactionDebugStartTime = 0.f;
+	float KnockDownGetUpRecoveryStartTime = 0.f;
 	UPROPERTY(VisibleAnywhere) bool bIsBeforeCharge = false;
 	UPROPERTY(VisibleAnywhere) bool bIsCharging = false;
 	UPROPERTY(VisibleAnywhere) bool bIsChargeInputCompleted = false;
@@ -518,4 +722,16 @@ private:
 	
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimMontage> ActiveDamageReactionMontage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimMontage> ActiveKnockDownGetUpMontage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimMontage> ActiveDeathMontage;
+
+	UPROPERTY(Transient)
+	TWeakObjectPtr<UAnimInstance> DeathRootMotionModeAnimInstance;
+
+	TEnumAsByte<ERootMotionMode::Type> PreviousDeathRootMotionMode = ERootMotionMode::NoRootMotionExtraction;
+	bool bDeathRootMotionModeOverridden = false;
 };
