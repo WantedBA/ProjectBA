@@ -63,6 +63,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Combat")
 	EBADamageReactionType GetDamageReactionType() const { return CurrentDamageReactionType; }
 
+	UFUNCTION(BlueprintPure, Category = "Combat")
+	float GetCurrentDamage() const { return CurrentDamage; }
+
 protected:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 

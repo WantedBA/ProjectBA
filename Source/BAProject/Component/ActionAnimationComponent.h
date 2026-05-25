@@ -67,6 +67,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(
 // 액션 도메인이 런타임 실행 방향을 애니메이션 행 검색 방향으로 변환할 때 사용한다.
 DECLARE_DELEGATE_RetVal_TwoParams(EActionDirection, FResolveActionAnimationDirection, int32, EActionDirection);
 
+// 액션 도메인이 애니메이션 재생 직전 소유자 회전 방향을 별도로 정할 때 사용한다.
+DECLARE_DELEGATE_RetVal_TwoParams(EActionDirection, FResolveActionOrientationDirection, int32, EActionDirection);
+
 /**
  * 공용 Action 애니메이션 재생 컴포넌트.
  *
@@ -107,6 +110,7 @@ public:
 	FOnActionWindowEvent OnActionWindowClosed;
 
 	FResolveActionAnimationDirection ResolveActionAnimationDirection;
+	FResolveActionOrientationDirection ResolveActionOrientationDirection;
 
 	// ActionTid에 가장 적합한 ActionAnimationData를 찾아 몽타주를 재생한다.
 	UFUNCTION(BlueprintCallable, Category = "Action|Animation")
@@ -158,6 +162,7 @@ private:
 	USkeletalMeshComponent* ResolveMeshComponent() const;
 	UAnimInstance* ResolveAnimInstance() const;
 	EActionDirection ResolveAnimationDirection(int32 ActionTid, EActionDirection ActionDirection) const;
+	EActionDirection ResolveOrientationDirection(int32 ActionTid, EActionDirection ActionDirection) const;
 	void OrientOwnerToActionDirection(EActionDirection Direction) const;
 	void ApplyRootMotionModeForAnimation(UAnimInstance& AnimInstance, const FActionAnimationDataRow& AnimationData);
 	void RestoreRootMotionMode();

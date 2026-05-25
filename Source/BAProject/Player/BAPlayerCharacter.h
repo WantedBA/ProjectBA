@@ -6,6 +6,8 @@
 #include "Tables/ActionEnums.h"
 #include "BAPlayerCharacter.generated.h"
 
+class UPlayerWeaponVFX;
+class UNiagaraComponent;
 class UCombatComponent;
 class UPlayerSkillComponent;
 class UAnimMontage;
@@ -18,6 +20,7 @@ class AMapLadder;
 class USpringArmComponent;
 class UStatComponent;
 class UStaticMeshComponent;
+class UTargetComponent;
 
 /**
  * 플레이어 캐릭터 본체.
@@ -38,6 +41,7 @@ enum class EBAPlayerState : uint8
 	DodgeRolling,
 	HitReacting,
 	KnockedDown,
+	Respawning,
 	Dead
 };
 
@@ -55,6 +59,12 @@ public:
 
 	// 공격 관련
 	virtual void TryAttack(EActionCommand InActionCommand); // CharacterBase 공격 진입점. 
+	
+	// 차징 공격 판정
+	void ChargeAttackStart();
+	void ChargeLoopStart(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation);
+	void ChargeAttackCompleted();
+	void StopChargeEffect();
 
 	bool TryStartGuard();
 	void StopGuard();
@@ -70,6 +80,7 @@ public:
 	
 	virtual class UStaticMeshComponent* GetWeaponMesh() const override { return WeaponMeshComponent; }
 
+	// NextComboTransitionTid와 NextAttackMontage를 설정하는 함수
 	void SetNextCombo(EActionCommand InActionCommand);
 	void OnNextComboCheck();
 	
@@ -100,6 +111,15 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
 	EPlayerLocomotionMode GetLocomotionMode() const;
+
+	UFUNCTION(BlueprintPure, Category = "LockOn")
+	bool IsLockOnTargetLocked() const;
+
+	UFUNCTION(BlueprintCallable, Category = "LockOn")
+	void ToggleLockOnTargeting();
+
+	UFUNCTION(BlueprintCallable, Category = "LockOn")
+	void SwitchLockOnTargetInput(const FVector2D& SwitchInput);
 
 	// Start, Loop, Stop, Turn 등 현재 재생해야 하는 이동 페이즈를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Animation|Movement")
@@ -195,6 +215,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Control|Cutscene")
 	void UnlockMovementForCutscene();
 
+	/** 마지막 체크포인트에서 부활 */
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void Respawn();
+
 protected:
 	// CharacterBase 훅
 	virtual void PostInitializeComponents() override;
@@ -237,6 +261,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Weapon")
 	TObjectPtr<UStaticMeshComponent> WeaponMeshComponent;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Components")
+	TObjectPtr<UPlayerWeaponVFX> PlayerWeaponVFX;
 
 	// 스탯 및 액션 콜백
 	UFUNCTION()
@@ -248,6 +275,14 @@ protected:
 	void BindActionCallbacks();
 	void BindGuardActionCallbacks();
 	void BindDodgeActionCallbacks();
+	void BindLockOnTargetCallbacks();
+	void ConfigureLockOnCameraDefaults();
+
+	UFUNCTION()
+	void HandleLockOnTargetLocked(UTargetComponent* Target, FName Socket);
+
+	UFUNCTION()
+	void HandleLockOnTargetUnlocked(UTargetComponent* UnlockedTarget, FName Socket);
 
 	UFUNCTION()
 	void HandleActionStarted(int32 ActionTid, EActionType ActionType);
@@ -277,12 +312,10 @@ protected:
 	
 	// 공격 관련
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	TObjectPtr<UAnimMontage> FirstLightAttackMontage;
-	const int32 FirstLComboTransitionTid = 71001;
+	int32 FirstLComboTransitionTid = 71001;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	TObjectPtr<UAnimMontage> FirstHeavyAttackMontage;
-	const int32 FirstRComboTransitionTid = 72001;
+	int32 FirstRComboTransitionTid = 72001;
 	
 	const float WeaponRadius = 20.f; // 충돌 판정 시 검 두께
 	int32 NowComboTransitionTid = 0; // 다음 콤보 결정할 때 사용
@@ -292,6 +325,13 @@ protected:
 	TObjectPtr<UAnimMontage> NextAttackMontage = nullptr;
 	EActionType NextAttackActionType = EActionType::None;
 	
+	// 최대 차징 시간
+	UPROPERTY(EditAnywhere, Category="Combat")
+	float MaxChargeTime = 1.5f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat")
+	FTimerHandle ChargeAttackTimerHandle;
+	
 private:
 	// 이동 런타임
 	void TickMovementRuntime(float DeltaTime);
@@ -299,6 +339,7 @@ private:
 	void BeginMovementPhase(EPlayerMovementPhase NewPhase);
 	void FinishCurrentMovementPhase();
 	void SetActiveGaitAndSpeed(EMovementState NewGait);
+	void UpdateMaxWalkSpeed(float DeltaTime);
 	EMovementState GetMovementAllowedGait(EMovementState RequestedGait) const;
 	const FBAPlayerMovementPhaseSettings& GetPhaseSettings(EMovementState Gait) const;
 	float GetSpeedForGait(EMovementState Gait) const;
@@ -311,8 +352,13 @@ private:
 	void ApplyBufferedMoveInput();
 	bool IsActionMovementLocked() const;
 	void SyncFreeStrafeFacingMode();
-	void UpdateInterpolatedFacingRotation();
+	void EnterLockOnStrafeMode();
+	bool ShouldDelayLockOnStrafeMode() const;
+	void ApplyPendingLockOnStrafeMode();
+	void RestoreLocomotionModeAfterLockOn();
+	void UpdateInterpolatedFacingRotation(float DeltaTime);
 	bool ShouldUseInterpolatedFacingRotation() const;
+	bool ShouldBlendMovementFacingRotation() const;
 	void UseMovementDirectionFacing(UCharacterMovementComponent& MovementComponent);
 	void UseControllerYawFacing(UCharacterMovementComponent& MovementComponent);
 	void UpdateInterpolatedMoveInputDirection(float DeltaTime);
@@ -321,6 +367,7 @@ private:
 	void FaceMoveInputDirection();
 	EActionDirection ResolveBufferedActionDirection(int32 ActionTid, EActionDirection BufferedDirection) const;
 	EActionDirection ResolveActionAnimationDirection(int32 ActionTid, EActionDirection ActionDirection) const;
+	EActionDirection ResolveActionOrientationDirection(int32 ActionTid, EActionDirection ActionDirection) const;
 	FVector2D ConvertWorldDirectionToMoveInput(const FVector& WorldDirection) const;
 	FVector ConvertMoveInputToWorldDirection(const FVector2D& MoveInput) const;
 
@@ -378,6 +425,9 @@ private:
 		bool bGuardBreak);
 	void FinishDamageReaction(int32 PlaybackId);
 
+	UFUNCTION()
+	void HandleRespawnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
 	// 이동 설정
 	UPROPERTY(EditAnywhere, Category = "Movement", meta = (ShowOnlyInnerProperties))
 	FBAPlayerMovementSpeedSettings SpeedSettings;
@@ -393,6 +443,15 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Interaction|Ladder", meta = (ShowOnlyInnerProperties))
 	FBAPlayerLadderSettings LadderSettings;
+
+	UPROPERTY(EditAnywhere, Category = "LockOn|Movement")
+	bool bForceStrafeWhileLockedOn = true;
+
+	UPROPERTY(EditAnywhere, Category = "LockOn|Camera")
+	bool bAutoCalibrateLockOnControllerPitch = true;
+
+	UPROPERTY(EditAnywhere, Category = "LockOn|Camera", meta = (Units = "deg"))
+	float LockOnAdditionalControllerPitchOffset = 0.f;
 
 	// 피격 반응 설정
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction", meta = (ClampMin = "0.0", ClampMax = "360.0"))
@@ -441,16 +500,26 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Montage")
 	FName GuardLoopSection = TEXT("Loop");
 
+	UPROPERTY(EditAnywhere, Category = "Combat|Respawn|Montage")
+	TObjectPtr<UAnimMontage> RespawnMontage;
+
 	// 런타임 상태
 	FBAPlayerMovementRuntimeState MovementRuntime;
 	FBAPlayerSprintRuntimeState SprintRuntime;
 	FBAPlayerLadderRuntimeState LadderRuntime;
+	EPlayerLocomotionMode LocomotionModeBeforeLockOn = EPlayerLocomotionMode::Free;
 	EPlayerDamageReactionState DamageReactionState = EPlayerDamageReactionState::None;
 	FTimerHandle DamageReactionTimerHandle;
 	int32 ActiveDamageReactionPlaybackId = 0;
 	int32 NextDamageReactionPlaybackId = 1;
 	bool bGuardInputHeld = false;
 	bool bPerfectGuardWindowActive = false;
+	bool bLockOnForcedStrafeActive = false;
+	bool bPendingLockOnStrafeAfterDodge = false;
+	UPROPERTY(VisibleAnywhere) bool bIsBeforeCharge = false;
+	UPROPERTY(VisibleAnywhere) bool bIsCharging = false;
+	UPROPERTY(VisibleAnywhere) bool bIsChargeInputCompleted = false;
+	UPROPERTY(Transient) UAnimMontage* PausedMontage = nullptr;
 	
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimMontage> ActiveDamageReactionMontage;

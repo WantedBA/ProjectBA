@@ -237,6 +237,10 @@ void ABAPlayerCharacter::OnDeath()
 	{
 		ActionComponent->CancelCurrentAction();
 	}
+
+	// 3초 후 리스폰 시퀀스 시작 (소울라이크 사망 연출 고려)
+	FTimerHandle RespawnTimerHandle;
+	GetWorldTimerManager().SetTimer(RespawnTimerHandle, this, &ABAPlayerCharacter::Respawn, 3.0f, false);
 }
 
 bool ABAPlayerCharacter::IsDamageReacting() const
@@ -251,7 +255,7 @@ EPlayerDamageReactionState ABAPlayerCharacter::GetDamageReactionState() const
 
 bool ABAPlayerCharacter::CanAcceptActionInput() const
 {
-	return IsAlive() && !IsDamageReacting() && !IsOnLadder();
+	return IsAlive() && !IsDamageReacting() && !IsOnLadder() && BAPlayerState != EBAPlayerState::Respawning;
 }
 
 bool ABAPlayerCharacter::IsGuardingAgainstDamage(const FVector& DamageDirection) const

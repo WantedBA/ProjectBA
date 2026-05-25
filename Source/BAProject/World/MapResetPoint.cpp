@@ -26,6 +26,9 @@ AMapResetPoint::AMapResetPoint()
 	InteractionPivot = CreateDefaultSubobject<USceneComponent>(TEXT("InteractionPivot"));
 	InteractionPivot->SetRelativeLocation(FVector(30.f, 30.f, 10.f));
 	InteractionPivot->SetupAttachment(Root);
+
+	RespawnPoint = CreateDefaultSubobject<USceneComponent>(TEXT("RespawnPoint"));
+	RespawnPoint->SetupAttachment(Root);
 }
 
 void AMapResetPoint::BeginPlay()
@@ -113,6 +116,7 @@ void AMapResetPoint::Interact_Implementation(AActor* Interactor)
 		{
 			if (USaveGameManager* SaveManager = GI->GetSubsystem<USaveGameManager>())
 			{
+				SaveManager->SetRespawnPoint(RespawnPoint->GetComponentLocation(), RespawnPoint->GetComponentRotation());
 				SaveManager->SaveGame();
 			}
 		}

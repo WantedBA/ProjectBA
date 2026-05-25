@@ -12,6 +12,7 @@
 				"UMG",
 				"Engine",
 				"AIModule",
+				"Niagara",
 				"DeveloperSettings"
 			]
 		},
@@ -32,6 +33,10 @@
 		{
 			"Name": "VisualStudioCodeSourceCodeAccess",
 			"Enabled": false
+		},
+		{
+			"Name": "LockOnTarget",
+			"Enabled": true
 		}
 	]
 }

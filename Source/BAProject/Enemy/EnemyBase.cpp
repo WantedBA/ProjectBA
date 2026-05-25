@@ -11,6 +11,7 @@
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
+#include "TargetComponent.h"
 
 AEnemyBase::AEnemyBase()
 {
@@ -34,6 +35,8 @@ AEnemyBase::AEnemyBase()
 	MaxAttackCount = 3;
 	AlertDuration = 3.0f;
 	bShowDebugRanges = true;
+
+	GetMesh()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 }
 
 void AEnemyBase::PostInitializeComponents()
@@ -333,6 +336,7 @@ void AEnemyBase::OnDeath()
 {
 	Super::OnDeath();
 	SetState(EEnemyState::Dead);
+	ScheduleLockOnTargetingReleaseOnDeath();
 
 	SetActorEnableCollision(false);
 
@@ -347,6 +351,40 @@ void AEnemyBase::OnDeath()
 	PlayAnimMontage(DeadMontage);
 
 	K2_OnDeadVisuals();
+}
+
+void AEnemyBase::ScheduleLockOnTargetingReleaseOnDeath()
+{
+	if (!bDisableLockOnCaptureOnDeath)
+	{
+		return;
+	}
+
+	if (!GetWorld() || LockOnReleaseDelayOnDeath <= 0.f)
+	{
+		ReleaseLockOnTargetingOnDeath();
+		return;
+	}
+
+	GetWorldTimerManager().SetTimer(
+		LockOnReleaseDelayTimerHandle,
+		this,
+		&AEnemyBase::ReleaseLockOnTargetingOnDeath,
+		LockOnReleaseDelayOnDeath,
+		false);
+}
+
+void AEnemyBase::ReleaseLockOnTargetingOnDeath()
+{
+	if (!bDisableLockOnCaptureOnDeath)
+	{
+		return;
+	}
+
+	if (UTargetComponent* TargetComponent = FindComponentByClass<UTargetComponent>())
+	{
+		TargetComponent->SetCanBeCaptured(false);
+	}
 }
 
 void AEnemyBase::SetState(EEnemyState NewState)

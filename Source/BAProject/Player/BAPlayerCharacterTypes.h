@@ -69,6 +69,12 @@ struct FBAPlayerMovementSpeedSettings
 
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float SprintSpeed = 700.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Movement", meta = (ClampMin = "0.0"))
+	float SpeedUpInterpRate = 8.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Movement", meta = (ClampMin = "0.0"))
+	float SlowDownInterpRate = 10.0f;
 };
 
 // Free/Strafe 모드별 CharacterMovement 파라미터와 입력 방향 보간 설정.
@@ -91,6 +97,9 @@ struct FBAPlayerLocomotionSettings
 
 	UPROPERTY(EditAnywhere, Category = "Movement|Locomotion")
 	float StrafeRotationRateYaw = 720.f;
+
+	UPROPERTY(EditAnywhere, Category = "Movement|Locomotion", meta = (ClampMin = "0.0", Units = "deg/s"))
+	float StrafeSprintFacingRotationRateYaw = 540.f;
 
 	UPROPERTY(EditAnywhere, Category = "Movement|Locomotion")
 	float StrafeMaxAcceleration = 2048.f;
@@ -218,6 +227,8 @@ struct FBAPlayerMovementRuntimeState
 	float InterpolatedMoveInputMemoryRemainingTime = 0.f;
 	float PhaseEntryLocalAngle = 0.f;
 	float PhaseElapsedTime = 0.f;
+	float CurrentMaxWalkSpeed = 0.f;
+	float TargetMaxWalkSpeed = 0.f;
 };
 
 // 질주 고갈 잠금과 스태미너 회복 일시정지 상태.

@@ -1,6 +1,7 @@
 #include "Enemy/Animation/ANS_Collision.h"
 #include "Enemy/EnemyBase.h"
 #include "Component/CombatComponent.h"
+#include "Component/PlayerWeaponVFX.h"
 
 void UANS_Collision::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
@@ -30,6 +31,12 @@ void UANS_Collision::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequence
 			CombatComp->CheckHitStart(HitRadius, -1.0f, StartSocket, EndSocket);
 		}
 	}
+
+	// 충돌 시간동안 트레일 설정
+	if (UPlayerWeaponVFX* WeaponVfx = CharacterBase->GetComponentByClass<UPlayerWeaponVFX>())
+	{
+		WeaponVfx->ActivateTrailNiagara();
+	}
 }
 
 void UANS_Collision::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
@@ -51,5 +58,11 @@ void UANS_Collision::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBa
 	if (CombatComp)
 	{
 		CombatComp->CheckHitEnd();
+	}
+	
+	// 충돌 시간동안 트레일 설정
+	if (UPlayerWeaponVFX* WeaponVfx = CharacterBase->GetComponentByClass<UPlayerWeaponVFX>())
+	{
+		WeaponVfx->ActivateTrailNiagara();
 	}
 }

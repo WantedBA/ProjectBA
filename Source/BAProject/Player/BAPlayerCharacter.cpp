@@ -6,11 +6,13 @@
 #include "Component/StatComponent.h"
 #include "EngineUtils.h"
 #endif
+#include "NiagaraComponent.h"
 #include "Component/ActionAnimationComponent.h"
 #include "Component/ActionComponent.h"
 #include "Component/CombatComponent.h"
 #include "Component/InteractorComponent.h"
 #include "Component/PlayerSkillComponent.h"
+#include "Component/PlayerWeaponVFX.h"
 #include "Component/StatComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Constants/BAProjectConstant.h"
@@ -19,6 +21,10 @@
 #include "Instance/UserDataSubsystem.h"
 #include "Materials/MaterialInterface.h"
 #include "Tables/BATableManager.h"
+#include "Kismet/GameplayStatics.h"
+#include "Map/MapInfoActor.h"
+#include "GameFramework/PlayerStart.h"
+#include "SaveGame/SaveGameManager.h"
 
 namespace
 {
@@ -52,6 +58,10 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	{
 		WeaponMeshComponent->SetStaticMesh(GreatSwordMesh.Object);
 	}
+	
+	PlayerWeaponVFX = CreateDefaultSubobject<UPlayerWeaponVFX>(TEXT("PlayerWeaponVFX"));
+	PlayerWeaponVFX->SetupAttachment(WeaponMeshComponent);
+	PlayerWeaponVFX->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
 
 	// 스탯 컴포넌트 생성
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));
@@ -109,7 +119,9 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
-	GetCharacterMovement()->MaxWalkSpeed = SpeedSettings.RunSpeed;
+	MovementRuntime.CurrentMaxWalkSpeed = SpeedSettings.RunSpeed;
+	MovementRuntime.TargetMaxWalkSpeed = SpeedSettings.RunSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = MovementRuntime.CurrentMaxWalkSpeed;
 }
 
 // 데이터 초기화와 스탯 변경 이벤트 바인딩을 수행한다.
@@ -132,10 +144,41 @@ void ABAPlayerCharacter::BeginPlay()
 
 	// PlayerCharacter BeginPlay의 델리게이트 콜백 바인딩 진입점을 단일화한다.
 	BindActionCallbacks();
+	BindLockOnTargetCallbacks();
+	ConfigureLockOnCameraDefaults();
 	
 	if (CombatComponent)
 	{
 		CombatComponent->SetShowDebugTrace(true);
+	}
+
+	// 초기 리스폰 지점 설정 (Fallback)
+	if (USaveGameManager* SaveManager = GetGameInstance()->GetSubsystem<USaveGameManager>())
+	{
+		if (SaveManager->GetRespawnLocation().IsNearlyZero())
+		{
+			FVector DefaultLoc = GetActorLocation();
+			FRotator DefaultRot = GetActorRotation();
+
+			// 1순위: MapInfoActor에서 기본값 가져오기
+			if (AMapInfoActor* MapInfo = Cast<AMapInfoActor>(UGameplayStatics::GetActorOfClass(GetWorld(), AMapInfoActor::StaticClass())))
+			{
+				if (!MapInfo->DefaultSpawnLocation.IsZero())
+				{
+					DefaultLoc = MapInfo->DefaultSpawnLocation;
+					DefaultRot = MapInfo->DefaultSpawnRotation;
+				}
+			}
+			// 2순위: PlayerStart 액터 찾기
+			else if (AActor* PlayerStart = UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass()))
+			{
+				DefaultLoc = PlayerStart->GetActorLocation();
+				DefaultRot = PlayerStart->GetActorRotation();
+			}
+
+			SaveManager->SetRespawnPoint(DefaultLoc, DefaultRot);
+			UE_LOG(LogTemp, Log, TEXT("Initial Respawn Point Set to: %s"), *DefaultLoc.ToString());
+		}
 	}
 }
 
@@ -241,7 +284,9 @@ void ABAPlayerCharacter::InitializeFromTable()
 		SprintCostSettings.bHasActionData = false;
 	}
 
-	GetCharacterMovement()->MaxWalkSpeed = SpeedSettings.RunSpeed;
+	MovementRuntime.CurrentMaxWalkSpeed = SpeedSettings.RunSpeed;
+	MovementRuntime.TargetMaxWalkSpeed = SpeedSettings.RunSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = MovementRuntime.CurrentMaxWalkSpeed;
 }
 
 // 공통 액션 콜백만 직접 등록하고, 액션별 예외 처리는 각 도메인 cpp에서 바인딩한다.

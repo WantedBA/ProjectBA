@@ -232,6 +232,9 @@ void ABAPlayerCharacter::BindDodgeActionCallbacks()
 		ActionAnimationComponent->ResolveActionAnimationDirection.BindUObject(
 			this,
 			&ABAPlayerCharacter::ResolveActionAnimationDirection);
+		ActionAnimationComponent->ResolveActionOrientationDirection.BindUObject(
+			this,
+			&ABAPlayerCharacter::ResolveActionOrientationDirection);
 		ActionAnimationComponent->OnActionMontageEnded.AddDynamic(this, &ABAPlayerCharacter::HandleDodgeActionMontageEnded);
 	}
 }
@@ -258,6 +261,11 @@ void ABAPlayerCharacter::HandleDodgeActionMontageEnded(
 	{
 		SetBAPlayerState(EBAPlayerState::None);
 	}
+
+	if (ActionType == EActionType::DodgeRoll)
+	{
+		ApplyPendingLockOnStrafeMode();
+	}
 }
 
 // Movement 전체를 갱신한다.
@@ -266,8 +274,9 @@ void ABAPlayerCharacter::TickMovementRuntime(const float DeltaTime)
 	UnlockSprintAfterRecovery();
 	UpdateInterpolatedMoveInputDirection(DeltaTime);
 	UpdatePhaseFromInputAndGait(DeltaTime);
+	UpdateMaxWalkSpeed(DeltaTime);
 	SyncFreeStrafeFacingMode();
-	UpdateInterpolatedFacingRotation();
+	UpdateInterpolatedFacingRotation(DeltaTime);
 	ApplyBufferedMoveInput();
 	DrainSprintStaminaDuringLoop(DeltaTime);
 }
@@ -386,10 +395,7 @@ void ABAPlayerCharacter::SetActiveGaitAndSpeed(const EMovementState NewGait)
 {
 	const EMovementState PreviousGait = MovementRuntime.ActiveGait;
 	MovementRuntime.ActiveGait = NewGait;
-	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
-	{
-		MovementComponent->MaxWalkSpeed = GetSpeedForGait(NewGait);
-	}
+	MovementRuntime.TargetMaxWalkSpeed = GetSpeedForGait(NewGait);
 
 	if (PreviousGait == NewGait)
 	{
@@ -404,6 +410,43 @@ void ABAPlayerCharacter::SetActiveGaitAndSpeed(const EMovementState NewGait)
 	{
 		ResumeSprintStaminaRecovery(true);
 	}
+}
+
+// 실제 MaxWalkSpeed는 gait 변경을 바로 따라가지 않고 보간해 Run/Sprint 전환 충격을 줄인다.
+void ABAPlayerCharacter::UpdateMaxWalkSpeed(const float DeltaTime)
+{
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (!MovementComponent)
+	{
+		return;
+	}
+
+	const float TargetSpeed = GetSpeedForGait(MovementRuntime.ActiveGait);
+	MovementRuntime.TargetMaxWalkSpeed = TargetSpeed;
+
+	if (MovementRuntime.CurrentMaxWalkSpeed <= 0.f || DeltaTime <= 0.f)
+	{
+		MovementRuntime.CurrentMaxWalkSpeed = TargetSpeed;
+		MovementComponent->MaxWalkSpeed = MovementRuntime.CurrentMaxWalkSpeed;
+		return;
+	}
+
+	if (FMath::IsNearlyEqual(MovementRuntime.CurrentMaxWalkSpeed, TargetSpeed, 1.f))
+	{
+		MovementRuntime.CurrentMaxWalkSpeed = TargetSpeed;
+	}
+	else
+	{
+		const bool bSpeedingUp = TargetSpeed > MovementRuntime.CurrentMaxWalkSpeed;
+		const float InterpRate = bSpeedingUp
+			? SpeedSettings.SpeedUpInterpRate
+			: SpeedSettings.SlowDownInterpRate;
+		MovementRuntime.CurrentMaxWalkSpeed = InterpRate <= 0.f
+			? TargetSpeed
+			: FMath::FInterpTo(MovementRuntime.CurrentMaxWalkSpeed, TargetSpeed, DeltaTime, InterpRate);
+	}
+
+	MovementComponent->MaxWalkSpeed = MovementRuntime.CurrentMaxWalkSpeed;
 }
 
 // 가드/스태미너 정책을 반영해 실제 허용 Gait를 반환한다.
