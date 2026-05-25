@@ -198,6 +198,7 @@ void ABAPlayerCharacter::FinalizeDropWeaponAndDie(const EActionDirection DeathDi
 void ABAPlayerCharacter::PrepareDeathState()
 {
 	GetWorldTimerManager().ClearTimer(DamageReactionTimerHandle);
+	ResetKnockDownRecovery();
 	DamageReactionState = EPlayerDamageReactionState::None;
 	ActiveDamageReactionMontage = nullptr;
 	ActiveDamageReactionPlaybackId = 0;

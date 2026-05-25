@@ -10,11 +10,76 @@
 #include "Kismet/GameplayStatics.h"
 #include "Camera/CameraShakeBase.h"
 #include "GameFramework/PlayerController.h"
+#include "Components/CapsuleComponent.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "Instance/BATimeSubsystem.h"
 #include "Component/ActionComponent.h"
 #include "Enemy/Monster.h"
+
+/*
+ * Combat Damage Direction Policy Summary
+ *
+ * CombatComponent는 히트 판정 결과를 피해 이벤트로 정리한다. 피격자의 상태 변경과 애니메이션 선택은
+ * 피격자 쪽 Damage 모듈이 담당하고, 여기서는 피해량, 피격 타입, 런치 세기, 방향만 넘긴다.
+ *
+ * 1. 공격 데이터
+ * - SetAttackData는 노티파이에서 사용할 현재 공격의 반경, 피해량, 피격 타입, 런치 속도를 저장한다.
+ * - 보스 패턴은 테이블의 DamageReactionType, LaunchHorizontalSpeed, LaunchVerticalSpeed를 그대로 넘긴다.
+ * - Launch 값이 0이면 피격자가 가진 기본값을 사용한다.
+ *
+ * 2. 방향 계산
+ * - 기본 DamageDirection은 공격자 중심에서 피격자 중심으로 향하는 평면 방향이다.
+ * - 이 방향은 가드 각도, 피격 방향 몽타주, 플레이어 런치 방향에 함께 쓰인다.
+ * - 평면 방향이 없으면 공격자의 전방 방향을 사용한다.
+ *
+ * 3. KnockDown 보정
+ * - KnockDown은 수평 런치가 중요하므로, 캡슐끼리 너무 가까우면 중심 방향이 불안정하다.
+ * - 공격자/피격자 캡슐 반지름 합에 KnockDownDirectionContactTolerance를 더한 거리 안에서는 공격자 전방 방향을 사용한다.
+ * - 이 보정은 KnockDown에만 적용한다. 일반 피격과 가드 판정의 방향 규칙은 바꾸지 않는다.
+ */
+namespace
+{
+	FVector GetFlatSafeDirection(const FVector& Direction)
+	{
+		FVector FlatDirection = Direction;
+		FlatDirection.Z = 0.f;
+		return FlatDirection.GetSafeNormal();
+	}
+
+	float GetCharacterCapsuleRadius(const AActor* Actor)
+	{
+		const ACharacter* Character = Cast<ACharacter>(Actor);
+		const UCapsuleComponent* CapsuleComponent = Character ? Character->GetCapsuleComponent() : nullptr;
+		return CapsuleComponent ? CapsuleComponent->GetScaledCapsuleRadius() : 0.f;
+	}
+
+	bool ShouldUseOwnerForwardForKnockDownDirection(
+		const AActor* OwnerActor,
+		const AActor* Victim,
+		const FVector& OwnerToVictim,
+		const float ContactTolerance)
+	{
+		if (!OwnerActor || !Victim)
+		{
+			return false;
+		}
+
+		const FVector FlatOwnerToVictim = FVector(OwnerToVictim.X, OwnerToVictim.Y, 0.f);
+		if (FlatOwnerToVictim.IsNearlyZero())
+		{
+			return true;
+		}
+
+		const float CombinedCapsuleRadius = GetCharacterCapsuleRadius(OwnerActor) + GetCharacterCapsuleRadius(Victim);
+		if (CombinedCapsuleRadius <= 0.f)
+		{
+			return false;
+		}
+
+		return FlatOwnerToVictim.Size() <= CombinedCapsuleRadius + FMath::Max(0.f, ContactTolerance);
+	}
+}
 
 UCombatComponent::UCombatComponent()
 {
@@ -280,11 +345,23 @@ void UCombatComponent::ApplyDamage(AActor* Victim, const FHitResult& HitResult)
 	FVector DamageDirection = FVector::ZeroVector;
 	if (OwnerActor)
 	{
-		DamageDirection = (Victim->GetActorLocation() - OwnerActor->GetActorLocation()).GetSafeNormal();
+		const FVector OwnerToVictim = Victim->GetActorLocation() - OwnerActor->GetActorLocation();
+		const FVector OwnerForward = GetFlatSafeDirection(OwnerActor->GetActorForwardVector());
+		const bool bUseForwardForKnockDown =
+			CurrentDamageReactionType == EBADamageReactionType::KnockDown
+			&& ShouldUseOwnerForwardForKnockDownDirection(
+				OwnerActor,
+				Victim,
+				OwnerToVictim,
+				KnockDownDirectionContactTolerance)
+			&& !OwnerForward.IsNearlyZero();
+		DamageDirection = bUseForwardForKnockDown
+			? OwnerForward
+			: GetFlatSafeDirection(OwnerToVictim);
 	}
 	if (DamageDirection.IsNearlyZero())
 	{
-		DamageDirection = OwnerActor ? OwnerActor->GetActorForwardVector().GetSafeNormal() : FVector::ZeroVector;
+		DamageDirection = OwnerActor ? GetFlatSafeDirection(OwnerActor->GetActorForwardVector()) : FVector::ZeroVector;
 	}
 
 	DamageEvent.DamageDirection = DamageDirection;

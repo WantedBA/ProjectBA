@@ -176,12 +176,12 @@ void ABAPlayerCharacter::BindGuardActionCallbacks()
 {
 	if (ActionComponent)
 	{
-		ActionComponent->OnActionStarted.AddDynamic(this, &ABAPlayerCharacter::HandleGuardInterruptingActionStarted);
+		ActionComponent->OnActionStarted.AddUniqueDynamic(this, &ABAPlayerCharacter::HandleGuardInterruptingActionStarted);
 	}
 
 	if (ActionAnimationComponent)
 	{
-		ActionAnimationComponent->OnActionMontageEnded.AddDynamic(this, &ABAPlayerCharacter::HandleGuardActionMontageEnded);
+		ActionAnimationComponent->OnActionMontageEnded.AddUniqueDynamic(this, &ABAPlayerCharacter::HandleGuardActionMontageEnded);
 	}
 }
 

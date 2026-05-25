@@ -29,7 +29,10 @@ void ABAPlayerCharacter::SetHasMoveInput(const bool bNewHasMoveInput)
 	if (!MovementRuntime.bHasMoveInput)
 	{
 		MovementRuntime.MoveInputVector = FVector2D::ZeroVector;
+		return;
 	}
+
+	RefreshKnockDownGetUpForMoveInput();
 }
 
 // Free/Strafe 제어 방식을 변경한다.
@@ -221,7 +224,7 @@ void ABAPlayerCharacter::BindDodgeActionCallbacks()
 {
 	if (ActionComponent)
 	{
-		ActionComponent->OnActionStarted.AddDynamic(this, &ABAPlayerCharacter::HandleDodgeActionStarted);
+		ActionComponent->OnActionStarted.AddUniqueDynamic(this, &ABAPlayerCharacter::HandleDodgeActionStarted);
 		ActionComponent->ResolveBufferedActionDirection.BindUObject(
 			this,
 			&ABAPlayerCharacter::ResolveBufferedActionDirection);
@@ -235,7 +238,7 @@ void ABAPlayerCharacter::BindDodgeActionCallbacks()
 		ActionAnimationComponent->ResolveActionOrientationDirection.BindUObject(
 			this,
 			&ABAPlayerCharacter::ResolveActionOrientationDirection);
-		ActionAnimationComponent->OnActionMontageEnded.AddDynamic(this, &ABAPlayerCharacter::HandleDodgeActionMontageEnded);
+		ActionAnimationComponent->OnActionMontageEnded.AddUniqueDynamic(this, &ABAPlayerCharacter::HandleDodgeActionMontageEnded);
 	}
 }
 
@@ -243,6 +246,15 @@ void ABAPlayerCharacter::HandleDodgeActionStarted(
 	const int32 /*ActionTid*/,
 	const EActionType ActionType)
 {
+	if (IsDamageReacting())
+	{
+		if (ActionComponent)
+		{
+			ActionComponent->CancelCurrentAction();
+		}
+		return;
+	}
+
 	if (ActionType == EActionType::DodgeRoll)
 	{
 		SetBAPlayerState(EBAPlayerState::DodgeRolling);
@@ -285,6 +297,14 @@ void ABAPlayerCharacter::TickMovementRuntime(const float DeltaTime)
 void ABAPlayerCharacter::UpdatePhaseFromInputAndGait(const float DeltaTime)
 {
 	MovementRuntime.PhaseElapsedTime += DeltaTime;
+
+	if (DamageReactionState == EPlayerDamageReactionState::KnockDown)
+	{
+		MovementRuntime.Phase = EPlayerMovementPhase::None;
+		MovementRuntime.PhaseElapsedTime = 0.f;
+		MovementRuntime.bWaitingForPhaseAnimation = false;
+		return;
+	}
 
 	const EMovementState AllowedGait = GetMovementAllowedGait(MovementRuntime.DesiredGait);
 	if (AllowedGait != MovementRuntime.ActiveGait)

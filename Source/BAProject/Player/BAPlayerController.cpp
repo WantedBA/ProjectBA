@@ -235,6 +235,17 @@ void ABAPlayerController::OnSprintStarted()
 {
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
 	{
+		if (PC->IsDamageReacting())
+		{
+			const EActionDirection DodgeDirection = PC->GetActionDirectionFromMoveInput(PC->GetMoveInputVector());
+			PC->SetKnockDownGetUpDodgeInputHeld(true, DodgeDirection);
+			PC->RequestKnockDownGetUpDodgeEscape(DodgeDirection);
+			bSprintInputHeld = false;
+			bSprintModifierHeld = false;
+			ApplyMovementStateByModifier();
+			return;
+		}
+
 		PC->CancelGuardForSprintInput();
 	}
 
@@ -246,7 +257,17 @@ void ABAPlayerController::OnSprintStarted()
 
 void ABAPlayerController::OnSprintCompleted()
 {
-	const bool bShouldDodge = IsSprintDodgeTap();
+	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
+		PC && PC->IsDamageReacting())
+	{
+		PC->SetKnockDownGetUpDodgeInputHeld(false, EActionDirection::Any);
+		bSprintInputHeld = false;
+		bSprintModifierHeld = false;
+		ApplyMovementStateByModifier();
+		return;
+	}
+
+	const bool bShouldDodge = bSprintInputHeld && IsSprintDodgeTap();
 
 	bSprintInputHeld = false;
 	bSprintModifierHeld = false;
@@ -324,8 +345,15 @@ bool ABAPlayerController::IsSprintDodgeTap() const
 void ABAPlayerController::TryStartDodgeAction() const
 {
 	ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
-	if (!PC || !PC->CanAcceptActionInput())
+	if (!PC)
 	{
+		return;
+	}
+
+	const EActionDirection DodgeDirection = PC->GetActionDirectionFromMoveInput(PC->GetMoveInputVector());
+	if (!PC->CanAcceptActionInput())
+	{
+		PC->RequestKnockDownGetUpDodgeEscape(DodgeDirection);
 		return;
 	}
 
@@ -335,7 +363,6 @@ void ABAPlayerController::TryStartDodgeAction() const
 		return;
 	}
 
-	const EActionDirection DodgeDirection = PC->GetActionDirectionFromMoveInput(PC->GetMoveInputVector());
 	ActionComponent->TryStartAction(EActionCommand::Dodge, DodgeDirection);
 }
 

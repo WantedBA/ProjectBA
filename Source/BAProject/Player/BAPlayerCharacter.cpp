@@ -1,6 +1,7 @@
 #include "Player/BAPlayerCharacter.h"
 
 #include "Camera/CameraComponent.h"
+#include "Player/BADamageCameraShake.h"
 #if !UE_BUILD_SHIPPING
 #include "Enemy/EnemyBase.h"
 #include "Component/StatComponent.h"
@@ -116,6 +117,7 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	MovementRuntime.CurrentMaxWalkSpeed = SpeedSettings.RunSpeed;
 	MovementRuntime.TargetMaxWalkSpeed = SpeedSettings.RunSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = MovementRuntime.CurrentMaxWalkSpeed;
+	DamageReactionCameraShakeClass = UBADamageCameraShake::StaticClass();
 }
 
 // 데이터 초기화와 스탯 변경 이벤트 바인딩을 수행한다.
@@ -129,8 +131,8 @@ void ABAPlayerCharacter::BeginPlay()
 
 	if (StatComponent)
 	{
-		StatComponent->OnHPChanged.AddDynamic(this, &ABAPlayerCharacter::OnHealthChanged);
-		StatComponent->OnStaminaChanged.AddDynamic(this, &ABAPlayerCharacter::OnStaminaChanged);
+		StatComponent->OnHPChanged.AddUniqueDynamic(this, &ABAPlayerCharacter::OnHealthChanged);
+		StatComponent->OnStaminaChanged.AddUniqueDynamic(this, &ABAPlayerCharacter::OnStaminaChanged);
 
 		OnHealthChanged(StatComponent->GetCurrentHP(), StatComponent->GetMaxHP());
 		OnStaminaChanged(StatComponent->GetCurrentStamina(), StatComponent->GetMaxStamina());
@@ -288,7 +290,7 @@ void ABAPlayerCharacter::BindActionCallbacks()
 {
 	if (ActionComponent)
 	{
-		ActionComponent->OnActionStarted.AddDynamic(this, &ABAPlayerCharacter::HandleActionStarted);
+		ActionComponent->OnActionStarted.AddUniqueDynamic(this, &ABAPlayerCharacter::HandleActionStarted);
 	}
 
 	BindGuardActionCallbacks();
@@ -299,7 +301,18 @@ void ABAPlayerCharacter::BindActionCallbacks()
 // 이 공통 콜백은 액션이 이동을 잠그는 경우 Movement 런타임만 정리한다.
 void ABAPlayerCharacter::HandleActionStarted(const int32 /*ActionTid*/, const EActionType /*ActionType*/)
 {
-	if (!ActionComponent || !ActionComponent->IsMovementLockedByAction())
+	if (!ActionComponent)
+	{
+		return;
+	}
+
+	if (IsDamageReacting())
+	{
+		ActionComponent->CancelCurrentAction();
+		return;
+	}
+
+	if (!ActionComponent->IsMovementLockedByAction())
 	{
 		return;
 	}
