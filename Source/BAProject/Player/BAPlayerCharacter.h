@@ -88,7 +88,7 @@ public:
 	void OnNextComboCheck();
 
 	// 스킬 컴포넌트에서 콤보 구성을 오버라이드 하기 위한 함수
-	void OverrideComboTransition(int32 NowComboTid, EActionCommand ActionCommand, int32 NextComboTransitionTid);
+	void OverrideComboTransition(int32 InNowComboTid, EActionCommand ActionCommand, int32 NewNextComboTid);
 	void ResetComboTransitionOverrides();
 	
 	UFUNCTION(BlueprintCallable, Category = "Combat")

@@ -341,12 +341,12 @@ void ABAPlayerCharacter::OnNextComboCheck()
 	}
 }
 
-void ABAPlayerCharacter::OverrideComboTransition(int32 NowComboTid, EActionCommand ActionCommand,
-	int32 NextComboTransitionTid)
+void ABAPlayerCharacter::OverrideComboTransition(int32 InNowComboTid, EActionCommand ActionCommand,
+	int32 NewNextComboTid)
 {
-	const int64 OverrideKey = MakeComboOverrideKey(NowComboTid, ActionCommand);
+	const int64 OverrideKey = MakeComboOverrideKey(InNowComboTid, ActionCommand);
 	
-	ComboTransitionOverrides.Add(OverrideKey, NextComboTransitionTid);
+	ComboTransitionOverrides.Add(OverrideKey, NewNextComboTid);
 }
 
 void ABAPlayerCharacter::ResetComboTransitionOverrides()
