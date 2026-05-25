@@ -8,6 +8,7 @@
 #include "PlayerSkillComponent.generated.h"
 
 
+class ABAPlayerCharacter;
 class UPlayerWeaponVFX;
 struct FSkillModifierRow;
 class UActionComponent;
@@ -53,6 +54,10 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UBATableManager> TableManager = nullptr;
 	
+// 플레이어 캐릭터 포인터
+	UPROPERTY(Transient)
+	TObjectPtr<ABAPlayerCharacter> PlayerCharacter = nullptr;
+	
 // 액터컴포넌트 포인터
 	UPROPERTY(Transient)
 	TObjectPtr<UActionComponent> ActionComponent = nullptr;
@@ -61,3 +66,20 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UPlayerWeaponVFX> WeaponVFXComponent = nullptr;
 };
+
+template <typename T>
+bool StringToEnum(const FString& EnumString, T& OutValue)
+{
+	if (UEnum* EnumPtr = StaticEnum<T>())
+	{
+		int64 Value = EnumPtr->GetValueByNameString(EnumString);
+
+		if (Value != INDEX_NONE)
+		{
+			OutValue = static_cast<T>(Value);
+			return true;
+		}
+	}
+
+	return false;
+}

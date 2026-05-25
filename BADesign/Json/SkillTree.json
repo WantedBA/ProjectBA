@@ -241,21 +241,24 @@
             "ApplyType": "Element",
             "Target": "WeaponVFX",
             "Value": "/Game/Assets/WeaponVFX/Weapon/MeleeWeaponAura_VFX/VFX/V4/NS_StylizedWeapon_V4_05.NS_StylizedWeapon_V4_05",
-            "Value2": "/Game/Assets/WeaponVFX/Trail/SwordTrailVFX/VFX/NS_Trail_03.NS_Trail_03"
+            "Value2": "/Game/Assets/WeaponVFX/Trail/SwordTrailVFX/VFX/NS_Trail_03.NS_Trail_03",
+            "Value3": " "
         },
         {
             "SkillTid": 7,
             "ApplyType": "Element",
             "Target": "WeaponVFX",
             "Value": "/Game/Assets/WeaponVFX/Trail/SlashTrailElemental/Niagara/Sword/NS_Sword_Ice.NS_Sword_Ice",
-            "Value2": "/Game/Assets/WeaponVFX/Trail/SlashTrailElemental/Niagara/SlashTrail/NS_SlashTrail_Ice.NS_SlashTrail_Ice"
+            "Value2": "/Game/Assets/WeaponVFX/Trail/SlashTrailElemental/Niagara/SlashTrail/NS_SlashTrail_Ice.NS_SlashTrail_Ice",
+            "Value3": " "
         },
         {
             "SkillTid": 8,
             "ApplyType": "Element",
             "Target": "WeaponVFX",
             "Value": "/Game/Assets/WeaponVFX/Weapon/MeleeWeaponAura_VFX/VFX/V3/NS_StylizedWeapon_V3_09.NS_StylizedWeapon_V3_09",
-            "Value2": "/Game/Assets/WeaponVFX/Trail/SwordTrailVFX/VFX/NS_Trail_12.NS_Trail_12"
+            "Value2": "/Game/Assets/WeaponVFX/Trail/SwordTrailVFX/VFX/NS_Trail_12.NS_Trail_12",
+            "Value3": " "
         },
         {
             "SkillTid": 9,
@@ -317,7 +320,11 @@
         },
         {
             "SkillTid": 21,
-            "ApplyType": "Action"
+            "ApplyType": "Action",
+            "Target": "ComboOverride",
+            "Value": 0,
+            "Value2": "HeavyAttack",
+            "Value3": 73001
         }
     ]
 }
