@@ -250,10 +250,6 @@ void ABAPlayerCharacter::PlayDamageReactionAnimation(
 
 	if (DamageReactionState == EPlayerDamageReactionState::KnockDown)
 	{
-		if (UWorld* World = GetWorld())
-		{
-			KnockDownReactionDebugStartTime = World->GetTimeSeconds();
-		}
 		SetInvincible(true);
 	}
 	PlayDamageReactionCameraShake(DamageReactionType, bGuarding, bGuardBreak);
@@ -330,12 +326,6 @@ void ABAPlayerCharacter::PlayDamageReactionAnimation(
 
 	if (DamageReactionState == EPlayerDamageReactionState::KnockDown)
 	{
-		LogKnockDownGetUpDebugMessage(
-			FString::Printf(
-				TEXT("REACTION START | montage=%s | duration %.2fs | recovery waits for prone %.2fs and ground"),
-				ActiveDamageReactionMontage ? *ActiveDamageReactionMontage->GetName() : TEXT("None"),
-				ReactionDuration,
-				FMath::Max(0.f, KnockDownRecoveryMinMontageTime)));
 		ScheduleKnockDownRecoveryStart(PlaybackId, ReactionDuration);
 		return;
 	}
@@ -448,7 +438,6 @@ void ABAPlayerCharacter::HandleKnockDownReactionMontageBlendingOut(
 
 	GetWorldTimerManager().ClearTimer(DamageReactionTimerHandle);
 	GetWorldTimerManager().ClearTimer(KnockDownRecoveryStartTimerHandle);
-	LogKnockDownGetUpDebugMessage(TEXT("REACTION BLENDOUT | fallback recovery start"));
 	FinishDamageReaction(PlaybackId);
 }
 

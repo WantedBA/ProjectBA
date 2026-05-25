@@ -489,7 +489,6 @@ private:
 	void StartKnockDownGetUp();
 	void FinishKnockDownGetUp();
 	void HandleKnockDownGetUpMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-	void LogKnockDownGetUpDebugMessage(const FString& Message) const;
 	void ApplyDamageReactionKnockback(
 		EBADamageReactionType DamageReactionType,
 		const FVector& DamageDirection,
@@ -614,10 +613,6 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Recovery", meta = (ClampMin = "0.0"))
 	float KnockDownGetUpStopBlendOut = 0.1f;
 
-	// KnockDown/GetUp 타이밍 로그 출력 여부
-	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Recovery|Debug")
-	bool bLogKnockDownGetUpDebug = true;
-
 	// 피격 카메라 셰이크 클래스
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Camera")
 	TSubclassOf<UCameraShakeBase> DamageReactionCameraShakeClass;
@@ -713,8 +708,6 @@ private:
 	bool bKnockDownGetUpMoveInputShortcut = false;
 	EActionDirection KnockDownGetUpQueuedDodgeDirection = EActionDirection::Any;
 	EActionDirection KnockDownGetUpHeldDodgeDirection = EActionDirection::Any;
-	float KnockDownReactionDebugStartTime = 0.f;
-	float KnockDownGetUpRecoveryStartTime = 0.f;
 	UPROPERTY(VisibleAnywhere) bool bIsBeforeCharge = false;
 	UPROPERTY(VisibleAnywhere) bool bIsCharging = false;
 	UPROPERTY(VisibleAnywhere) bool bIsChargeInputCompleted = false;
