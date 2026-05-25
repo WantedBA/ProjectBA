@@ -51,6 +51,10 @@ void ABAPlayerCharacter::Respawn()
 			}
 
 			// 2. 상태 초기화
+			ResetLandingRecovery();
+			ClearFallDamageSuppression();
+			bFallTrackingActive = false;
+			LastFallDistance = 0.f;
 			CharacterState = ECharacterState::Alive;
 			SetBAPlayerState(EBAPlayerState::Respawning);
 

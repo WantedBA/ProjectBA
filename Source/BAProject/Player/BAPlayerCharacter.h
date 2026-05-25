@@ -195,6 +195,32 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Action")
 	bool CanAcceptActionInput() const;
 
+	UFUNCTION(BlueprintPure, Category = "Animation|Falling")
+	bool IsLandingRecoveryActive() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Falling")
+	bool ShouldPlayHeavyLanding() const;
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Falling")
+	bool IsLandingRecoveryInputLocked() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Animation|Falling")
+	void CompleteLandingRecoveryAnimation();
+
+	bool ResolveLandingRecoveryBeforeAction(EActionCommand Command, EActionDirection Direction = EActionDirection::Any);
+
+	UFUNCTION(BlueprintPure, Category = "Animation|Falling")
+	float GetLastFallDistance() const;
+
+	UFUNCTION(BlueprintPure, Category = "Movement|Falling")
+	bool IsFallDamageSuppressed() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Movement|Falling")
+	void SetFallDamageSuppressed(bool bSuppressed, FName Source);
+
+	UFUNCTION(BlueprintCallable, Category = "Movement|Falling")
+	void ClearFallDamageSuppression();
+
 	bool RequestKnockDownGetUpEscape();
 	bool RequestKnockDownGetUpDodgeEscape(EActionDirection DodgeDirection);
 	void SetKnockDownGetUpDodgeInputHeld(bool bHeld, EActionDirection DodgeDirection);
@@ -239,6 +265,8 @@ public:
 protected:
 	// CharacterBase 훅
 	virtual void PostInitializeComponents() override;
+	virtual void Falling() override;
+	virtual void Landed(const FHitResult& Hit) override;
 	virtual void OnDamaged(
 		float FinalDamage,
 		FDamageEvent const& DamageEvent,
@@ -332,6 +360,18 @@ protected:
 
 	UFUNCTION(BlueprintImplementableEvent, Category = "Combat|Death", meta = (DisplayName = "OnDeathMontageEnded"))
 	void K2_OnDeathMontageEnded(bool bInterrupted);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Movement|Falling", meta = (DisplayName = "OnFallStarted"))
+	void K2_OnFallStarted();
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Movement|Falling", meta = (DisplayName = "OnLandedFromFall"))
+	void K2_OnLandedFromFall(float FallDistance, float AppliedDamage, bool bFatalFall);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Movement|Falling", meta = (DisplayName = "OnLandingRecoveryStarted"))
+	void K2_OnLandingRecoveryStarted(float FallDistance, UAnimMontage* LandingMontage);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = "Movement|Falling", meta = (DisplayName = "OnLandingRecoveryEnded"))
+	void K2_OnLandingRecoveryEnded();
 	
 	// 공격 관련
 	// 첫 약공격 콤보 전이 TID
@@ -431,6 +471,21 @@ private:
 	void DrainLadderSprintStamina(float DeltaTime);
 	void ResetMovementRuntimeForLadder();
 
+	// 낙하/착지
+	bool ShouldTrackFall() const;
+	void BeginFallTracking();
+	void EndFallTrackingFromLanding();
+	float CalculateFallDamage(float FallDistance) const;
+	float ApplyFallDamage(float FallDistance, bool& bOutFatalFall);
+	void BeginLandingRecovery(float FallDistance);
+	void FinishLandingRecovery();
+	void ResetLandingRecovery();
+	void PlayLandingRecoveryCameraShake();
+	void EndLandingRecovery(bool bStartQueuedAction);
+	void QueueLandingRecoveryAction(EActionCommand Command, EActionDirection Direction);
+	void ClearQueuedLandingRecoveryAction();
+	void StartQueuedLandingRecoveryAction(EActionCommand Command, EActionDirection Direction);
+
 	// 피격 반응
 	bool ShouldPlayGuardBreakReaction() const;
 	void HandlePerfectGuardSucceeded(const FHitResult& HitResult, AActor* DamageCauser);
@@ -489,7 +544,6 @@ private:
 	void StartKnockDownGetUp();
 	void FinishKnockDownGetUp();
 	void HandleKnockDownGetUpMontageEnded(UAnimMontage* Montage, bool bInterrupted);
-	void LogKnockDownGetUpDebugMessage(const FString& Message) const;
 	void ApplyDamageReactionKnockback(
 		EBADamageReactionType DamageReactionType,
 		const FVector& DamageDirection,
@@ -520,6 +574,42 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Interaction|Ladder", meta = (ShowOnlyInnerProperties))
 	FBAPlayerLadderSettings LadderSettings;
+
+	// 낙하 피해 시작 높이
+	UPROPERTY(EditAnywhere, Category = "Movement|Falling", meta = (ClampMin = "0.0", Units = "cm"))
+	float SafeFallDistance = 400.f;
+
+	// 낙사 높이
+	UPROPERTY(EditAnywhere, Category = "Movement|Falling", meta = (ClampMin = "0.0", Units = "cm"))
+	float FatalFallDistance = 1500.f;
+
+	// 피해 시작점 현재 HP 비율
+	UPROPERTY(EditAnywhere, Category = "Movement|Falling", meta = (ClampMin = "0.0", ClampMax = "100.0", Units = "%"))
+	float FallDamageMinCurrentHPPercent = 15.f;
+
+	// 낙사 직전 현재 HP 비율
+	UPROPERTY(EditAnywhere, Category = "Movement|Falling", meta = (ClampMin = "0.0", ClampMax = "100.0", Units = "%"))
+	float FallDamageMaxCurrentHPPercent = 80.f;
+
+	// 약착지 입력 잠금 시작 높이
+	UPROPERTY(EditAnywhere, Category = "Movement|Falling|Recovery", meta = (ClampMin = "0.0", Units = "cm"))
+	float LandingInputLockMinFallDistance = 100.f;
+
+	// 강착지 판정 시작 높이
+	UPROPERTY(EditAnywhere, Category = "Movement|Falling|Recovery", meta = (ClampMin = "0.0", Units = "cm"))
+	float LandingRecoveryMinFallDistance = 900.f;
+
+	// 착지 잠금 자동 종료 시간
+	UPROPERTY(EditAnywhere, Category = "Movement|Falling|Recovery", meta = (ClampMin = "0.0", Units = "s"))
+	float LandingRecoveryAutoFinishDuration = 2.f;
+
+	// 강착지 카메라 셰이크 클래스
+	UPROPERTY(EditAnywhere, Category = "Movement|Falling|Recovery|Camera")
+	TSubclassOf<UCameraShakeBase> LandingRecoveryCameraShakeClass;
+
+	// 강착지 카메라 셰이크 강도 배율
+	UPROPERTY(EditAnywhere, Category = "Movement|Falling|Recovery|Camera", meta = (ClampMin = "0.0"))
+	float LandingRecoveryCameraShakeScale = 15.f;
 
 	// 락온 성공 시 Strafe 고정 여부
 	UPROPERTY(EditAnywhere, Category = "LockOn|Movement")
@@ -614,10 +704,6 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Recovery", meta = (ClampMin = "0.0"))
 	float KnockDownGetUpStopBlendOut = 0.1f;
 
-	// KnockDown/GetUp 타이밍 로그 출력 여부
-	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Recovery|Debug")
-	bool bLogKnockDownGetUpDebug = true;
-
 	// 피격 카메라 셰이크 클래스
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Camera")
 	TSubclassOf<UCameraShakeBase> DamageReactionCameraShakeClass;
@@ -690,6 +776,12 @@ private:
 	FTimerHandle DamageReactionTimerHandle;
 	FTimerHandle KnockDownRecoveryStartTimerHandle;
 	FTimerHandle KnockDownGetUpTimerHandle;
+	FTimerHandle LandingRecoveryTimerHandle;
+	float FallStartZ = 0.f;
+	float LastFallDistance = 0.f;
+	TSet<FName> FallDamageSuppressionSources;
+	EActionCommand LandingRecoveryQueuedCommand = EActionCommand::None;
+	EActionDirection LandingRecoveryQueuedDirection = EActionDirection::Any;
 	int32 ActiveDamageReactionPlaybackId = 0;
 	int32 NextDamageReactionPlaybackId = 1;
 	EActionDirection LastDamageHitDirection = EActionDirection::Any;
@@ -702,6 +794,9 @@ private:
 	bool bWeaponDroppedForDeath = false;
 	bool bGuardInputHeld = false;
 	bool bPerfectGuardWindowActive = false;
+	bool bFallTrackingActive = false;
+	bool bLandingRecoveryActive = false;
+	bool bLandingRecoveryInputLocked = false;
 	bool bLockOnForcedStrafeActive = false;
 	bool bPendingLockOnStrafeAfterDodge = false;
 	bool bKnockDownWaitingForGetUp = false;
@@ -713,8 +808,6 @@ private:
 	bool bKnockDownGetUpMoveInputShortcut = false;
 	EActionDirection KnockDownGetUpQueuedDodgeDirection = EActionDirection::Any;
 	EActionDirection KnockDownGetUpHeldDodgeDirection = EActionDirection::Any;
-	float KnockDownReactionDebugStartTime = 0.f;
-	float KnockDownGetUpRecoveryStartTime = 0.f;
 	UPROPERTY(VisibleAnywhere) bool bIsBeforeCharge = false;
 	UPROPERTY(VisibleAnywhere) bool bIsCharging = false;
 	UPROPERTY(VisibleAnywhere) bool bIsChargeInputCompleted = false;

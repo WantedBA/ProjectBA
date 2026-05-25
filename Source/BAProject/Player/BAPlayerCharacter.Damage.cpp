@@ -2,6 +2,7 @@
 
 #include "Component/ActionComponent.h"
 #include "Component/StatComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 /*
  * Damage Reaction Policy Summary
@@ -136,7 +137,14 @@ EPlayerDamageReactionState ABAPlayerCharacter::GetDamageReactionState() const
 
 bool ABAPlayerCharacter::CanAcceptActionInput() const
 {
-	return IsAlive() && !IsDamageReacting() && !bKnockDownGetUpInProgress && !IsOnLadder() && BAPlayerState != EBAPlayerState::Respawning;
+	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	return IsAlive()
+		&& !IsDamageReacting()
+		&& !bKnockDownGetUpInProgress
+		&& !bLandingRecoveryInputLocked
+		&& !IsOnLadder()
+		&& BAPlayerState != EBAPlayerState::Respawning
+		&& (!MovementComponent || !MovementComponent->IsFalling());
 }
 
 bool ABAPlayerCharacter::IsGuardingAgainstDamage(const FVector& DamageDirection) const
