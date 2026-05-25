@@ -71,7 +71,7 @@ void UPlayerWeaponVFX::SetTrailNiagaraAsset(UNiagaraSystem* NiagaraAsset, bool b
 
 void UPlayerWeaponVFX::ActivateTrailNiagara()
 {
-	TrailNiagaraComponent->Activate();
+	TrailNiagaraComponent->Activate(true);
 }
 
 void UPlayerWeaponVFX::DeactivateTrailNiagara()

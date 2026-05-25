@@ -9,7 +9,6 @@
 #include "Engine/SkeletalMesh.h"
 #include "DrawDebugHelpers.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Components/StaticMeshComponent.h"
 #include "BrainComponent.h"
 #include "AI/EnemyAIController.h"
 #include "Kismet/GameplayStatics.h"
@@ -20,6 +19,7 @@
 #include "Instance/QuestManageSubsystem.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
+#include "Component/PlayerWeaponVFX.h"
 
 // Utility 패턴 선택 튜닝 상수 (밸런싱 시 한곳에서 조정)
 namespace BossPatternTuning
@@ -34,6 +34,12 @@ ABoss::ABoss()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	EnemyGrade = EEnemyGrade::Boss;
+
+	SwordMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SwordMeshComponent"));
+	SwordMeshComponent->SetupAttachment(GetMesh(), TEXT("Sword_Start"));
+
+	WeaponVFX = CreateDefaultSubobject<UPlayerWeaponVFX>(TEXT("WeaponVFX"));
+	WeaponVFX->SetupAttachment(SwordMeshComponent);
 }
 
 void ABoss::BeginPlay()
@@ -43,21 +49,11 @@ void ABoss::BeginPlay()
 	bIsEnding = false;
 	InitialTransform = GetActorTransform();
 
-	// BP에 추가된 무기 메시 컴포넌트를 태그로 찾아 캐싱 (히트 트레이스 소켓 조회용)
-	TArray<UActorComponent*> WeaponComps = GetComponentsByTag(UStaticMeshComponent::StaticClass(), WeaponComponentTag);
-	if (WeaponComps.Num() > 0)
+	if (WeaponVFX && WeaponTrailAsset)
 	{
-		CachedWeaponMesh = Cast<UStaticMeshComponent>(WeaponComps[0]);
+		WeaponVFX->SetTrailNiagaraAsset(WeaponTrailAsset);
 	}
-	else
-	{
-		// 태그를 못 찾으면 첫 StaticMeshComponent로 폴백 (보스 본체는 SkeletalMesh라 보통 무기뿐)
-		CachedWeaponMesh = FindComponentByClass<UStaticMeshComponent>();
-		UE_LOG(LogTemp, Warning,
-			TEXT("[ABoss] 무기 태그 '%s' 미발견 → 첫 StaticMeshComponent 폴백(%s). BP에서 Component Tag 지정 권장."),
-			*WeaponComponentTag.ToString(),
-			CachedWeaponMesh ? *CachedWeaponMesh->GetName() : TEXT("없음"));
-	}
+
 
 	if (MonsterTid != 0)
 	{
@@ -621,10 +617,6 @@ UAnimMontage* ABoss::PlayTurnToTarget(AActor* Target)
 	return (Duration > 0.0f) ? TurnMontage : nullptr;
 }
 
-UStaticMeshComponent* ABoss::GetWeaponMesh() const
-{
-	return CachedWeaponMesh;
-}
 
 void ABoss::LoadBossPatterns(int32 StageType)
 {
