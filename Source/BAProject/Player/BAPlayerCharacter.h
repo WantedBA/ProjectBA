@@ -86,6 +86,10 @@ public:
 	// NextComboTransitionTid와 NextAttackMontage를 설정하는 함수
 	void SetNextCombo(EActionCommand InActionCommand);
 	void OnNextComboCheck();
+
+	// 스킬 컴포넌트에서 콤보 구성을 오버라이드 하기 위한 함수
+	void OverrideComboTransition(int32 NowComboTid, EActionCommand ActionCommand, int32 NextComboTransitionTid);
+	void ResetComboTransitionOverrides();
 	
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void SetBAPlayerState(EBAPlayerState NewState);
@@ -365,7 +369,8 @@ private:
 	// 공격 런타임
 	void ClearAttackRuntimeState();
 	bool IsActiveAttackMontagePlaying() const;
-
+	int64 MakeComboOverrideKey(int32 NowComboTid, EActionCommand ActionCommand) const;
+	
 	// 이동 런타임
 	void TickMovementRuntime(float DeltaTime);
 	void UpdatePhaseFromInputAndGait(float DeltaTime);
@@ -504,6 +509,11 @@ private:
 
 	UFUNCTION()
 	void HandleRespawnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	
+	// 스킬 컴포넌트에서 런타임에 커맨드를 오버라이드하기 위한 값
+	// 키: MakeComboOverrideKey(NowComboTransitionTid, InActionCommand), 값: NextComboTransitionTid
+	UPROPERTY(VisibleAnywhere)
+	TMap<int64, int32> ComboTransitionOverrides;
 
 	// 이동 설정
 	UPROPERTY(EditAnywhere, Category = "Movement", meta = (ShowOnlyInnerProperties))
