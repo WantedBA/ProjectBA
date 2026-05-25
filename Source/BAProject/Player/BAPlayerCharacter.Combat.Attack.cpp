@@ -19,6 +19,16 @@ void ABAPlayerCharacter::TryAttack(EActionCommand InActionCommand)
 		SetBAPlayerState(EBAPlayerState::None);
 	}
 
+	if (!ResolveLandingRecoveryBeforeAction(InActionCommand))
+	{
+		return;
+	}
+
+	if (!CanAcceptActionInput())
+	{
+		return;
+	}
+
 	switch (BAPlayerState)
 	{
 	// 공격 커맨드 무시

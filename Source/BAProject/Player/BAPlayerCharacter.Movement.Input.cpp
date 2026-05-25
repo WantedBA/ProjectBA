@@ -1,6 +1,7 @@
 #include "Player/BAPlayerCharacter.h"
 
 #include "Component/ActionComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Tables/ActionRows.h"
 #include "Tables/BATableManager.h"
 
@@ -66,7 +67,11 @@ namespace
 // Phase가 루트모션 소유가 아닐 때만 저장된 이동 입력을 실제 이동에 사용한다.
 void ABAPlayerCharacter::ApplyBufferedMoveInput()
 {
-	if (!MovementRuntime.bHasMoveInput || IsMovementPhaseUsingRootMotion() || IsActionMovementLocked())
+	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (!MovementRuntime.bHasMoveInput
+		|| IsMovementPhaseUsingRootMotion()
+		|| IsActionMovementLocked()
+		|| (MovementComponent && MovementComponent->IsFalling()))
 	{
 		return;
 	}
@@ -252,6 +257,7 @@ bool ABAPlayerCharacter::IsActionMovementLocked() const
 	return BAPlayerState != EBAPlayerState::None 
 	|| !IsAlive()
 	|| IsDamageReacting()
+	|| bLandingRecoveryActive
 	|| (ActionComponent && ActionComponent->IsMovementLockedByAction());
 }
 

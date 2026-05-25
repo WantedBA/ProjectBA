@@ -2,6 +2,7 @@
 
 #include "Camera/CameraComponent.h"
 #include "Player/BADamageCameraShake.h"
+#include "Player/BALandingCameraShake.h"
 #if !UE_BUILD_SHIPPING
 #include "Enemy/EnemyBase.h"
 #include "Component/StatComponent.h"
@@ -124,6 +125,7 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	MovementRuntime.TargetMaxWalkSpeed = SpeedSettings.RunSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = MovementRuntime.CurrentMaxWalkSpeed;
 	DamageReactionCameraShakeClass = UBADamageCameraShake::StaticClass();
+	LandingRecoveryCameraShakeClass = UBALandingRecoveryCameraShake::StaticClass();
 }
 
 // 데이터 초기화와 스탯 변경 이벤트 바인딩을 수행한다.
@@ -149,10 +151,6 @@ void ABAPlayerCharacter::BeginPlay()
 	BindLockOnTargetCallbacks();
 	ConfigureLockOnCameraDefaults();
 	
-	if (CombatComponent)
-	{
-		CombatComponent->SetShowDebugTrace(true);
-	}
 
 	// 초기 리스폰 지점 설정 (Fallback)
 	if (USaveGameManager* SaveManager = GetGameInstance()->GetSubsystem<USaveGameManager>())
@@ -313,6 +311,11 @@ void ABAPlayerCharacter::HandleActionStarted(const int32 /*ActionTid*/, const EA
 	}
 
 	if (IsDamageReacting())
+	{
+		ActionComponent->CancelCurrentAction();
+		return;
+	}
+	if (bLandingRecoveryActive)
 	{
 		ActionComponent->CancelCurrentAction();
 		return;

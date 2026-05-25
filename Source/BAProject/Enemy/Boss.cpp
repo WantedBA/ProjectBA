@@ -9,7 +9,6 @@
 #include "Engine/SkeletalMesh.h"
 #include "DrawDebugHelpers.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Components/StaticMeshComponent.h"
 #include "BrainComponent.h"
 #include "AI/EnemyAIController.h"
 #include "Kismet/GameplayStatics.h"
@@ -18,6 +17,9 @@
 #include "Animation/AnimMontage.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Instance/QuestManageSubsystem.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+#include "Component/PlayerWeaponVFX.h"
 
 // Utility 패턴 선택 튜닝 상수 (밸런싱 시 한곳에서 조정)
 namespace BossPatternTuning
@@ -32,6 +34,12 @@ ABoss::ABoss()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	EnemyGrade = EEnemyGrade::Boss;
+
+	SwordMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SwordMeshComponent"));
+	SwordMeshComponent->SetupAttachment(GetMesh(), TEXT("Sword_Start"));
+
+	WeaponVFX = CreateDefaultSubobject<UPlayerWeaponVFX>(TEXT("WeaponVFX"));
+	WeaponVFX->SetupAttachment(SwordMeshComponent);
 }
 
 void ABoss::BeginPlay()
@@ -41,21 +49,11 @@ void ABoss::BeginPlay()
 	bIsEnding = false;
 	InitialTransform = GetActorTransform();
 
-	// BP에 추가된 무기 메시 컴포넌트를 태그로 찾아 캐싱 (히트 트레이스 소켓 조회용)
-	TArray<UActorComponent*> WeaponComps = GetComponentsByTag(UStaticMeshComponent::StaticClass(), WeaponComponentTag);
-	if (WeaponComps.Num() > 0)
+	if (WeaponVFX && WeaponTrailAsset)
 	{
-		CachedWeaponMesh = Cast<UStaticMeshComponent>(WeaponComps[0]);
+		WeaponVFX->SetTrailNiagaraAsset(WeaponTrailAsset);
 	}
-	else
-	{
-		// 태그를 못 찾으면 첫 StaticMeshComponent로 폴백 (보스 본체는 SkeletalMesh라 보통 무기뿐)
-		CachedWeaponMesh = FindComponentByClass<UStaticMeshComponent>();
-		UE_LOG(LogTemp, Warning,
-			TEXT("[ABoss] 무기 태그 '%s' 미발견 → 첫 StaticMeshComponent 폴백(%s). BP에서 Component Tag 지정 권장."),
-			*WeaponComponentTag.ToString(),
-			CachedWeaponMesh ? *CachedWeaponMesh->GetName() : TEXT("없음"));
-	}
+
 
 	if (MonsterTid != 0)
 	{
@@ -619,10 +617,6 @@ UAnimMontage* ABoss::PlayTurnToTarget(AActor* Target)
 	return (Duration > 0.0f) ? TurnMontage : nullptr;
 }
 
-UStaticMeshComponent* ABoss::GetWeaponMesh() const
-{
-	return CachedWeaponMesh;
-}
 
 void ABoss::LoadBossPatterns(int32 StageType)
 {
@@ -771,6 +765,7 @@ bool ABoss::ExecuteBossPattern(int32 PatternTid)
 	{
 		bIsCharging = true;
 		ChargingDamageAccumulated = 0.f;
+		SetChargeOutline(true);
 	}
 
 	if (CombatComponent == nullptr)
@@ -822,6 +817,7 @@ void ABoss::OnPatternMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 
 	// 차징 몽타주가 스턴 없이 정상 완료된 경우
 	bIsCharging = false;
+	SetChargeOutline(false);
 
 	const EEnemyState State = GetCurrentState();
 
@@ -868,18 +864,12 @@ void ABoss::OnPatternMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 			PendingComboTid = NextTid;
 			bIsComboTransitioning = true;
 
-			if (TransitionTime > 0.f)
-			{
-				GetWorldTimerManager().SetTimer(
-					ComboTransitionHandle,
-					this, &ABoss::ExecutePendingCombo,
-					TransitionTime, false
-				);
-			}
-			else
-			{
-				ExecutePendingCombo();
-			}
+			const float ActualDelay = FMath::Max(TransitionTime, BossConfig::MinComboGapTime);
+			GetWorldTimerManager().SetTimer(
+				ComboTransitionHandle,
+				this, &ABoss::ExecutePendingCombo,
+				ActualDelay, false
+			);
 			return;
 		}
 	}
@@ -930,9 +920,41 @@ void ABoss::OnEnemyAttackAniFinished(EEnemyState NewState)
 	Super::OnEnemyAttackAniFinished(NewState);
 }
 
+void ABoss::SetChargeOutline(bool bEnabled)
+{
+	TArray<UPrimitiveComponent*> Primitives;
+	GetComponents<UPrimitiveComponent>(Primitives);
+	for (UPrimitiveComponent* P : Primitives)
+	{
+		P->SetRenderCustomDepth(bEnabled);
+		if (bEnabled)
+			P->SetCustomDepthStencilValue(BossChargeStencilValue);
+	}
+
+	if (bEnabled)
+	{
+		if (ChargingVFX && !ChargingVFXComp)
+		{
+			ChargingVFXComp = UNiagaraFunctionLibrary::SpawnSystemAttached(
+				ChargingVFX, GetMesh(), NAME_None,
+				FVector::ZeroVector, FRotator::ZeroRotator,
+				EAttachLocation::KeepRelativeOffset, false
+			);
+		}
+		if (ChargingVFXComp)
+			ChargingVFXComp->Activate(true);
+	}
+	else
+	{
+		if (ChargingVFXComp)
+			ChargingVFXComp->Deactivate();
+	}
+}
+
 void ABoss::TriggerChargingStun()
 {
 	bIsCharging = false;
+	SetChargeOutline(false);
 	bChargingStunActive = true;
 	ChargingStunStartTime = GetWorld()->GetTimeSeconds();
 	GetWorldTimerManager().ClearTimer(ChargingStunMinDurationHandle);

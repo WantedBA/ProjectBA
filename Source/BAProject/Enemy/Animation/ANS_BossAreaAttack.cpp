@@ -168,9 +168,10 @@ void UANS_BossAreaAttack::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSeq
 		Victim->TakeDamage(Damage, DamageEvent, InstigatorController, Owner);
 	}
 
-	// VFX 스폰. 스케일을 Radius에 맞게 자동 조정한다.
 	ActiveVFXList.Reset();
-	const float VFXScale = (VFXBaseRadius > 0.0f) ? (Radius / VFXBaseRadius) : 1.0f;
+	const float VFXScale = bAutoScaleVFX
+		? ((VFXBaseRadius > 0.0f) ? (Radius / VFXBaseRadius) : 1.0f)
+		: VFXCustomScale;
 
 	for (UNiagaraSystem* VFX : AreaVFXList)
 	{
@@ -184,7 +185,7 @@ void UANS_BossAreaAttack::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSeq
 			VFX,
 			VFXOrigin,
 			Owner->GetActorRotation(),
-			FVector(VFXScale),
+			FVector(VFXScale, VFXScale, 1.0f),  // XY만 반경에 맞게 스케일, Z는 원본 유지
 			true,  // bAutoDestroy: NotifyEnd 이후 파티클이 자연 소멸하면 자동 제거
 			true,
 			ENCPoolMethod::None

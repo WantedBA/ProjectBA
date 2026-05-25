@@ -45,31 +45,6 @@ namespace
 	constexpr float KnockDownRecoveryGroundRetryInterval = 0.05f;
 }
 
-void ABAPlayerCharacter::LogKnockDownGetUpDebugMessage(const FString& Message) const
-{
-#if !UE_BUILD_SHIPPING
-	if (!bLogKnockDownGetUpDebug)
-	{
-		return;
-	}
-
-	const UWorld* World = GetWorld();
-	const float Now = World ? World->GetTimeSeconds() : 0.f;
-	const FString ReactionElapsed = KnockDownReactionDebugStartTime > 0.f
-		? FString::Printf(TEXT("%.2f"), Now - KnockDownReactionDebugStartTime)
-		: TEXT("--");
-	const FString RecoveryElapsed = KnockDownGetUpRecoveryStartTime > 0.f
-		? FString::Printf(TEXT("%.2f"), Now - KnockDownGetUpRecoveryStartTime)
-		: TEXT("--");
-	const FString FullMessage = FString::Printf(
-		TEXT("[KD hit+%ss rec+%ss] %s"),
-		*ReactionElapsed,
-		*RecoveryElapsed,
-		*Message);
-	UE_LOG(LogTemp, Warning, TEXT("%s"), *FullMessage);
-#endif
-}
-
 void ABAPlayerCharacter::ResetKnockDownRecovery()
 {
 	GetWorldTimerManager().ClearTimer(KnockDownRecoveryStartTimerHandle);
@@ -84,8 +59,6 @@ void ABAPlayerCharacter::ResetKnockDownRecovery()
 	KnockDownGetUpQueuedDodgeDirection = EActionDirection::Any;
 	KnockDownGetUpHeldDodgeDirection = EActionDirection::Any;
 	ActiveKnockDownGetUpMontage = nullptr;
-	KnockDownReactionDebugStartTime = 0.f;
-	KnockDownGetUpRecoveryStartTime = 0.f;
 }
 
 void ABAPlayerCharacter::ScheduleKnockDownRecoveryStart(const int32 PlaybackId, const float ReactionDuration)
@@ -125,7 +98,6 @@ void ABAPlayerCharacter::TryBeginKnockDownRecoveryWait(const int32 PlaybackId)
 	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
 	if (MovementComponent && MovementComponent->IsFalling())
 	{
-		LogKnockDownGetUpDebugMessage(TEXT("RECOVERY DELAY | waiting for ground"));
 		GetWorldTimerManager().SetTimer(
 			KnockDownRecoveryStartTimerHandle,
 			FTimerDelegate::CreateUObject(this, &ABAPlayerCharacter::TryBeginKnockDownRecoveryWait, PlaybackId),
@@ -136,7 +108,6 @@ void ABAPlayerCharacter::TryBeginKnockDownRecoveryWait(const int32 PlaybackId)
 
 	GetWorldTimerManager().ClearTimer(KnockDownRecoveryStartTimerHandle);
 	GetWorldTimerManager().ClearTimer(DamageReactionTimerHandle);
-	LogKnockDownGetUpDebugMessage(TEXT("RECOVERY START | freeze final frame and start recovery wait"));
 	FinishDamageReaction(PlaybackId);
 }
 
@@ -147,10 +118,6 @@ void ABAPlayerCharacter::BeginKnockDownRecoveryWait()
 
 	GetWorldTimerManager().ClearTimer(KnockDownRecoveryStartTimerHandle);
 	ActiveDamageReactionPlaybackId = 0;
-	if (UWorld* World = GetWorld())
-	{
-		KnockDownGetUpRecoveryStartTime = World->GetTimeSeconds();
-	}
 	FreezeMontageAtFinalFrame(ActiveDamageReactionMontage);
 	bKnockDownWaitingForGetUp = true;
 	bKnockDownGetUpInProgress = false;
@@ -167,14 +134,6 @@ void ABAPlayerCharacter::BeginKnockDownRecoveryWait()
 	MovementRuntime.bWaitingForPhaseAnimation = false;
 
 	const float EscapeStartDelay = FMath::Max(0.f, KnockDownGetUpEscapeInputStartDelay);
-	const float EscapeEndDelay = FMath::Max(EscapeStartDelay, KnockDownGetUpEscapeInputEndDelay);
-	LogKnockDownGetUpDebugMessage(
-		FString::Printf(
-			TEXT("WAIT START | window %.2f~%.2f | moveHeld=%d dodgeHeld=%d"),
-			EscapeStartDelay,
-			EscapeEndDelay,
-			MovementRuntime.bHasMoveInput ? 1 : 0,
-			bKnockDownGetUpDodgeInputHeld ? 1 : 0));
 	if (EscapeStartDelay <= 0.f)
 	{
 		OpenKnockDownGetUpEscapeWindow();
@@ -233,15 +192,10 @@ bool ABAPlayerCharacter::TryStartKnockDownGetUpEscape(
 	{
 		bKnockDownGetUpQueuedDodgeInput = true;
 		KnockDownGetUpQueuedDodgeDirection = DodgeDirection;
-		LogKnockDownGetUpDebugMessage(TEXT("DODGE INPUT ACCEPTED | immediate dodge escape"));
 		EscapeKnockDownGetUpImmediately();
 		return true;
 	}
 
-	LogKnockDownGetUpDebugMessage(
-		FString::Printf(
-			TEXT("MOVE INPUT ACCEPTED | play getup %.0f%%"),
-			FMath::Clamp(KnockDownGetUpMoveInputMontageFraction, 0.f, 1.f) * 100.f));
 	StartKnockDownGetUp();
 	return true;
 }
@@ -254,11 +208,6 @@ void ABAPlayerCharacter::OpenKnockDownGetUpEscapeWindow()
 	}
 
 	bKnockDownGetUpEscapeWindowOpen = true;
-	LogKnockDownGetUpDebugMessage(
-		FString::Printf(
-			TEXT("WINDOW OPEN | moveHeld=%d dodgeHeld=%d"),
-			MovementRuntime.bHasMoveInput ? 1 : 0,
-			bKnockDownGetUpDodgeInputHeld ? 1 : 0));
 
 	if (bKnockDownGetUpDodgeInputHeld)
 	{
@@ -298,10 +247,6 @@ void ABAPlayerCharacter::CloseKnockDownGetUpEscapeWindow()
 	}
 
 	bKnockDownGetUpEscapeWindowOpen = false;
-	LogKnockDownGetUpDebugMessage(
-		FString::Printf(
-			TEXT("WINDOW CLOSE | no input, getup after %.2fs"),
-			FMath::Max(0.f, KnockDownGetUpNoInputDelayAfterEscapeWindow)));
 	bKnockDownGetUpQueuedByMoveInput = false;
 	bKnockDownGetUpQueuedDodgeInput = false;
 	bKnockDownGetUpDodgeInputHeld = false;
@@ -332,7 +277,6 @@ void ABAPlayerCharacter::EscapeKnockDownGetUpImmediately()
 	}
 
 	GetWorldTimerManager().ClearTimer(KnockDownGetUpTimerHandle);
-	LogKnockDownGetUpDebugMessage(TEXT("DODGE ESCAPE START | stop frozen knockdown"));
 	bKnockDownWaitingForGetUp = false;
 	bKnockDownGetUpInProgress = true;
 	bKnockDownGetUpMoveInputShortcut = true;
@@ -430,13 +374,6 @@ void ABAPlayerCharacter::StartKnockDownGetUp()
 		? FMath::Clamp(KnockDownGetUpMoveInputMontageFraction, 0.f, 1.f)
 		: 1.f;
 	const float FinishDelay = GetUpDuration * FinishFraction;
-	LogKnockDownGetUpDebugMessage(
-		FString::Printf(
-			TEXT("GETUP START | duration %.2fs | finish %.2fs | fraction %.0f%% | moveEscape=%d"),
-			GetUpDuration,
-			FinishDelay,
-			FinishFraction * 100.f,
-			bKnockDownGetUpMoveInputShortcut ? 1 : 0));
 	if (FinishDelay <= 0.f)
 	{
 		FinishKnockDownGetUp();
@@ -467,12 +404,6 @@ void ABAPlayerCharacter::FinishKnockDownGetUp()
 	const bool bImmediateInputEscape = bKnockDownGetUpMoveInputShortcut;
 	const bool bShouldStartQueuedDodge = bKnockDownGetUpMoveInputShortcut && bKnockDownGetUpQueuedDodgeInput;
 	const EActionDirection QueuedDodgeDirection = KnockDownGetUpQueuedDodgeDirection;
-	LogKnockDownGetUpDebugMessage(
-		bShouldStartQueuedDodge
-			? TEXT("FINISH | start queued dodge")
-			: MovementRuntime.bHasMoveInput
-				? TEXT("FINISH | resume movement")
-				: TEXT("FINISH | idle"));
 
 	bKnockDownWaitingForGetUp = false;
 	bKnockDownGetUpInProgress = false;

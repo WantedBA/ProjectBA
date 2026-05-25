@@ -33,9 +33,17 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "AreaAttack|VFX")
 	TArray<TObjectPtr<UNiagaraSystem>> AreaVFXList;
 
-	// VFX 에셋이 설계된 기준 반경. Radius / VFXBaseRadius 비율로 자동 스케일된다.
+	// true: Radius / VFXBaseRadius 비율로 XY 스케일 자동 계산. false: VFXCustomScale 직접 지정.
 	UPROPERTY(EditAnywhere, Category = "AreaAttack|VFX")
+	bool bAutoScaleVFX = true;
+
+	// bAutoScaleVFX = true 일 때 사용. VFX 에셋이 설계된 기준 반경.
+	UPROPERTY(EditAnywhere, Category = "AreaAttack|VFX", meta = (EditCondition = "bAutoScaleVFX", EditConditionHides))
 	float VFXBaseRadius = 100.0f;
+
+	// bAutoScaleVFX = false 일 때 사용. VFX XY 스케일을 직접 지정.
+	UPROPERTY(EditAnywhere, Category = "AreaAttack|VFX", meta = (EditCondition = "!bAutoScaleVFX", EditConditionHides))
+	float VFXCustomScale = 1.0f;
 
 	// Actor 로컬 스페이스 오프셋 (X=정면, Z=위). 데미지 판정 Origin과 별개로 VFX 위치만 이동.
 	UPROPERTY(EditAnywhere, Category = "AreaAttack|VFX")
