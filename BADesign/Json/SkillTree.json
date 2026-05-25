@@ -272,11 +272,15 @@
             "SkillTid": 11,
             "ApplyType": "Stat",
             "Target": "AttackSpeed",
-            "Value": 1.2
+            "Value": 1.1
         },
         {
             "SkillTid": 12,
-            "ApplyType": "Action"
+            "ApplyType": "Action",
+            "Target": "ComboOverride",
+            "Value": 71001,
+            "Value2": "HeavyAttack",
+            "Value3": 72011
         },
         {
             "SkillTid": 13,

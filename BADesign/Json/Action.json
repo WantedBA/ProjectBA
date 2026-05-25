@@ -782,6 +782,19 @@
             "Tid": 73001,
             "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_ChargeAttack.AM_Player_ChargeAttack",
             "DamageCoefficient": 3
+        },
+        {
+            "Tid": 72011,
+            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_3.AM_Player_HeavyAttack_3",
+            "PlayRate": 0.9,
+            "NextOnR": 72012,
+            "DamageCoefficient": 1.75
+        },
+        {
+            "Tid": 72012,
+            "Montage": "/Game/Character/Player/Animation/Montages/HeavyAttack/AM_Player_HeavyAttack_4.AM_Player_HeavyAttack_4",
+            "PlayRate": 0.9,
+            "DamageCoefficient": 1.75
         }
     ]
 }
