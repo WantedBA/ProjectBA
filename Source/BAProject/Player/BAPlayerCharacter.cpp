@@ -7,11 +7,13 @@
 #include "Component/StatComponent.h"
 #include "EngineUtils.h"
 #endif
+#include "NiagaraComponent.h"
 #include "Component/ActionAnimationComponent.h"
 #include "Component/ActionComponent.h"
 #include "Component/CombatComponent.h"
 #include "Component/InteractorComponent.h"
 #include "Component/PlayerSkillComponent.h"
+#include "Component/PlayerWeaponVFX.h"
 #include "Component/StatComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Constants/BAProjectConstant.h"
@@ -57,6 +59,10 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	{
 		WeaponMeshComponent->SetStaticMesh(GreatSwordMesh.Object);
 	}
+	
+	PlayerWeaponVFX = CreateDefaultSubobject<UPlayerWeaponVFX>(TEXT("PlayerWeaponVFX"));
+	PlayerWeaponVFX->SetupAttachment(WeaponMeshComponent);
+	PlayerWeaponVFX->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
 
 	// 스탯 컴포넌트 생성
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));

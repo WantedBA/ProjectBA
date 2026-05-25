@@ -136,7 +136,7 @@ EPlayerDamageReactionState ABAPlayerCharacter::GetDamageReactionState() const
 
 bool ABAPlayerCharacter::CanAcceptActionInput() const
 {
-	return IsAlive() && !IsDamageReacting() && !bKnockDownGetUpInProgress && !IsOnLadder();
+	return IsAlive() && !IsDamageReacting() && !bKnockDownGetUpInProgress && !IsOnLadder() && BAPlayerState != EBAPlayerState::Respawning;
 }
 
 bool ABAPlayerCharacter::IsGuardingAgainstDamage(const FVector& DamageDirection) const

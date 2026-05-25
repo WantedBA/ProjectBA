@@ -6,6 +6,8 @@
 #include "Tables/ActionEnums.h"
 #include "BAPlayerCharacter.generated.h"
 
+class UPlayerWeaponVFX;
+class UNiagaraComponent;
 class UCombatComponent;
 class UPlayerSkillComponent;
 class UAnimMontage;
@@ -40,6 +42,7 @@ enum class EBAPlayerState : uint8
 	DodgeRolling,
 	HitReacting,
 	KnockedDown,
+	Respawning,
 	Dead
 };
 
@@ -273,6 +276,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Weapon")
 	TObjectPtr<UStaticMeshComponent> WeaponMeshComponent;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Components")
+	TObjectPtr<UPlayerWeaponVFX> PlayerWeaponVFX;
 
 	// 스탯 및 액션 콜백
 	UFUNCTION()
@@ -345,6 +351,13 @@ protected:
 	TObjectPtr<UAnimMontage> ActiveAttackMontage = nullptr;
 	int32 ActiveAttackPlaybackId = 0;
 	int32 NextAttackPlaybackId = 1;
+	
+	// 최대 차징 시간
+	UPROPERTY(EditAnywhere, Category="Combat")
+	float MaxChargeTime = 1.5f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat")
+	FTimerHandle ChargeAttackTimerHandle;
 	
 private:
 	// 공격 런타임
@@ -482,6 +495,9 @@ private:
 		bool bGuarding,
 		bool bGuardBreak);
 	void FinishDamageReaction(int32 PlaybackId);
+
+	UFUNCTION()
+	void HandleRespawnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
 	// 이동 설정
 	UPROPERTY(EditAnywhere, Category = "Movement", meta = (ShowOnlyInnerProperties))
@@ -655,6 +671,9 @@ private:
 	// 가드 몽타주 반복 섹션 이름
 	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Montage")
 	FName GuardLoopSection = TEXT("Loop");
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Respawn|Montage")
+	TObjectPtr<UAnimMontage> RespawnMontage;
 
 	// 런타임 상태
 	FBAPlayerMovementRuntimeState MovementRuntime;
