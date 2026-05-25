@@ -6,7 +6,10 @@
 #include "Quest/QuestActivatable.h"
 #include "Boss.generated.h"
 
-class UStaticMeshComponent;
+class UNiagaraSystem;
+class UNiagaraComponent;
+class UPlayerWeaponVFX;
+class USkeletalMeshComponent;
 
 // 보스 공격 패턴 1개의 런타임 데이터. BossMonster 테이블 행을 LoadBossPatterns에서 매핑.
 USTRUCT(BlueprintType)
@@ -106,9 +109,6 @@ public:
 	// 타겟 방향으로 회전 몽타주를 재생. 재생한 몽타주 반환 (회전 불필요/실패 시 nullptr)
 	UAnimMontage* PlayTurnToTarget(AActor* Target);
 
-	// 히트 트레이스용 무기 메시 반환. 보스는 검이 별도 컴포넌트라 GetMesh() 대신 이걸 쓴다.
-	virtual UStaticMeshComponent* GetWeaponMesh() const override;
-
 	UFUNCTION()
 	virtual void HandleHPChanged(float CurrentHP, float MaxHP);
 
@@ -160,6 +160,9 @@ private:
 
 	void FinishChargingStun();
 
+	void SetChargeOutline(bool bEnabled);
+	static constexpr int32 BossChargeStencilValue = 2;
+
 	// 플레이어가 보스 정면 기준 어느 구역(정면/측면/후방)에 있는지
 	EBossPatternZone GetPlayerZone(AActor* Target) const;
 
@@ -189,6 +192,18 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss|Debug")
 	bool bShowAIDebug = true;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Combat")
+	TObjectPtr<USkeletalMeshComponent> SwordMeshComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Combat")
+	TObjectPtr<UPlayerWeaponVFX> WeaponVFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Combat")
+	TObjectPtr<UNiagaraSystem> WeaponTrailAsset;
+
+	UPROPERTY(EditAnywhere, Category = "Boss|Charging")
+	TObjectPtr<UNiagaraSystem> ChargingVFX;
 
 	// 차징 중 누적 데미지가 이 값 이상이면 차징이 무너지고 스턴 몽타주 재생
 	UPROPERTY(EditAnywhere, Category = "Boss|Charging")
@@ -223,13 +238,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Combat")
 	float WeaponHitRadius = 15.0f;
 
-	// BP의 무기 메시 컴포넌트에 달아둘 태그. BeginPlay에서 이 태그로 무기 컴포넌트를 찾는다.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Boss|Combat")
-	FName WeaponComponentTag = TEXT("Weapon");
-
-	// 태그로 찾은 무기 메시 컴포넌트 캐시. GetWeaponMesh()가 반환한다.
-	UPROPERTY(Transient)
-	TObjectPtr<UStaticMeshComponent> CachedWeaponMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Data")
 	TArray<FBossAttackData> BossPatterns;
@@ -256,6 +264,7 @@ protected:
 
 	bool bIsCharging = false;
 	float ChargingDamageAccumulated = 0.f;
+	TObjectPtr<UNiagaraComponent> ChargingVFXComp;
 	// TriggerChargingStun 진행 중 — OnPatternMontageEnded가 Idle로 빠지는 것을 막는 가드
 	bool bChargingStunActive = false;
 	float ChargingStunStartTime = 0.f;

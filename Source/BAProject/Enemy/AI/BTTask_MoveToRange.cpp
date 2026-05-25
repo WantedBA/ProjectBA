@@ -54,6 +54,7 @@ EBTNodeResult::Type UBTTask_MoveToRange::ExecuteTask(UBehaviorTreeComponent& Own
     {
         IdealRange = BBComp->GetValueAsFloat(BBKey::AttackRange);
     }
+    IdealRange = FMath::Max(IdealRange, MinApproachDistance);
 
     FAIMoveRequest Request;
     Request.SetGoalActor(TargetActor);
@@ -98,6 +99,7 @@ void UBTTask_MoveToRange::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
     {
         IdealRange = BBComp->GetValueAsFloat(BBKey::AttackRange);
     }
+    IdealRange = FMath::Max(IdealRange, MinApproachDistance);
 
     if (BossPawn == nullptr || TargetActor == nullptr)
     {

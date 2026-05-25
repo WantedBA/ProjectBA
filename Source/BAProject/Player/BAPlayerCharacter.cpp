@@ -151,10 +151,6 @@ void ABAPlayerCharacter::BeginPlay()
 	BindLockOnTargetCallbacks();
 	ConfigureLockOnCameraDefaults();
 	
-	if (CombatComponent)
-	{
-		CombatComponent->SetShowDebugTrace(true);
-	}
 
 	// 초기 리스폰 지점 설정 (Fallback)
 	if (USaveGameManager* SaveManager = GetGameInstance()->GetSubsystem<USaveGameManager>())
