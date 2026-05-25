@@ -244,6 +244,7 @@ void ABAPlayerCharacter::PrepareDeathState()
 {
 	GetWorldTimerManager().ClearTimer(DamageReactionTimerHandle);
 	ResetKnockDownRecovery();
+	ResetLandingRecovery();
 	DamageReactionState = EPlayerDamageReactionState::None;
 	ActiveDamageReactionMontage = nullptr;
 	ActiveDamageReactionPlaybackId = 0;
