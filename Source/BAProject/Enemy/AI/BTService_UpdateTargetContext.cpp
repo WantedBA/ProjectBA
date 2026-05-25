@@ -5,6 +5,7 @@
 #include "DrawDebugHelpers.h"
 #include "Engine/OverlapResult.h"
 #include "Enemy/EnemyBase.h"
+#include "Character/CharacterBase.h"
 
 UBTService_UpdateTargetContext::UBTService_UpdateTargetContext()
 {
@@ -77,6 +78,13 @@ void UBTService_UpdateTargetContext::TickNode(UBehaviorTreeComponent& OwnerComp,
 
 			if (Pawn->IsPlayerControlled())
 			{
+				if (ACharacterBase* PlayerChar = Cast<ACharacterBase>(Pawn))
+				{
+					if (!PlayerChar->IsAlive())
+					{
+						continue;
+					}
+				}
 				NewTarget = Pawn;
 				break;
 			}
@@ -90,8 +98,16 @@ void UBTService_UpdateTargetContext::TickNode(UBehaviorTreeComponent& OwnerComp,
 
 	if (NewTarget == nullptr && CurrentTarget != nullptr && Enemy->IsPersistentAggro())
 	{
-		AEnemyBase* TargetEnemy = Cast<AEnemyBase>(CurrentTarget);
-		bool bTargetDead = TargetEnemy ? TargetEnemy->IsDead() : false;
+		bool bTargetDead = false;
+		if (AEnemyBase* TargetEnemy = Cast<AEnemyBase>(CurrentTarget))
+		{
+			bTargetDead = TargetEnemy->IsDead();
+		}
+		else if (ACharacterBase* TargetChar = Cast<ACharacterBase>(CurrentTarget))
+		{
+			bTargetDead = !TargetChar->IsAlive();
+		}
+
 		if (!bTargetDead && IsValid(CurrentTarget))
 		{
 			NewTarget = CurrentTarget;
@@ -105,13 +121,21 @@ void UBTService_UpdateTargetContext::TickNode(UBehaviorTreeComponent& OwnerComp,
 
 	if (NewTarget == nullptr && !bIsBusy)
 	{
-		// 이전에 타겟이 있었다가 사라진 경우 복귀 상태로 전환
+		// 이전에 타겟이 있었다가 사라진 경우
 		if (CurrentTarget != nullptr)
 		{
-			BBComp->SetValueAsBool(BBKey::IsReturning, true);
-			Enemy->SetState(EEnemyState::Move);
-			Enemy->ResetAttackCount(); // 복귀 시 공격 횟수 초기화
-			UE_LOG(LogTemp, Log, TEXT("[%s] Target Actor Cleared -> Patrol/Return Mode"), *Enemy->GetName());
+			if (Enemy->IsPersistentAggro())
+			{
+				// 보스: 플레이어 사망 시 Idle 유지
+				Enemy->SetState(EEnemyState::Idle);
+			}
+			else
+			{
+				BBComp->SetValueAsBool(BBKey::IsReturning, true);
+				Enemy->SetState(EEnemyState::Move);
+				Enemy->ResetAttackCount();
+				UE_LOG(LogTemp, Log, TEXT("[%s] Target Actor Cleared -> Patrol/Return Mode"), *Enemy->GetName());
+			}
 		}
 
 		// 홈 위치 거리 체크: 이미 홈 근처라면 복귀 상태 해제
