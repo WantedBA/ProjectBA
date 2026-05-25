@@ -240,6 +240,7 @@ void ABAPlayerCharacter::PlayDamageReactionAnimation(
 	const bool bGuardBreak)
 {
 	ResetKnockDownRecovery();
+	bFallTrackingActive = false;
 
 	const int32 PlaybackId = NextDamageReactionPlaybackId++;
 	ActiveDamageReactionPlaybackId = PlaybackId;

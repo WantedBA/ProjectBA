@@ -13,6 +13,14 @@ void ABAPlayerCharacter::SetMovementState(const EMovementState NewState)
 // 2D 이동 입력을 저장한다. 입력의 소비는 캐릭터 Tick에서 일괄 처리한다.
 void ABAPlayerCharacter::SetMoveInputVector(const FVector2D& NewMoveInput)
 {
+	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (!IsDamageReacting() && MovementComponent && MovementComponent->IsFalling())
+	{
+		MovementRuntime.MoveInputVector = FVector2D::ZeroVector;
+		SetHasMoveInput(false);
+		return;
+	}
+
 	MovementRuntime.MoveInputVector = NewMoveInput;
 	if (MovementRuntime.MoveInputVector.SizeSquared() > 1.f)
 	{
@@ -25,7 +33,9 @@ void ABAPlayerCharacter::SetMoveInputVector(const FVector2D& NewMoveInput)
 // 이동 입력 유무를 설정하고 입력이 끊긴 경우 원본 입력을 초기화한다.
 void ABAPlayerCharacter::SetHasMoveInput(const bool bNewHasMoveInput)
 {
-	MovementRuntime.bHasMoveInput = bNewHasMoveInput;
+	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	MovementRuntime.bHasMoveInput = bNewHasMoveInput
+		&& (IsDamageReacting() || !MovementComponent || !MovementComponent->IsFalling());
 	if (!MovementRuntime.bHasMoveInput)
 	{
 		MovementRuntime.MoveInputVector = FVector2D::ZeroVector;
@@ -87,7 +97,13 @@ EPlayerCombatMode ABAPlayerCharacter::GetCombatMode() const
 // 방어 판정은 GuardWindow에서만 열리지만, 이동 중 가드는 하체 locomotion을 유지한다.
 bool ABAPlayerCharacter::CanMoveWhileGuarding() const
 {
-	if (!ActionComponent || !IsAlive() || IsDamageReacting() || IsOnLadder())
+	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (!ActionComponent
+		|| !IsAlive()
+		|| IsDamageReacting()
+		|| bLandingRecoveryActive
+		|| IsOnLadder()
+		|| (MovementComponent && MovementComponent->IsFalling()))
 	{
 		return false;
 	}
@@ -108,7 +124,7 @@ bool ABAPlayerCharacter::CanMoveWhileGuarding() const
 // 이동 중 가드는 Loop 단일 몽타주도 하체 locomotion 위에 상체 가드만 얹혀야 하므로 가드 윈도우 여부와 분리한다.
 bool ABAPlayerCharacter::ShouldUseUpperBodyGuardPose() const
 {
-	if (!ActionComponent || !IsAlive() || IsDamageReacting() || IsOnLadder())
+	if (!ActionComponent || !IsAlive() || IsDamageReacting() || bLandingRecoveryActive || IsOnLadder())
 	{
 		return false;
 	}
@@ -138,7 +154,10 @@ FVector2D ABAPlayerCharacter::GetMoveInputVector() const
 // 현재 이동 입력을 컨트롤 yaw 기준 월드 방향으로 변환한다.
 FVector ABAPlayerCharacter::GetMoveInputWorldDirection() const
 {
-	if (!MovementRuntime.bHasMoveInput || IsActionMovementLocked())
+	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (!MovementRuntime.bHasMoveInput
+		|| IsActionMovementLocked()
+		|| (MovementComponent && MovementComponent->IsFalling()))
 	{
 		return FVector::ZeroVector;
 	}
@@ -274,6 +293,13 @@ void ABAPlayerCharacter::HandleDodgeActionMontageEnded(
 		SetBAPlayerState(EBAPlayerState::None);
 	}
 
+	if ((ActionType == EActionType::DodgeRoll || ActionType == EActionType::Backstep)
+		&& !MovementRuntime.bHasMoveInput)
+	{
+		MovementRuntime.bSuppressVelocityFacingUntilMoveInput = true;
+		SnapInterpolatedMoveInputTo(FVector2D::ZeroVector);
+	}
+
 	if (ActionType == EActionType::DodgeRoll)
 	{
 		ApplyPendingLockOnStrafeMode();
@@ -299,6 +325,23 @@ void ABAPlayerCharacter::UpdatePhaseFromInputAndGait(const float DeltaTime)
 	MovementRuntime.PhaseElapsedTime += DeltaTime;
 
 	if (DamageReactionState == EPlayerDamageReactionState::KnockDown)
+	{
+		MovementRuntime.Phase = EPlayerMovementPhase::None;
+		MovementRuntime.PhaseElapsedTime = 0.f;
+		MovementRuntime.bWaitingForPhaseAnimation = false;
+		return;
+	}
+
+	if (bLandingRecoveryActive)
+	{
+		MovementRuntime.Phase = EPlayerMovementPhase::None;
+		MovementRuntime.PhaseElapsedTime = 0.f;
+		MovementRuntime.bWaitingForPhaseAnimation = false;
+		return;
+	}
+
+	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (MovementComponent && MovementComponent->IsFalling())
 	{
 		MovementRuntime.Phase = EPlayerMovementPhase::None;
 		MovementRuntime.PhaseElapsedTime = 0.f;

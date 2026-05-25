@@ -67,7 +67,17 @@ bool ABAPlayerCharacter::TryStartGuard()
 {
 	bGuardInputHeld = true;
 
-	if (!CanAcceptActionInput() || !ActionComponent)
+	if (!ActionComponent)
+	{
+		return false;
+	}
+
+	if (!ResolveLandingRecoveryBeforeAction(EActionCommand::Guard))
+	{
+		return false;
+	}
+
+	if (!CanAcceptActionInput())
 	{
 		return false;
 	}
@@ -94,6 +104,10 @@ bool ABAPlayerCharacter::TryStartGuard()
 void ABAPlayerCharacter::StopGuard()
 {
 	bGuardInputHeld = false;
+	if (LandingRecoveryQueuedCommand == EActionCommand::Guard)
+	{
+		ClearQueuedLandingRecoveryAction();
+	}
 
 	if (!ActionComponent)
 	{

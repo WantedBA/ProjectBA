@@ -143,6 +143,7 @@ private:
 	bool bSprintInputHeld = false;
 	bool bSprintModifierHeld = false;
 	bool bHasMoveInput = false;
+	FVector2D LastMoveInputVector = FVector2D::ZeroVector;
 	double SprintDodgePressedTime = 0.0;
 	
 };
