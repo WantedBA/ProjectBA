@@ -2,9 +2,9 @@
 
 작성일: 2026-05-22
 문서 분리: 2026-05-25
-기준 브랜치: `origin/develop` / `debf5d8e` Features/skill apply element (#103)
-진행 중 참고 브랜치: `feature/death-montage-flow` / `b01e9613`
-최근 업데이트: 2026-05-25 / TODO 4번, 8번 완료/병합 및 피격/가드 셰이크 완료 반영
+기준 브랜치: `origin/develop` / `9abec5e7` Feature/death montage flow (#104)
+진행 중 참고 브랜치: `develop` / 낙하 착지 작업
+최근 업데이트: 2026-05-25 / 낙하 피해와 공통 착지 잠금 정책 정리
 
 이 문서는 정책, 결정사항, 현재 동작, 완료 이력만 기록한다. 남은 작업과 우선순위는 [TODO_Gameplay.md](TODO_Gameplay.md)에만 기록한다.
 
@@ -160,6 +160,8 @@
 - `debf5d8e` Features/skill apply element (#103)
   - 스킬 속성 적용 데이터와 무기 Trail/Element VFX 경로가 추가됐다.
   - `PlayerWeaponVFX` 컴포넌트가 추가되고 스킬 적용 흐름과 연결됐다.
+- `9abec5e7` Feature/death montage flow (#104)
+  - 사망 몽타주, LargeHit 사망 루트모션, KnockDown/Airborne 기립, 피격/가드 셰이크 흐름이 병합됐다.
 
 ### 피격/가드 카메라 셰이크
 
@@ -181,7 +183,33 @@
 
 ## 진행 중인 정책/구현 메모
 
-### `feature/death-montage-flow`
+### 낙하, 착지, 낙사
+
+- 낙하 추적은 `BAPlayerCharacter.Movement.Falling.cpp`에서 처리한다.
+- `Falling()`은 낙하 시작 Z 위치를 저장하고 `K2_OnFallStarted()`를 호출한다.
+- `Landed()`는 낙하 시작 Z와 착지 Z 차이로 `FallDistance`를 계산한다.
+- `SafeFallDistance` 미만은 데미지를 주지 않는다. 기본값은 400cm다.
+- `FatalFallDistance` 이상이면 낙사로 처리한다. 기본값은 1500cm다.
+- 낙하 피해는 현재 HP 비율로 계산한다.
+- `FallDamageMinCurrentHPPercent`는 피해 시작점 비율이다.
+- `FallDamageMaxCurrentHPPercent`는 낙사 직전 비율이다.
+- `BAFallDamageSuppressionVolume` 안에서는 낙하 피해와 낙사를 적용하지 않는다.
+- `LandingInputLockMinFallDistance` 이상이면 약착지/강착지 공통 착지 잠금을 시작한다.
+- `LandingRecoveryAutoFinishDuration`은 Notify 누락 시 착지 잠금을 자동 종료하는 fallback이다.
+- 이동 입력은 착지 애니메이션 Notify가 `CompleteLandingRecoveryAnimation()`을 호출하기 전까지 막는다.
+- `IsLandingRecoveryActive()`는 약착지/강착지 공통 착지 회복 상태다.
+- `LandingRecoveryMinFallDistance` 이상이면 `ShouldPlayHeavyLanding()`이 true가 되어 ABP가 강착지로 분기한다.
+- 강착지 여부는 별도 런타임 변수로 저장하지 않고 `LastFallDistance`와 기준 높이로 계산한다.
+- ABP Notify는 `CompleteLandingRecoveryAnimation()`을 호출해 착지 애니메이션 종료를 C++에 알린다.
+- `LandingRecoveryCameraShakeClass`가 비어 있으면 C++ 기본 강착지 셰이크를 재생한다.
+- KnockDown/Airborne 같은 피격 런치는 낙하 데미지로 해석하지 않는다.
+- BP 연출 연결점:
+  - `K2_OnFallStarted`
+  - `K2_OnLandedFromFall`
+  - `K2_OnLandingRecoveryStarted`
+  - `K2_OnLandingRecoveryEnded`
+
+### 사망, 피격 기립
 
 - 플레이어 사망 처리는 `BAPlayerCharacter.Damage.Death.cpp`로 분리되어 있다.
 - 일반 피격 사망과 큰 피격 사망은 방향별 사망 몽타주 맵으로 분리한다.
@@ -237,6 +265,23 @@
 - 회피 중 락온을 시작해도 회피 방향은 유지되고, Strafe 전환은 회피 종료 뒤 적용된다.
 - 카메라 높이는 `BP_PlayerCharacter`의 `LockOn Additional Controller Pitch Offset`으로 조정한다.
 
+### 낙하/착지
+
+- 일반 낙하는 `Falling()`에서 시작 높이를 기록하고 `Landed()`에서 거리와 데미지를 계산한다.
+- 낙하 데미지는 P의 거짓 기준에 맞춰 낮은 높이부터 현재 HP 비율로 적용한다.
+- 연출 구간은 `SetFallDamageSuppressed()` 또는 `BAFallDamageSuppressionVolume`으로 낙하 피해를 끈다.
+- 피격 리액션 중 발생한 Falling은 낙하 데미지로 처리하지 않는다.
+- Falling 중에는 이동 입력으로 공중 이동을 하지 않는다.
+- C++은 `IsLandingRecoveryActive()`로 약착지/강착지 공통 착지 회복 여부를 제공한다.
+- C++은 `ShouldPlayHeavyLanding()`으로 강착지 분기 여부를 제공한다.
+- C++은 `IsLandingRecoveryInputLocked()`로 후딜 입력 잠금 여부를 제공한다.
+- 이동 입력은 약착지/강착지 애니메이션 Notify가 닫히기 전까지 소비하지 않는다.
+- 공격/가드/회피 입력은 착지 회복 중 마지막 입력 하나만 저장하고 Notify 이후 실행한다.
+- ABP는 약착지/강착지 마지막에 `CompleteLandingRecoveryAnimation()`을 호출해 착지 잠금을 닫는다.
+- 강착지는 `LandingRecoveryCameraShakeClass`와 `LandingRecoveryCameraShakeScale`로 셰이크를 조절한다.
+- 착지 회복이 끝나면 기존 이동 런타임이 다시 입력을 소비한다.
+- BP는 `IsLandingRecoveryActive()`, `ShouldPlayHeavyLanding()`, `GetLastFallDistance()`로 착지 상태를 조회한다.
+
 ### 피격/사망
 
 - 일반 피격, 큰 피격, KnockDown, GuardHit, GuardBreak는 `EPlayerDamageReactionState`로 분리한다.
@@ -255,3 +300,4 @@
 - 락온 작업은 `BAProjectEditor Win64 Development`와 `BAProject Win64 Development` 빌드 성공을 확인했다.
 - PIE에서 Middle Mouse Button 락온/해제, 타겟 전환, 락온 카메라 높이 `-10` 값을 확인했다.
 - `feature/death-montage-flow`의 피격/가드 카메라 셰이크는 PIE 체감 확인을 완료했다.
+- 낙하/착지 변경은 Live Coding 비활성화 후 빌드 재확인 필요.
