@@ -74,8 +74,8 @@ void UActionAnimationComponent::BeginPlay()
 
 	if (bAutoBindToOwnerActionComponent && CachedActionComponent)
 	{
-		CachedActionComponent->OnActionStarted.AddDynamic(this, &UActionAnimationComponent::HandleActionStarted);
-		CachedActionComponent->OnActionCompleted.AddDynamic(this, &UActionAnimationComponent::HandleActionCompleted);
+		CachedActionComponent->OnActionStarted.AddUniqueDynamic(this, &UActionAnimationComponent::HandleActionStarted);
+		CachedActionComponent->OnActionCompleted.AddUniqueDynamic(this, &UActionAnimationComponent::HandleActionCompleted);
 	}
 }
 

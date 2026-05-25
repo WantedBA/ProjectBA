@@ -1,16 +1,40 @@
 ﻿#include "BAPlayerCharacter.h"
+#include "Animation/AnimInstance.h"
 #include "Component/ActionComponent.h"
 #include "Component/CombatComponent.h"
 #include "Component/PlayerWeaponVFX.h"
 #include "Component/StatComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Tables/ActionRows.h"
 #include "Tables/BATableManager.h"
 
+void ABAPlayerCharacter::ClearAttackRuntimeState()
+{
+	NowComboTransitionTid = 0;
+	NextComboTransitionTid = 0;
+	NextAttackMontage = nullptr;
+	NextAttackActionType = EActionType::None;
+	ActiveAttackMontage = nullptr;
+	ActiveAttackPlaybackId = 0;
+}
+
+bool ABAPlayerCharacter::IsActiveAttackMontagePlaying() const
+{
+	const USkeletalMeshComponent* MeshComponent = GetMesh();
+	UAnimInstance* AnimInstance = MeshComponent ? MeshComponent->GetAnimInstance() : nullptr;
+	return AnimInstance && ActiveAttackMontage && AnimInstance->Montage_IsPlaying(ActiveAttackMontage);
+}
 
 // 공격 입력 진입점
 void ABAPlayerCharacter::TryAttack(EActionCommand InActionCommand)
 {
 	UE_LOG(LogTemp, Log, TEXT("Player TryAttack Command: %hhd"), InActionCommand);
+
+	if (BAPlayerState == EBAPlayerState::Attacking && !IsActiveAttackMontagePlaying())
+	{
+		ClearAttackRuntimeState();
+		SetBAPlayerState(EBAPlayerState::None);
+	}
 
 	switch (BAPlayerState)
 	{
@@ -35,13 +59,19 @@ void ABAPlayerCharacter::TryAttack(EActionCommand InActionCommand)
 		{
 			CancelGuardForActionInterrupt();
 			SetNextCombo(InActionCommand);
-			StartAttack(NextAttackMontage);
+			if (NextAttackMontage)
+			{
+				StartAttack(NextAttackMontage);
+			}
 		}
 		else if (InActionCommand == EActionCommand::HeavyAttack)
 		{
 			CancelGuardForActionInterrupt();
 			SetNextCombo(InActionCommand);
-			StartAttack(NextAttackMontage);
+			if (NextAttackMontage)
+			{
+				StartAttack(NextAttackMontage);
+			}
 		}
 	}
 }
@@ -132,7 +162,10 @@ void ABAPlayerCharacter::StopChargeEffect()
 	PausedMontage = nullptr;
 }
 
-void ABAPlayerCharacter::OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bArg)
+void ABAPlayerCharacter::OnAttackMontageEnded(
+	UAnimMontage* AnimMontage,
+	const bool bInterrupted,
+	const int32 PlaybackId)
 {
 	// 차징 공격 중간에 외부에서 끊긴 경우
 	if (bIsCharging)
@@ -140,16 +173,20 @@ void ABAPlayerCharacter::OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bA
 		StopChargeEffect();
 		bIsCharging = false;
 	}
-	
-	// 정상 종료되었을 경우
-	if (!bArg)
+
+	if (PlaybackId != ActiveAttackPlaybackId || AnimMontage != ActiveAttackMontage)
+	{
+		return;
+	}
+
+	ClearAttackRuntimeState();
+	if (BAPlayerState == EBAPlayerState::Attacking)
 	{
 		SetBAPlayerState(EBAPlayerState::None);
-		NowComboTransitionTid = 0;
 	}
 	
 	// 공격 몽타주가 중간에 끊긴 경우
-	if (bArg && BAPlayerState != EBAPlayerState::Attacking)
+	if (bInterrupted && BAPlayerState != EBAPlayerState::Attacking)
 	{
 		NowComboTransitionTid = 0;
 	}
@@ -164,15 +201,23 @@ void ABAPlayerCharacter::OnAttackMontageEnded(UAnimMontage* AnimMontage, bool bA
 void ABAPlayerCharacter::StartAttack(UAnimMontage* InAnimMontage)
 {
 	const UBATableManager* TableManager = UBATableManager::Get(this);
+	if (!TableManager || !InAnimMontage || NextComboTransitionTid == 0)
+	{
+		ClearAttackRuntimeState();
+		return;
+	}
 	
 	NowComboTransitionTid = NextComboTransitionTid;
 	NextComboTransitionTid = 0;
 	NextAttackMontage = nullptr;
+	const EActionType AttackActionType = NextAttackActionType;
+	NextAttackActionType = EActionType::None;
 	
 	const FComboTransitionRow* NowCombo = TableManager->FindComboTransition(NowComboTransitionTid);
 	if (!NowCombo)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Failed to find combo transition row with tid: %d"), NowComboTransitionTid);
+		ClearAttackRuntimeState();
 		return;
 	}
 	
@@ -181,24 +226,51 @@ void ABAPlayerCharacter::StartAttack(UAnimMontage* InAnimMontage)
 	
 	// 재생 속도 : 테이블에 정의된 몽타주 재생 속도 * 공격 속도
 	const float MontagePlayRate = NowCombo->PlayRate * StatComponent->GetAttackSpeed();
-	CombatComponent->ExecuteAttack(InAnimMontage, MontagePlayRate);
-	
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	if (!AnimInstance)
 	{
-		SetBAPlayerState(EBAPlayerState::Attacking);
-		
-		// 스태미나 소모
-		ActionComponent->ConsumeActionStartStaminaCostByType(NextAttackActionType);
-		
-		FOnMontageEnded MontageEnded;
-		MontageEnded.BindUObject(this, &ABAPlayerCharacter::OnAttackMontageEnded);
-		AnimInstance->Montage_SetEndDelegate(MontageEnded, InAnimMontage);
+		ClearAttackRuntimeState();
+		return;
 	}
+
+	const int32 PlaybackId = NextAttackPlaybackId++;
+	ActiveAttackPlaybackId = PlaybackId;
+	ActiveAttackMontage = InAnimMontage;
+	const float PlayedDuration = PlayAnimMontage(InAnimMontage, MontagePlayRate);
+	if (PlayedDuration <= 0.f)
+	{
+		ClearAttackRuntimeState();
+		if (BAPlayerState == EBAPlayerState::Attacking)
+		{
+			SetBAPlayerState(EBAPlayerState::None);
+		}
+		return;
+	}
+
+	SetBAPlayerState(EBAPlayerState::Attacking);
+
+	// 스태미나 소모
+	if (ActionComponent)
+	{
+		ActionComponent->ConsumeActionStartStaminaCostByType(AttackActionType);
+	}
+
+	FOnMontageEnded MontageEnded;
+	MontageEnded.BindUObject(this, &ABAPlayerCharacter::OnAttackMontageEnded, PlaybackId);
+	AnimInstance->Montage_SetEndDelegate(MontageEnded, InAnimMontage);
 }
 
 void ABAPlayerCharacter::SetNextCombo(EActionCommand InActionCommand)
 {
-	static const UBATableManager* TableManager = UBATableManager::Get(this);
+	const UBATableManager* TableManager = UBATableManager::Get(this);
+	if (!TableManager)
+	{
+		return;
+	}
+
+	NextComboTransitionTid = 0;
+	NextAttackMontage = nullptr;
+	NextAttackActionType = EActionType::None;
 	
 	// 현재 실행 중인 액션이 없을 경우 기본값으로 세팅
 	if (!NowComboTransitionTid)

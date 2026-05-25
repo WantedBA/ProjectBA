@@ -9,13 +9,16 @@
 UENUM(BlueprintType)
 enum class EBADamageReactionType : uint8
 {
+	// 정확한 물리 상태가 아니라 피격 반응 연출과 규칙 묶음을 고르는 값이다.
+	// 공중 추가 피격, 착지 피해, 공중 제어, 무기 드롭 타이밍 같은 규칙이 분리되면 Airborne/Launch 계열을 별도 enum으로 나눈다.
+
 	// 일반 피격 반응: 이동 x
 	HitReact,
 
 	// 강공격이나 큰 패턴의 피격 반응: 두세걸음 이동 o
 	LargeHitReact,
 
-	// 장거리 넉백/비행 피격 반응.
+	// 에어본/장거리 넉백으로 시작해 바닥에 떨어지는 피격 반응까지 포함한다.
 	// 재생 중 추가 피격을 막아, 날아가는 도중 연속으로 맞는 상황을 방지한다.
 	KnockDown
 };
@@ -47,6 +50,14 @@ struct BAPROJECT_API FBADamageEvent : public FDamageEvent
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
 	FHitResult HitResult;
+
+	// KnockDown 계열 피격에서 사용할 수평 런치 속도다. 0이면 피격자 기본값을 사용한다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage|Launch", meta = (ClampMin = "0.0"))
+	float LaunchHorizontalSpeed = 0.f;
+
+	// KnockDown 계열 피격에서 사용할 위쪽 런치 속도다. 0이면 피격자 기본값을 사용한다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage|Launch", meta = (ClampMin = "0.0"))
+	float LaunchVerticalSpeed = 0.f;
 
 	// CombatComponent가 피해 적용 시점에 확인한 피해자 가드 상태다.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage|Guard")

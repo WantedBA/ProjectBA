@@ -1,10 +1,83 @@
 #include "Enemy/Animation/ANS_BossAreaAttack.h"
 #include "Character/CharacterBase.h"
 #include "Component/CombatComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "GameFramework/Character.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "DrawDebugHelpers.h"
+
+namespace
+{
+	constexpr float KnockDownAreaDirectionContactTolerance = 80.f;
+
+	FVector GetAreaFlatSafeDirection(const FVector& Direction)
+	{
+		FVector FlatDirection = Direction;
+		FlatDirection.Z = 0.f;
+		return FlatDirection.GetSafeNormal();
+	}
+
+	float GetAreaCharacterCapsuleRadius(const AActor* Actor)
+	{
+		const ACharacter* Character = Cast<ACharacter>(Actor);
+		const UCapsuleComponent* CapsuleComponent = Character ? Character->GetCapsuleComponent() : nullptr;
+		return CapsuleComponent ? CapsuleComponent->GetScaledCapsuleRadius() : 0.f;
+	}
+
+	bool ShouldUseOwnerForwardForKnockDownAreaDirection(
+		const AActor* Owner,
+		const AActor* Victim,
+		const FVector& Origin)
+	{
+		if (!Owner || !Victim)
+		{
+			return false;
+		}
+
+		const FVector OwnerToVictim = Victim->GetActorLocation() - Owner->GetActorLocation();
+		const FVector OriginToVictim = Victim->GetActorLocation() - Origin;
+		const float CombinedCapsuleRadius = GetAreaCharacterCapsuleRadius(Owner) + GetAreaCharacterCapsuleRadius(Victim);
+		const float ContactDistance = CombinedCapsuleRadius > 0.f
+			? CombinedCapsuleRadius + KnockDownAreaDirectionContactTolerance
+			: KnockDownAreaDirectionContactTolerance;
+
+		const FVector FlatOwnerToVictim = FVector(OwnerToVictim.X, OwnerToVictim.Y, 0.f);
+		const FVector FlatOriginToVictim = FVector(OriginToVictim.X, OriginToVictim.Y, 0.f);
+		return FlatOwnerToVictim.IsNearlyZero()
+			|| FlatOriginToVictim.IsNearlyZero()
+			|| FlatOwnerToVictim.Size() <= ContactDistance
+			|| FlatOriginToVictim.Size() <= ContactDistance;
+	}
+
+	FVector ResolveAreaDamageDirection(
+		const AActor* Owner,
+		const AActor* Victim,
+		const FVector& Origin,
+		const EBADamageReactionType DamageReactionType)
+	{
+		if (!Victim)
+		{
+			return FVector::ZeroVector;
+		}
+
+		const FVector OwnerForward = Owner ? GetAreaFlatSafeDirection(Owner->GetActorForwardVector()) : FVector::ZeroVector;
+		if (DamageReactionType == EBADamageReactionType::KnockDown
+			&& ShouldUseOwnerForwardForKnockDownAreaDirection(Owner, Victim, Origin)
+			&& !OwnerForward.IsNearlyZero())
+		{
+			return OwnerForward;
+		}
+
+		FVector DamageDirection = GetAreaFlatSafeDirection(Victim->GetActorLocation() - Origin);
+		if (DamageDirection.IsNearlyZero())
+		{
+			DamageDirection = OwnerForward;
+		}
+		return DamageDirection;
+	}
+}
 
 FVector UANS_BossAreaAttack::GetOrigin(AActor* Owner) const
 {
@@ -78,7 +151,7 @@ void UANS_BossAreaAttack::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSeq
 
 		HitActors.Add(Victim);
 
-		FVector DamageDirection = (Victim->GetActorLocation() - Origin).GetSafeNormal();
+		const FVector DamageDirection = ResolveAreaDamageDirection(Owner, Victim, Origin, DamageReactionType);
 
 		FBADamageEvent DamageEvent;
 		DamageEvent.DamageReactionType = DamageReactionType;
