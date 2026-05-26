@@ -13,19 +13,25 @@
 UNotifyLayer::UNotifyLayer(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	SortOrder = 999;
+	SortOrder = 10;
 }
 
 void UNotifyLayer::PlayFadeEffect(bool bFadeIn)
 {
 	if (bFadeIn && FadeInAnim)
 	{
-		// 화면이 밝아지는 애니메이션 재생
+		FadeImage->SetVisibility(ESlateVisibility::Visible);
+
+		// 애니메이션 종료 후 지우기
+		FWidgetAnimationDynamicEvent EndEvent;
+		EndEvent.BindDynamic(this, &UNotifyLayer::OnFadeInAnimationFinished);
+		BindToAnimationFinished(FadeInAnim, EndEvent);
+
 		PlayAnimation(FadeInAnim);
 	}
 	else if(!bFadeIn && FadeOutAnim)
 	{
-		// 화면이 어두워지는 애니메이션 재생
+		FadeImage->SetVisibility(ESlateVisibility::Visible);
 		PlayAnimation(FadeOutAnim);
 	}
 }
@@ -68,6 +74,15 @@ void UNotifyLayer::SetInteractionNotice(bool bShow, int32 Tid)
 	}
 }
 
+void UNotifyLayer::OnFadeInAnimationFinished()
+{
+	if (FadeImage)
+	{
+		FadeImage->SetVisibility(ESlateVisibility::Collapsed);
+		UE_LOG(LogTemp, Warning, TEXT(">>> NotifyLayer: Fade In Finished. Path Cleared."));
+	}
+}
+
 void UNotifyLayer::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -76,6 +91,6 @@ void UNotifyLayer::NativeConstruct()
 
 	if (FadeImage)
 	{
-		FadeImage->SetRenderOpacity(0.0f);
+		FadeImage->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }

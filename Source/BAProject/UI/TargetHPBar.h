@@ -18,7 +18,6 @@ protected:
 	UPROPERTY(meta = (BindWidget), BlueprintReadOnly, Category = "BA|UI")
 	class UStatusBar* TargetHPBar;
 
-
 	// 연결된 몬스터 값 저장
 	UPROPERTY()
 	class UStatComponent* CurrentBoundStat;
@@ -57,5 +56,4 @@ public:
 private:
 	// 위젯 숨기기 함수
 	void HideWidget();
-	
 };

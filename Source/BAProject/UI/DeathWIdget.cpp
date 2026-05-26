@@ -3,6 +3,7 @@
 
 #include "UI/DeathWIdget.h"
 #include "UI/System/SubSystemUI.h"
+#include "UI/MainHUD.h"
 #include "Player/BAPlayerCharacter.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -19,9 +20,14 @@ void UDeathWidget::RetryGame()
 		Player->Respawn();
 	}
 
-	// 부활 시 사망 팝업 제거
 	if (USubSystemUI* UISub = GetGameInstance()->GetSubsystem<USubSystemUI>())
 	{
+		if (UMainHUD* MainHUD = UISub->GetMainHUD())
+		{
+			MainHUD->HideBossHPBar();
+		}
+
+		// 부활 시 사망 팝업 제거
 		UISub->PopUI();
 	}
 }

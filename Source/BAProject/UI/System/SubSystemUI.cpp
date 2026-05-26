@@ -35,6 +35,15 @@ void USubSystemUI::PushUI(ULayerBase* InWidget)
 		return;
 	}
 
+	if (InWidget->GetStackType() == EStackElemType::Popup)
+	{
+		InWidget->AddToViewport(100);
+	}
+	else
+	{
+		InWidget->AddToViewport(InWidget->GetSortOrder());
+	}
+
 	// Notify 저장
 	if (UNotifyLayer* Notify = Cast<UNotifyLayer>(InWidget))
 	{
@@ -213,18 +222,26 @@ void USubSystemUI::CleanupUI()
 void USubSystemUI::HandlePlayerDeath()
 {
 	const UUISettings* Settings = GetDefault<UUISettings>();
-
-	if (Settings && Settings->DeathWidgetClass)
+	if (!Settings || !Settings->DeathWidgetClass)
 	{
-		TSubclassOf<ULayerBase> TargetLayerClass = Settings->DeathWidgetClass;
-
-		// 팝업으로 사망 창 띄우기
-		if (TargetLayerClass)
-		{
-			PushUIByClass(TargetLayerClass);
-			UE_LOG(LogTemp, Warning, TEXT(">>> Player Died! Death Screen Pushed."));
-		}
+		return;
 	}
+
+	FTimerHandle FadeTimer;
+	GetWorld()->GetTimerManager().SetTimer(FadeTimer, [this]()
+		{
+			if (CachedNotifyLayer)
+			{
+				CachedNotifyLayer->PlayFadeEffect(false);
+			}
+		}, 2.0f, false);
+
+	FTimerHandle DeathUITimer;
+	GetWorld()->GetTimerManager().SetTimer(DeathUITimer, [this, Settings]()
+		{
+			PushUIByClass(Settings->DeathWidgetClass);
+			UE_LOG(LogTemp, Warning, TEXT(">>> SubSystemUI: Death UI Pushed after Cinematic Sequence."));
+		}, 3.5f, false);
 }
 
 void USubSystemUI::RefreshInputMode()
