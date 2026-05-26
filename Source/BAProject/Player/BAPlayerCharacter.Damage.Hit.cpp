@@ -6,6 +6,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/RootMotionSource.h"
 #include "TimerManager.h"
 
 /*
@@ -27,7 +28,8 @@
  * 3. 넉백과 런치
  * - ApplyDamageReactionKnockback은 DamageEvent의 LaunchHorizontalSpeed/LaunchVerticalSpeed를 우선 사용한다.
  * - 기본 HitReact 넉백은 HitReactKnockbackStrength 값을 그대로 사용한다.
- * - Launch 값이 0이면 플레이어 기본 KnockDownKnockbackStrength/KnockDownLaunchVerticalSpeed를 사용한다.
+ * - KnockDown은 Launch 값이 0이면 플레이어 기본 KnockDownKnockbackStrength/KnockDownLaunchVerticalSpeed를 사용한다.
+ * - 일반 피격/가드는 수평 속도만 적용해 지상 리액션이 Falling으로 전환되지 않게 한다.
  * - GuardBreak는 루트모션 밀림을 사용하므로 Launch 넉백을 적용하지 않는다.
  *
  * 4. 종료
@@ -39,6 +41,8 @@
  */
 namespace
 {
+	const FName GroundDamageKnockbackRootMotionName(TEXT("BA_GroundDamageKnockback"));
+
 	UAnimMontage* FindConfiguredMontage(
 		const TMap<EActionDirection, TObjectPtr<UAnimMontage>>& Montages,
 		const EActionDirection Direction)
@@ -190,19 +194,17 @@ void ABAPlayerCharacter::ApplyDamageReactionKnockback(
 
 	// 넉백 강도는 플레이어가 보유한 피격 반응 타입별 값으로 결정한다.
 	float KnockbackStrength = HitReactKnockbackStrength;
-	float KnockbackZ = DamageReactionKnockbackZ;
+	bool bUseLaunchKnockback = false;
 	if (bGuarding)
 	{
 		KnockbackStrength = GuardHitKnockbackStrength;
 	}
 	else if (DamageReactionType == EBADamageReactionType::KnockDown)
 	{
+		bUseLaunchKnockback = true;
 		KnockbackStrength = LastDamageLaunchHorizontalSpeed > 0.f
 			? LastDamageLaunchHorizontalSpeed
 			: KnockDownKnockbackStrength;
-		KnockbackZ = LastDamageLaunchVerticalSpeed > 0.f
-			? LastDamageLaunchVerticalSpeed
-			: KnockDownLaunchVerticalSpeed;
 	}
 	else if (DamageReactionType == EBADamageReactionType::LargeHitReact)
 	{
@@ -228,9 +230,57 @@ void ABAPlayerCharacter::ApplyDamageReactionKnockback(
 		return;
 	}
 
+	if (!bUseLaunchKnockback)
+	{
+		ApplyGroundDamageReactionKnockback(KnockbackDirection, KnockbackStrength);
+		return;
+	}
+
+	const float KnockbackZ = LastDamageLaunchVerticalSpeed > 0.f
+		? LastDamageLaunchVerticalSpeed
+		: KnockDownLaunchVerticalSpeed;
 	FVector LaunchVelocity = KnockbackDirection * KnockbackStrength;
 	LaunchVelocity.Z = KnockbackZ;
-	LaunchCharacter(LaunchVelocity, true, DamageReactionType == EBADamageReactionType::KnockDown);
+	LaunchCharacter(LaunchVelocity, true, true);
+}
+
+void ABAPlayerCharacter::ApplyGroundDamageReactionKnockback(
+	const FVector& KnockbackDirection,
+	const float KnockbackStrength)
+{
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (!MovementComponent || KnockbackStrength <= 0.f)
+	{
+		return;
+	}
+
+	FVector GroundKnockbackDirection = KnockbackDirection;
+	GroundKnockbackDirection.Z = 0.f;
+	if (!GroundKnockbackDirection.Normalize())
+	{
+		return;
+	}
+
+	MovementComponent->RemoveRootMotionSource(GroundDamageKnockbackRootMotionName);
+
+	if (GroundDamageReactionKnockbackDuration <= 0.f)
+	{
+		FVector GroundKnockbackVelocity = GroundKnockbackDirection * KnockbackStrength;
+		GroundKnockbackVelocity.Z = MovementComponent->Velocity.Z;
+		MovementComponent->Velocity = GroundKnockbackVelocity;
+		return;
+	}
+
+	TSharedPtr<FRootMotionSource_ConstantForce> KnockbackRootMotion = MakeShared<FRootMotionSource_ConstantForce>();
+	KnockbackRootMotion->InstanceName = GroundDamageKnockbackRootMotionName;
+	KnockbackRootMotion->AccumulateMode = ERootMotionAccumulateMode::Additive;
+	KnockbackRootMotion->Priority = 500;
+	KnockbackRootMotion->Duration = GroundDamageReactionKnockbackDuration;
+	KnockbackRootMotion->Force = GroundKnockbackDirection * KnockbackStrength;
+	KnockbackRootMotion->FinishVelocityParams.Mode = ERootMotionFinishVelocityMode::SetVelocity;
+	KnockbackRootMotion->FinishVelocityParams.SetVelocity = FVector::ZeroVector;
+
+	MovementComponent->ApplyRootMotionSource(KnockbackRootMotion);
 }
 
 void ABAPlayerCharacter::PlayDamageReactionAnimation(

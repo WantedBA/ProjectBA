@@ -15,6 +15,18 @@ UStatusBar::UStatusBar(const FObjectInitializer& ObjectInitializer)
 	InterpSpeed = 5.0f;
 }
 
+void UStatusBar::SetProgressImmediate(float Value)
+{
+	// 목표값과 현재 표시값을 모두 인자값으로 강제 고정
+	TargetPercent = FMath::Clamp(Value, 0.0f, 1.0f);
+	CurrentDisplayPercent = TargetPercent;
+
+	if (Bar)
+	{
+		Bar->SetPercent(CurrentDisplayPercent);
+	}
+}
+
 void UStatusBar::NativeConstruct()
 {
 	Super::NativeConstruct();

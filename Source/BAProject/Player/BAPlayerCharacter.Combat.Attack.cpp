@@ -8,23 +8,6 @@
 #include "Tables/ActionRows.h"
 #include "Tables/BATableManager.h"
 
-void ABAPlayerCharacter::ClearAttackRuntimeState()
-{
-	NowComboTransitionTid = 0;
-	NextComboTransitionTid = 0;
-	NextAttackMontage = nullptr;
-	NextAttackActionType = EActionType::None;
-	ActiveAttackMontage = nullptr;
-	ActiveAttackPlaybackId = 0;
-}
-
-bool ABAPlayerCharacter::IsActiveAttackMontagePlaying() const
-{
-	const USkeletalMeshComponent* MeshComponent = GetMesh();
-	UAnimInstance* AnimInstance = MeshComponent ? MeshComponent->GetAnimInstance() : nullptr;
-	return AnimInstance && ActiveAttackMontage && AnimInstance->Montage_IsPlaying(ActiveAttackMontage);
-}
-
 // 공격 입력 진입점
 void ABAPlayerCharacter::TryAttack(EActionCommand InActionCommand)
 {
@@ -157,7 +140,7 @@ void ABAPlayerCharacter::ChargeAttackCompleted()
 	UBATableManager* TableManager = UBATableManager::Get(this);
 	const FComboTransitionRow* NowCombo = TableManager->FindComboTransition(NowComboTransitionTid);
 	CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack() * NowCombo->DamageCoefficient 
-		* (1.f + FinalChargeTime));
+	                               * (1.f + FinalChargeTime));
 	
 	GetMesh()->GetAnimInstance()->Montage_Resume(PausedMontage);
 	StopChargeEffect();
@@ -282,28 +265,18 @@ void ABAPlayerCharacter::SetNextCombo(EActionCommand InActionCommand)
 	NextAttackMontage = nullptr;
 	NextAttackActionType = EActionType::None;
 	
-	// 현재 실행 중인 액션이 없을 경우 기본값으로 세팅
-	if (!NowComboTransitionTid)
+	// 다음 콤보 Tid 찾기
+	// 스킬로 오버라이드된 콤보가 있는지 확인
+	const int64 OverrideKey = MakeComboOverrideKey(NowComboTransitionTid, InActionCommand);
+	if (const int32* OverrideTid = ComboTransitionOverrides.Find(OverrideKey))
 	{
-		if (InActionCommand == EActionCommand::LightAttack)
-		{
-			NextComboTransitionTid = FirstLComboTransitionTid;
-		}
-		else if (InActionCommand == EActionCommand::HeavyAttack)
-		{
-			NextComboTransitionTid = FirstRComboTransitionTid;
-		}
+		NextComboTransitionTid = *OverrideTid;
 	}
 	else
 	{
 		// 현재 실행 중인 액션
 		const FComboTransitionRow* NowComboTransition = 
 			TableManager->FindComboTransition(NowComboTransitionTid);
-		if (!NowComboTransition)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[ABAPlayerCharacter::SetNextCombo] Failed to find now action animation data for tid: %d"), NowComboTransitionTid);
-			return;
-		}
 		
 		// 현재 액션과 입력 커맨드로 다음 액션 탐색
 		if (InActionCommand == EActionCommand::LightAttack)
@@ -322,6 +295,7 @@ void ABAPlayerCharacter::SetNextCombo(EActionCommand InActionCommand)
 		}
 	}
 	
+	// 설정된 Tid에서 다음 몽타주 탐색
 	const FComboTransitionRow* NextComboTransition = 
 		TableManager->FindComboTransition(NextComboTransitionTid);
 	
@@ -355,5 +329,40 @@ void ABAPlayerCharacter::OnNextComboCheck()
 	{
 		return;
 	}
+}
+
+void ABAPlayerCharacter::OverrideComboTransition(int32 InNowComboTid, EActionCommand ActionCommand,
+	int32 NewNextComboTid)
+{
+	const int64 OverrideKey = MakeComboOverrideKey(InNowComboTid, ActionCommand);
+	
+	ComboTransitionOverrides.Add(OverrideKey, NewNextComboTid);
+}
+
+void ABAPlayerCharacter::ResetComboTransitionOverrides()
+{
+	ComboTransitionOverrides.Empty();
+}
+
+void ABAPlayerCharacter::ClearAttackRuntimeState()
+{
+	NowComboTransitionTid = 0;
+	NextComboTransitionTid = 0;
+	NextAttackMontage = nullptr;
+	NextAttackActionType = EActionType::None;
+	ActiveAttackMontage = nullptr;
+	ActiveAttackPlaybackId = 0;
+}
+
+bool ABAPlayerCharacter::IsActiveAttackMontagePlaying() const
+{
+	const USkeletalMeshComponent* MeshComponent = GetMesh();
+	UAnimInstance* AnimInstance = MeshComponent ? MeshComponent->GetAnimInstance() : nullptr;
+	return AnimInstance && ActiveAttackMontage && AnimInstance->Montage_IsPlaying(ActiveAttackMontage);
+}
+
+int64 ABAPlayerCharacter::MakeComboOverrideKey(int32 NowComboTid, EActionCommand ActionCommand) const
+{
+	return (static_cast<int64>(NowComboTid) << 8) | static_cast<uint8>(ActionCommand);
 }
 

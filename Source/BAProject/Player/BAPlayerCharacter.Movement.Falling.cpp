@@ -69,6 +69,26 @@ void ABAPlayerCharacter::Landed(const FHitResult& Hit)
 	EndFallTrackingFromLanding();
 }
 
+void ABAPlayerCharacter::ResolveInitialGroundedMovementMode()
+{
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (!MovementComponent || !MovementComponent->IsFalling())
+	{
+		return;
+	}
+
+	FFindFloorResult FloorResult;
+	MovementComponent->FindFloor(GetActorLocation(), FloorResult, false);
+	if (!FloorResult.IsWalkableFloor())
+	{
+		return;
+	}
+
+	bFallTrackingActive = false;
+	LastFallDistance = 0.f;
+	MovementComponent->SetMovementMode(MOVE_Walking);
+}
+
 bool ABAPlayerCharacter::IsLandingRecoveryActive() const
 {
 	return bLandingRecoveryActive;
