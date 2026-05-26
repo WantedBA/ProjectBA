@@ -552,33 +552,7 @@ float ABAPlayerCharacter::GetAnalogWalkInputThreshold() const
 
 float ABAPlayerCharacter::GetMoveInputScaleForActiveGait() const
 {
-	const float InputSize = MovementRuntime.MoveInputVector.Size();
-	if (MovementRuntime.DesiredGait != EMovementState::Run)
-	{
-		return InputSize;
-	}
-
-	if (MovementRuntime.ActiveGait == EMovementState::Walk)
-	{
-		return FMath::Clamp(InputSize / GetAnalogWalkInputThreshold(), 0.f, 1.f);
-	}
-
-	if (MovementRuntime.ActiveGait == EMovementState::Run)
-	{
-		if (SpeedSettings.RunSpeed <= KINDA_SMALL_NUMBER)
-		{
-			return InputSize;
-		}
-
-		const float WalkRunSpeedRatio = FMath::Clamp(SpeedSettings.WalkSpeed / SpeedSettings.RunSpeed, 0.f, 1.f);
-		const float Threshold = GetAnalogWalkInputThreshold();
-		const float RunAlpha = Threshold >= 1.f
-			? 1.f
-			: FMath::Clamp((InputSize - Threshold) / (1.f - Threshold), 0.f, 1.f);
-		return FMath::Lerp(WalkRunSpeedRatio, 1.f, RunAlpha);
-	}
-
-	return InputSize;
+	return MovementRuntime.bHasMoveInput ? 1.f : 0.f;
 }
 
 // Gait별 Phase 설정을 반환한다.
