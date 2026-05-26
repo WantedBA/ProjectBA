@@ -109,29 +109,32 @@ void ABAPlayerCharacter::Respawn()
 
 void ABAPlayerCharacter::ResetWeaponAttachment()
 {
-	if (WeaponMeshComponent == nullptr || GetMesh() == nullptr)
+	if (!WeaponMeshComponent || !GetMesh())
 	{
 		return;
 	}
 
-	// 물리 시뮬레이션 즉시 중단
+	// 1. 물리 시뮬레이션 즉시 중단
 	WeaponMeshComponent->SetSimulatePhysics(false);
 	WeaponMeshComponent->PutRigidBodyToSleep();
-	
-	// 충돌 설정 초기화 (NoCollision 명시)
+
+	// 2. 충돌 설정 초기화 (NoCollision 명시)
 	WeaponMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	WeaponMeshComponent->SetCollisionProfileName(TEXT("NoCollision"));
 
-	// 소켓에 다시 부착 ( SnapToTargetIncludingScale 사용 )
+	// 3. 소켓에 다시 부착
 	const FName TargetSocket = FName(SocketName::RightHandTargetSocketName);
 	if (GetMesh()->DoesSocketExist(TargetSocket))
 	{
-		WeaponMeshComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TargetSocket);
+		// 부착 시 상대 변환값을 유지하도록 설정한 뒤, 저장해둔 기본값으로 초기화
+		WeaponMeshComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, TargetSocket);
+		WeaponMeshComponent->SetRelativeLocation(DefaultWeaponRelativeLocation);
+		WeaponMeshComponent->SetRelativeRotation(DefaultWeaponRelativeRotation);
 	}
-	//else
-	//{
-	//	UE_LOG(LogTemp, Warning, TEXT("[BAPlayerCharacter] ResetWeaponAttachment: Socket %s not found on mesh."), *TargetSocket.ToString());
-	//}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[BAPlayerCharacter] ResetWeaponAttachment: Socket %s not found on mesh."), *TargetSocket.ToString());
+	}
 
 	bWeaponDroppedForDeath = false;
 }
