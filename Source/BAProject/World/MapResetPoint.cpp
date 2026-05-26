@@ -25,7 +25,7 @@ AMapResetPoint::AMapResetPoint()
 	MeshComponent->SetupAttachment(Root);
 
 	InteractionPivot = CreateDefaultSubobject<USceneComponent>(TEXT("InteractionPivot"));
-	InteractionPivot->SetRelativeLocation(FVector(30.f, 30.f, 10.f));
+	InteractionPivot->SetRelativeLocation(FVector(40.f, 40.f, 30.f));
 	InteractionPivot->SetupAttachment(Root);
 
 	RespawnPoint = CreateDefaultSubobject<UArrowComponent>(TEXT("RespawnPoint"));
@@ -93,11 +93,38 @@ void AMapResetPoint::Interact_Implementation(AActor* Interactor)
 	if (bIsPlayerResting == true)
 	{
 		bIsPlayerResting = false;
+
+		if (RestMontage)
+		{
+			Player->StopAnimMontage(RestMontage);
+		}
+
 		Player->UnlockMovementForCutscene();
 	}
 	else
 	{
 		bIsPlayerResting = true;
+
+		// 1. 플레이어를 상호작용 위치로 고정
+		if (InteractionPivot)
+		{
+			Player->SetActorLocationAndRotation(
+				InteractionPivot->GetComponentLocation(),
+				InteractionPivot->GetComponentRotation(),
+				false, nullptr, ETeleportType::TeleportPhysics
+			);
+
+			if (APlayerController* PC = Cast<APlayerController>(Player->GetController()))
+			{
+				PC->SetControlRotation(InteractionPivot->GetComponentRotation());
+			}
+		}
+
+		// 2. 휴식 애니메이션 재생
+		if (RestMontage)
+		{
+			Player->PlayAnimMontage(RestMontage);
+		}
 
 		// RecoverPlayer
 		if (UStatComponent* StatComp = Player->FindComponentByClass<UStatComponent>())
@@ -108,6 +135,7 @@ void AMapResetPoint::Interact_Implementation(AActor* Interactor)
 		// RespawnEnemies
 		if (UQuestManageSubsystem* QM = UQuestManageSubsystem::Get(this))
 		{
+			QM->ResetActiveQuests();
 			QM->RespawnQuestZoneEnemies();
 		}
 
