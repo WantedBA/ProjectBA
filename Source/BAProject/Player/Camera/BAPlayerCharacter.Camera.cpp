@@ -5,8 +5,8 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "LockOnTargetComponent.h"
 #include "LockOnTargetExtensions/ControllerRotationExtension.h"
-#include "Player/BADamageCameraShake.h"
-#include "Player/BALandingCameraShake.h"
+#include "Player/Camera/BADamageCameraShake.h"
+#include "Player/Camera/BALandingCameraShake.h"
 
 void ABAPlayerCharacter::InitializeCameraDefaults()
 {
