@@ -55,12 +55,6 @@ void UQuestManageSubsystem::StartQuest(int32 QuestTid, const TArray<FTransform>&
 {
     if (ActiveQuests.Contains(QuestTid)) return;
 
-    if (IsQuestCompleted(QuestTid)) // 이미 완료된 퀘스트인 경우
-    {
-        SpawnQuestMonsters(QuestTid, SpawnTransforms, MonsterClass); // 몬스터만 소환하고 종료
-        return;
-    }
-
     UBATableManager* TM = UBATableManager::Get(GetGameInstance());
     if (!TM || !TM->FindQuest(QuestTid))
     {
@@ -75,24 +69,26 @@ void UQuestManageSubsystem::StartQuest(int32 QuestTid, const TArray<FTransform>&
         for (const TWeakObjectPtr<AActor>& Weak : *Pending)
         {
             AEnemyBase* Enemy = Cast<AEnemyBase>(Weak.Get());
-            if (!Enemy) continue;
+            if (!Enemy || Enemy->IsDead()) continue;
             
             State.RemainingMonsters++;
             State.PrePlacedMonsters.Add(Enemy);
             
+            // 중복 바인딩 방지: QM이 이전에 등록한 모든 델리게이트 제거 후 새로 등록
+            Enemy->OnDeathEvent.RemoveAll(this);
             Enemy->OnDeathEvent.AddWeakLambda(this,
                 [this, QuestTid]()
                 {
                    NotifyMonsterKilled(QuestTid); 
                 });
         }
-        PendingMonsters.Remove(QuestTid);
+        // StartQuest에서는 삭제하지 않음 (사망 후 재진입 시 다시 읽어야 함)
     }
 
-    if (TArray<TWeakObjectPtr<AActor>>* PendingA = PendingActivatables.Find(QuestTid))
+    if (TArray<TWeakObjectPtr<AActor>>* RegActivatables = PendingActivatables.Find(QuestTid))
     {
-        State.Activatables = MoveTemp(*PendingA);
-        PendingActivatables.Remove(QuestTid);
+        State.Activatables = *RegActivatables;
+        // StartQuest에서는 삭제하지 않음
     }
 
     for (const FZoneMonsterRows* Row : TM->GetZoneMonstersByQuest(QuestTid))
@@ -307,21 +303,27 @@ void UQuestManageSubsystem::CompleteQuest(int32 QuestTid)
 {
     if (!ActiveQuests.Contains(QuestTid)) return;
 
-    CompletedQuests.Add(QuestTid);
-
-    SetActivatablesActive(QuestTid, false);
-
-    UBATableManager* TM = UBATableManager::Get(GetGameInstance());
-    if (TM)
+    // 처음 클리어할 때만 보상 및 이벤트 처리
+    if (!CompletedQuests.Contains(QuestTid))
     {
-        if (const FQuestRows* Row = TM->FindQuest(QuestTid))
+        CompletedQuests.Add(QuestTid);
+
+        UBATableManager* TM = UBATableManager::Get(GetGameInstance());
+        if (TM)
         {
-            ApplyRewards(Row->RewardTid);
+            if (const FQuestRows* Row = TM->FindQuest(QuestTid))
+            {
+                ApplyRewards(Row->RewardTid);
+            }
         }
+
+        OnQuestCompleted.Broadcast(QuestTid);
     }
 
-    OnQuestCompleted.Broadcast(QuestTid);
+    SetActivatablesActive(QuestTid, false);
     ActiveQuests.Remove(QuestTid);
+
+    // 주의: Pending 목록은 영구 보관하여 리스폰/휴식 후 재진입 시에도 투명벽 등이 정상 작동하도록 함
 }
 
 void UQuestManageSubsystem::ApplyRewards(int32 RewardTid)

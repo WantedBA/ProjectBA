@@ -185,7 +185,7 @@ EActionDirection ABAPlayerCharacter::GetActionDirectionFromMoveInput(const FVect
 
 void ABAPlayerCharacter::FaceMoveInputDirection()
 {
-	const FVector MoveDirection = ConvertMoveInputToWorldDirection(GetMoveInputVector());
+	const FVector MoveDirection = ConvertMoveInputToWorldDirection(GetInterpolatedMoveInputVector());
 	if (MoveDirection.IsNearlyZero())
 	{
 		return;

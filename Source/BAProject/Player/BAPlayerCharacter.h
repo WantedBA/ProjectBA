@@ -202,6 +202,21 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Action")
 	bool CanAcceptActionInput() const;
 
+	UFUNCTION(BlueprintCallable, Category = "Combat|Recovery")
+	void OpenRecoveryEscapeWindow(const FBAPlayerRecoveryEscapeWindowSettings& Settings);
+
+	UFUNCTION(BlueprintCallable, Category = "Combat|Recovery")
+	void CloseRecoveryEscapeWindow(const FBAPlayerRecoveryEscapeWindowSettings& Settings);
+
+	UFUNCTION(BlueprintPure, Category = "Combat|Recovery")
+	bool IsRecoveryEscapeWindowOpen() const;
+
+	UFUNCTION(BlueprintPure, Category = "Combat|Recovery")
+	bool IsRecoveryEscapeRequiredForCurrentState() const;
+
+	bool TryStartRecoveryEscapeAction(EActionCommand Command, EActionDirection Direction = EActionDirection::Any);
+	bool TryStartRecoveryEscapeMove(const FVector2D& MoveInput);
+
 	UFUNCTION(BlueprintPure, Category = "Animation|Falling")
 	bool IsLandingRecoveryActive() const;
 
@@ -488,6 +503,11 @@ private:
 	// 가드
 	void CancelGuardForActionInterrupt();
 	void ConfigureGuardMontageSections();
+	void StopGuardImmediately();
+	void ScheduleGuardReleaseGrace(float OverrideDelay = -1.f);
+	void ClearGuardReleaseGrace();
+	bool ShouldDelayGuardRelease() const;
+	bool CanUseGuardReleaseGraceAfterSuccess() const;
 	float GetGuardAbsorptionMultiplier() const;
 	float GetPerfectGuardStaminaCostMultiplier() const;
 	bool ConsumeGuardStaminaForDamage();
@@ -596,6 +616,17 @@ private:
 		bool bGuardBreak) const;
 	void FinishDamageReaction(int32 PlaybackId);
 
+	// 공격/피격 후딜 탈출
+	bool IsAttackRecoveryEscapeState() const;
+	bool IsDamageReactionRecoveryEscapeState() const;
+	bool CanUseRecoveryEscapeDodge() const;
+	bool CanUseRecoveryEscapeGuard() const;
+	bool CanUseRecoveryEscapeMove() const;
+	void ClearRecoveryEscapeWindow();
+	void ExitCurrentRecoveryForEscape(bool bKeepQueuedAttack);
+	void ExitAttackRecoveryForEscape(bool bKeepQueuedAttack);
+	void ExitDamageReactionRecoveryForEscape();
+
 	UFUNCTION()
 	void HandleRespawnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 	
@@ -670,7 +701,7 @@ private:
 
 	// 공격 성공 시 플레이어 공격 몽타주 정지 시간
 	UPROPERTY(EditAnywhere, Category = "Combat|Attack|HitStop", meta = (ClampMin = "0.0", Units = "s"))
-	float AttackHitStopDuration = 0.2f;
+	float AttackHitStopDuration = 0.1f;
 
 	// 피격 반응 설정
 	// 가드 정면 판정 좌우 허용 각도
@@ -704,6 +735,10 @@ private:
 	// 일반 피격/가드 수평 넉백 유지 시간
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback", meta = (ClampMin = "0.0", Units = "s"))
 	float GroundDamageReactionKnockbackDuration = 0.12f;
+
+	// 후딜 탈출 시 현재 공격/피격 몽타주를 정리하는 blend-out 시간
+	UPROPERTY(EditAnywhere, Category = "Combat|Recovery", meta = (ClampMin = "0.0", Units = "s"))
+	float RecoveryEscapeMontageBlendOut = 0.05f;
 
 	// 일반 피격 방향별 리액션 몽타주
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")
@@ -844,6 +879,10 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Montage")
 	FName GuardLoopSection = TEXT("Loop");
 
+	// 가드 입력을 뗀 뒤에도 방어 자세를 유지하는 시간
+	UPROPERTY(EditAnywhere, Category = "Combat|Guard", meta = (ClampMin = "0.0", Units = "s"))
+	float GuardReleaseGraceDuration = 1.f;
+
 	UPROPERTY(EditAnywhere, Category = "Combat|Respawn|Montage")
 	TObjectPtr<UAnimMontage> RespawnMontage;
 
@@ -873,7 +912,9 @@ private:
 	bool bDeathMovementDisableDeferred = false;
 	bool bWeaponDroppedForDeath = false;
 	bool bGuardInputHeld = false;
+	bool bGuardReleaseGraceAvailable = false;
 	bool bPerfectGuardWindowActive = false;
+	FTimerHandle GuardReleaseGraceTimerHandle;
 	bool bFallTrackingActive = false;
 	bool bLandingRecoveryActive = false;
 	bool bLandingRecoveryInputLocked = false;
@@ -888,6 +929,10 @@ private:
 	bool bKnockDownGetUpMoveInputShortcut = false;
 	EActionDirection KnockDownGetUpQueuedDodgeDirection = EActionDirection::Any;
 	EActionDirection KnockDownGetUpHeldDodgeDirection = EActionDirection::Any;
+	int32 RecoveryEscapeWindowCount = 0;
+	int32 RecoveryEscapeDodgeWindowCount = 0;
+	int32 RecoveryEscapeGuardWindowCount = 0;
+	int32 RecoveryEscapeMoveWindowCount = 0;
 	UPROPERTY(VisibleAnywhere) bool bIsBeforeCharge = false;
 	UPROPERTY(VisibleAnywhere) bool bIsCharging = false;
 	UPROPERTY(VisibleAnywhere) bool bIsChargeInputCompleted = false;

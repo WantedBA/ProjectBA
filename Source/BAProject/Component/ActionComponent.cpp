@@ -75,6 +75,21 @@ bool UActionComponent::TryStartAction(const EActionCommand Command, const EActio
 	return TryStartActionByTid(Moveset->ActionTid, Direction);
 }
 
+bool UActionComponent::TryStartActionOfType(
+	const EActionCommand Command,
+	const EActionDirection Direction,
+	const EActionType RequiredActionType)
+{
+	const FMovesetRow* Moveset = FindBestMoveset(Command, Direction, RequiredActionType);
+	if (!Moveset)
+	{
+		LastStartResult = EActionStartResult::MovesetNotFound;
+		return false;
+	}
+
+	return TryStartActionByTid(Moveset->ActionTid, Direction);
+}
+
 bool UActionComponent::TryStartActionByTid(const int32 ActionTid)
 {
 	return TryStartActionByTid(ActionTid, EActionDirection::Any);
@@ -269,7 +284,8 @@ bool UActionComponent::IsActiveActionUsingRootMotion() const
 
 const FMovesetRow* UActionComponent::FindBestMoveset(
 	const EActionCommand Command,
-	const EActionDirection Direction) const
+	const EActionDirection Direction,
+	const EActionType RequiredActionType) const
 {
 	const UBATableManager* TableManager = UBATableManager::Get(this);
 	if (!TableManager)
@@ -296,9 +312,23 @@ const FMovesetRow* UActionComponent::FindBestMoveset(
 		{
 			continue;
 		}
+
+		const FActionDataRow* RowActionData = nullptr;
+		if (RequiredActionType != EActionType::None)
+		{
+			RowActionData = TableManager->FindActionData(Row->ActionTid);
+			if (!RowActionData || RowActionData->ActionType != RequiredActionType)
+			{
+				continue;
+			}
+		}
+
 		if (Row->GuardState != GuardState)
 		{
-			const FActionDataRow* RowActionData = TableManager->FindActionData(Row->ActionTid);
+			if (!RowActionData)
+			{
+				RowActionData = TableManager->FindActionData(Row->ActionTid);
+			}
 			// 가드 중 특수 행동은 별도 GuardState Moveset을 만들지 않아도 기본 Row를 재사용한다.
 			// 이 예외가 없으면 CanStartAction까지 도달하기 전에 Moveset 검색 단계에서 막힌다.
 			const bool bCanUseDefaultGuardStateForInterrupt =
