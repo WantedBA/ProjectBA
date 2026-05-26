@@ -160,8 +160,8 @@ void ABAPlayerCharacter::TryHeal()
 		return;
 	}*/
 	
-	// ActionComponent->TryStartAction(EActionCommand::UseConsumable);
-	PlayAnimMontage(HealMontage);
+	ActionComponent->TryStartAction(EActionCommand::UseConsumable);
+	// PlayAnimMontage(HealMontage);
 }
 
 void ABAPlayerCharacter::OnHealAnimNotify()
