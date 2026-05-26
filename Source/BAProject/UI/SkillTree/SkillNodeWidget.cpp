@@ -5,6 +5,10 @@
 
 #include "Components/Button.h"
 #include "Instance/SkillTreeSubsystem.h"
+#include "UI/System/SubSystemUI.h"
+#include "UI/MainHUD.h"
+#include "Engine/GameInstance.h"
+
 
 void USkillNodeWidget::SetSkillNodeState(const ESkillNodeState InSkillNodeState)
 {
@@ -33,6 +37,10 @@ void USkillNodeWidget::NativeOnInitialized()
 	if (SkillNodeButton)
 	{
 		SkillNodeButton->OnClicked.AddDynamic(this, &USkillNodeWidget::HandleSkillNodeButtonClicked);
+
+		// 마우스 올린 경우 및 뗐을 때 이벤트 연결
+		SkillNodeButton->OnHovered.AddDynamic(this, &USkillNodeWidget::HandleSkillNodeButtonHovered);
+		SkillNodeButton->OnUnhovered.AddDynamic(this, &USkillNodeWidget::HandleSkillNodeButtonUnhovered);
 	}
 	else
 	{
@@ -43,4 +51,45 @@ void USkillNodeWidget::NativeOnInitialized()
 void USkillNodeWidget::HandleSkillNodeButtonClicked()
 {
 	OnSkillNodeClicked.Broadcast(SkillId);
+}
+
+void USkillNodeWidget::HandleSkillNodeButtonHovered()
+{
+	UE_LOG(LogTemp, Warning, TEXT("!!! SkillNode Hovered !!! ID: %d"), SkillId);
+
+	// GameInstance 가져오기
+	UGameInstance* GI = GetGameInstance();
+	if (!GI)
+	{
+		return;
+	}
+
+	// GameInstance 에서 UI 찾기
+	USubSystemUI* UISubsystem = GI->GetSubsystem<USubSystemUI>();
+	if (!UISubsystem)
+	{
+		return;
+	}
+
+	// 툴팁 요청
+	if (UMainHUD* MainHUD = UISubsystem->GetMainHUD())
+	{
+		MainHUD->RequestShowTooltip(SkillId);
+	}
+}
+
+void USkillNodeWidget::HandleSkillNodeButtonUnhovered()
+{
+	// SubSystemUI 찾기
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (USubSystemUI* UISubsystem = GI->GetSubsystem<USubSystemUI>())
+		{
+			// HUD를 찾아서 툴팁 숨기기
+			if (UMainHUD* MainHUD = UISubsystem->GetMainHUD())
+			{
+				MainHUD->HideTooltip();
+			}
+		}
+	}
 }

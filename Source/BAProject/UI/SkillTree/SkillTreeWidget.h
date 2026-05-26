@@ -22,6 +22,9 @@ protected:
 	
 public:
 	virtual void OnPopped() override;
+
+	UFUNCTION(BlueprintCallable, Category = "BA|SkillTree")
+	void CreateSkillLines();
 	
 protected:
 // 델리게이트로 실행되는 함수
@@ -47,5 +50,18 @@ protected:
 	// 스킬 Tid를 키 값으로 하는 스킬 노드 맵
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SkillTree)
 	TMap<int32, TObjectPtr<USkillNodeWidget>> SkillNodeMap;
+
+protected:
+	// 생성된 모든 선 위젯 담아둘 배열
+	UPROPERTY()
+	TArray<TObjectPtr<class USkillConnectionLine>> SkillLines;
+
+	// 선을 만들 때 쓸 블루프린트 클래스
+	UPROPERTY(EditAnywhere, Category = "BA|SkillTree")
+	TSubclassOf<class USkillConnectionLine> SkillLineClass;
+
+	UPROPERTY(meta = (BindWidget))
+	class UCanvasPanel* LineCanvas;
+
 	
 };

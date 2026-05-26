@@ -38,6 +38,11 @@ public:
 	// 전체 개수 확인
 	int32 Num() const { return Items.Num(); }
 
+	void Clear()
+	{
+		Items.Empty();
+	}
+
 private:
 	TArray<T> Items;
 };
