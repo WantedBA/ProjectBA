@@ -1,3 +1,4 @@
+
 // Copyright TeamBA. All Rights Reserved.
 
 #pragma once
@@ -23,6 +24,10 @@ public:
     // 외부 시스템이 호출 — 벽을 열고 비주얼을 끔. bConsumed는 유지 → 재진입해도 다시 안 닫힘
     UFUNCTION(BlueprintCallable, Category = "InvisibleWall")
     void OpenWall();
+
+    // 상태 초기화 — 벽을 열고 bConsumed를 false로 리셋하여 다시 작동 가능하게 함
+    UFUNCTION(BlueprintCallable, Category = "InvisibleWall")
+    void ReArm();
 
     virtual void OnQuestActivated_Implementation(int32 QuestTid) override;
     virtual void OnQuestDeactivated_Implementation(int32 QuestTid) override;
