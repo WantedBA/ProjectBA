@@ -43,7 +43,9 @@ public:
 		float InDamage,
 		FName InStartSocket = NAME_None,
 		FName InEndSocket = NAME_None,
-		EBADamageReactionType InDamageReactionType = EBADamageReactionType::HitReact);
+		EBADamageReactionType InDamageReactionType = EBADamageReactionType::HitReact,
+		float InLaunchHorizontalSpeed = 0.f,
+		float InLaunchVerticalSpeed = 0.f);
 
 	// 전역 시간 배율을 짧게 낮춰 타격감을 만든다.
 	void TriggerHitStop(float Duration);
@@ -79,12 +81,15 @@ public:
 	FOnHitDetected OnHitDetected;
 
 protected:
+	// 타격 시 생성할 Shockwave 나이아가라 시스템
 	UPROPERTY(EditAnywhere, Category = "Combat|VFX")
 	TObjectPtr<class UNiagaraSystem> ShockwaveSystem;
 
+	// 타격 시 생성할 Distortion 나이아가라 시스템
 	UPROPERTY(EditAnywhere, Category = "Combat|VFX")
 	TObjectPtr<class UNiagaraSystem> DistortionSystem;
 
+	// 무기 히트 트레이스 PIE 화면 표시 여부
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Debug")
 	bool bShowDebugTrace = false;
 
@@ -97,12 +102,27 @@ protected:
 	UPROPERTY()
 	float CurrentDamage;
 
+	// SetAttackData 호출 전 기본 피격 리액션 타입
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	EBADamageReactionType CurrentDamageReactionType = EBADamageReactionType::HitReact;
 
+	// SetAttackData 호출 전 기본 수평 런치 속도
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Launch", meta = (ClampMin = "0.0"))
+	float CurrentLaunchHorizontalSpeed = 0.f;
+
+	// SetAttackData 호출 전 기본 수직 런치 속도
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Launch", meta = (ClampMin = "0.0"))
+	float CurrentLaunchVerticalSpeed = 0.f;
+
+	// KnockDown 근접 전방 fallback 거리 여유
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Launch", meta = (ClampMin = "0.0"))
+	float KnockDownDirectionContactTolerance = 220.f;
+
+	// 히트 트레이스 시작 소켓 이름
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Socket")
 	FName StartSocketName = TEXT("Sword_Start");
 
+	// 히트 트레이스 끝 소켓 이름
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Socket")
 	FName EndSocketName = TEXT("Sword_End");
 

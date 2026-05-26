@@ -96,6 +96,13 @@ struct BAPROJECT_API F1StageBossAttackRows : public FBARowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
 	int32 DamageReactionType = 0;
 
+	// KnockDown 계열 피격에서 사용할 수평/수직 런치 속도. 0이면 피격자 기본값을 사용한다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
+	float LaunchHorizontalSpeed = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
+	float LaunchVerticalSpeed = 0.0f;
+
 	// 콤보로 이어질 다음 패턴 Tid (0 = 없음)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "1StageBossAttack")
 	int32 NextComboTid = 0;
@@ -171,6 +178,13 @@ struct BAPROJECT_API F2StageBossAttackRows : public FBARowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
 	int32 DamageReactionType = 0;
 
+	// KnockDown 계열 피격에서 사용할 수평/수직 런치 속도. 0이면 피격자 기본값을 사용한다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
+	float LaunchHorizontalSpeed = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
+	float LaunchVerticalSpeed = 0.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "2StageBossAttack")
 	int32 NextComboTid = 0;
 
@@ -244,6 +258,13 @@ struct BAPROJECT_API F3StageBossAttackRows : public FBARowBase
 	// 피격 반응 타입 — 0=HitReact, 1=LargeHitReact, 2=KnockDown
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
 	int32 DamageReactionType = 0;
+
+	// KnockDown 계열 피격에서 사용할 수평/수직 런치 속도. 0이면 피격자 기본값을 사용한다.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
+	float LaunchHorizontalSpeed = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
+	float LaunchVerticalSpeed = 0.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "3StageBossAttack")
 	int32 NextComboTid = 0;

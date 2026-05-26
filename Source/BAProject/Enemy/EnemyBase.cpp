@@ -161,6 +161,30 @@ void AEnemyBase::OnDamaged(
 
 	const FHitResult HitResult = ResolveDamageHitResult(DamageEvent);
 	const FVector HitVisualLocation = HitResult.bBlockingHit ? FVector(HitResult.ImpactPoint) : GetActorLocation();
+
+	EBADamageReactionType ReactionType = EBADamageReactionType::HitReact;
+	FRotator HitVFXRotation = FRotator::ZeroRotator;
+	if (DamageEvent.IsOfType(FBADamageEvent::ClassID))
+	{
+		const FBADamageEvent& BAEvent = static_cast<const FBADamageEvent&>(DamageEvent);
+		ReactionType = BAEvent.DamageReactionType;
+		if (!BAEvent.DamageDirection.IsNearlyZero())
+		{
+			HitVFXRotation = BAEvent.DamageDirection.Rotation();
+		}
+	}
+
+	const bool bHeavyHit = (ReactionType >= EBADamageReactionType::LargeHitReact);
+	UNiagaraSystem* VFXToSpawn = bHeavyHit ? HeavyHitVFX.Get() : HitVFX.Get();
+	const float VFXScale = bHeavyHit ? HeavyHitVFXScale : HitVFXScale;
+	if (VFXToSpawn)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(), VFXToSpawn, HitVisualLocation,
+			HitVFXRotation, FVector(VFXScale), true, true
+		);
+	}
+
 	K2_OnHitVisuals(HitVisualLocation);
 }
 
