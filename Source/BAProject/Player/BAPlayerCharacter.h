@@ -407,6 +407,7 @@ private:
 	bool IsActiveAttackMontagePlaying() const;
 
 	// 이동 런타임
+	void ResolveInitialGroundedMovementMode();
 	void TickMovementRuntime(float DeltaTime);
 	void UpdatePhaseFromInputAndGait(float DeltaTime);
 	void BeginMovementPhase(EPlayerMovementPhase NewPhase);
@@ -550,6 +551,7 @@ private:
 		EActionDirection HitDirection,
 		bool bGuarding,
 		bool bGuardBreak);
+	void ApplyGroundDamageReactionKnockback(const FVector& KnockbackDirection, float KnockbackStrength);
 	void PlayDamageReactionCameraShake(
 		EBADamageReactionType DamageReactionType,
 		bool bGuarding,
@@ -652,9 +654,9 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
 	float GuardHitKnockbackStrength = 360.f;
 
-	// KnockDown 제외 피격/가드 넉백 기본 Z 속도
-	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
-	float DamageReactionKnockbackZ = 20.f;
+	// 일반 피격/가드 수평 넉백 유지 시간
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback", meta = (ClampMin = "0.0", Units = "s"))
+	float GroundDamageReactionKnockbackDuration = 0.12f;
 
 	// 일반 피격 방향별 리액션 몽타주
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")
