@@ -168,6 +168,15 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 		return;
 	}
 
+	// 사다리 위에서는 CanAcceptActionInput()이 false라 일반 입력 차단을 거치지 않고 W/S를 TickLadderClimb로 전달
+	if (ControlledCharacter->IsOnLadder())
+	{
+		bHasMoveInput = !Movement.IsNearlyZero();
+		ControlledCharacter->SetMoveInputVector(Movement);
+		ApplyMovementStateByModifier();
+		return;
+	}
+
 	if (!ControlledCharacter->CanAcceptActionInput() && !ControlledCharacter->IsDamageReacting())
 	{
 		bHasMoveInput = false;
@@ -249,6 +258,16 @@ void ABAPlayerController::ToggleWalk()
 
 void ABAPlayerController::OnSprintStarted()
 {
+	// 사다리 위에서는 탭=닷지 체계 무시 — Space 누르면 즉시 빨리오르기
+	if (ABAPlayerCharacter* LadderPC = Cast<ABAPlayerCharacter>(GetPawn());
+		LadderPC && LadderPC->IsOnLadder())
+	{
+		bSprintInputHeld = true;
+		bSprintModifierHeld = true;
+		ApplyMovementStateByModifier();
+		return;
+	}
+
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
 	{
 		if (PC->IsDamageReacting())
@@ -284,6 +303,16 @@ void ABAPlayerController::OnSprintStarted()
 
 void ABAPlayerController::OnSprintCompleted()
 {
+	// 사다리 위에서는 닷지 트리거 X, 단순히 sprint 해제
+	if (ABAPlayerCharacter* LadderPC = Cast<ABAPlayerCharacter>(GetPawn());
+		LadderPC && LadderPC->IsOnLadder())
+	{
+		bSprintInputHeld = false;
+		bSprintModifierHeld = false;
+		ApplyMovementStateByModifier();
+		return;
+	}
+
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
 		PC && PC->IsDamageReacting())
 	{
