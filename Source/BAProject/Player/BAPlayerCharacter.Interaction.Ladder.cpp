@@ -91,17 +91,18 @@ void ABAPlayerCharacter::TickLadderClimb(const float DeltaTime)
 		DrainLadderSprintStamina(DeltaTime);
 	}
 
-	if (FMath::Abs(ClimbSpeed) > KINDA_SMALL_NUMBER)
-	{
-		// sweep=false: 사다리/캡슐 충돌로 막히지 않게 직접 이동
-		AddActorWorldOffset(FVector::UpVector * ClimbSpeed * DeltaTime, false, nullptr, ETeleportType::TeleportPhysics);
-	}
+	// XY를 사다리 진입 라인(BottomEntry XY)에 강제 락 — 측면 진입 시 루트모션/외부 힘으로 인한 횡 드리프트 차단
+	const AMapLadder* Ladder = LadderRuntime.CurrentLadder.Get();
+	const FVector BottomLocation = Ladder->GetBottomEntryLocation();
+	const FVector CurrentLocation = GetActorLocation();
+	const float NewZ = CurrentLocation.Z + ClimbSpeed * DeltaTime;
+	SetActorLocation(
+		FVector(BottomLocation.X, BottomLocation.Y, NewZ),
+		false, nullptr, ETeleportType::TeleportPhysics);
 
 	// 자동 이탈 - 이동 방향과 일치할 때만 (진입 직후 즉시 트리거 방지)
-	const AMapLadder* Ladder = LadderRuntime.CurrentLadder.Get();
 	const FVector ActorLocation = GetActorLocation();
 	const FVector TopLocation = Ladder->GetTopEntryLocation();
-	const FVector BottomLocation = Ladder->GetBottomEntryLocation();
 
 	if (ClimbSpeed > 0.f && ActorLocation.Z >= TopLocation.Z)
 	{
