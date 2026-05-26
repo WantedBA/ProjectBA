@@ -20,6 +20,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Instance/UserDataSubsystem.h"
 #include "Materials/MaterialInterface.h"
+#include "Player/Camera/CameraOcclusionFadeComponent.h"
 #include "Tables/BATableManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Map/MapInfoActor.h"
@@ -110,6 +111,9 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	Camera->SetupAttachment(SpringArm);
 	Camera->SetRelativeRotation(FRotator(-17.f, 0.f, 0.f));
 	Camera->bUsePawnControlRotation = false;
+
+	CameraOcclusionFadeComponent = CreateDefaultSubobject<UCameraOcclusionFadeComponent>(
+		TEXT("CameraOcclusionFadeComponent"));
 	
 	// 마우스 카메라 제어 Yaw축만 허용
 	bUseControllerRotationPitch = false;

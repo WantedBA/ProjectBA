@@ -17,6 +17,7 @@ class UCameraComponent;
 class UCharacterMovementComponent;
 class UActionComponent;
 class UActionAnimationComponent;
+class UCameraOcclusionFadeComponent;
 class UInteractorComponent;
 class UAnimInstance;
 class AMapLadder;
@@ -307,6 +308,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	TObjectPtr<UCameraComponent> Camera;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	TObjectPtr<UCameraOcclusionFadeComponent> CameraOcclusionFadeComponent;
 
 	// SpringArm 충돌은 벽만 안정적으로 밀어내고 근접 전투 대상에는 덜 민감하게 둔다.
 	UPROPERTY(EditAnywhere, Category = "Camera|Collision")
