@@ -7,6 +7,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "TimerManager.h"
+#include "Constants/BAProjectConstant.h"
 
 /*
  * Death Policy Summary
@@ -188,6 +189,8 @@ void ABAPlayerCharacter::FinalizeDeferredDamageReactionDeath()
 	{
 		DropWeaponForDeath();
 	}
+
+	Respawn();
 }
 
 void ABAPlayerCharacter::FinalizeDropWeaponAndDie(const EActionDirection DeathDirection)
@@ -228,6 +231,7 @@ void ABAPlayerCharacter::FinalizeDeathAfterMontage()
 
 	if (!bDeathMovementDisableDeferred)
 	{
+		Respawn();
 		return;
 	}
 
@@ -238,6 +242,8 @@ void ABAPlayerCharacter::FinalizeDeathAfterMontage()
 	{
 		DropWeaponForDeath();
 	}
+
+	Respawn();
 }
 
 void ABAPlayerCharacter::PrepareDeathState()
