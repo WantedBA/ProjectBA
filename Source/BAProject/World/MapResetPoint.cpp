@@ -1,6 +1,7 @@
 #include "World/MapResetPoint.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/ArrowComponent.h"
 #include "Component/StatComponent.h"
 #include "Instance/QuestManageSubsystem.h"
 #include "SaveGame/SaveGameManager.h"
@@ -27,8 +28,10 @@ AMapResetPoint::AMapResetPoint()
 	InteractionPivot->SetRelativeLocation(FVector(30.f, 30.f, 10.f));
 	InteractionPivot->SetupAttachment(Root);
 
-	RespawnPoint = CreateDefaultSubobject<USceneComponent>(TEXT("RespawnPoint"));
+	RespawnPoint = CreateDefaultSubobject<UArrowComponent>(TEXT("RespawnPoint"));
 	RespawnPoint->SetupAttachment(Root);
+	RespawnPoint->ArrowSize = 3.0f;
+	RespawnPoint->SetRelativeLocation(FVector(0.f, 0.f, 10.f));
 }
 
 void AMapResetPoint::BeginPlay()
