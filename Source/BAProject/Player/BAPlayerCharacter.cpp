@@ -136,6 +136,7 @@ void ABAPlayerCharacter::BeginPlay()
 	InitializeFromTable();
 	SyncFreeStrafeFacingMode();
 	SetActiveGaitAndSpeed(EMovementState::Run);
+	ResolveInitialGroundedMovementMode();
 
 	if (StatComponent)
 	{

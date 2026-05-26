@@ -86,6 +86,10 @@ public:
 	// NextComboTransitionTid와 NextAttackMontage를 설정하는 함수
 	void SetNextCombo(EActionCommand InActionCommand);
 	void OnNextComboCheck();
+
+	// 스킬 컴포넌트에서 콤보 구성을 오버라이드 하기 위한 함수
+	void OverrideComboTransition(int32 InNowComboTid, EActionCommand ActionCommand, int32 NewNextComboTid);
+	void ResetComboTransitionOverrides();
 	
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void SetBAPlayerState(EBAPlayerState NewState);
@@ -374,14 +378,6 @@ protected:
 	void K2_OnLandingRecoveryEnded();
 	
 	// 공격 관련
-	// 첫 약공격 콤보 전이 TID
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	int32 FirstLComboTransitionTid = 71001;
-	
-	// 첫 강공격 콤보 전이 TID
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	int32 FirstRComboTransitionTid = 72001;
-	
 	const float WeaponRadius = 20.f; // 충돌 판정 시 검 두께
 	int32 NowComboTransitionTid = 0; // 다음 콤보 결정할 때 사용
 	int32 NextComboTransitionTid = 0; // 결정된 다음 콤보 저장
@@ -405,8 +401,10 @@ private:
 	// 공격 런타임
 	void ClearAttackRuntimeState();
 	bool IsActiveAttackMontagePlaying() const;
-
+	int64 MakeComboOverrideKey(int32 NowComboTid, EActionCommand ActionCommand) const;
+	
 	// 이동 런타임
+	void ResolveInitialGroundedMovementMode();
 	void TickMovementRuntime(float DeltaTime);
 	void UpdatePhaseFromInputAndGait(float DeltaTime);
 	void BeginMovementPhase(EPlayerMovementPhase NewPhase);
@@ -550,6 +548,7 @@ private:
 		EActionDirection HitDirection,
 		bool bGuarding,
 		bool bGuardBreak);
+	void ApplyGroundDamageReactionKnockback(const FVector& KnockbackDirection, float KnockbackStrength);
 	void PlayDamageReactionCameraShake(
 		EBADamageReactionType DamageReactionType,
 		bool bGuarding,
@@ -558,6 +557,11 @@ private:
 
 	UFUNCTION()
 	void HandleRespawnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	
+	// 스킬 컴포넌트에서 런타임에 커맨드를 오버라이드하기 위한 값
+	// 키: MakeComboOverrideKey(NowComboTransitionTid, InActionCommand), 값: NextComboTransitionTid
+	UPROPERTY(VisibleAnywhere)
+	TMap<int64, int32> ComboTransitionOverrides;
 
 	// 이동 설정
 	UPROPERTY(EditAnywhere, Category = "Movement", meta = (ShowOnlyInnerProperties))
@@ -652,9 +656,9 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
 	float GuardHitKnockbackStrength = 360.f;
 
-	// KnockDown 제외 피격/가드 넉백 기본 Z 속도
-	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback")
-	float DamageReactionKnockbackZ = 20.f;
+	// 일반 피격/가드 수평 넉백 유지 시간
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback", meta = (ClampMin = "0.0", Units = "s"))
+	float GroundDamageReactionKnockbackDuration = 0.12f;
 
 	// 일반 피격 방향별 리액션 몽타주
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")

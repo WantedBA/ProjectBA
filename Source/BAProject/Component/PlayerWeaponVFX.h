@@ -32,6 +32,12 @@ public:
 	void ActivateTrailNiagara();
 	void DeactivateTrailNiagara();
 	
+	// 트레일 위치 보정 함수
+	void SetTrailZOffset(float ZOffset);
+	
+	// 트레일 스케일 조정 함수
+	void SetTrailScale(float Scale);
+	
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Weapon VFX")
 	UNiagaraComponent* WeaponNiagaraComponent = nullptr;
