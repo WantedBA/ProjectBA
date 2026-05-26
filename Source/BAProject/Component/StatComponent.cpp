@@ -246,6 +246,27 @@ void UStatComponent::SetCurrentStamina(const float NewCurrentStamina)
 	RefreshStaminaRecoveryTick();
 }
 
+void UStatComponent::Heal()
+{
+	if (HealCount <= 0)
+	{
+		return;
+	}
+	
+	if (IsDead())
+	{
+		return;
+	}
+
+	float OldHP = CurrentHP;
+	CurrentHP = FMath::Clamp(CurrentHP + GetHealAmount(), 0.f, GetMaxHP());
+
+	if (OldHP != CurrentHP)
+	{
+		OnHPChanged.Broadcast(CurrentHP, MaxHP);
+	}
+}
+
 void UStatComponent::RefreshStaminaRecoveryTick()
 {
 	const bool bCanRecover =

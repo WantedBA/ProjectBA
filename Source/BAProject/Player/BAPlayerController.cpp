@@ -134,7 +134,7 @@ void ABAPlayerController::SetupInputComponent()
 		);
 	}
 	
-	if (ensureMsgf(HealAction, TEXT("WalkAction is not configured on %s"), *GetName()))
+	if (ensureMsgf(HealAction, TEXT("HealAction is not configured on %s"), *GetName()))
 	{
 		EnhancedInputComponent->BindAction(HealAction, ETriggerEvent::Triggered, this, &ABAPlayerController::Heal);
 	}

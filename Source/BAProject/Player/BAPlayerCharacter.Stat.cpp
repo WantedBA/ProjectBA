@@ -141,7 +141,30 @@ void ABAPlayerCharacter::ResetWeaponAttachment()
 
 void ABAPlayerCharacter::TryHeal()
 {
+	// 플레이어 상태값 검사
+	if (BAPlayerState != EBAPlayerState::None)
+	{
+		return;
+	}
 	
+	// 회복 가능 횟수 검사
+	if (StatComponent->GetHealCount() <= 0)
+	{
+		return;
+	}
+
+	// 현재 감소한 체력이 회복량보다 많은 지 검사
+	if (StatComponent->GetHealAmount() > StatComponent->GetMaxHP() - StatComponent->GetCurrentHP())
+	{
+		return;
+	}
+	
+	HealMontage
+}
+
+void ABAPlayerCharacter::OnHealAnimNotify()
+{
+	StatComponent->Heal();
 }
 
 void ABAPlayerCharacter::HandleRespawnMontageEnded(UAnimMontage* Montage, bool bInterrupted)

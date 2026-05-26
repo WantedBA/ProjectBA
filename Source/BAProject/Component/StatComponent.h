@@ -84,6 +84,10 @@ public:
 	FORCEINLINE float GetAttackSpeed() const { return AttackSpeed * AttackSpeedModifier; }
 	FORCEINLINE void SetAttackSpeed(const float NewAttackSpeed) { AttackSpeed = NewAttackSpeed; }
 	
+	FORCEINLINE float GetHealAmount() const { return HealAmount; }
+	
+	FORCEINLINE int32 GetHealCount() const { return HealCount; }
+	
 	// 스태미너를 지정량 소비하고 회복 Tick 상태를 갱신한다.
 	UFUNCTION(BlueprintCallable, Category = "Stat")
 	void ConsumeStamina(float ConsumeAmount);
@@ -118,6 +122,9 @@ public:
 
 	// 스태미너 현재값을 범위 안으로 보정하고 변경 이벤트를 발행한다.
 	void SetCurrentStamina(const float NewCurrentStamina);
+	
+	// 체력 회복 처리
+	void Heal();
 
 	FORCEINLINE float GetWalkSpeed() const { return WalkSpeed; }
 	FORCEINLINE float GetRunSpeed() const { return RunSpeed; }
@@ -138,6 +145,12 @@ protected:
 	float MaxHP;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Health")
 	float CurrentHP;
+	// 기본 힐량
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Health")
+	float HealAmount;
+	// 회복 가능 횟수
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Health")
+	int32 HealCount;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Stamina")
 	float MaxStamina;
