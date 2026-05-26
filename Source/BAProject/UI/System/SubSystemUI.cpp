@@ -2,9 +2,30 @@
 
 
 #include "UI/System/SubSystemUI.h"
+#include "UI/MainHUD.h"
+#include "UI/NotifyLayer.h"
+#include "UI/System/UISettings.h"
+#include "UI/DeathWidget.h"
+#include "UI/System/PopupBase.h"
 #include "StackElem.h"
 #include "LayerBase.h"
 #include "Blueprint/UserWidget.h"
+#include "Component/StatComponent.h"
+
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/Pawn.h"
+
+#include "Engine/Engine.h"
+#include "Engine/World.h"
+
+
+void USubSystemUI::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Super::Initialize(Collection);
+
+	// 월드 델리게이트에 함수 등록
+	FWorldDelegates::OnPostWorldInitialization.AddUObject(this, &USubSystemUI::HandleWorldInit);
+}
 
 void USubSystemUI::PushUI(ULayerBase* InWidget)
 {
@@ -12,6 +33,18 @@ void USubSystemUI::PushUI(ULayerBase* InWidget)
 	if (!InWidget)
 	{
 		return;
+	}
+
+	// Notify 저장
+	if (UNotifyLayer* Notify = Cast<UNotifyLayer>(InWidget))
+	{
+		CachedNotifyLayer = Notify;
+		UE_LOG(LogTemp, Warning, TEXT(">>> Success: CachedNotifyLayer is Set!"));
+	}
+
+	if (UMainHUD* HUD = Cast<UMainHUD>(InWidget))
+	{
+		CachedMainHUD = HUD;
 	}
 
 	// 뷰포트에 위젯 띄움
@@ -35,12 +68,10 @@ void USubSystemUI::PushUI(ULayerBase* InWidget)
 	{
 		InWidget->SetKeyboardFocus();
 	}
-
-
 	UE_LOG(LogTemp, Log, TEXT("UI Pushed! 현재 스택 개수: %d"), UIStack.Num());
 }
 
-ULayerBase* USubSystemUI::PushUIByClass(TSubclassOf<ULayerBase> InWidgetClass)
+ULayerBase* USubSystemUI::PushUIByClass(TSubclassOf<ULayerBase> InWidgetClass, UWorld* InWorld)
 {
 	// 유효 체크
 	if (!InWidgetClass)
@@ -49,9 +80,11 @@ ULayerBase* USubSystemUI::PushUIByClass(TSubclassOf<ULayerBase> InWidgetClass)
 		return nullptr;
 	}
 
+	UWorld* TargetWorld = InWorld ? InWorld : GetWorld();
+
 	// 위젯 생성
 	// GetWorld()를 통해 현재 월드에 위젯을 생성함
-	ULayerBase* NewWidget = CreateWidget<ULayerBase>(GetWorld(), InWidgetClass);
+	ULayerBase* NewWidget = CreateWidget<ULayerBase>(TargetWorld, InWidgetClass);
 
 	if (NewWidget)
 	{
@@ -107,10 +140,97 @@ void USubSystemUI::OnWidgetCloseAnimationFinished(ULayerBase* Widget)
 	}
 }
 
+void USubSystemUI::HandleWorldInit(UWorld* World, const UWorld::InitializationValues IValues)
+{
+	CleanupUI();
+
+	// 실제 플레이 시에만 실행
+	if (!World || World->IsGameWorld())
+	{
+		// 프로젝트 세팅에 등록된 설정값 가져오기
+		const UUISettings* Settings = GetDefault<UUISettings>();
+
+		if (Settings && Settings->DefaultNotifyLayerClass)
+			{
+				// 위젯 생성
+				if (!CachedNotifyLayer || !CachedNotifyLayer->IsInViewport())
+					{
+						PushUIByClass(Settings->DefaultNotifyLayerClass, World);
+					}
+			}
+
+		// 페이드 인 연출
+		if (CachedNotifyLayer)
+			{
+				FTimerHandle TimerHandle;
+				World->GetTimerManager().SetTimer(TimerHandle, [this, World]()
+					{
+						if (CachedNotifyLayer)
+						{
+							CachedNotifyLayer->PlayFadeEffect(true);
+							CachedNotifyLayer->ShowSplashMessageByTid(10001);
+						}
+
+						if (APlayerController* PC = World->GetFirstPlayerController())
+						{
+							if (APawn* Pawn = PC->GetPawn())
+							{
+								if (UStatComponent* Stat = Pawn->FindComponentByClass<UStatComponent>())
+								{
+									// 플레이어 사망 시 델리게이트 연결
+									Stat->OnDead.RemoveDynamic(this, &USubSystemUI::HandlePlayerDeath);
+									Stat->OnDead.AddDynamic(this, &USubSystemUI::HandlePlayerDeath);
+
+									UE_LOG(LogTemp, Warning, TEXT(">>> Success: Bound to Player Death Signal!"));
+									RefreshInputMode();
+								}
+							}
+						}
+					}, 0.1f, false);
+			}
+	}
+}
+
+void USubSystemUI::CleanupUI()
+{
+	ClearAllUI();
+
+	// 캐시 포인터 초기화
+	CachedMainHUD = nullptr;
+	CachedNotifyLayer = nullptr;
+
+	// 입력 모드 리셋
+	if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+	{
+		FInputModeGameOnly GameMode;
+		PC->SetInputMode(GameMode);
+	}
+}
+
+void USubSystemUI::HandlePlayerDeath()
+{
+	const UUISettings* Settings = GetDefault<UUISettings>();
+
+	if (Settings && Settings->DeathWidgetClass)
+	{
+		TSubclassOf<ULayerBase> TargetLayerClass = Settings->DeathWidgetClass;
+
+		// 팝업으로 사망 창 띄우기
+		if (TargetLayerClass)
+		{
+			PushUIByClass(TargetLayerClass);
+			UE_LOG(LogTemp, Warning, TEXT(">>> Player Died! Death Screen Pushed."));
+		}
+
+	}
+}
+
 void USubSystemUI::RefreshInputMode()
 {
 	// 현재 스택에 최상단 요소를 확인하여 팝업 유무 판별
 	bool bHasPopup = false;
+	ULayerBase* TopWidget = nullptr;
+
 
 	if (!UIStack.IsEmpty())
 	{
@@ -118,6 +238,7 @@ void USubSystemUI::RefreshInputMode()
 		if (TopElem && TopElem->GetStackType() == EStackElemType::Popup)
 		{
 			bHasPopup = true;
+			TopWidget = Cast<ULayerBase>(TopElem);
 		}
 	}
 
@@ -152,16 +273,23 @@ void USubSystemUI::RefreshInputMode()
 	{
 		if (bHasPopup)
 		{
-			// 팝업이 있다면 UI 전용 입력 모드로 변경후 커서 활성화
-			FInputModeUIOnly InputMode;
+			FInputModeGameAndUI InputMode;
+			if (TopWidget)
+			{
+				InputMode.SetWidgetToFocus(TopWidget->GetCachedWidget());
+			}
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+
 			PC->SetInputMode(InputMode);
 			PC->bShowMouseCursor = true;
+
+			PC->bEnableClickEvents = true;
+			PC->bEnableMouseOverEvents = true;
 		}
 		else
 		{
-			// 팝업이 없다면 마우스 커서 비활성화, 게임 조작 재활성화
-			FInputModeGameOnly InputMode;
-			PC->SetInputMode(InputMode);
+			FInputModeGameOnly GameMode;
+			PC->SetInputMode(GameMode);
 			PC->bShowMouseCursor = false;
 		}
 	}
@@ -186,4 +314,28 @@ bool USubSystemUI::HandleBackAction()
 	}
 
 	return false; // Popup이 없으면 아무것도 안함
+}
+
+void USubSystemUI::ClearAllUI()
+{
+	// 스택에 있는 모든 위젯을 화면에서 지우기
+	while (!UIStack.IsEmpty())
+	{
+		IStackElem* Elem = UIStack.Pop();
+		if (UUserWidget* Widget = Cast<UUserWidget>(Elem))
+		{
+			Widget->RemoveFromParent();
+		}
+	}
+
+	// 캐싱된 변수 초기화
+	CachedMainHUD = nullptr;
+	CachedNotifyLayer = nullptr;
+	if (GlobalBlurWidget)
+	{
+		GlobalBlurWidget->RemoveFromParent();
+		GlobalBlurWidget = nullptr;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT(">>> SubSystemUI: All UI Cleared for Level Transition."));
 }

@@ -12,7 +12,8 @@
 				"UMG",
 				"Engine",
 				"AIModule",
-				"Niagara"
+				"Niagara",
+				"DeveloperSettings"
 			]
 		},
 		{

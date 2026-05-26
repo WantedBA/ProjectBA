@@ -14,6 +14,9 @@ UCLASS()
 class BAPROJECT_API UTooltipWidget : public UBaseWidget
 {
 	GENERATED_BODY()
+
+protected:
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	
 protected:
 	// 스킬, 아이템 이름을 표시할 텍스트

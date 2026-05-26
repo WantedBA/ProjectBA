@@ -16,6 +16,9 @@ class BAPROJECT_API UStatusBar : public UUserWidget
 
 public:
 	UStatusBar(const FObjectInitializer& ObjectInitializer);
+
+	// 보간 없이 특정 수치로 게이지 조절하는 함수
+	void SetProgressImmediate(float Value);
 	
 protected:
 	UPROPERTY(meta = (BindWidget))
