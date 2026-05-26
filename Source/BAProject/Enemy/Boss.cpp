@@ -25,6 +25,7 @@
 #include "UI/System/SubSystemUI.h"
 #include "UI/MainHUD.h"
 #include "Component/StatComponent.h"
+#include "Player/BAPlayerCharacter.h"
 
 
 // Utility 패턴 선택 튜닝 상수 (밸런싱 시 한곳에서 조정)
@@ -413,6 +414,22 @@ void ABoss::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	bIsEnding = true;
 
+	// 플레이어 사망/리스폰 구독 해제 — 보스가 파괴돼도 콜백이 살아남는 일 방지
+	if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0))
+	{
+		if (ACharacter* PlayerCharacter = Cast<ACharacter>(PlayerPawn))
+		{
+			if (UStatComponent* PlayerStat = PlayerCharacter->FindComponentByClass<UStatComponent>())
+			{
+				PlayerStat->OnDead.RemoveDynamic(this, &ABoss::HandlePlayerDied);
+			}
+			if (ABAPlayerCharacter* BAPlayer = Cast<ABAPlayerCharacter>(PlayerCharacter))
+			{
+				BAPlayer->OnRespawned.RemoveDynamic(this, &ABoss::HandlePlayerRespawned);
+			}
+		}
+	}
+
 	GetWorldTimerManager().ClearTimer(ResetDelayHandle);
 	GetWorldTimerManager().ClearTimer(ComboTransitionHandle);
 	GetWorldTimerManager().ClearTimer(ChargingStunMinDurationHandle);
@@ -496,6 +513,19 @@ void ABoss::OnQuestActivated_Implementation(int32 tid)
 		AIC->EngageTarget(PlayerPawn);
 	}
 
+	if (ACharacter* PlayerCharacter = Cast<ACharacter>(PlayerPawn))
+	{
+		if (UStatComponent* PlayerStat = PlayerCharacter->FindComponentByClass<UStatComponent>())
+		{
+			PlayerStat->OnDead.AddUniqueDynamic(this, &ABoss::HandlePlayerDied);
+		}
+		// 리스폰 시 보스 FullReset
+		if (ABAPlayerCharacter* BAPlayer = Cast<ABAPlayerCharacter>(PlayerCharacter))
+		{
+			BAPlayer->OnRespawned.AddUniqueDynamic(this, &ABoss::HandlePlayerRespawned);
+		}
+	}
+
 	if (UBrainComponent* Brain = AIC->GetBrainComponent())
 	{
 		Brain->ResumeLogic(TEXT("WaitingForQuest"));
@@ -513,6 +543,21 @@ void ABoss::OnQuestActivated_Implementation(int32 tid)
 
 void ABoss::OnQuestDeactivated_Implementation(int32 tid)
 {
+	if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0))
+	{
+		if (ACharacter* PlayerCharacter = Cast<ACharacter>(PlayerPawn))
+		{
+			if (UStatComponent* PlayerStat = PlayerCharacter->FindComponentByClass<UStatComponent>())
+			{
+				PlayerStat->OnDead.RemoveDynamic(this, &ABoss::HandlePlayerDied);
+			}
+			if (ABAPlayerCharacter* BAPlayer = Cast<ABAPlayerCharacter>(PlayerCharacter))
+			{
+				BAPlayer->OnRespawned.RemoveDynamic(this, &ABoss::HandlePlayerRespawned);
+			}
+		}
+	}
+	
 	if (IsDead())
 		return;
 
@@ -554,6 +599,25 @@ void ABoss::PauseForReset()
 		GetWorldTimerManager().SetTimer(ResetDelayHandle, this, &ABoss::FullReset, DevResetDelay, false);
 	}
 #endif
+}
+
+void ABoss::HandlePlayerDied()
+{
+	if (IsDead() || bIsEnding)
+	{
+		return;
+	}
+	PauseForReset();
+}
+
+void ABoss::HandlePlayerRespawned()
+{
+	if (bIsEnding)
+	{
+		return;
+	}
+	// 보스 사망 후에도 호출될 수 있음 — FullReset 내부에서 CurrentState를 Idle로 직접 대입하므로 안전
+	FullReset();
 }
 
 void ABoss::FullReset()

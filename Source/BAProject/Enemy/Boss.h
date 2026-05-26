@@ -129,6 +129,12 @@ public:
 	// 플레이어 사망 시 즉시 호출 — AI 정지 (Dev 모드에서는 DevResetDelay 후 FullReset 자동 호출)
 	UFUNCTION(BlueprintCallable, Category = "Boss|Quest")
 	void PauseForReset();
+		
+	UFUNCTION()
+	void HandlePlayerDied();
+
+	UFUNCTION()
+	void HandlePlayerRespawned();
 
 	// HP·위치·전투 상태 완전 복구 — UI 확인 버튼 또는 Dev 타이머에서 호출
 	UFUNCTION(BlueprintCallable, Category = "Boss|Quest")

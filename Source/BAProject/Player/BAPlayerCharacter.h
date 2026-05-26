@@ -48,6 +48,9 @@ enum class EBAPlayerState : uint8
 	Dead
 };
 
+// 리스폰 완료 시 호출 — 보스 등 PrePlaced 적이 FullReset에 구독
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerRespawned);
+
 UCLASS()
 class BAPROJECT_API ABAPlayerCharacter : public ACharacterBase
 {
@@ -265,6 +268,10 @@ public:
 	/** 마지막 체크포인트에서 부활 */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void Respawn();
+
+	// Respawn() 완료 시 발화 — 보스 FullReset 트리거용
+	UPROPERTY(BlueprintAssignable, Category = "Combat")
+	FOnPlayerRespawned OnRespawned;
 
 protected:
 	// CharacterBase 훅

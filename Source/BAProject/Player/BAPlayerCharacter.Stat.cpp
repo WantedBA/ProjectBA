@@ -99,6 +99,9 @@ void ABAPlayerCharacter::Respawn()
 				QM->RespawnQuestZoneEnemies();
 			}
 
+			// 5. PrePlaced 적(보스 등)이 FullReset 할 수 있도록 신호
+			OnRespawned.Broadcast();
+
 			UE_LOG(LogTemp, Log, TEXT("Player Respawned at %s"), *RespawnLoc.ToString());
 		}
 	}
