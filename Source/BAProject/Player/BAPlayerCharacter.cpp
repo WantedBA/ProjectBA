@@ -1,8 +1,6 @@
 #include "Player/BAPlayerCharacter.h"
 
 #include "Camera/CameraComponent.h"
-#include "Player/BADamageCameraShake.h"
-#include "Player/BALandingCameraShake.h"
 #if !UE_BUILD_SHIPPING
 #include "Enemy/EnemyBase.h"
 #include "Component/StatComponent.h"
@@ -107,9 +105,6 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	SpringArm->bInheritRoll = false;
 	SpringArm->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
 	
-	// camera spring arm 충돌 활성화
-	SpringArm->bDoCollisionTest = true; 
-
 	// camera 설정
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
@@ -124,8 +119,7 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	MovementRuntime.CurrentMaxWalkSpeed = SpeedSettings.RunSpeed;
 	MovementRuntime.TargetMaxWalkSpeed = SpeedSettings.RunSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = MovementRuntime.CurrentMaxWalkSpeed;
-	DamageReactionCameraShakeClass = UBADamageCameraShake::StaticClass();
-	LandingRecoveryCameraShakeClass = UBALandingRecoveryCameraShake::StaticClass();
+	InitializeCameraDefaults();
 }
 
 // 데이터 초기화와 스탯 변경 이벤트 바인딩을 수행한다.
@@ -150,6 +144,7 @@ void ABAPlayerCharacter::BeginPlay()
 	// PlayerCharacter BeginPlay의 델리게이트 콜백 바인딩 진입점을 단일화한다.
 	BindActionCallbacks();
 	BindLockOnTargetCallbacks();
+	ApplyCameraCollisionSettings();
 	ConfigureLockOnCameraDefaults();
 	
 
@@ -305,6 +300,7 @@ void ABAPlayerCharacter::BindActionCallbacks()
 
 	BindGuardActionCallbacks();
 	BindDodgeActionCallbacks();
+	BindAttackCallbacks();
 }
 
 // 액션별 예외 처리는 가드/구르기 등 각 도메인 콜백에서 처리한다.

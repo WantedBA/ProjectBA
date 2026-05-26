@@ -6,12 +6,35 @@
 #include "Tables/MonsterRows.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Constants/BAProjectConstant.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/MeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "BrainComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
 #include "TargetComponent.h"
+
+namespace
+{
+	void IgnoreCameraChannelForEnemyBody(AEnemyBase& Enemy)
+	{
+		if (UCapsuleComponent* CapsuleComponent = Enemy.GetCapsuleComponent())
+		{
+			CapsuleComponent->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+		}
+
+		TArray<UMeshComponent*> MeshComponents;
+		Enemy.GetComponents<UMeshComponent>(MeshComponents);
+		for (UMeshComponent* MeshComponent : MeshComponents)
+		{
+			if (MeshComponent)
+			{
+				MeshComponent->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+			}
+		}
+	}
+}
 
 AEnemyBase::AEnemyBase()
 {
@@ -36,7 +59,7 @@ AEnemyBase::AEnemyBase()
 	AlertDuration = 3.0f;
 	bShowDebugRanges = true;
 
-	GetMesh()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	IgnoreCameraChannelForEnemyBody(*this);
 }
 
 void AEnemyBase::PostInitializeComponents()
@@ -49,6 +72,7 @@ void AEnemyBase::PostInitializeComponents()
 	}
 
 	OnAttackPerfectGuarded.AddUObject(this, &AEnemyBase::HandleAttackPerfectGuarded);
+	IgnoreCameraChannelForEnemyBody(*this);
 }
 
 void AEnemyBase::PossessedBy(AController* NewController)
