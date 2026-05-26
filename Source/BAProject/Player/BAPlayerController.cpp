@@ -134,6 +134,11 @@ void ABAPlayerController::SetupInputComponent()
 		);
 	}
 	
+	if (ensureMsgf(HealAction, TEXT("WalkAction is not configured on %s"), *GetName()))
+	{
+		EnhancedInputComponent->BindAction(HealAction, ETriggerEvent::Triggered, this, &ABAPlayerController::Heal);
+	}
+	
 	// 체크포인트(스킬트리 열기)
 	if (ensureMsgf(SkillTreeToggleAction, TEXT("SkillTreeToggleAction is not configured on %s"), *GetName()))
 	{
@@ -520,4 +525,12 @@ void ABAPlayerController::ToggleSkillTree()
 	}
 
 	SkillTreeWidget = Cast<USkillTreeWidget>(UISubsystem->PushUIByClass(SkillTreeWidgetClass));
+}
+
+void ABAPlayerController::Heal()
+{
+	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
+	{
+		PC->TryHeal();
+	}
 }

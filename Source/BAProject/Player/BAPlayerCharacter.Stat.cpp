@@ -139,6 +139,11 @@ void ABAPlayerCharacter::ResetWeaponAttachment()
 	bWeaponDroppedForDeath = false;
 }
 
+void ABAPlayerCharacter::TryHeal()
+{
+	
+}
+
 void ABAPlayerCharacter::HandleRespawnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	if (BAPlayerState == EBAPlayerState::Respawning)

@@ -269,6 +269,8 @@ public:
 
 	/** 사망 시 드롭된 무기를 다시 손에 부착 */
 	void ResetWeaponAttachment();
+	
+	void TryHeal();
 
 protected:
 	// CharacterBase 훅

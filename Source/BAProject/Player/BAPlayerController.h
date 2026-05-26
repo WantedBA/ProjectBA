@@ -59,6 +59,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> GuardAction;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> HealAction;
+	
+	
 // 체크포인트 인풋
 	// 체크포인트에서 활성화할 IMC
 	UPROPERTY(EditDefaultsOnly, Category = "Input|Checkpoint")
@@ -145,6 +149,9 @@ private:
 	
 	// 스킬트리 열기
 	void ToggleSkillTree();
+	
+	// 회복
+	void Heal();
 
 	bool bWalkToggleEnabled = false;
 	bool bSprintInputHeld = false;
