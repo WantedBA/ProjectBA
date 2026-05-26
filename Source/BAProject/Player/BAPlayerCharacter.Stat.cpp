@@ -60,6 +60,13 @@ void ABAPlayerCharacter::Respawn()
 			CharacterState = ECharacterState::Alive;
 			SetBAPlayerState(EBAPlayerState::Respawning);
 
+			// FreezeMontageAtFinalFrame(bPauseAnims=true)으로 고정된 메시 애니메이션 해제
+			// 이 플래그가 남아있으면 RespawnMontage가 재생돼도 프레임이 진행되지 않는다.
+			if (USkeletalMeshComponent* SkMesh = GetMesh())
+			{
+				SkMesh->bPauseAnims = false;
+			}
+
 			if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 			{
 				MoveComp->SetMovementMode(MOVE_Walking);
