@@ -41,3 +41,9 @@ namespace BossConfig
 {
 	constexpr float MinComboGapTime = 0.3f;
 }
+
+namespace CollisionChannel
+{
+	constexpr ECollisionChannel PlayerAttackTrace = ECC_GameTraceChannel1;
+	constexpr ECollisionChannel EnemyAttackTrace = ECC_GameTraceChannel2;
+}
