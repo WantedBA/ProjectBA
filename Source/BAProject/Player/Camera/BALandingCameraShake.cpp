@@ -1,4 +1,4 @@
-#include "Player/BALandingCameraShake.h"
+#include "Player/Camera/BALandingCameraShake.h"
 
 UBALandingRecoveryCameraShakePattern::UBALandingRecoveryCameraShakePattern(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

@@ -3,18 +3,10 @@
 #include "GameFramework/Character.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Engine/DamageEvents.h"
-#include "Enemy/EnemyBase.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
-#include "NiagaraComponent.h"
-#include "Kismet/GameplayStatics.h"
-#include "Camera/CameraShakeBase.h"
-#include "GameFramework/PlayerController.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/World.h"
-#include "TimerManager.h"
-#include "Instance/BATimeSubsystem.h"
-#include "Component/ActionComponent.h"
 #include "Enemy/Monster.h"
 
 /*
@@ -104,6 +96,8 @@ void UCombatComponent::ExecuteAttack(UAnimMontage* AttackMontage, float PlayRate
 		return;
 	}
 
+	ResetTargetHitRecords();
+
 	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
 	if (OwnerCharacter)
 	{
@@ -154,7 +148,6 @@ void UCombatComponent::CheckHitStart(float InRadius, float InDamage, FName InSta
 		PrevStartLocation = OwnerCharacter->GetMesh()->GetSocketLocation(StartSocketName);
 		PrevEndLocation = OwnerCharacter->GetMesh()->GetSocketLocation(EndSocketName);
 	}
-	HitActors.Empty();
 	
 	SetComponentTickEnabled(true);
 }
@@ -174,6 +167,8 @@ void UCombatComponent::SetAttackData(
 	float InLaunchHorizontalSpeed,
 	float InLaunchVerticalSpeed)
 {
+	ResetTargetHitRecords();
+
 	CurrentRadius = InRadius;
 	CurrentDamage = InDamage;
 	CurrentDamageReactionType = InDamageReactionType;
@@ -191,21 +186,9 @@ void UCombatComponent::SetAttackData(
 	}
 }
 
-void UCombatComponent::TriggerHitStop(float Duration)
+void UCombatComponent::SetMaxHitsPerTargetPerAttack(const int32 InMaxHits)
 {
-	UWorld* World = GetWorld();
-	if (World == nullptr)
-	{
-		return;
-	}
-
-	UBATimeSubsystem* TimeSubsystem = World->GetSubsystem<UBATimeSubsystem>();
-	if (TimeSubsystem == nullptr)
-	{
-		return;
-	}
-
-	TimeSubsystem->ApplyHitStop(Duration);
+	MaxHitsPerTargetPerAttack = FMath::Max(0, InMaxHits);
 }
 
 void UCombatComponent::ProcessHitCheck()
@@ -269,9 +252,9 @@ void UCombatComponent::ProcessHitCheck()
 		for (const FHitResult& Hit : OutHits)
 		{
 			AActor* Victim = Hit.GetActor();
-			if (Victim && !HitActors.Contains(Victim))
+			if (CanRegisterHit(Victim))
 			{
-				HitActors.Add(Victim);
+				RegisterTargetHit(Victim);
 				ApplyDamage(Victim, Hit);
 			}
 		}
@@ -320,6 +303,71 @@ void UCombatComponent::SpawnShockwave(FVector Location, float Scale)
 			true
 		);
 	}
+}
+
+void UCombatComponent::ResetTargetHitRecords()
+{
+	TargetHitRecords.Empty();
+}
+
+bool UCombatComponent::CanRegisterHit(AActor* Victim) const
+{
+	if (Victim == nullptr)
+	{
+		return false;
+	}
+
+	if (MaxHitsPerTargetPerAttack <= 0)
+	{
+		return true;
+	}
+
+	const FCombatTargetHitRecord* HitRecord = FindHitRecord(Victim);
+	return HitRecord == nullptr || HitRecord->HitCount < MaxHitsPerTargetPerAttack;
+}
+
+void UCombatComponent::RegisterTargetHit(AActor* Victim)
+{
+	if (Victim == nullptr || MaxHitsPerTargetPerAttack <= 0)
+	{
+		return;
+	}
+
+	if (FCombatTargetHitRecord* HitRecord = FindHitRecord(Victim))
+	{
+		++HitRecord->HitCount;
+		return;
+	}
+
+	FCombatTargetHitRecord& NewHitRecord = TargetHitRecords.AddDefaulted_GetRef();
+	NewHitRecord.Target = Victim;
+	NewHitRecord.HitCount = 1;
+}
+
+FCombatTargetHitRecord* UCombatComponent::FindHitRecord(AActor* Victim)
+{
+	if (Victim == nullptr)
+	{
+		return nullptr;
+	}
+
+	return TargetHitRecords.FindByPredicate([Victim](const FCombatTargetHitRecord& HitRecord)
+	{
+		return HitRecord.Target.Get() == Victim;
+	});
+}
+
+const FCombatTargetHitRecord* UCombatComponent::FindHitRecord(AActor* Victim) const
+{
+	if (Victim == nullptr)
+	{
+		return nullptr;
+	}
+
+	return TargetHitRecords.FindByPredicate([Victim](const FCombatTargetHitRecord& HitRecord)
+	{
+		return HitRecord.Target.Get() == Victim;
+	});
 }
 
 // CombatComponent는 공격자/피격자의 구체 타입에 치우친 전투 처리를 직접 수행하지 않는다.
@@ -373,7 +421,8 @@ void UCombatComponent::ApplyDamage(AActor* Victim, const FHitResult& HitResult)
 			&& VictimCharacter->IsPerfectGuardWindowActive();
 	}
 
-	Victim->TakeDamage(CurrentDamage, DamageEvent, Instigator, OwnerActor);
+	const float AppliedDamage = Victim->TakeDamage(CurrentDamage, DamageEvent, Instigator, OwnerActor);
+	OnDamageResolved.Broadcast(Victim, HitResult, AppliedDamage);
 
 	// 충격파 및 왜곡 발생
 	SpawnShockwave(HitResult.ImpactPoint, 1.0f);

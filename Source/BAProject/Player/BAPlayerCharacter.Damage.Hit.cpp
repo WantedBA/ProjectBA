@@ -5,7 +5,6 @@
 #include "Component/ActionComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/PlayerController.h"
 #include "GameFramework/RootMotionSource.h"
 #include "TimerManager.h"
 
@@ -152,6 +151,7 @@ bool ABAPlayerCharacter::ShouldPlayGuardBreakReaction() const
 void ABAPlayerCharacter::CancelCurrentActionForDamageReaction()
 {
 	SetGuardWindowActive(false);
+	ClearAttackHitStop(true);
 
 	// 전력질주 중 피격 시 전력질주가 끊겨야 함
 	if (MovementRuntime.DesiredGait == EMovementState::Sprint)
@@ -490,24 +490,6 @@ void ABAPlayerCharacter::HandleKnockDownReactionMontageBlendingOut(
 	GetWorldTimerManager().ClearTimer(DamageReactionTimerHandle);
 	GetWorldTimerManager().ClearTimer(KnockDownRecoveryStartTimerHandle);
 	FinishDamageReaction(PlaybackId);
-}
-
-void ABAPlayerCharacter::PlayDamageReactionCameraShake(
-	const EBADamageReactionType /*DamageReactionType*/,
-	const bool /*bGuarding*/,
-	const bool /*bGuardBreak*/)
-{
-	if (!DamageReactionCameraShakeClass || DamageReactionCameraShakeScale <= 0.f)
-	{
-		return;
-	}
-
-	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
-	{
-		PlayerController->ClientStartCameraShake(
-			DamageReactionCameraShakeClass,
-			DamageReactionCameraShakeScale);
-	}
 }
 
 void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)

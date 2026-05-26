@@ -33,6 +33,7 @@ protected:
 
 	// 위젯 생성 시 몬스터와 연결
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
 public:
 	// 락온 대상 HP 갱신
@@ -55,6 +56,9 @@ public:
 	void CancelHideTimer();
 
 private:
+	void BindToTarget(AActor* TargetActor);
+	void UnbindCurrentTarget();
+
 	// 위젯 숨기기 함수
 	void HideWidget();
 	
