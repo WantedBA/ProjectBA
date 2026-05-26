@@ -629,7 +629,6 @@ private:
 		bool bGuarding,
 		bool bGuardBreak) const;
 	void PlayPerfectGuardForceFeedback() const;
-	void PlayGuardStartForceFeedback() const;
 	void PlayDeathForceFeedback() const;
 	void PlayConfiguredForceFeedback(float Intensity, float Duration) const;
 	float ResolveForceFeedbackIntensity(float Intensity) const;
@@ -875,7 +874,7 @@ private:
 
 	// 기존 피드백별 세기 값에 곱하는 전체 체감 보정값.
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0"))
-	float ForceFeedbackIntensityMultiplier = 1.75f;
+	float ForceFeedbackIntensityMultiplier = 7.f;
 
 	// Xbox/XInput 기준 왼쪽 저주파 모터. 그립/핸들 쪽 둔탁한 진동 체감에 가깝다.
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback|XInput", meta = (ClampMin = "0.0", ClampMax = "2.0"))
@@ -886,46 +885,40 @@ private:
 	float XInputRightMotorScale = 0.9f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float HitReactForceFeedbackIntensity = 0.45f;
+	float HitReactForceFeedbackIntensity = 0.35f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
-	float HitReactForceFeedbackDuration = 0.14f;
+	float HitReactForceFeedbackDuration = 0.2f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float LargeHitReactForceFeedbackIntensity = 0.65f;
+	float LargeHitReactForceFeedbackIntensity = 0.5f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
-	float LargeHitReactForceFeedbackDuration = 0.18f;
+	float LargeHitReactForceFeedbackDuration = 0.25f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float KnockDownForceFeedbackIntensity = 0.85f;
+	float KnockDownForceFeedbackIntensity = 0.8f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
-	float KnockDownForceFeedbackDuration = 0.24f;
+	float KnockDownForceFeedbackDuration = 0.3f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float GuardHitForceFeedbackIntensity = 0.45f;
+	float GuardHitForceFeedbackIntensity = 0.35f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
 	float GuardHitForceFeedbackDuration = 0.12f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float GuardStartForceFeedbackIntensity = 0.25f;
+	float PerfectGuardForceFeedbackIntensity = 0.8f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
-	float GuardStartForceFeedbackDuration = 0.08f;
-
-	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float PerfectGuardForceFeedbackIntensity = 0.7f;
-
-	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
-	float PerfectGuardForceFeedbackDuration = 0.14f;
+	float PerfectGuardForceFeedbackDuration = 0.2f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float GuardBreakForceFeedbackIntensity = 0.85f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
-	float GuardBreakForceFeedbackDuration = 0.22f;
+	float GuardBreakForceFeedbackDuration = 0.4f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float DeathForceFeedbackIntensity = 0.9f;

@@ -110,11 +110,6 @@ void ABAPlayerCharacter::PlayPerfectGuardForceFeedback() const
 	PlayConfiguredForceFeedback(PerfectGuardForceFeedbackIntensity, PerfectGuardForceFeedbackDuration);
 }
 
-void ABAPlayerCharacter::PlayGuardStartForceFeedback() const
-{
-	PlayConfiguredForceFeedback(GuardStartForceFeedbackIntensity, GuardStartForceFeedbackDuration);
-}
-
 void ABAPlayerCharacter::PlayDeathForceFeedback() const
 {
 	PlayConfiguredForceFeedback(DeathForceFeedbackIntensity, DeathForceFeedbackDuration);
