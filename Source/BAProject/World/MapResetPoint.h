@@ -7,6 +7,7 @@
 
 class USceneComponent;
 class UStaticMeshComponent;
+class UArrowComponent;
 class USkillTreeWidget;
 
 UCLASS()
@@ -33,7 +34,7 @@ protected:
 	TObjectPtr<USceneComponent> InteractionPivot;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<USceneComponent> RespawnPoint;
+	TObjectPtr<UArrowComponent> RespawnPoint;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
