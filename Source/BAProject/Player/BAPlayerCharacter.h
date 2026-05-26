@@ -631,6 +631,9 @@ private:
 	void PlayPerfectGuardForceFeedback() const;
 	void PlayGuardStartForceFeedback() const;
 	void PlayConfiguredForceFeedback(float Intensity, float Duration) const;
+	void PlayXInputForceFeedback(float Intensity, float Duration) const;
+	void StopXInputForceFeedback() const;
+	void StopXInputForceFeedback(int32 PlaybackId) const;
 	void PlayDeathCameraShake();
 	void PlayConfiguredCameraShake(TSubclassOf<UCameraShakeBase> ShakeClass, float Scale) const;
 	float ResolveDamageReactionCameraShakeScale(
@@ -861,6 +864,13 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback")
 	bool bEnableGamepadForceFeedback = true;
 
+	// PC Xbox 컨트롤러용 XInput 럼블 fallback. 표준 Force Feedback이 무반응일 때도 Xbox 패드는 이 경로로 울린다.
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback")
+	bool bEnableXInputForceFeedbackFallback = true;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0", ClampMax = "3"))
+	int32 XInputForceFeedbackUserIndex = 0;
+
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float HitReactForceFeedbackIntensity = 0.3f;
 
@@ -1017,6 +1027,8 @@ private:
 	int32 RecoveryEscapeDodgeWindowCount = 0;
 	int32 RecoveryEscapeGuardWindowCount = 0;
 	int32 RecoveryEscapeMoveWindowCount = 0;
+	mutable FTimerHandle XInputForceFeedbackStopTimerHandle;
+	mutable int32 XInputForceFeedbackPlaybackId = 0;
 	UPROPERTY(VisibleAnywhere) bool bIsBeforeCharge = false;
 	UPROPERTY(VisibleAnywhere) bool bIsCharging = false;
 	UPROPERTY(VisibleAnywhere) bool bIsChargeInputCompleted = false;
