@@ -266,6 +266,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void Respawn();
 
+	/** 사망 시 드롭된 무기를 다시 손에 부착 */
+	void ResetWeaponAttachment();
+
 protected:
 	// CharacterBase 훅
 	virtual void PostInitializeComponents() override;
