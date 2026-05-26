@@ -132,18 +132,6 @@ void ABAPlayerCharacter::TryAttack(EActionCommand InActionCommand)
 		return;
 	}
 
-	if (IsDamageReactionRecoveryEscapeState())
-	{
-		TryStartAttackFromRecoveryEscape(InActionCommand);
-		return;
-	}
-
-	if (IsAttackRecoveryEscapeState())
-	{
-		TryStartAttackFromRecoveryEscape(InActionCommand);
-		return;
-	}
-
 	if (!CanAcceptActionInput())
 	{
 		return;

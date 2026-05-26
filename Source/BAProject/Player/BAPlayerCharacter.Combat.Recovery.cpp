@@ -10,10 +10,6 @@
 void ABAPlayerCharacter::OpenRecoveryEscapeWindow(const FBAPlayerRecoveryEscapeWindowSettings& Settings)
 {
 	++RecoveryEscapeWindowCount;
-	if (Settings.bAllowAttack)
-	{
-		++RecoveryEscapeAttackWindowCount;
-	}
 	if (Settings.bAllowDodge)
 	{
 		++RecoveryEscapeDodgeWindowCount;
@@ -31,10 +27,6 @@ void ABAPlayerCharacter::OpenRecoveryEscapeWindow(const FBAPlayerRecoveryEscapeW
 void ABAPlayerCharacter::CloseRecoveryEscapeWindow(const FBAPlayerRecoveryEscapeWindowSettings& Settings)
 {
 	RecoveryEscapeWindowCount = FMath::Max(0, RecoveryEscapeWindowCount - 1);
-	if (Settings.bAllowAttack)
-	{
-		RecoveryEscapeAttackWindowCount = FMath::Max(0, RecoveryEscapeAttackWindowCount - 1);
-	}
 	if (Settings.bAllowDodge)
 	{
 		RecoveryEscapeDodgeWindowCount = FMath::Max(0, RecoveryEscapeDodgeWindowCount - 1);
@@ -70,7 +62,8 @@ bool ABAPlayerCharacter::TryStartRecoveryEscapeAction(
 
 	if (Command == EActionCommand::LightAttack || Command == EActionCommand::HeavyAttack)
 	{
-		return TryStartAttackFromRecoveryEscape(Command);
+		// 공격 간 전환은 AN_PlayerNextComboCheck Notify에서만 실행한다.
+		return false;
 	}
 
 	if (Command == EActionCommand::Dodge)
@@ -139,45 +132,6 @@ bool ABAPlayerCharacter::TryStartRecoveryEscapeMove(const FVector2D& MoveInput)
 	return true;
 }
 
-bool ABAPlayerCharacter::TryStartAttackFromRecoveryEscape(const EActionCommand Command)
-{
-	if (!CanUseRecoveryEscapeAttack())
-	{
-		return false;
-	}
-
-	if (IsAttackRecoveryEscapeState())
-	{
-		SetNextCombo(Command);
-		if (!NextAttackMontage)
-		{
-			return false;
-		}
-
-		FaceMoveInputDirection();
-		ExitAttackRecoveryForEscape(true);
-		StartAttack(NextAttackMontage);
-		return true;
-	}
-
-	if (IsDamageReactionRecoveryEscapeState())
-	{
-		NowComboTransitionTid = 0;
-		SetNextCombo(Command);
-		if (!NextAttackMontage)
-		{
-			return false;
-		}
-
-		FaceMoveInputDirection();
-		ExitDamageReactionRecoveryForEscape();
-		StartAttack(NextAttackMontage);
-		return true;
-	}
-
-	return false;
-}
-
 bool ABAPlayerCharacter::IsAttackRecoveryEscapeState() const
 {
 	return BAPlayerState == EBAPlayerState::Attacking && ActiveAttackMontage != nullptr;
@@ -188,13 +142,6 @@ bool ABAPlayerCharacter::IsDamageReactionRecoveryEscapeState() const
 	return BAPlayerState == EBAPlayerState::HitReacting
 		&& (DamageReactionState == EPlayerDamageReactionState::HitReact
 			|| DamageReactionState == EPlayerDamageReactionState::LargeHitReact);
-}
-
-bool ABAPlayerCharacter::CanUseRecoveryEscapeAttack() const
-{
-	return IsRecoveryEscapeRequiredForCurrentState()
-		&& IsRecoveryEscapeWindowOpen()
-		&& RecoveryEscapeAttackWindowCount > 0;
 }
 
 bool ABAPlayerCharacter::CanUseRecoveryEscapeDodge() const
@@ -221,7 +168,6 @@ bool ABAPlayerCharacter::CanUseRecoveryEscapeMove() const
 void ABAPlayerCharacter::ClearRecoveryEscapeWindow()
 {
 	RecoveryEscapeWindowCount = 0;
-	RecoveryEscapeAttackWindowCount = 0;
 	RecoveryEscapeDodgeWindowCount = 0;
 	RecoveryEscapeGuardWindowCount = 0;
 	RecoveryEscapeMoveWindowCount = 0;

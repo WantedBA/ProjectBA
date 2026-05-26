@@ -62,9 +62,6 @@ struct FBAPlayerRecoveryEscapeWindowSettings
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery")
-	bool bAllowAttack = true;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery")
 	bool bAllowDodge = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery")

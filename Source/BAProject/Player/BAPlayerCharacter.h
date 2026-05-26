@@ -443,7 +443,6 @@ private:
 	void StartAttackHitStop();
 	void FinishAttackHitStop(int32 PlaybackId);
 	void ClearAttackHitStop(bool bResumePausedMontage);
-	bool TryStartAttackFromRecoveryEscape(EActionCommand Command);
 
 	// 이동 런타임
 	void ResolveInitialGroundedMovementMode();
@@ -612,7 +611,6 @@ private:
 	// 공격/피격 후딜 탈출
 	bool IsAttackRecoveryEscapeState() const;
 	bool IsDamageReactionRecoveryEscapeState() const;
-	bool CanUseRecoveryEscapeAttack() const;
 	bool CanUseRecoveryEscapeDodge() const;
 	bool CanUseRecoveryEscapeGuard() const;
 	bool CanUseRecoveryEscapeMove() const;
@@ -924,7 +922,6 @@ private:
 	EActionDirection KnockDownGetUpQueuedDodgeDirection = EActionDirection::Any;
 	EActionDirection KnockDownGetUpHeldDodgeDirection = EActionDirection::Any;
 	int32 RecoveryEscapeWindowCount = 0;
-	int32 RecoveryEscapeAttackWindowCount = 0;
 	int32 RecoveryEscapeDodgeWindowCount = 0;
 	int32 RecoveryEscapeGuardWindowCount = 0;
 	int32 RecoveryEscapeMoveWindowCount = 0;
