@@ -15,6 +15,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Instance/QuestManageSubsystem.h"
 #include "NiagaraFunctionLibrary.h"
@@ -89,6 +90,25 @@ void ABoss::PossessedBy(AController* NewController)
 void ABoss::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// 디졸브 진행 — DeadMontage 종료 후 OnDeathMontageEnded에서 활성화됨
+	if (bIsDissolving)
+	{
+		DissolveElapsed += DeltaTime;
+		const float Alpha = FMath::Clamp(DissolveElapsed / DissolveDuration, 0.f, 1.f);
+		for (UMaterialInstanceDynamic* Mat : DynamicDissolveMaterials)
+		{
+			if (Mat)
+			{
+				Mat->SetScalarParameterValue(DissolveParamName, Alpha);
+			}
+		}
+		if (Alpha >= 1.f)
+		{
+			bIsDissolving = false;
+			SetActorHiddenInGame(true);
+		}
+	}
 
 	if (bIsEnding)
 	{
@@ -837,6 +857,17 @@ bool ABoss::ExecuteBossPattern(int32 PatternTid)
 	}
 
 	return true;
+}
+
+void ABoss::StartBossDissolve()
+{
+	if (bIsDissolving)
+	{
+		return;  // 중복 호출 방지
+	}
+	OnStartDissolve();  // EnemyBase: 머티리얼을 DissolveMaterialsInput으로 교체하고 DynamicDissolveMaterials 채움
+	bIsDissolving = true;
+	DissolveElapsed = 0.f;
 }
 
 void ABoss::OnPatternMontageEnded(UAnimMontage* Montage, bool bInterrupted)
