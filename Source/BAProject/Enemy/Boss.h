@@ -192,6 +192,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Quest")
 	int32 ActiveQuestTid = 0;
 
+	// FullReset 이후 재교전에 사용 — OnQuestActivated에서 저장하며 절대 지워지지 않음
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Quest")
+	int32 LastBossQuestTid = 0;
+
 	// Dev 전용: true면 PauseForReset 호출 후 DevResetDelay초 뒤 자동으로 FullReset 호출
 	UPROPERTY(EditAnywhere, Category = "Boss|Quest|Dev")
 	bool bDevAutoReset = true;

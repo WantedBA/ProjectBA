@@ -10,6 +10,7 @@
 #include "DrawDebugHelpers.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "BrainComponent.h"
+#include "BehaviorTree/BehaviorTreeComponent.h"
 #include "AI/EnemyAIController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -61,15 +62,20 @@ void ABoss::BeginPlay()
 		WeaponVFX->SetTrailNiagaraAsset(WeaponTrailAsset);
 	}
 
-
 	if (MonsterTid != 0)
 	{
 		InitializeFromTable(MonsterTid);
 	}
 
 	// 보스는 기본적으로 슈퍼아머 — 피격당해도 공격·추격이 끊기지 않는다.
-	// (103·104 차징 중 그로기 같은 특수 상황에서만 SetSuperArmor(false)로 일시 해제 예정)
 	SetSuperArmor(true);
+
+	// 퀘스트 활성화 여부와 무관하게 항상 리스폰 신호를 수신해야 하므로 BeginPlay에서 바인딩.
+	// OnQuestActivated에도 AddUnique 로 중복 방지되어 있으므로 이중 등록 걱정 없음.
+	if (ABAPlayerCharacter* BAPlayer = Cast<ABAPlayerCharacter>(UGameplayStatics::GetPlayerPawn(this, 0)))
+	{
+		BAPlayer->OnRespawned.AddUniqueDynamic(this, &ABoss::HandlePlayerRespawned);
+	}
 }
 
 void ABoss::PossessedBy(AController* NewController)
@@ -502,6 +508,7 @@ void ABoss::OnQuestActivated_Implementation(int32 tid)
 		return;
 
 	ActiveQuestTid = tid;
+	LastBossQuestTid = tid;
 
 	AEnemyAIController* AIC = Cast<AEnemyAIController>(GetController());
 	if (AIC == nullptr)
@@ -526,9 +533,18 @@ void ABoss::OnQuestActivated_Implementation(int32 tid)
 		}
 	}
 
+	// PossessedBy → PauseLogic(paused 상태): ResumeLogic으로 재개
+	// FullReset   → StopTree  (stopped 상태): RestartTree로 재시작
 	if (UBrainComponent* Brain = AIC->GetBrainComponent())
 	{
-		Brain->ResumeLogic(TEXT("WaitingForQuest"));
+		if (Brain->IsPaused())
+		{
+			Brain->ResumeLogic(TEXT("WaitingForQuest"));
+		}
+		else if (UBehaviorTreeComponent* BTComp = Cast<UBehaviorTreeComponent>(Brain))
+		{
+			BTComp->RestartTree();
+		}
 	}
 
 	// UI 체력바 띄우기
@@ -551,10 +567,10 @@ void ABoss::OnQuestDeactivated_Implementation(int32 tid)
 			{
 				PlayerStat->OnDead.RemoveDynamic(this, &ABoss::HandlePlayerDied);
 			}
-			if (ABAPlayerCharacter* BAPlayer = Cast<ABAPlayerCharacter>(PlayerCharacter))
-			{
-				BAPlayer->OnRespawned.RemoveDynamic(this, &ABoss::HandlePlayerRespawned);
-			}
+			// OnRespawned은 여기서 제거하지 않는다.
+			// ResetActiveQuests() → OnQuestDeactivated → OnRespawned 제거 후
+			// OnRespawned.Broadcast() 가 호출되면 FullReset 이 수신되지 않기 때문.
+			// 바인딩은 EndPlay 에서만 해제한다.
 		}
 	}
 	
@@ -583,13 +599,14 @@ void ABoss::PauseForReset()
 		AnimInst->Montage_Stop(0.2f);
 	}
 
-	// AI 즉시 정지
+	// AI 즉시 정지 — StopTree(Forced)로 진행 중인 BTTask(ExecuteBossPattern 등) AbortTask 호출 후
+	// CleanupDelegate까지 동기 처리. PauseLogic은 FinishLatentTask 결과를 삼켜 태스크가 InProgress로 남음.
 	if (AAIController* AIC = Cast<AAIController>(GetController()))
 	{
 		AIC->StopMovement();
-		if (UBrainComponent* Brain = AIC->GetBrainComponent())
+		if (UBehaviorTreeComponent* BTComp = Cast<UBehaviorTreeComponent>(AIC->GetBrainComponent()))
 		{
-			Brain->PauseLogic(TEXT("WaitingForReset"));
+			BTComp->StopTree(EBTStopMode::Forced);
 		}
 	}
 
@@ -613,15 +630,76 @@ void ABoss::HandlePlayerDied()
 void ABoss::HandlePlayerRespawned()
 {
 	if (bIsEnding)
-	{
 		return;
-	}
-	// 보스 사망 후에도 호출될 수 있음 — FullReset 내부에서 CurrentState를 Idle로 직접 대입하므로 안전
+
+	// 보스가 실제로 사망해 디졸브 중이면 리셋하지 않는다 (플레이어 클리어 후 다른 이유로 리스폰된 경우).
+	if (bIsDissolving)
+		return;
+
 	FullReset();
+
+	APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(this, 0);
+	if (!PlayerPawn)
+		return;
+
+	// 퀘스트 없이 테스트 중(bStartPausedForQuest=false)이거나 퀘스트가 활성된 이력이 있으면 재교전.
+	// bStartPausedForQuest=true인데 퀘스트를 한 번도 밟지 않은 경우는 계속 대기 유지.
+	const bool bShouldReengage = (LastBossQuestTid > 0) || (!bStartPausedForQuest);
+	if (!bShouldReengage)
+		return;
+
+	// 퀘스트 모드: 컨텍스트 복구
+	if (LastBossQuestTid > 0)
+	{
+		ActiveQuestTid = LastBossQuestTid;
+
+		// 플레이어 사망 델리게이트 재등록 (FullReset → AbortQuest → OnQuestDeactivated에서 해제됨)
+		if (ACharacter* PlayerChar = Cast<ACharacter>(PlayerPawn))
+		{
+			if (UStatComponent* PlayerStat = PlayerChar->FindComponentByClass<UStatComponent>())
+			{
+				PlayerStat->OnDead.AddUniqueDynamic(this, &ABoss::HandlePlayerDied);
+			}
+		}
+	}
+
+	if (AEnemyAIController* AIC = Cast<AEnemyAIController>(GetController()))
+	{
+		AIC->EngageTarget(PlayerPawn);
+		// StopTree로 정지된 BT를 루트부터 새로 시작
+		if (UBehaviorTreeComponent* BTComp = Cast<UBehaviorTreeComponent>(AIC->GetBrainComponent()))
+		{
+			BTComp->RestartTree();
+		}
+	}
+
+	// 보스 HP 바 재표시 (퀘스트 모드만 — 테스트 모드는 HUD 불필요)
+	if (LastBossQuestTid > 0 && !CachedBossName.IsEmpty() && StatComponent)
+	{
+		if (USubSystemUI* UISub = GetGameInstance()->GetSubsystem<USubSystemUI>())
+		{
+			if (UMainHUD* HUD = UISub->GetMainHUD())
+			{
+				HUD->InitBossStatus(CachedBossName, StatComponent->GetCurrentHP(), StatComponent->GetMaxHP());
+			}
+		}
+	}
 }
 
 void ABoss::FullReset()
 {
+	// bDevAutoReset 타이머가 남아있으면 즉시 취소 (Retry 먼저 처리된 경우 중복 리셋 방지)
+	GetWorldTimerManager().ClearTimer(ResetDelayHandle);
+
+	// PauseForReset이 이미 StopTree 했더라도 직접 호출(bDevAutoReset 등) 경로에서 보호
+	if (AAIController* AIC = Cast<AAIController>(GetController()))
+	{
+		if (UBehaviorTreeComponent* BTComp = Cast<UBehaviorTreeComponent>(AIC->GetBrainComponent()))
+		{
+			BTComp->StopTree(EBTStopMode::Forced);
+		}
+	}
+
 	// 퀘스트 중단 — 트리거 ReArm + 런타임 소환 몬스터 Destroy (보스 자신은 PrePlacedMonsters라 제외됨)
 	int32 TidToAbort = ActiveQuestTid;
 	ActiveQuestTid = 0;
@@ -670,14 +748,7 @@ void ABoss::FullReset()
 	GetWorldTimerManager().ClearTimer(ChargingStunMinDurationHandle);
 	SetSuperArmor(true);
 
-	// AI를 퀘스트 대기 상태로 재전환 — 다음 TriggerStart까지 정지 유지
-	if (AAIController* AIC = Cast<AAIController>(GetController()))
-	{
-		if (UBrainComponent* Brain = AIC->GetBrainComponent())
-		{
-			Brain->PauseLogic(TEXT("WaitingForQuest"));
-		}
-	}
+	// BT는 StopTree(Forced)로 이미 정지됨. HandlePlayerRespawned/OnQuestActivated에서 RestartTree로 재개.
 }
 
 float ABoss::GetPatternIdealRange(int32 PatternTid) const
