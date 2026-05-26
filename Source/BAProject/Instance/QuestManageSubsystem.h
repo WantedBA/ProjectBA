@@ -39,6 +39,7 @@ public:
 
     void RegisterTrigger(int32 QuestTid, AQuestZoneActor* Trigger);
     void AbortQuest(int32 QuestTid);
+    void ResetActiveQuests();
 
     void ClearQuestMonsters(int32 QuestTid); // 모든 몬스터 제거
     void RefreshQuestMonsters(int32 QuestTid, const TArray<FTransform>& SpawnTransforms, TSubclassOf<AMonster> MonsterClass); // 몬스터 재 생성

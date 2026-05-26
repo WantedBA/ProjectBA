@@ -6,6 +6,7 @@
 #include "SaveGame/SaveGameManager.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "Constants/BAProjectConstant.h"
 
 // HP 변경을 UserDataSubsystem에 전달해 UI/HUD가 최신 체력 값을 보게 한다.
 void ABAPlayerCharacter::OnHealthChanged(float CurrentHP, float MaxHP)
@@ -53,10 +54,18 @@ void ABAPlayerCharacter::Respawn()
 			// 2. 상태 초기화
 			ResetLandingRecovery();
 			ClearFallDamageSuppression();
+			ResetWeaponAttachment(); // 무기 부착
 			bFallTrackingActive = false;
 			LastFallDistance = 0.f;
 			CharacterState = ECharacterState::Alive;
 			SetBAPlayerState(EBAPlayerState::Respawning);
+
+			// FreezeMontageAtFinalFrame(bPauseAnims=true)으로 고정된 메시 애니메이션 해제
+			// 이 플래그가 남아있으면 RespawnMontage가 재생돼도 프레임이 진행되지 않는다.
+			if (USkeletalMeshComponent* SkMesh = GetMesh())
+			{
+				SkMesh->bPauseAnims = false;
+			}
 
 			if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 			{
@@ -96,12 +105,48 @@ void ABAPlayerCharacter::Respawn()
 			// 4. 적들 리스폰
 			if (UQuestManageSubsystem* QM = GI->GetSubsystem<UQuestManageSubsystem>())
 			{
+				QM->ResetActiveQuests();
 				QM->RespawnQuestZoneEnemies();
 			}
+
+			// 5. PrePlaced 적(보스 등)이 FullReset 할 수 있도록 신호
+			OnRespawned.Broadcast();
 
 			UE_LOG(LogTemp, Log, TEXT("Player Respawned at %s"), *RespawnLoc.ToString());
 		}
 	}
+}
+
+void ABAPlayerCharacter::ResetWeaponAttachment()
+{
+	if (WeaponMeshComponent == nullptr || GetMesh() == nullptr)
+	{
+		return;
+	}
+
+	// 물리 시뮬레이션 즉시 중단
+	WeaponMeshComponent->SetSimulatePhysics(false);
+	WeaponMeshComponent->PutRigidBodyToSleep();
+	
+	// 충돌 설정 초기화 (NoCollision 명시)
+	WeaponMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	WeaponMeshComponent->SetCollisionProfileName(TEXT("NoCollision"));
+
+	// 소켓에 다시 부착 ( SnapToTargetIncludingScale 사용 )
+	const FName TargetSocket = FName(SocketName::RightHandTargetSocketName);
+	if (GetMesh()->DoesSocketExist(TargetSocket))
+	{
+		WeaponMeshComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TargetSocket);
+		// 부착 시 상대 변환값을 유지하도록 설정한 뒤, 저장해둔 기본값으로 초기화
+		WeaponMeshComponent->SetRelativeLocation(DefaultWeaponRelativeLocation);
+		WeaponMeshComponent->SetRelativeRotation(DefaultWeaponRelativeRotation);
+	}
+	//else
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("[BAPlayerCharacter] ResetWeaponAttachment: Socket %s not found on mesh."), *TargetSocket.ToString());
+	//}
+
+	bWeaponDroppedForDeath = false;
 }
 
 void ABAPlayerCharacter::HandleRespawnMontageEnded(UAnimMontage* Montage, bool bInterrupted)

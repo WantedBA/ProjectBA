@@ -3,8 +3,6 @@
 #include "Component/ActionComponent.h"
 #include "Component/StatComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/PlayerController.h"
-#include "Player/BALandingCameraShake.h"
 #include "TimerManager.h"
 
 /*
@@ -67,6 +65,26 @@ void ABAPlayerCharacter::Landed(const FHitResult& Hit)
 	}
 
 	EndFallTrackingFromLanding();
+}
+
+void ABAPlayerCharacter::ResolveInitialGroundedMovementMode()
+{
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (!MovementComponent || !MovementComponent->IsFalling())
+	{
+		return;
+	}
+
+	FFindFloorResult FloorResult;
+	MovementComponent->FindFloor(GetActorLocation(), FloorResult, false);
+	if (!FloorResult.IsWalkableFloor())
+	{
+		return;
+	}
+
+	bFallTrackingActive = false;
+	LastFallDistance = 0.f;
+	MovementComponent->SetMovementMode(MOVE_Walking);
 }
 
 bool ABAPlayerCharacter::IsLandingRecoveryActive() const
@@ -316,26 +334,6 @@ void ABAPlayerCharacter::ResetLandingRecovery()
 	bLandingRecoveryActive = false;
 	bLandingRecoveryInputLocked = false;
 	ClearQueuedLandingRecoveryAction();
-}
-
-void ABAPlayerCharacter::PlayLandingRecoveryCameraShake()
-{
-	if (LandingRecoveryCameraShakeScale <= 0.f)
-	{
-		return;
-	}
-
-	TSubclassOf<UCameraShakeBase> ShakeClass = LandingRecoveryCameraShakeClass;
-	if (!ShakeClass)
-	{
-		ShakeClass = UBALandingRecoveryCameraShake::StaticClass();
-	}
-	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
-	{
-		PlayerController->ClientStartCameraShake(
-			ShakeClass,
-			LandingRecoveryCameraShakeScale);
-	}
 }
 
 void ABAPlayerCharacter::ClearQueuedLandingRecoveryAction()

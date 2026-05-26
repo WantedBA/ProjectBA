@@ -74,6 +74,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	bool TryStartAction(EActionCommand Command, EActionDirection Direction = EActionDirection::Any);
 
+	// 현재 Moveset 문맥에서 Command와 Direction에 맞는 액션 중 지정 타입만 골라 시작한다.
+	UFUNCTION(BlueprintCallable, Category = "Action")
+	bool TryStartActionOfType(EActionCommand Command, EActionDirection Direction, EActionType RequiredActionType);
+
 	// Moveset 검색 없이 ActionTid를 직접 지정해 시작을 시도한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	bool TryStartActionByTid(int32 ActionTid);
@@ -193,7 +197,10 @@ private:
 	void BeginAction(const FActionDataRow& ActionData, EActionDirection Direction);
 	void StartCooldown(const FActionDataRow& ActionData);
 	void ApplyStaminaRecoveryRateMultiplier(const FActionDataRow& ActionData);
-	const FMovesetRow* FindBestMoveset(EActionCommand Command, EActionDirection Direction) const;
+	const FMovesetRow* FindBestMoveset(
+		EActionCommand Command,
+		EActionDirection Direction,
+		EActionType RequiredActionType = EActionType::None) const;
 	bool CanStartAction(const FActionDataRow& ActionData, EActionDirection Direction);
 	bool CanConsumeStamina(const FActionDataRow& ActionData, float StaminaCost) const;
 	bool ConsumeStamina(const FActionDataRow& ActionData, float StaminaCost, bool bPauseRecovery, bool bRestartRecoveryDelay);

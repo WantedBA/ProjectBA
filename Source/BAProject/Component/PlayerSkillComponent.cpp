@@ -40,6 +40,13 @@ void UPlayerSkillComponent::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("PlayerSkillComponent: World not found."));
 		return;
 	}
+	
+	// 캐릭터 포인터 설정
+	PlayerCharacter = Cast<ABAPlayerCharacter>(GetOwner());
+	if (!PlayerCharacter)
+	{
+		UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Failed to cast owner to ABAPlayerCharacter"));
+	}
 
 	// 액터컴포넌트 포인터 설정
 	ActionComponent = Cast<UActionComponent>(GetOwner()->GetComponentByClass(UActionComponent::StaticClass()));
@@ -59,11 +66,24 @@ void UPlayerSkillComponent::BeginPlay()
 	}
 	
 	// 스킬트리 창이 닫힐 때 스킬 새로고침 바인딩
-	SkillTreeSubsystem->OnSkillTreeChangeCompleted.AddUniqueDynamic(this, &UPlayerSkillComponent::RefreshAllSkills);
+	if (SkillTreeSubsystem)
+	{
+		SkillTreeSubsystem->OnSkillTreeChangeCompleted.AddUniqueDynamic(this, &UPlayerSkillComponent::RefreshAllSkills);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[PlayerSkillComponent::BeginPlay] SkillTreeSubsystem not found."));
+	}
 }
 
 void UPlayerSkillComponent::RefreshAllSkills()
 {
+	if (!SkillTreeSubsystem || !TableManager || !ActionComponent || !StatComponent || !WeaponVFXComponent || !PlayerCharacter)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[PlayerSkillComponent::RefreshAllSkills] Required reference is missing."));
+		return;
+	}
+
 	// 기존 스킬 변경사항 초기화
 	ClearAllSkills();
 	
@@ -81,6 +101,13 @@ void UPlayerSkillComponent::ClearAllSkills()
 	ActionComponent->ResetMovesetKeys();
 	StatComponent->ResetModifiers();
 	WeaponVFXComponent->ResetElement();
+	if (TrailNiagaraDefault)
+	{
+		WeaponVFXComponent->SetTrailNiagaraAsset(TrailNiagaraDefault);
+		WeaponVFXComponent->SetTrailScale(TrailNiagaraScaleDefault);
+		WeaponVFXComponent->SetTrailZOffset(TrailNiagaraZOffsetDefault);
+	}
+	PlayerCharacter->ResetComboTransitionOverrides();
 }
 
 void UPlayerSkillComponent::ApplySkill(int32 SkillId)
@@ -123,12 +150,45 @@ void UPlayerSkillComponent::ApplySkill(int32 SkillId)
 void UPlayerSkillComponent::ApplyAction(const FSkillModifierRow* SkillModifier)
 {
 	static const FName MovesetKeyTarget = FName(TEXT("MovesetKey"));
+	static const FName ComboOverrideTarget = FName(TEXT("ComboOverride"));
 
 	if (SkillModifier->Target == MovesetKeyTarget)
 	{
 		// ActionComponent에 관련 로직이 구현되어 있는 경우
 		const FName NewMovesetKey = FName(*SkillModifier->Value);
 		ActionComponent->AddMovesetKey(NewMovesetKey);
+	}
+	else if (SkillModifier->Target == ComboOverrideTarget)
+	{
+		// 플레이어의 ComboTransitionOverrides 사용
+		if (!PlayerCharacter)
+		{
+			UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: PlayerCharacter null"));
+			return;
+		}
+		
+		int32 NowComboTid;
+		if (!LexTryParseString(NowComboTid, *SkillModifier->Value))
+		{
+			UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Failed to parse NowComboTid: %s"), *SkillModifier->Value);
+			return;
+		}
+		
+		EActionCommand Command;
+		if (!StringToEnum(SkillModifier->Value2, Command))
+		{
+			UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Failed to parse Command: %s"), *SkillModifier->Value2);
+			return;
+		}
+		
+		int32 NextComboTid;
+		if (!LexTryParseString(NextComboTid, *SkillModifier->Value3))
+		{
+			UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Failed to parse NowComboTid: %s"), *SkillModifier->Value3);
+			return;
+		}
+		
+		PlayerCharacter->OverrideComboTransition(NowComboTid, Command, NextComboTid);
 	}
 	else
 	{
@@ -160,6 +220,24 @@ void UPlayerSkillComponent::ApplyElement(const FSkillModifierRow* SkillModifier)
 		else
 		{
 			UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Failed to load Weapon Trail Niagara System: %s"), *SkillModifier->Value2);
+		}
+		// 무기 트레일 효과 오프셋 설정
+		if (float TrailZOffset = FCString::Atof(*SkillModifier->Value3))
+		{
+			WeaponVFXComponent->SetTrailZOffset(TrailZOffset);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Invalid Trail Z Offset value: %s"), *SkillModifier->Value3);
+		}
+		// 무기 트레일 효과 스케일 설정
+		if (float TrailScale = FCString::Atof(*SkillModifier->Value4))
+		{
+			WeaponVFXComponent->SetTrailScale(TrailScale);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Invalid Trail Scale value: %s"), *SkillModifier->Value4);
 		}
 	}
 }

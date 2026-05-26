@@ -5,7 +5,7 @@
 #include "Component/ActionComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/PlayerController.h"
+#include "GameFramework/RootMotionSource.h"
 #include "TimerManager.h"
 
 /*
@@ -27,7 +27,8 @@
  * 3. 넉백과 런치
  * - ApplyDamageReactionKnockback은 DamageEvent의 LaunchHorizontalSpeed/LaunchVerticalSpeed를 우선 사용한다.
  * - 기본 HitReact 넉백은 HitReactKnockbackStrength 값을 그대로 사용한다.
- * - Launch 값이 0이면 플레이어 기본 KnockDownKnockbackStrength/KnockDownLaunchVerticalSpeed를 사용한다.
+ * - KnockDown은 Launch 값이 0이면 플레이어 기본 KnockDownKnockbackStrength/KnockDownLaunchVerticalSpeed를 사용한다.
+ * - 일반 피격/가드는 수평 속도만 적용해 지상 리액션이 Falling으로 전환되지 않게 한다.
  * - GuardBreak는 루트모션 밀림을 사용하므로 Launch 넉백을 적용하지 않는다.
  *
  * 4. 종료
@@ -39,6 +40,8 @@
  */
 namespace
 {
+	const FName GroundDamageKnockbackRootMotionName(TEXT("BA_GroundDamageKnockback"));
+
 	UAnimMontage* FindConfiguredMontage(
 		const TMap<EActionDirection, TObjectPtr<UAnimMontage>>& Montages,
 		const EActionDirection Direction)
@@ -148,6 +151,7 @@ bool ABAPlayerCharacter::ShouldPlayGuardBreakReaction() const
 void ABAPlayerCharacter::CancelCurrentActionForDamageReaction()
 {
 	SetGuardWindowActive(false);
+	ClearAttackHitStop(true);
 
 	// 전력질주 중 피격 시 전력질주가 끊겨야 함
 	if (MovementRuntime.DesiredGait == EMovementState::Sprint)
@@ -190,19 +194,17 @@ void ABAPlayerCharacter::ApplyDamageReactionKnockback(
 
 	// 넉백 강도는 플레이어가 보유한 피격 반응 타입별 값으로 결정한다.
 	float KnockbackStrength = HitReactKnockbackStrength;
-	float KnockbackZ = DamageReactionKnockbackZ;
+	bool bUseLaunchKnockback = false;
 	if (bGuarding)
 	{
 		KnockbackStrength = GuardHitKnockbackStrength;
 	}
 	else if (DamageReactionType == EBADamageReactionType::KnockDown)
 	{
+		bUseLaunchKnockback = true;
 		KnockbackStrength = LastDamageLaunchHorizontalSpeed > 0.f
 			? LastDamageLaunchHorizontalSpeed
 			: KnockDownKnockbackStrength;
-		KnockbackZ = LastDamageLaunchVerticalSpeed > 0.f
-			? LastDamageLaunchVerticalSpeed
-			: KnockDownLaunchVerticalSpeed;
 	}
 	else if (DamageReactionType == EBADamageReactionType::LargeHitReact)
 	{
@@ -228,9 +230,57 @@ void ABAPlayerCharacter::ApplyDamageReactionKnockback(
 		return;
 	}
 
+	if (!bUseLaunchKnockback)
+	{
+		ApplyGroundDamageReactionKnockback(KnockbackDirection, KnockbackStrength);
+		return;
+	}
+
+	const float KnockbackZ = LastDamageLaunchVerticalSpeed > 0.f
+		? LastDamageLaunchVerticalSpeed
+		: KnockDownLaunchVerticalSpeed;
 	FVector LaunchVelocity = KnockbackDirection * KnockbackStrength;
 	LaunchVelocity.Z = KnockbackZ;
-	LaunchCharacter(LaunchVelocity, true, DamageReactionType == EBADamageReactionType::KnockDown);
+	LaunchCharacter(LaunchVelocity, true, true);
+}
+
+void ABAPlayerCharacter::ApplyGroundDamageReactionKnockback(
+	const FVector& KnockbackDirection,
+	const float KnockbackStrength)
+{
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (!MovementComponent || KnockbackStrength <= 0.f)
+	{
+		return;
+	}
+
+	FVector GroundKnockbackDirection = KnockbackDirection;
+	GroundKnockbackDirection.Z = 0.f;
+	if (!GroundKnockbackDirection.Normalize())
+	{
+		return;
+	}
+
+	MovementComponent->RemoveRootMotionSource(GroundDamageKnockbackRootMotionName);
+
+	if (GroundDamageReactionKnockbackDuration <= 0.f)
+	{
+		FVector GroundKnockbackVelocity = GroundKnockbackDirection * KnockbackStrength;
+		GroundKnockbackVelocity.Z = MovementComponent->Velocity.Z;
+		MovementComponent->Velocity = GroundKnockbackVelocity;
+		return;
+	}
+
+	TSharedPtr<FRootMotionSource_ConstantForce> KnockbackRootMotion = MakeShared<FRootMotionSource_ConstantForce>();
+	KnockbackRootMotion->InstanceName = GroundDamageKnockbackRootMotionName;
+	KnockbackRootMotion->AccumulateMode = ERootMotionAccumulateMode::Additive;
+	KnockbackRootMotion->Priority = 500;
+	KnockbackRootMotion->Duration = GroundDamageReactionKnockbackDuration;
+	KnockbackRootMotion->Force = GroundKnockbackDirection * KnockbackStrength;
+	KnockbackRootMotion->FinishVelocityParams.Mode = ERootMotionFinishVelocityMode::SetVelocity;
+	KnockbackRootMotion->FinishVelocityParams.SetVelocity = FVector::ZeroVector;
+
+	MovementComponent->ApplyRootMotionSource(KnockbackRootMotion);
 }
 
 void ABAPlayerCharacter::PlayDamageReactionAnimation(
@@ -239,6 +289,7 @@ void ABAPlayerCharacter::PlayDamageReactionAnimation(
 	const bool bGuarding,
 	const bool bGuardBreak)
 {
+	ClearRecoveryEscapeWindow();
 	ResetKnockDownRecovery();
 	bFallTrackingActive = false;
 
@@ -254,6 +305,7 @@ void ABAPlayerCharacter::PlayDamageReactionAnimation(
 		SetInvincible(true);
 	}
 	PlayDamageReactionCameraShake(DamageReactionType, bGuarding, bGuardBreak);
+	PlayDamageReactionForceFeedback(DamageReactionType, bGuarding, bGuardBreak);
 
 	// 연속 피격 시 이전 종료 타이머가 새 반응 상태를 해제하지 못하게 식별자를 갱신한다.
 	GetWorldTimerManager().ClearTimer(DamageReactionTimerHandle);
@@ -442,24 +494,6 @@ void ABAPlayerCharacter::HandleKnockDownReactionMontageBlendingOut(
 	FinishDamageReaction(PlaybackId);
 }
 
-void ABAPlayerCharacter::PlayDamageReactionCameraShake(
-	const EBADamageReactionType /*DamageReactionType*/,
-	const bool /*bGuarding*/,
-	const bool /*bGuardBreak*/)
-{
-	if (!DamageReactionCameraShakeClass || DamageReactionCameraShakeScale <= 0.f)
-	{
-		return;
-	}
-
-	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
-	{
-		PlayerController->ClientStartCameraShake(
-			DamageReactionCameraShakeClass,
-			DamageReactionCameraShakeScale);
-	}
-}
-
 void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)
 {
 	if (PlaybackId != ActiveDamageReactionPlaybackId)
@@ -467,6 +501,7 @@ void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)
 		return;
 	}
 
+	ClearRecoveryEscapeWindow();
 	const EPlayerDamageReactionState FinishedDamageReactionState = DamageReactionState;
 	if (bDeathFinalizationDeferred)
 	{
@@ -484,9 +519,12 @@ void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)
 	ActiveDamageReactionPlaybackId = 0;
 	ActiveDamageReactionMontage = nullptr;
 
-	const bool bFinishedGuardReaction = FinishedDamageReactionState == EPlayerDamageReactionState::GuardHit
-		|| FinishedDamageReactionState == EPlayerDamageReactionState::GuardBreak;
-	const bool bShouldResumeGuard = bFinishedGuardReaction && ShouldResumeGuardAfterGuardReaction();
+	const bool bFinishedGuardHitReaction = FinishedDamageReactionState == EPlayerDamageReactionState::GuardHit;
+	const bool bFinishedGuardBreakReaction = FinishedDamageReactionState == EPlayerDamageReactionState::GuardBreak;
+	const bool bFinishedGuardReaction = bFinishedGuardHitReaction || bFinishedGuardBreakReaction;
+	const bool bShouldResumeGuard = bFinishedGuardHitReaction
+		? ShouldResumeGuardAfterGuardReaction()
+		: bFinishedGuardBreakReaction && bGuardInputHeld && IsAlive() && !IsOnLadder();
 	if (bFinishedGuardReaction && ActionComponent)
 	{
 		// GuardBreak 리액션 중에는 무방비였으므로 종료 시 상태를 비운 뒤, 입력이 유지되어 있으면 아래에서 재시작한다.

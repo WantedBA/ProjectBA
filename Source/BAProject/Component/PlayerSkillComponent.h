@@ -8,6 +8,8 @@
 #include "PlayerSkillComponent.generated.h"
 
 
+class UNiagaraSystem;
+class ABAPlayerCharacter;
 class UPlayerWeaponVFX;
 struct FSkillModifierRow;
 class UActionComponent;
@@ -27,10 +29,11 @@ public:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-protected:
 	// 전체 스킬 새로고침
 	UFUNCTION(BlueprintCallable, Category="Skill")
 	void RefreshAllSkills();
+
+protected:
 	
 	// 스킬 모두 삭제
 	UFUNCTION(BlueprintCallable, Category="Skill")
@@ -39,6 +42,14 @@ protected:
 	// 스킬 적용 구현 종류에 따라 분기
 	UFUNCTION(BlueprintCallable, Category="Skill")
 	void ApplySkill(int32 SkillId);
+	
+// 트레일 기본값
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Weapon VFX")
+	TObjectPtr<UNiagaraSystem> TrailNiagaraDefault = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Weapon VFX")
+	float TrailNiagaraScaleDefault = 1.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Weapon VFX")
+	float TrailNiagaraZOffsetDefault = 0.0f;
 	
 private:
 // 1차 분기 - ApplyType
@@ -53,6 +64,10 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UBATableManager> TableManager = nullptr;
 	
+// 플레이어 캐릭터 포인터
+	UPROPERTY(Transient)
+	TObjectPtr<ABAPlayerCharacter> PlayerCharacter = nullptr;
+	
 // 액터컴포넌트 포인터
 	UPROPERTY(Transient)
 	TObjectPtr<UActionComponent> ActionComponent = nullptr;
@@ -61,3 +76,20 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UPlayerWeaponVFX> WeaponVFXComponent = nullptr;
 };
+
+template <typename T>
+bool StringToEnum(const FString& EnumString, T& OutValue)
+{
+	if (UEnum* EnumPtr = StaticEnum<T>())
+	{
+		int64 Value = EnumPtr->GetValueByNameString(EnumString);
+
+		if (Value != INDEX_NONE)
+		{
+			OutValue = static_cast<T>(Value);
+			return true;
+		}
+	}
+
+	return false;
+}

@@ -129,6 +129,12 @@ public:
 	// 플레이어 사망 시 즉시 호출 — AI 정지 (Dev 모드에서는 DevResetDelay 후 FullReset 자동 호출)
 	UFUNCTION(BlueprintCallable, Category = "Boss|Quest")
 	void PauseForReset();
+		
+	UFUNCTION()
+	void HandlePlayerDied();
+
+	UFUNCTION()
+	void HandlePlayerRespawned();
 
 	// HP·위치·전투 상태 완전 복구 — UI 확인 버튼 또는 Dev 타이머에서 호출
 	UFUNCTION(BlueprintCallable, Category = "Boss|Quest")
@@ -142,6 +148,12 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual bool IsPersistentAggro() const override { return true; }
 	virtual void OnEnemyAttackAniFinished(EEnemyState NewState) override;
+
+public:
+	// BP에서 사망 몽타주 종료 이벤트나 Anim Notify에서 호출.
+	// 머티리얼을 디졸브 머티리얼로 교체하고 Tick에서 DissolveAmount 0→1 보간 시작.
+	UFUNCTION(BlueprintCallable, Category = "Boss|Death")
+	void StartBossDissolve();
 
 private:
 	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
@@ -179,6 +191,10 @@ protected:
 	// 현재 활성화된 퀘스트 Tid (OnQuestActivated에서 저장, FullReset에서 초기화)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Quest")
 	int32 ActiveQuestTid = 0;
+
+	// FullReset 이후 재교전에 사용 — OnQuestActivated에서 저장하며 절대 지워지지 않음
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Quest")
+	int32 LastBossQuestTid = 0;
 
 	// Dev 전용: true면 PauseForReset 호출 후 DevResetDelay초 뒤 자동으로 FullReset 호출
 	UPROPERTY(EditAnywhere, Category = "Boss|Quest|Dev")
@@ -276,4 +292,16 @@ protected:
 
 	// BeginPlay에서 캐시 — FullReset 시 이 위치·회전으로 복구
 	FTransform InitialTransform;
+
+	// 사망 후 디졸브
+	// 디졸브 머티리얼의 스칼라 파라미터 이름 (0=불투명, 1=완전 사라짐)
+	UPROPERTY(EditAnywhere, Category = "Boss|Death")
+	FName DissolveParamName = TEXT("DissolveAmount");
+
+	// 디졸브 진행 시간(초). 짧을수록 빨리 사라짐
+	UPROPERTY(EditAnywhere, Category = "Boss|Death", meta = (ClampMin = "0.1"))
+	float DissolveDuration = 2.0f;
+
+	bool bIsDissolving = false;
+	float DissolveElapsed = 0.f;
 };

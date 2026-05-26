@@ -5,24 +5,115 @@
 #include "Component/PlayerWeaponVFX.h"
 #include "Component/StatComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Enemy/EnemyBase.h"
 #include "Tables/ActionRows.h"
 #include "Tables/BATableManager.h"
+#include "TimerManager.h"
 
-void ABAPlayerCharacter::ClearAttackRuntimeState()
+void ABAPlayerCharacter::BindAttackCallbacks()
 {
-	NowComboTransitionTid = 0;
-	NextComboTransitionTid = 0;
-	NextAttackMontage = nullptr;
-	NextAttackActionType = EActionType::None;
-	ActiveAttackMontage = nullptr;
-	ActiveAttackPlaybackId = 0;
+	if (CombatComponent)
+	{
+		CombatComponent->OnDamageResolved.AddUObject(this, &ABAPlayerCharacter::HandleAttackDamageResolved);
+	}
 }
 
-bool ABAPlayerCharacter::IsActiveAttackMontagePlaying() const
+void ABAPlayerCharacter::HandleAttackDamageResolved(
+	AActor* Victim,
+	const FHitResult& /*HitResult*/,
+	const float AppliedDamage)
 {
-	const USkeletalMeshComponent* MeshComponent = GetMesh();
+	if (ShouldTriggerAttackHitStop(Victim, AppliedDamage))
+	{
+		StartAttackHitStop();
+	}
+}
+
+bool ABAPlayerCharacter::ShouldTriggerAttackHitStop(const AActor* Victim, const float AppliedDamage) const
+{
+	const AEnemyBase* EnemyVictim = Cast<AEnemyBase>(Victim);
+	return AttackHitStopDuration > 0.f
+		&& AppliedDamage > 0.f
+		&& EnemyVictim
+		&& !EnemyVictim->IsDead()
+		&& ActiveAttackMontage != nullptr;
+}
+
+void ABAPlayerCharacter::StartAttackHitStop()
+{
+	if (AttackHitStopDuration <= 0.f || !ActiveAttackMontage)
+	{
+		return;
+	}
+
+	if (HitStopPausedMontage && AttackHitStopPlaybackId == ActiveAttackPlaybackId)
+	{
+		FTimerDelegate ResumeDelegate;
+		ResumeDelegate.BindUObject(this, &ABAPlayerCharacter::FinishAttackHitStop, AttackHitStopPlaybackId);
+		GetWorldTimerManager().ClearTimer(AttackHitStopTimerHandle);
+		GetWorldTimerManager().SetTimer(AttackHitStopTimerHandle, ResumeDelegate, AttackHitStopDuration, false);
+		return;
+	}
+	ClearAttackHitStop(false);
+
+	USkeletalMeshComponent* MeshComponent = GetMesh();
 	UAnimInstance* AnimInstance = MeshComponent ? MeshComponent->GetAnimInstance() : nullptr;
-	return AnimInstance && ActiveAttackMontage && AnimInstance->Montage_IsPlaying(ActiveAttackMontage);
+	if (!AnimInstance || !AnimInstance->Montage_IsPlaying(ActiveAttackMontage))
+	{
+		return;
+	}
+
+	HitStopPausedMontage = ActiveAttackMontage;
+	AttackHitStopPlaybackId = ActiveAttackPlaybackId;
+	AnimInstance->Montage_Pause(ActiveAttackMontage);
+
+	FTimerDelegate ResumeDelegate;
+	ResumeDelegate.BindUObject(this, &ABAPlayerCharacter::FinishAttackHitStop, AttackHitStopPlaybackId);
+	GetWorldTimerManager().SetTimer(AttackHitStopTimerHandle, ResumeDelegate, AttackHitStopDuration, false);
+}
+
+void ABAPlayerCharacter::FinishAttackHitStop(const int32 PlaybackId)
+{
+	if (PlaybackId != ActiveAttackPlaybackId || !HitStopPausedMontage)
+	{
+		ClearAttackHitStop(false);
+		return;
+	}
+
+	UAnimMontage* MontageToResume = HitStopPausedMontage;
+	HitStopPausedMontage = nullptr;
+	AttackHitStopPlaybackId = 0;
+	GetWorldTimerManager().ClearTimer(AttackHitStopTimerHandle);
+
+	if (USkeletalMeshComponent* MeshComponent = GetMesh())
+	{
+		if (UAnimInstance* AnimInstance = MeshComponent->GetAnimInstance())
+		{
+			AnimInstance->Montage_Resume(MontageToResume);
+		}
+	}
+}
+
+void ABAPlayerCharacter::ClearAttackHitStop(const bool bResumePausedMontage)
+{
+	GetWorldTimerManager().ClearTimer(AttackHitStopTimerHandle);
+
+	UAnimMontage* MontageToResume = HitStopPausedMontage;
+	HitStopPausedMontage = nullptr;
+	AttackHitStopPlaybackId = 0;
+
+	if (!bResumePausedMontage || !MontageToResume)
+	{
+		return;
+	}
+
+	if (USkeletalMeshComponent* MeshComponent = GetMesh())
+	{
+		if (UAnimInstance* AnimInstance = MeshComponent->GetAnimInstance())
+		{
+			AnimInstance->Montage_Resume(MontageToResume);
+		}
+	}
 }
 
 // 공격 입력 진입점
@@ -156,8 +247,14 @@ void ABAPlayerCharacter::ChargeAttackCompleted()
 	// 차징 공격 대미지 설정
 	UBATableManager* TableManager = UBATableManager::Get(this);
 	const FComboTransitionRow* NowCombo = TableManager->FindComboTransition(NowComboTransitionTid);
-	CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack() * NowCombo->DamageCoefficient 
-		* (1.f + FinalChargeTime));
+	CombatComponent->SetAttackData(
+		WeaponRadius,
+		StatComponent->GetAttack() * NowCombo->DamageCoefficient * (1.f + FinalChargeTime),
+		NAME_None,
+		NAME_None,
+		EBADamageReactionType::HitReact,
+		0.f,
+		0.f);
 	
 	GetMesh()->GetAnimInstance()->Montage_Resume(PausedMontage);
 	StopChargeEffect();
@@ -210,6 +307,8 @@ void ABAPlayerCharacter::OnAttackMontageEnded(
 
 void ABAPlayerCharacter::StartAttack(UAnimMontage* InAnimMontage)
 {
+	ClearRecoveryEscapeWindow();
+
 	const UBATableManager* TableManager = UBATableManager::Get(this);
 	if (!TableManager || !InAnimMontage || NextComboTransitionTid == 0)
 	{
@@ -232,7 +331,14 @@ void ABAPlayerCharacter::StartAttack(UAnimMontage* InAnimMontage)
 	}
 	
 	// 대미지 설정
-	CombatComponent->SetAttackData(WeaponRadius, StatComponent->GetAttack() * NowCombo->DamageCoefficient);
+	CombatComponent->SetAttackData(
+		WeaponRadius,
+		StatComponent->GetAttack() * NowCombo->DamageCoefficient,
+		NAME_None,
+		NAME_None,
+		EBADamageReactionType::HitReact,
+		0.f,
+		0.f);
 	
 	// 재생 속도 : 테이블에 정의된 몽타주 재생 속도 * 공격 속도
 	const float MontagePlayRate = NowCombo->PlayRate * StatComponent->GetAttackSpeed();
@@ -282,28 +388,18 @@ void ABAPlayerCharacter::SetNextCombo(EActionCommand InActionCommand)
 	NextAttackMontage = nullptr;
 	NextAttackActionType = EActionType::None;
 	
-	// 현재 실행 중인 액션이 없을 경우 기본값으로 세팅
-	if (!NowComboTransitionTid)
+	// 다음 콤보 Tid 찾기
+	// 스킬로 오버라이드된 콤보가 있는지 확인
+	const int64 OverrideKey = MakeComboOverrideKey(NowComboTransitionTid, InActionCommand);
+	if (const int32* OverrideTid = ComboTransitionOverrides.Find(OverrideKey))
 	{
-		if (InActionCommand == EActionCommand::LightAttack)
-		{
-			NextComboTransitionTid = FirstLComboTransitionTid;
-		}
-		else if (InActionCommand == EActionCommand::HeavyAttack)
-		{
-			NextComboTransitionTid = FirstRComboTransitionTid;
-		}
+		NextComboTransitionTid = *OverrideTid;
 	}
 	else
 	{
 		// 현재 실행 중인 액션
 		const FComboTransitionRow* NowComboTransition = 
 			TableManager->FindComboTransition(NowComboTransitionTid);
-		if (!NowComboTransition)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[ABAPlayerCharacter::SetNextCombo] Failed to find now action animation data for tid: %d"), NowComboTransitionTid);
-			return;
-		}
 		
 		// 현재 액션과 입력 커맨드로 다음 액션 탐색
 		if (InActionCommand == EActionCommand::LightAttack)
@@ -322,6 +418,7 @@ void ABAPlayerCharacter::SetNextCombo(EActionCommand InActionCommand)
 		}
 	}
 	
+	// 설정된 Tid에서 다음 몽타주 탐색
 	const FComboTransitionRow* NextComboTransition = 
 		TableManager->FindComboTransition(NextComboTransitionTid);
 	
@@ -349,6 +446,7 @@ void ABAPlayerCharacter::OnNextComboCheck()
 {
 	if (NextAttackMontage)
 	{
+		FaceMoveInputDirection();
 		StartAttack(NextAttackMontage);
 	}
 	else
@@ -357,3 +455,44 @@ void ABAPlayerCharacter::OnNextComboCheck()
 	}
 }
 
+void ABAPlayerCharacter::OverrideComboTransition(int32 InNowComboTid, EActionCommand ActionCommand,
+	int32 NewNextComboTid)
+{
+	const int64 OverrideKey = MakeComboOverrideKey(InNowComboTid, ActionCommand);
+	
+	ComboTransitionOverrides.Add(OverrideKey, NewNextComboTid);
+}
+
+void ABAPlayerCharacter::ResetComboTransitionOverrides()
+{
+	ComboTransitionOverrides.Empty();
+}
+
+void ABAPlayerCharacter::ClearAttackRuntimeState()
+{
+	ClearRecoveryEscapeWindow();
+	ClearAttackHitStop(true);
+	NowComboTransitionTid = 0;
+	NextComboTransitionTid = 0;
+	NextAttackMontage = nullptr;
+	NextAttackActionType = EActionType::None;
+	ActiveAttackMontage = nullptr;
+	ActiveAttackPlaybackId = 0;
+}
+
+bool ABAPlayerCharacter::IsActiveAttackMontagePlaying() const
+{
+	if (HitStopPausedMontage && HitStopPausedMontage == ActiveAttackMontage)
+	{
+		return true;
+	}
+
+	const USkeletalMeshComponent* MeshComponent = GetMesh();
+	UAnimInstance* AnimInstance = MeshComponent ? MeshComponent->GetAnimInstance() : nullptr;
+	return AnimInstance && ActiveAttackMontage && AnimInstance->Montage_IsPlaying(ActiveAttackMontage);
+}
+
+int64 ABAPlayerCharacter::MakeComboOverrideKey(int32 NowComboTid, EActionCommand ActionCommand) const
+{
+	return (static_cast<int64>(NowComboTid) << 8) | static_cast<uint8>(ActionCommand);
+}

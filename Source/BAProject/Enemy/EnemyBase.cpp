@@ -6,12 +6,53 @@
 #include "Tables/MonsterRows.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Constants/BAProjectConstant.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/MeshComponent.h"
+#include "Components/PrimitiveComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "BrainComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
 #include "TargetComponent.h"
+
+namespace
+{
+	void ConfigureEnemyCollisionResponses(AEnemyBase& Enemy)
+	{
+		TArray<UPrimitiveComponent*> PrimitiveComponents;
+		Enemy.GetComponents<UPrimitiveComponent>(PrimitiveComponents);
+		for (UPrimitiveComponent* PrimitiveComponent : PrimitiveComponents)
+		{
+			if (PrimitiveComponent)
+			{
+				PrimitiveComponent->SetCollisionResponseToChannel(CollisionChannel::PlayerAttackTrace, ECR_Ignore);
+				PrimitiveComponent->SetCollisionResponseToChannel(CollisionChannel::EnemyAttackTrace, ECR_Ignore);
+			}
+		}
+
+		if (UCapsuleComponent* CapsuleComponent = Enemy.GetCapsuleComponent())
+		{
+			CapsuleComponent->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+			CapsuleComponent->SetCollisionResponseToChannel(CollisionChannel::PlayerAttackTrace, ECR_Block);
+		}
+
+		TArray<UMeshComponent*> MeshComponents;
+		Enemy.GetComponents<UMeshComponent>(MeshComponents);
+		for (UMeshComponent* MeshComponent : MeshComponents)
+		{
+			if (MeshComponent)
+			{
+				MeshComponent->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+			}
+		}
+
+		if (USkeletalMeshComponent* BodyMeshComponent = Enemy.GetMesh())
+		{
+			BodyMeshComponent->SetCollisionResponseToChannel(CollisionChannel::PlayerAttackTrace, ECR_Block);
+		}
+	}
+}
 
 AEnemyBase::AEnemyBase()
 {
@@ -36,7 +77,7 @@ AEnemyBase::AEnemyBase()
 	AlertDuration = 3.0f;
 	bShowDebugRanges = true;
 
-	GetMesh()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	ConfigureEnemyCollisionResponses(*this);
 }
 
 void AEnemyBase::PostInitializeComponents()
@@ -49,6 +90,7 @@ void AEnemyBase::PostInitializeComponents()
 	}
 
 	OnAttackPerfectGuarded.AddUObject(this, &AEnemyBase::HandleAttackPerfectGuarded);
+	ConfigureEnemyCollisionResponses(*this);
 }
 
 void AEnemyBase::PossessedBy(AController* NewController)

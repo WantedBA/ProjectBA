@@ -15,6 +15,7 @@
 void UTargetHPBar::NativeConstruct()
 {
 	Super::NativeConstruct();
+	SetVisibility(ESlateVisibility::Collapsed);
 
 	// 캐릭터 정보 가져오기
 	APlayerController* PC = GetOwningPlayer();
@@ -35,23 +36,14 @@ void UTargetHPBar::NativeConstruct()
 	if (LockOnComp)
 	{
 		// 락온 대상 찾기
-		AActor* Monster = LockOnComp->GetTargetActor();
-
-		if (Monster)
-		{
-			// 해당 몬스터의 스텟 컴포넌트 연결
-			if (UStatComponent* Stat = Monster->FindComponentByClass<UStatComponent>())
-			{
-				Stat->OnHPChanged.RemoveDynamic(this, &UTargetHPBar::HandleHPChanged);
-				Stat->OnHPChanged.AddDynamic(this, &UTargetHPBar::HandleHPChanged);
-
-				// 초기 세팅
-				UpdateHP(Stat->GetCurrentHP(), Stat->GetMaxHP());
-				UE_LOG(LogTemp, Warning, TEXT(">>> Success: Bound to %s via Player LockOn!"),
-					*Monster->GetName());
-			}
-		}
+		BindToTarget(LockOnComp->GetTargetActor());
 	}
+}
+
+void UTargetHPBar::NativeDestruct()
+{
+	UnbindCurrentTarget();
+	Super::NativeDestruct();
 }
 
 void UTargetHPBar::HandleHPChanged(float CurrentHP, float MaxHP)
@@ -83,7 +75,6 @@ void UTargetHPBar::OnTargetCaptured()
 {
 	// 타이머 리셋
 	CancelHideTimer();
-	SetVisibility(ESlateVisibility::HitTestInvisible);
 
 	// 새로운 타겟 정보 갱신
 	APlayerController* PC = GetOwningPlayer();
@@ -93,24 +84,7 @@ void UTargetHPBar::OnTargetCaptured()
 	{
 		if (ULockOnTargetComponent* LockOnComp = Player->FindComponentByClass<ULockOnTargetComponent>())
 		{
-			AActor* NewMonster = LockOnComp->GetTargetActor();
-			if (NewMonster)
-			{
-				if (UStatComponent* Stat = NewMonster->FindComponentByClass<UStatComponent>())
-				{
-					// 이전에 락온 된 몬스터 정보가 있을경우 끊음
-					if (CurrentBoundStat)
-					{
-						CurrentBoundStat->OnHPChanged.RemoveDynamic(this, &UTargetHPBar::HandleHPChanged);
-					}
-					// 새 몬스터 연결
-					Stat->OnHPChanged.AddDynamic(this, &UTargetHPBar::HandleHPChanged);
-
-					CurrentBoundStat = Stat;
-
-					UpdateHP(Stat->GetCurrentHP(), Stat->GetMaxHP());
-				}
-			}
+			BindToTarget(LockOnComp->GetTargetActor());
 		}
 	}
 
@@ -122,6 +96,8 @@ void UTargetHPBar::OnTargetCaptured()
 
 void UTargetHPBar::OnTargetReleased()
 {
+	UnbindCurrentTarget();
+
 	if (UWidgetComponent* ParentComp = Cast<UWidgetComponent>(GetOuter()))
 	{
 		ParentComp->SetVisibility(true);
@@ -149,6 +125,38 @@ void UTargetHPBar::CancelHideTimer()
 	if (HideTimerHandle.IsValid())
 	{
 		GetWorld()->GetTimerManager().ClearTimer(HideTimerHandle);
+	}
+}
+
+void UTargetHPBar::BindToTarget(AActor* TargetActor)
+{
+	UStatComponent* NewStat = TargetActor ? TargetActor->FindComponentByClass<UStatComponent>() : nullptr;
+	if (!NewStat)
+	{
+		UnbindCurrentTarget();
+		SetVisibility(ESlateVisibility::Collapsed);
+		return;
+	}
+
+	if (CurrentBoundStat && CurrentBoundStat != NewStat)
+	{
+		CurrentBoundStat->OnHPChanged.RemoveDynamic(this, &UTargetHPBar::HandleHPChanged);
+	}
+
+	// BP 이벤트가 중복 호출돼도 같은 델리게이트가 중복 바인딩되지 않게 보장한다.
+	NewStat->OnHPChanged.RemoveDynamic(this, &UTargetHPBar::HandleHPChanged);
+	NewStat->OnHPChanged.AddUniqueDynamic(this, &UTargetHPBar::HandleHPChanged);
+	CurrentBoundStat = NewStat;
+
+	UpdateHP(NewStat->GetCurrentHP(), NewStat->GetMaxHP());
+}
+
+void UTargetHPBar::UnbindCurrentTarget()
+{
+	if (CurrentBoundStat)
+	{
+		CurrentBoundStat->OnHPChanged.RemoveDynamic(this, &UTargetHPBar::HandleHPChanged);
+		CurrentBoundStat = nullptr;
 	}
 }
 
