@@ -1,5 +1,7 @@
 #include "Component/CombatComponent.h"
 #include "Character/CharacterBase.h"
+#include "Constants/BAProjectConstant.h"
+#include "Enemy/EnemyBase.h"
 #include "GameFramework/Character.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Engine/DamageEvents.h"
@@ -70,6 +72,21 @@ namespace
 		}
 
 		return FlatOwnerToVictim.Size() <= CombinedCapsuleRadius + FMath::Max(0.f, ContactTolerance);
+	}
+
+	ECollisionChannel ResolveAttackTraceChannel(const ACharacterBase& OwnerCharacter)
+	{
+		return OwnerCharacter.IsA<AEnemyBase>()
+			? CollisionChannel::EnemyAttackTrace
+			: CollisionChannel::PlayerAttackTrace;
+	}
+
+	bool IsEnemyFriendlyFire(const AActor* OwnerActor, const AActor* Victim)
+	{
+		return OwnerActor
+			&& Victim
+			&& OwnerActor->IsA<AEnemyBase>()
+			&& Victim->IsA<AEnemyBase>();
 	}
 }
 
@@ -231,6 +248,7 @@ void UCombatComponent::ProcessHitCheck()
 	ActorsToIgnore.Add(OwnerCharacter);
 
 	EDrawDebugTrace::Type DebugTrace = bShowDebugTrace ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None;
+	const ECollisionChannel HitTraceChannel = ResolveAttackTraceChannel(*OwnerCharacter);
 
 	// Box Trace: 이전 위치에서 현재 위치까지 무기 전체를 스윕(Sweep)
 	bool bHit = UKismetSystemLibrary::BoxTraceMulti(
@@ -239,7 +257,7 @@ void UCombatComponent::ProcessHitCheck()
 		CurrentMid,
 		HalfSize,
 		Orientation,
-		UEngineTypes::ConvertToTraceType(ECC_Pawn),
+		UEngineTypes::ConvertToTraceType(HitTraceChannel),
 		false,
 		ActorsToIgnore,
 		DebugTrace,
@@ -313,6 +331,11 @@ void UCombatComponent::ResetTargetHitRecords()
 bool UCombatComponent::CanRegisterHit(AActor* Victim) const
 {
 	if (Victim == nullptr)
+	{
+		return false;
+	}
+
+	if (Victim == GetOwner() || IsEnemyFriendlyFire(GetOwner(), Victim))
 	{
 		return false;
 	}
