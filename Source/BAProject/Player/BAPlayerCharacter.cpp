@@ -181,6 +181,11 @@ void ABAPlayerCharacter::BeginPlay()
 			UE_LOG(LogTemp, Log, TEXT("Initial Respawn Point Set to: %s"), *DefaultLoc.ToString());
 		}
 	}
+
+	if (PlayerSkillComponent)
+	{
+		PlayerSkillComponent->RefreshAllSkills();
+	}
 }
 
 // 공통 Movement 상태를 매 프레임 갱신하고, 가능한 경우 이동 입력을 소비한다.
