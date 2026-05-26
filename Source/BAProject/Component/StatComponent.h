@@ -46,16 +46,16 @@ public:
 	// 플레이어 기본 스탯 전체를 초기화하고 HP/스태미너를 최대치로 채운다.
 	void InitializeStats
 	(
-		const float InMaxHP, 
-		const float InMaxStamina, 
-		const float InStaminaRecoveryPerSecond,
-		const float InStaminaRecoveryDelay,
-		const float InWalkSpeed, 
-		const float InRunSpeed, 
-		const float InSprintSpeed, 
-		const float InAttack, 
-		const float InAttackSpeed, 
-		const float InDefence
+		float InMaxHP,
+		float InMaxStamina,
+		float InStaminaRecoveryPerSecond,
+		float InStaminaRecoveryDelay,
+		float InWalkSpeed,
+		float InRunSpeed,
+		float InSprintSpeed,
+		float InAttack,
+		float InAttackSpeed,
+		float InDefence, int InHealCount, float InHealAmount
 	);
 
 	// 모든 스탯을 최대치로 복구하고 이벤트를 발행한다.

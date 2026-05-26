@@ -1,3 +1,4 @@
+#include "Component/ActionComponent.h"
 #include "Player/BAPlayerCharacter.h"
 
 #include "Component/StatComponent.h"
@@ -153,13 +154,14 @@ void ABAPlayerCharacter::TryHeal()
 		return;
 	}
 
-	// 현재 감소한 체력이 회복량보다 많은 지 검사
+	/*// 현재 감소한 체력이 회복량보다 많은 지 검사
 	if (StatComponent->GetHealAmount() > StatComponent->GetMaxHP() - StatComponent->GetCurrentHP())
 	{
 		return;
-	}
+	}*/
 	
-	HealMontage
+	// ActionComponent->TryStartAction(EActionCommand::UseConsumable);
+	PlayAnimMontage(HealMontage);
 }
 
 void ABAPlayerCharacter::OnHealAnimNotify()

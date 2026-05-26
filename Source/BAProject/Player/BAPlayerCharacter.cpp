@@ -272,7 +272,7 @@ void ABAPlayerCharacter::InitializeFromTable()
 		SpeedSettings.SprintSpeed,
 		BaseStat.BaseAttack,
 		BaseStat.BaseAttackSpeed,
-		BaseStat.BaseDefence
+		BaseStat.BaseDefence, BaseStat.HealCount, BaseStat.HealAmount
 	);
 
 	const UBATableManager* TableManager = UBATableManager::Get(this);

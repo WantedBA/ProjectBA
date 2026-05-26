@@ -39,6 +39,10 @@ struct FPlayerBaseStat
 	float LadderSlideDownSpeed = 0.f; // LadderSlideDownSpeed
 	UPROPERTY(BlueprintReadWrite)
 	float LadderExitClearance = 0.f; // LadderExitClearance
+	UPROPERTY(BlueprintReadWrite)
+	int HealCount = 0;
+	UPROPERTY(BlueprintReadWrite)
+	float HealAmount = 0.f;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnPlayerHpChanged, float, CurrentHP, float, MaxHp);

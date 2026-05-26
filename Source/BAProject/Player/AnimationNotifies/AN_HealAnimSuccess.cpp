@@ -12,7 +12,7 @@ void UAN_HealAnimSuccess::Notify(USkeletalMeshComponent* MeshComp, UAnimSequence
 
 	if (ABAPlayerCharacter* PlayerCharacter = Cast<ABAPlayerCharacter>(MeshComp->GetOwner()))
 	{
-		PlayerCharacter->TryHeal();
+		PlayerCharacter->OnHealAnimNotify();
 	}
 	else
 	{

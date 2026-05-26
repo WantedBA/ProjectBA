@@ -133,7 +133,9 @@ void UStatComponent::InitializeStats
 	const float InSprintSpeed,
 	const float InAttack,
 	const float InAttackSpeed,
-	const float InDefence
+	const float InDefence,
+	const int InHealCount,
+	const float InHealAmount
 )
 {
 	MaxHP = InMaxHP;
@@ -153,6 +155,8 @@ void UStatComponent::InitializeStats
 	AttackSpeed = InAttackSpeed;
 	Defence = InDefence;
 	OnHPChanged.Broadcast(CurrentHP, MaxHP);
+	HealCount = InHealCount;
+	HealAmount = InHealAmount;
 }
 
 void UStatComponent::ConsumeStamina(const float ConsumeAmount)
@@ -257,6 +261,8 @@ void UStatComponent::Heal()
 	{
 		return;
 	}
+	
+	HealCount--;
 
 	float OldHP = CurrentHP;
 	CurrentHP = FMath::Clamp(CurrentHP + GetHealAmount(), 0.f, GetMaxHP());
