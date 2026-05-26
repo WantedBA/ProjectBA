@@ -84,9 +84,9 @@ public:
 	FORCEINLINE float GetAttackSpeed() const { return AttackSpeed * AttackSpeedModifier; }
 	FORCEINLINE void SetAttackSpeed(const float NewAttackSpeed) { AttackSpeed = NewAttackSpeed; }
 	
-	FORCEINLINE float GetHealAmount() const { return HealAmount; }
+	FORCEINLINE float GetHealAmount() const { return HealAmount + HealAmountModifier; }
 	
-	FORCEINLINE int32 GetHealCount() const { return HealCount; }
+	FORCEINLINE int32 GetLeftHealCount() const { return MaxHealCount + HealCountModifier - UsedHealCount; }
 	
 	// 스태미너를 지정량 소비하고 회복 Tick 상태를 갱신한다.
 	UFUNCTION(BlueprintCallable, Category = "Stat")
@@ -136,6 +136,7 @@ public:
 	void SetMaxStaminaModifier(const float NewModifier);
 	void SetGuardDamageReductionRateModifier(const float NewModifier);
 	void SetStaminaRecoveryModifier(const float NewModifier);
+	void SetHealCountModifier(const int32 NewModifier);
 
 protected:
 	// 스태미너 회복이 필요한 동안만 활성화된다.
@@ -150,7 +151,9 @@ protected:
 	float HealAmount;
 	// 회복 가능 횟수
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Health")
-	int32 HealCount;
+	int32 MaxHealCount;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Health")
+	int32 UsedHealCount;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Stamina")
 	float MaxStamina;
@@ -189,6 +192,8 @@ protected:
 	float MaxStaminaModifier = 1.f;
 	float GuardDamageReductionRateModifier = 1.f;
 	float StaminaRecoveryModifier = 1.f;
+	int32 HealCountModifier = 0;
+	float HealAmountModifier = 0.f;
 	
 private:
 	void RefreshStaminaRecoveryTick();

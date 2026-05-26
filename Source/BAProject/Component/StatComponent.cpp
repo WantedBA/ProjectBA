@@ -41,6 +41,11 @@ void UStatComponent::SetStaminaRecoveryModifier(const float NewModifier)
 	StaminaRecoveryModifier = NewModifier;
 }
 
+void UStatComponent::SetHealCountModifier(const int32 NewModifier)
+{
+	HealCountModifier = NewModifier;
+}
+
 void UStatComponent::TickComponent
 (
 	float DeltaTime,
@@ -155,7 +160,7 @@ void UStatComponent::InitializeStats
 	AttackSpeed = InAttackSpeed;
 	Defence = InDefence;
 	OnHPChanged.Broadcast(CurrentHP, MaxHP);
-	HealCount = InHealCount;
+	MaxHealCount = InHealCount;
 	HealAmount = InHealAmount;
 }
 
@@ -252,7 +257,7 @@ void UStatComponent::SetCurrentStamina(const float NewCurrentStamina)
 
 void UStatComponent::Heal()
 {
-	if (HealCount <= 0)
+	if (GetLeftHealCount() <= 0)
 	{
 		return;
 	}
@@ -262,7 +267,7 @@ void UStatComponent::Heal()
 		return;
 	}
 	
-	HealCount--;
+	UsedHealCount++;
 
 	float OldHP = CurrentHP;
 	CurrentHP = FMath::Clamp(CurrentHP + GetHealAmount(), 0.f, GetMaxHP());

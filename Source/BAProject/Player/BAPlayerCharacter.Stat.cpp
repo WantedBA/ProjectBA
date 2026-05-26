@@ -149,7 +149,7 @@ void ABAPlayerCharacter::TryHeal()
 	}
 	
 	// 회복 가능 횟수 검사
-	if (StatComponent->GetHealCount() <= 0)
+	if (StatComponent->GetLeftHealCount() <= 0)
 	{
 		return;
 	}

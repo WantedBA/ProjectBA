@@ -17,7 +17,7 @@
             "LadderSlideDownSpeed": 600,
             "LadderExitClearance": 80,
             "HealCount": 3,
-            "HealAmount": 25
+            "HealAmount": 35
         }
     ]
 }
