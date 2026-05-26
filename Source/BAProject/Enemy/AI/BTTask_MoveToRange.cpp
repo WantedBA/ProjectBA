@@ -4,11 +4,27 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "Enemy/EnemyBase.h"
+#include "GameFramework/Character.h"
+#include "Components/CapsuleComponent.h"
 
 UBTTask_MoveToRange::UBTTask_MoveToRange()
 {
 	NodeName = TEXT("Move To Range");
 	bNotifyTick = true;
+}
+
+float UBTTask_MoveToRange::ComputeMonsterStopDistance(APawn* Self, AActor* Target) const
+{
+	auto GetRadius = [](const AActor* A) -> float
+	{
+		const ACharacter* C = Cast<ACharacter>(A);
+		if (C && C->GetCapsuleComponent())
+		{
+			return C->GetCapsuleComponent()->GetScaledCapsuleRadius();
+		}
+		return 0.f;
+	};
+	return GetRadius(Self) + GetRadius(Target) + MonsterContactMargin;
 }
 
 EBTNodeResult::Type UBTTask_MoveToRange::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -35,7 +51,14 @@ EBTNodeResult::Type UBTTask_MoveToRange::ExecuteTask(UBehaviorTreeComponent& Own
     if (BossPawn)
     {
         const float CurrentDistance = FVector::Dist(BossPawn->GetActorLocation(), TargetActor->GetActorLocation());
-        if (CurrentDistance <= ImmediateAttackRange)
+
+        // 보스 패턴이면 ImmediateAttackRange로 조기 성공, 몬스터는 캡슐 컨택 거리까지 접근해야 멜리가 닿는다
+        const float PatternRange = BBComp->GetValueAsFloat(BBKey::SelectedPatternIdealRange);
+        const float EarlySuccessThreshold = (PatternRange > 0.0f)
+            ? ImmediateAttackRange
+            : ComputeMonsterStopDistance(BossPawn, TargetActor);
+
+        if (CurrentDistance <= EarlySuccessThreshold)
         {
             return EBTNodeResult::Succeeded;
         }
@@ -48,13 +71,18 @@ EBTNodeResult::Type UBTTask_MoveToRange::ExecuteTask(UBehaviorTreeComponent& Own
         Enemy->SetState(EEnemyState::Chase);
     }
 
-    // 패턴별 사거리 우선. 비어있으면(=비-패턴 컨텍스트) 공용 AttackRange로 fallback
+    // 패턴별 사거리 우선. 비어있으면(=몬스터) 캡슐 컨택 거리로 정지 — AttackRange는 공격 판정 데코레이터에서만 쓰임
     float IdealRange = BBComp->GetValueAsFloat(BBKey::SelectedPatternIdealRange);
-    if (IdealRange <= 0.0f)
+    const bool bUsingPatternRange = (IdealRange > 0.0f);
+    if (!bUsingPatternRange)
     {
-        IdealRange = BBComp->GetValueAsFloat(BBKey::AttackRange);
+        IdealRange = ComputeMonsterStopDistance(BossPawn, TargetActor);
     }
-    IdealRange = FMath::Max(IdealRange, MinApproachDistance);
+    // MinApproachDistance는 보스 패턴 컨텍스트에서만 강제
+    if (bUsingPatternRange)
+    {
+        IdealRange = FMath::Max(IdealRange, MinApproachDistance);
+    }
 
     FAIMoveRequest Request;
     Request.SetGoalActor(TargetActor);
@@ -94,22 +122,27 @@ void UBTTask_MoveToRange::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
     APawn* BossPawn = AIController->GetPawn();
     AActor* TargetActor = Cast<AActor>(BBComp->GetValueAsObject(BBKey::TargetActor));
 
-    float IdealRange = BBComp->GetValueAsFloat(BBKey::SelectedPatternIdealRange);
-    if (IdealRange <= 0.0f)
-    {
-        IdealRange = BBComp->GetValueAsFloat(BBKey::AttackRange);
-    }
-    IdealRange = FMath::Max(IdealRange, MinApproachDistance);
-
     if (BossPawn == nullptr || TargetActor == nullptr)
     {
         FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
         return;
     }
 
+    float IdealRange = BBComp->GetValueAsFloat(BBKey::SelectedPatternIdealRange);
+    const bool bUsingPatternRange = (IdealRange > 0.0f);
+    if (!bUsingPatternRange)
+    {
+        IdealRange = ComputeMonsterStopDistance(BossPawn, TargetActor);
+    }
+    if (bUsingPatternRange)
+    {
+        IdealRange = FMath::Max(IdealRange, MinApproachDistance);
+    }
+
     const float Distance = FVector::Dist(BossPawn->GetActorLocation(), TargetActor->GetActorLocation());
-    // 캡슐 합 + NavMesh 끝점 어긋남에 대한 여유. 정확히 IdealRange로는 도달 못 하는 케이스가 흔함
-    const float ArriveBuffer = 50.0f;
+    // 캡슐 합 + NavMesh 끝점 어긋남에 대한 여유. 정확히 IdealRange로는 도달 못 하는 케이스가 흔함.
+    // 보스의 큰 IdealRange에는 50이 적절하지만, 몬스터의 작은 AttackRange엔 과도 → 10으로 축소.
+    const float ArriveBuffer = bUsingPatternRange ? 50.0f : 10.0f;
     if (Distance <= IdealRange + ArriveBuffer)
     {
         AIController->StopMovement();
