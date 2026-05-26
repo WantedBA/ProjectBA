@@ -69,10 +69,10 @@ EMovementState ABAPlayerCharacter::GetMovementState() const
 	return MovementRuntime.ActiveGait;
 }
 
-// 컨트롤러 입력이 요청한 Walk/Run/Sprint를 반환한다.
+// AnimBP가 사용할 Walk/Run/Sprint를 반환한다.
 EMovementState ABAPlayerCharacter::GetDesiredMovementState() const
 {
-	return MovementRuntime.DesiredGait;
+	return GetMovementAllowedGait(MovementRuntime.DesiredGait);
 }
 
 // 현재 Free/Strafe 제어 방식을 반환한다.
@@ -547,20 +547,35 @@ bool ABAPlayerCharacter::ShouldUseAnalogWalkGait(const EMovementState RequestedG
 
 float ABAPlayerCharacter::GetAnalogWalkInputThreshold() const
 {
-	if (SpeedSettings.RunSpeed <= KINDA_SMALL_NUMBER)
-	{
-		return 1.f;
-	}
-
-	return FMath::Clamp(SpeedSettings.WalkSpeed / SpeedSettings.RunSpeed, 0.05f, 1.f);
+	return FMath::Clamp(AnalogWalkInputThreshold, 0.05f, 1.f);
 }
 
 float ABAPlayerCharacter::GetMoveInputScaleForActiveGait() const
 {
 	const float InputSize = MovementRuntime.MoveInputVector.Size();
-	if (MovementRuntime.ActiveGait == EMovementState::Walk && MovementRuntime.DesiredGait == EMovementState::Run)
+	if (MovementRuntime.DesiredGait != EMovementState::Run)
+	{
+		return InputSize;
+	}
+
+	if (MovementRuntime.ActiveGait == EMovementState::Walk)
 	{
 		return FMath::Clamp(InputSize / GetAnalogWalkInputThreshold(), 0.f, 1.f);
+	}
+
+	if (MovementRuntime.ActiveGait == EMovementState::Run)
+	{
+		if (SpeedSettings.RunSpeed <= KINDA_SMALL_NUMBER)
+		{
+			return InputSize;
+		}
+
+		const float WalkRunSpeedRatio = FMath::Clamp(SpeedSettings.WalkSpeed / SpeedSettings.RunSpeed, 0.f, 1.f);
+		const float Threshold = GetAnalogWalkInputThreshold();
+		const float RunAlpha = Threshold >= 1.f
+			? 1.f
+			: FMath::Clamp((InputSize - Threshold) / (1.f - Threshold), 0.f, 1.f);
+		return FMath::Lerp(WalkRunSpeedRatio, 1.f, RunAlpha);
 	}
 
 	return InputSize;

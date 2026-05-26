@@ -45,9 +45,6 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> LookAction;
 
-	UPROPERTY(Transient)
-	TObjectPtr<UInputAction> GamepadLookAction;
-
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> LightAttackAction;
 
@@ -95,18 +92,6 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Input", meta = (ClampMin = "0.0"))
 	float SprintHoldRequiredTime = 0.5f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Input|Gamepad")
-	bool bSmoothGamepadLookInput = true;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input|Gamepad", meta = (ClampMin = "0.0", EditCondition = "bSmoothGamepadLookInput"))
-	float GamepadLookInputInterpRate = 10.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input|Gamepad", meta = (ClampMin = "0.0"))
-	float GamepadLookYawScale = 0.85f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input|Gamepad", meta = (ClampMin = "0.0"))
-	float GamepadLookPitchScale = 0.75f;
-	
 	UPROPERTY(EditDefaultsOnly, Category="Input")
 	TObjectPtr<UInputAction> InteractAction;
 	
@@ -122,9 +107,6 @@ private:
 
 	// 카메라 yaw/pitch 입력을 컨트롤러 회전에 적용한다.
 	void Look(const FInputActionValue& Value);
-
-	// 게임패드 카메라 입력을 보간 대상으로 저장한다.
-	void LookGamepad(const FInputActionValue& Value);
 
 	// 카메라 yaw/pitch 입력을 락온 상태에 맞게 처리한다.
 	void ApplyLookInput(const FVector2D& LookInput);
@@ -148,9 +130,6 @@ private:
 
 	// 홀드 시간이 충족되면 질주 modifier를 활성화한다.
 	void UpdateSprintHoldState();
-
-	// 게임패드 카메라 입력을 부드럽게 보간해 적용한다.
-	void UpdateGamepadLookInput(float DeltaTime);
 
 	// 현재 입력 modifier 조합을 캐릭터의 DesiredGait로 반영한다.
 	void ApplyMovementStateByModifier() const;
@@ -187,10 +166,7 @@ private:
 	bool bSprintInputHeld = false;
 	bool bSprintModifierHeld = false;
 	bool bHasMoveInput = false;
-	bool bHasPendingGamepadLookInput = false;
 	FVector2D LastMoveInputVector = FVector2D::ZeroVector;
-	FVector2D PendingGamepadLookInput = FVector2D::ZeroVector;
-	FVector2D SmoothedGamepadLookInput = FVector2D::ZeroVector;
 	double SprintDodgePressedTime = 0.0;
 	
 };

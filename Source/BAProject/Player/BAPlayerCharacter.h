@@ -661,6 +661,10 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Movement", meta = (ShowOnlyInnerProperties))
 	FBAPlayerMovementSpeedSettings SpeedSettings;
 
+	// Run 요청 중에도 스틱 기울기가 이 값 이하면 Walk 애니메이션/속도로 처리한다.
+	UPROPERTY(EditAnywhere, Category = "Movement|Analog", meta = (ClampMin = "0.05", ClampMax = "1.0"))
+	float AnalogWalkInputThreshold = 0.55f;
+
 	UPROPERTY(EditAnywhere, Category = "Movement|Locomotion", meta = (ShowOnlyInnerProperties))
 	FBAPlayerLocomotionSettings LocomotionSettings;
 
