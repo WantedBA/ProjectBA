@@ -130,6 +130,9 @@ void ABAPlayerCharacter::ResetWeaponAttachment()
 	if (GetMesh()->DoesSocketExist(TargetSocket))
 	{
 		WeaponMeshComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TargetSocket);
+		// 부착 시 상대 변환값을 유지하도록 설정한 뒤, 저장해둔 기본값으로 초기화
+		WeaponMeshComponent->SetRelativeLocation(DefaultWeaponRelativeLocation);
+		WeaponMeshComponent->SetRelativeRotation(DefaultWeaponRelativeRotation);
 	}
 	//else
 	//{
