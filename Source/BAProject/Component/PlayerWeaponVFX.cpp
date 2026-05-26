@@ -78,3 +78,13 @@ void UPlayerWeaponVFX::DeactivateTrailNiagara()
 {
 	TrailNiagaraComponent->Deactivate();
 }
+
+void UPlayerWeaponVFX::SetTrailZOffset(float ZOffset)
+{
+	TrailNiagaraComponent->SetRelativeLocation(FVector(0, 0, ZOffset));
+}
+
+void UPlayerWeaponVFX::SetTrailScale(float Scale)
+{
+	TrailNiagaraComponent->SetRelativeScale3D(FVector(Scale, Scale, Scale));
+}

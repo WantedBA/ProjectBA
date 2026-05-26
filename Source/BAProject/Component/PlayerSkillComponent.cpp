@@ -202,6 +202,24 @@ void UPlayerSkillComponent::ApplyElement(const FSkillModifierRow* SkillModifier)
 		{
 			UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Failed to load Weapon Trail Niagara System: %s"), *SkillModifier->Value2);
 		}
+		// 무기 트레일 효과 오프셋 설정
+		if (float TrailZOffset = FCString::Atof(*SkillModifier->Value3))
+		{
+			WeaponVFXComponent->SetTrailZOffset(TrailZOffset);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Invalid Trail Z Offset value: %s"), *SkillModifier->Value3);
+		}
+		// 무기 트레일 효과 스케일 설정
+		if (float TrailScale = FCString::Atof(*SkillModifier->Value4))
+		{
+			WeaponVFXComponent->SetTrailScale(TrailScale);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("PlayerSkillComponent: Invalid Trail Scale value: %s"), *SkillModifier->Value4);
+		}
 	}
 }
 

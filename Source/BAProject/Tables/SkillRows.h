@@ -148,6 +148,10 @@ struct BAPROJECT_API FSkillModifierRow : public FBARowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Modifier")
 	FString Value3;
 	
+	// 추가 값4
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Modifier")
+	FString Value4;
+	
 	virtual void PostRead() override
 	{
 		bTid = SkillTid;
