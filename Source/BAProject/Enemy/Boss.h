@@ -129,6 +129,12 @@ public:
 	// 플레이어 사망 시 즉시 호출 — AI 정지 (Dev 모드에서는 DevResetDelay 후 FullReset 자동 호출)
 	UFUNCTION(BlueprintCallable, Category = "Boss|Quest")
 	void PauseForReset();
+		
+	UFUNCTION()
+	void HandlePlayerDied();
+
+	UFUNCTION()
+	void HandlePlayerRespawned();
 
 	// HP·위치·전투 상태 완전 복구 — UI 확인 버튼 또는 Dev 타이머에서 호출
 	UFUNCTION(BlueprintCallable, Category = "Boss|Quest")
@@ -185,6 +191,10 @@ protected:
 	// 현재 활성화된 퀘스트 Tid (OnQuestActivated에서 저장, FullReset에서 초기화)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Quest")
 	int32 ActiveQuestTid = 0;
+
+	// FullReset 이후 재교전에 사용 — OnQuestActivated에서 저장하며 절대 지워지지 않음
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Boss|Quest")
+	int32 LastBossQuestTid = 0;
 
 	// Dev 전용: true면 PauseForReset 호출 후 DevResetDelay초 뒤 자동으로 FullReset 호출
 	UPROPERTY(EditAnywhere, Category = "Boss|Quest|Dev")

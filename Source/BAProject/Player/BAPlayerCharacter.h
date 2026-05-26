@@ -49,6 +49,8 @@ enum class EBAPlayerState : uint8
 	Dead
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerRespawned);
+
 UCLASS()
 class BAPROJECT_API ABAPlayerCharacter : public ACharacterBase
 {
@@ -281,6 +283,9 @@ public:
 	/** 마지막 체크포인트에서 부활 */
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void Respawn();
+
+	UPROPERTY(BlueprintAssignable, Category = "Combat")
+	FOnPlayerRespawned OnRespawned;
 
 	/** 사망 시 드롭된 무기를 다시 손에 부착 */
 	void ResetWeaponAttachment();
