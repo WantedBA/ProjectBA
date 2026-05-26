@@ -1,8 +1,6 @@
 #include "Player/BAPlayerCharacter.h"
 
 #include "Camera/CameraComponent.h"
-#include "Player/BADamageCameraShake.h"
-#include "Player/BALandingCameraShake.h"
 #if !UE_BUILD_SHIPPING
 #include "Enemy/EnemyBase.h"
 #include "Component/StatComponent.h"
@@ -22,6 +20,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Instance/UserDataSubsystem.h"
 #include "Materials/MaterialInterface.h"
+#include "Player/Camera/CameraOcclusionFadeComponent.h"
 #include "Tables/BATableManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Map/MapInfoActor.h"
@@ -55,7 +54,7 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	WeaponMeshComponent->SetupAttachment(GetMesh(), FName(SocketName::RightHandTargetSocketName));
 	WeaponMeshComponent->SetCollisionProfileName(TEXT("NoCollision"));
 
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> GreatSwordMesh(TEXT("/Game/Assets/Great_Sword.Great_Sword"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> GreatSwordMesh(TEXT("/Game/Assets/Weapon/Brass_Iron_StaticMesh.Brass_Iron_StaticMesh"));
 	if (GreatSwordMesh.Succeeded())
 	{
 		WeaponMeshComponent->SetStaticMesh(GreatSwordMesh.Object);
@@ -63,7 +62,7 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	
 	PlayerWeaponVFX = CreateDefaultSubobject<UPlayerWeaponVFX>(TEXT("PlayerWeaponVFX"));
 	PlayerWeaponVFX->SetupAttachment(WeaponMeshComponent);
-	PlayerWeaponVFX->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
+	// PlayerWeaponVFX->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
 
 	// 스탯 컴포넌트 생성
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));
@@ -107,14 +106,14 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	SpringArm->bInheritRoll = false;
 	SpringArm->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
 	
-	// camera spring arm 충돌 활성화
-	SpringArm->bDoCollisionTest = true; 
-
 	// camera 설정
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
 	Camera->SetRelativeRotation(FRotator(-17.f, 0.f, 0.f));
 	Camera->bUsePawnControlRotation = false;
+
+	CameraOcclusionFadeComponent = CreateDefaultSubobject<UCameraOcclusionFadeComponent>(
+		TEXT("CameraOcclusionFadeComponent"));
 	
 	// 마우스 카메라 제어 Yaw축만 허용
 	bUseControllerRotationPitch = false;
@@ -124,8 +123,7 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	MovementRuntime.CurrentMaxWalkSpeed = SpeedSettings.RunSpeed;
 	MovementRuntime.TargetMaxWalkSpeed = SpeedSettings.RunSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = MovementRuntime.CurrentMaxWalkSpeed;
-	DamageReactionCameraShakeClass = UBADamageCameraShake::StaticClass();
-	LandingRecoveryCameraShakeClass = UBALandingRecoveryCameraShake::StaticClass();
+	InitializeCameraDefaults();
 }
 
 // 데이터 초기화와 스탯 변경 이벤트 바인딩을 수행한다.
@@ -150,6 +148,7 @@ void ABAPlayerCharacter::BeginPlay()
 	// PlayerCharacter BeginPlay의 델리게이트 콜백 바인딩 진입점을 단일화한다.
 	BindActionCallbacks();
 	BindLockOnTargetCallbacks();
+	ApplyCameraCollisionSettings();
 	ConfigureLockOnCameraDefaults();
 	
 
@@ -180,6 +179,11 @@ void ABAPlayerCharacter::BeginPlay()
 			SaveManager->SetRespawnPoint(DefaultLoc, DefaultRot);
 			UE_LOG(LogTemp, Log, TEXT("Initial Respawn Point Set to: %s"), *DefaultLoc.ToString());
 		}
+	}
+
+	if (PlayerSkillComponent)
+	{
+		PlayerSkillComponent->RefreshAllSkills();
 	}
 }
 
@@ -300,6 +304,7 @@ void ABAPlayerCharacter::BindActionCallbacks()
 
 	BindGuardActionCallbacks();
 	BindDodgeActionCallbacks();
+	BindAttackCallbacks();
 }
 
 // 액션별 예외 처리는 가드/구르기 등 각 도메인 콜백에서 처리한다.

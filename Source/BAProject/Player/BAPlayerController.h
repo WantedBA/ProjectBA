@@ -72,6 +72,13 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<USkillTreeWidget> SkillTreeWidget;
+
+	// 전투 중 바닥/천장 쪽으로 시야가 과하게 기울지 않도록 제한한다.
+	UPROPERTY(EditDefaultsOnly, Category = "Camera|View", meta = (Units = "deg"))
+	float ViewPitchMin = -30.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Camera|View", meta = (Units = "deg"))
+	float ViewPitchMax = 60.f;
 	
 	// 이 시간 이내에 질주 입력을 떼면 회피 입력으로 해석한다.
 	UPROPERTY(EditDefaultsOnly, Category = "Input")

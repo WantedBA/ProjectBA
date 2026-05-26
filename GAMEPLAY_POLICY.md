@@ -3,8 +3,8 @@
 작성일: 2026-05-22
 문서 분리: 2026-05-25
 기준 브랜치: `origin/develop` / `9abec5e7` Feature/death montage flow (#104)
-진행 중 참고 브랜치: `develop` / 낙하 착지 작업
-최근 업데이트: 2026-05-25 / 낙하 피해와 공통 착지 잠금 정책 정리
+진행 중 참고 브랜치: `feature/camera-polishing` / 카메라 폴리싱
+최근 업데이트: 2026-05-26 / 카메라 충돌, Pitch 제한, 공격 히트스톱 정책 정리
 
 이 문서는 정책, 결정사항, 현재 동작, 완료 이력만 기록한다. 남은 작업과 우선순위는 [TODO_Gameplay.md](TODO_Gameplay.md)에만 기록한다.
 
@@ -23,8 +23,10 @@
   - `Instant`: 액션 시작 비용.
   - `OnDemand`: 가드 피격/퍼펙트 가드 같은 명시 소비 비용.
   - 별도 소비 컨텍스트 enum은 두지 않는다.
-- 피격/가드 카메라 셰이크는 기본 C++ 셰이크로 연결되어 있다.
-- 공격 카메라 셰이크는 별도 폴리싱 작업으로 남긴다.
+- 카메라 충돌, 락온 카메라 보정, 플레이어 카메라 셰이크 재생 정책은 `BAPlayerCharacter.Camera.cpp`에서 관리한다.
+- 공격 히트 피드백은 카메라 셰이크가 아니라 실제 히트 시점의 플레이어 공격 몽타주 정지로 처리한다.
+- 일반공격, 강공격, 차지 공격 모두 살아 있는 적에게 피해가 적용된 경우 같은 히트스톱 규칙을 사용한다.
+- 피격/가드 카메라 셰이크는 판정 강도별 스케일을 다르게 적용한다.
 
 ## 완료된 작업
 
@@ -146,7 +148,7 @@
 - `ControllerRotationExtension`이 컨트롤러 회전을 타겟 방향으로 돌린다.
 - `ConfigureLockOnCameraDefaults()`는 카메라 상대 Pitch를 기준으로 `PitchOffset`을 보정한다.
 - 화면 높이 조정은 `BP_PlayerCharacter`의 `LockOn Additional Controller Pitch Offset`으로 한다.
-- 현재 테스트 기준 `-10` 값이 원하는 화면 높이에 가깝다.
+- 현재 C++ 기본값은 `-10`이고, 테스트 기준 이 값이 원하는 화면 높이에 가깝다.
 
 ### 최근 develop 반영
 
@@ -167,9 +169,9 @@
 
 - `feature/death-montage-flow`에서 기본 C++ 셰이크 연결을 완료했다.
 - `UBADamageCameraShake`를 `BAPlayerCharacter` 기본값으로 사용한다.
-- 피격 리액션 재생 시 `ClientStartCameraShake()`를 호출한다.
-- 일반 피격, 큰 피격, KnockDown, GuardHit, GuardBreak는 같은 기본 셰이크를 사용한다.
-- 공격 셰이크는 이 작업에 포함하지 않는다.
+- 피격 리액션 재생 시 `PlayDamageReactionCameraShake()`를 호출한다.
+- 일반 피격, 큰 피격, KnockDown 순서로 셰이크 스케일이 커진다.
+- 일반 가드, 퍼펙트 가드/가드 브레이크 순서로 셰이크 스케일이 커진다.
 
 ### 일반 몬스터 피격 화면 깜빡임
 
@@ -182,6 +184,27 @@
 - `NextAttackMontage`, `NextAttackActionType`, `NextComboTransitionTid` 정리 흐름에 포함됐다.
 
 ## 진행 중인 정책/구현 메모
+
+### 카메라 폴리싱
+
+- 일반 카메라 Pitch 제한은 `ABAPlayerController`에서 `ViewPitchMin -50`, `ViewPitchMax 35` 기본값으로 적용한다.
+- SpringArm 충돌은 `BAPlayerCharacter`의 `Camera|Collision` 설정으로 관리한다.
+  - 기본값은 `bEnableCameraCollision true`, `ProbeChannel ECC_Camera`, `ProbeSize 8`이다.
+  - 벽 충돌은 `Camera` 채널을 계속 사용해 유지한다.
+- 적 몸체는 카메라만 불필요하게 막지 않도록 `AEnemyBase`에서 Capsule과 모든 MeshComponent의 `ECC_Camera` 응답을 `Ignore`로 둔다.
+- 락온 화면 높이는 `LockOnAdditionalControllerPitchOffset -10`을 C++ 기본값으로 사용한다.
+- 플레이어 공격 히트스톱은 `BAPlayerCharacter.Combat.Attack.cpp`에서 처리한다.
+  - `CombatComponent::ApplyDamage()`는 피해 적용 결과만 `OnDamageResolved`로 알리고, 플레이어 전용 판단은 하지 않는다.
+  - 실제 무기 트레이스가 적 계열 피해 대상을 잡고 `TakeDamage()`가 0보다 큰 피해를 적용한 경우에만 후보가 된다.
+  - 피해 적용 후 적이 죽은 상태면 히트스톱을 생략한다.
+  - 발동 시 전역 시간 팽창을 쓰지 않고, 현재 플레이어 공격 몽타주만 `AttackHitStopDuration 0.2`초 동안 멈춘 뒤 재개한다.
+  - 일반공격, 강공격, 차지 공격은 같은 `AttackHitStopDuration` 값을 사용한다.
+- 피격/가드 셰이크는 `UBADamageCameraShake`를 기본값으로 사용한다.
+  - `DamageReactionCameraShakeScale`은 내부 전체 배율이며 에디터에 노출하지 않는다.
+  - 피격은 `HitReactCameraShakeScale 0.15`, `LargeHitReactCameraShakeScale 1.0`, `KnockDownCameraShakeScale 1.75` 순서로 커진다.
+  - 가드는 `GuardHitCameraShakeScale 0.7`, `PerfectGuardCameraShakeScale 1.25`, `GuardBreakCameraShakeScale 1.25`를 사용한다.
+- LandLight는 셰이크를 재생하지 않고, LandHeavy만 `LandingRecoveryCameraShakeClass`와 `LandingRecoveryCameraShakeScale`로 셰이크를 재생한다.
+- 사망 상태 정리 시 `DeathCameraShakeClass`와 `DeathCameraShakeScale 1.8`로 셰이크를 재생한다.
 
 ### 낙하, 착지, 낙사
 
@@ -220,9 +243,8 @@
 - KnockDown/Airborne 리액션은 `Damage.Hit.cpp`와 `Damage.GetUp.cpp`로 분리되어 있다.
 - KnockDown/Airborne은 지면 도착 후 바로 idle로 돌아가지 않고 마지막 프레임 고정, 입력 탈출 창, 기립 몽타주를 거친다.
 - 피격/가드 카메라 셰이크는 `UBADamageCameraShake` 기본 C++ 클래스로 연결되어 있다.
-  - 기본 클래스는 `BAPlayerCharacter` 생성자에서 `DamageReactionCameraShakeClass = UBADamageCameraShake::StaticClass()`로 설정한다.
-  - 피격 리액션 재생 시 `PlayDamageReactionCameraShake()`가 `ClientStartCameraShake()`를 호출한다.
-  - 현재 기본 구현은 모든 피격/가드 피격/가드 브레이크에 같은 셰이크 클래스를 사용한다.
+  - 기본 클래스는 `BAPlayerCharacter.Camera.cpp`의 `InitializeCameraDefaults()`에서 설정한다.
+  - 피격/가드/퍼펙트 가드/사망 셰이크 스케일은 `BAPlayerCharacter.Camera.cpp`에서 결정한다.
 
 ## 현재 동작 요약
 
@@ -289,7 +311,7 @@
 - KnockDown/Airborne은 기립이 끝날 때까지 무적을 유지한다.
 - KnockDown/Airborne 기립 대기 중 이동 입력은 기립 몽타주 일부 재생 후 이동 복귀로 처리한다.
 - KnockDown/Airborne 기립 대기 중 구르기 입력은 기립 몽타주 없이 즉시 회피 탈출로 처리한다.
-- 피격/가드 카메라 셰이크는 기본 C++ 셰이크로 연결되어 있다.
+- 피격/가드/사망 카메라 셰이크는 기본 C++ 셰이크로 연결되어 있고 판정별 스케일을 다르게 적용한다.
 
 ## 검증 상태
 
