@@ -55,7 +55,7 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	WeaponMeshComponent->SetupAttachment(GetMesh(), FName(SocketName::RightHandTargetSocketName));
 	WeaponMeshComponent->SetCollisionProfileName(TEXT("NoCollision"));
 
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> GreatSwordMesh(TEXT("/Game/Assets/Great_Sword.Great_Sword"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> GreatSwordMesh(TEXT("/Game/Assets/Weapon/Brass_Iron_StaticMesh.Brass_Iron_StaticMesh"));
 	if (GreatSwordMesh.Succeeded())
 	{
 		WeaponMeshComponent->SetStaticMesh(GreatSwordMesh.Object);
@@ -63,7 +63,7 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	
 	PlayerWeaponVFX = CreateDefaultSubobject<UPlayerWeaponVFX>(TEXT("PlayerWeaponVFX"));
 	PlayerWeaponVFX->SetupAttachment(WeaponMeshComponent);
-	PlayerWeaponVFX->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
+	// PlayerWeaponVFX->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
 
 	// 스탯 컴포넌트 생성
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));
@@ -180,6 +180,11 @@ void ABAPlayerCharacter::BeginPlay()
 			SaveManager->SetRespawnPoint(DefaultLoc, DefaultRot);
 			UE_LOG(LogTemp, Log, TEXT("Initial Respawn Point Set to: %s"), *DefaultLoc.ToString());
 		}
+	}
+
+	if (PlayerSkillComponent)
+	{
+		PlayerSkillComponent->RefreshAllSkills();
 	}
 }
 

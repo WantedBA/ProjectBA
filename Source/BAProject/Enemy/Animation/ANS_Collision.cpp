@@ -63,6 +63,6 @@ void UANS_Collision::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBa
 	// 충돌 시간동안 트레일 설정
 	if (UPlayerWeaponVFX* WeaponVfx = CharacterBase->GetComponentByClass<UPlayerWeaponVFX>())
 	{
-		WeaponVfx->ActivateTrailNiagara();
+		WeaponVfx->DeactivateTrailNiagara();
 	}
 }

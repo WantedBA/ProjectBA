@@ -66,11 +66,24 @@ void UPlayerSkillComponent::BeginPlay()
 	}
 	
 	// 스킬트리 창이 닫힐 때 스킬 새로고침 바인딩
-	SkillTreeSubsystem->OnSkillTreeChangeCompleted.AddUniqueDynamic(this, &UPlayerSkillComponent::RefreshAllSkills);
+	if (SkillTreeSubsystem)
+	{
+		SkillTreeSubsystem->OnSkillTreeChangeCompleted.AddUniqueDynamic(this, &UPlayerSkillComponent::RefreshAllSkills);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[PlayerSkillComponent::BeginPlay] SkillTreeSubsystem not found."));
+	}
 }
 
 void UPlayerSkillComponent::RefreshAllSkills()
 {
+	if (!SkillTreeSubsystem || !TableManager || !ActionComponent || !StatComponent || !WeaponVFXComponent || !PlayerCharacter)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[PlayerSkillComponent::RefreshAllSkills] Required reference is missing."));
+		return;
+	}
+
 	// 기존 스킬 변경사항 초기화
 	ClearAllSkills();
 	
@@ -88,6 +101,12 @@ void UPlayerSkillComponent::ClearAllSkills()
 	ActionComponent->ResetMovesetKeys();
 	StatComponent->ResetModifiers();
 	WeaponVFXComponent->ResetElement();
+	if (TrailNiagaraDefault)
+	{
+		WeaponVFXComponent->SetTrailNiagaraAsset(TrailNiagaraDefault);
+		WeaponVFXComponent->SetTrailScale(TrailNiagaraScaleDefault);
+		WeaponVFXComponent->SetTrailZOffset(TrailNiagaraZOffsetDefault);
+	}
 	PlayerCharacter->ResetComboTransitionOverrides();
 }
 
