@@ -132,6 +132,18 @@ void ABAPlayerCharacter::TryAttack(EActionCommand InActionCommand)
 		return;
 	}
 
+	if (IsDamageReactionRecoveryEscapeState())
+	{
+		TryStartAttackFromRecoveryEscape(InActionCommand);
+		return;
+	}
+
+	if (IsAttackRecoveryEscapeState())
+	{
+		TryStartAttackFromRecoveryEscape(InActionCommand);
+		return;
+	}
+
 	if (!CanAcceptActionInput())
 	{
 		return;
@@ -307,6 +319,8 @@ void ABAPlayerCharacter::OnAttackMontageEnded(
 
 void ABAPlayerCharacter::StartAttack(UAnimMontage* InAnimMontage)
 {
+	ClearRecoveryEscapeWindow();
+
 	const UBATableManager* TableManager = UBATableManager::Get(this);
 	if (!TableManager || !InAnimMontage || NextComboTransitionTid == 0)
 	{
@@ -468,6 +482,7 @@ void ABAPlayerCharacter::ResetComboTransitionOverrides()
 
 void ABAPlayerCharacter::ClearAttackRuntimeState()
 {
+	ClearRecoveryEscapeWindow();
 	ClearAttackHitStop(true);
 	NowComboTransitionTid = 0;
 	NextComboTransitionTid = 0;

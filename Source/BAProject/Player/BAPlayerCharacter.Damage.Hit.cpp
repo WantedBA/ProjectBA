@@ -289,6 +289,7 @@ void ABAPlayerCharacter::PlayDamageReactionAnimation(
 	const bool bGuarding,
 	const bool bGuardBreak)
 {
+	ClearRecoveryEscapeWindow();
 	ResetKnockDownRecovery();
 	bFallTrackingActive = false;
 
@@ -499,6 +500,7 @@ void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)
 		return;
 	}
 
+	ClearRecoveryEscapeWindow();
 	const EPlayerDamageReactionState FinishedDamageReactionState = DamageReactionState;
 	if (bDeathFinalizationDeferred)
 	{
@@ -516,9 +518,12 @@ void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)
 	ActiveDamageReactionPlaybackId = 0;
 	ActiveDamageReactionMontage = nullptr;
 
-	const bool bFinishedGuardReaction = FinishedDamageReactionState == EPlayerDamageReactionState::GuardHit
-		|| FinishedDamageReactionState == EPlayerDamageReactionState::GuardBreak;
-	const bool bShouldResumeGuard = bFinishedGuardReaction && ShouldResumeGuardAfterGuardReaction();
+	const bool bFinishedGuardHitReaction = FinishedDamageReactionState == EPlayerDamageReactionState::GuardHit;
+	const bool bFinishedGuardBreakReaction = FinishedDamageReactionState == EPlayerDamageReactionState::GuardBreak;
+	const bool bFinishedGuardReaction = bFinishedGuardHitReaction || bFinishedGuardBreakReaction;
+	const bool bShouldResumeGuard = bFinishedGuardHitReaction
+		? ShouldResumeGuardAfterGuardReaction()
+		: bFinishedGuardBreakReaction && bGuardInputHeld && IsAlive() && !IsOnLadder();
 	if (bFinishedGuardReaction && ActionComponent)
 	{
 		// GuardBreak 리액션 중에는 무방비였으므로 종료 시 상태를 비운 뒤, 입력이 유지되어 있으면 아래에서 재시작한다.

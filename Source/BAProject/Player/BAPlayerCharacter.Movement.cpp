@@ -274,7 +274,7 @@ void ABAPlayerCharacter::HandleDodgeActionStarted(
 		return;
 	}
 
-	if (ActionType == EActionType::DodgeRoll)
+	if (ActionType == EActionType::DodgeRoll || ActionType == EActionType::Backstep)
 	{
 		SetBAPlayerState(EBAPlayerState::DodgeRolling);
 	}
@@ -286,7 +286,7 @@ void ABAPlayerCharacter::HandleDodgeActionMontageEnded(
 	UAnimMontage* /*Montage*/,
 	const bool bInterrupted)
 {
-	if (ActionType == EActionType::DodgeRoll
+	if ((ActionType == EActionType::DodgeRoll || ActionType == EActionType::Backstep)
 		&& !bInterrupted
 		&& BAPlayerState == EBAPlayerState::DodgeRolling)
 	{
@@ -300,7 +300,7 @@ void ABAPlayerCharacter::HandleDodgeActionMontageEnded(
 		SnapInterpolatedMoveInputTo(FVector2D::ZeroVector);
 	}
 
-	if (ActionType == EActionType::DodgeRoll)
+	if (ActionType == EActionType::DodgeRoll || ActionType == EActionType::Backstep)
 	{
 		ApplyPendingLockOnStrafeMode();
 	}

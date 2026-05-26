@@ -131,7 +131,7 @@ private:
 	bool IsSprintDodgeTap() const;
 
 	// 현재 이동 입력 방향을 사용해 Dodge 액션을 시작한다.
-	void TryStartDodgeAction() const;
+	bool TryStartDodgeAction() const;
 
 	// 가드
 	void OnGuardStarted();

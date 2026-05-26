@@ -177,6 +177,26 @@ void ABAPlayerController::Move(const FInputActionValue& Value)
 		return;
 	}
 
+	if (ControlledCharacter->IsRecoveryEscapeRequiredForCurrentState())
+	{
+		if (ControlledCharacter->TryStartRecoveryEscapeMove(Movement))
+		{
+			bHasMoveInput = !Movement.IsNearlyZero();
+			if (UActionComponent* ActionComponent = ControlledCharacter->GetActionComponent())
+			{
+				ActionComponent->UpdateBufferedActionDirection(ControlledCharacter->GetActionDirectionFromMoveInput(Movement));
+			}
+		}
+		else
+		{
+			bHasMoveInput = false;
+			ControlledCharacter->SetMoveInputVector(FVector2D::ZeroVector);
+		}
+
+		ApplyMovementStateByModifier();
+		return;
+	}
+
 	if (!ControlledCharacter->CanAcceptActionInput() && !ControlledCharacter->IsDamageReacting())
 	{
 		bHasMoveInput = false;
@@ -270,6 +290,20 @@ void ABAPlayerController::OnSprintStarted()
 
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
 	{
+		if (PC->IsRecoveryEscapeRequiredForCurrentState())
+		{
+			const FVector2D DodgeInput = PC->GetMoveInputVector().IsNearlyZero()
+				? LastMoveInputVector
+				: PC->GetMoveInputVector();
+			const EActionDirection DodgeDirection = PC->GetActionDirectionFromMoveInput(DodgeInput);
+			if (PC->TryStartRecoveryEscapeAction(EActionCommand::Dodge, DodgeDirection))
+			{
+				bSprintInputHeld = false;
+				bSprintModifierHeld = false;
+				return;
+			}
+		}
+
 		if (PC->IsDamageReacting())
 		{
 			const EActionDirection DodgeDirection = PC->GetActionDirectionFromMoveInput(PC->GetMoveInputVector());
@@ -314,6 +348,21 @@ void ABAPlayerController::OnSprintCompleted()
 	}
 
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
+		PC && PC->IsRecoveryEscapeRequiredForCurrentState())
+	{
+		const FVector2D DodgeInput = PC->GetMoveInputVector().IsNearlyZero()
+			? LastMoveInputVector
+			: PC->GetMoveInputVector();
+		const EActionDirection DodgeDirection = PC->GetActionDirectionFromMoveInput(DodgeInput);
+		if (PC->TryStartRecoveryEscapeAction(EActionCommand::Dodge, DodgeDirection))
+		{
+			bSprintInputHeld = false;
+			bSprintModifierHeld = false;
+			return;
+		}
+	}
+
+	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
 		PC && PC->IsDamageReacting())
 	{
 		PC->SetKnockDownGetUpDodgeInputHeld(false, EActionDirection::Any);
@@ -327,12 +376,12 @@ void ABAPlayerController::OnSprintCompleted()
 
 	bSprintInputHeld = false;
 	bSprintModifierHeld = false;
-	ApplyMovementStateByModifier();
-
-	if (bShouldDodge)
+	if (bShouldDodge && TryStartDodgeAction())
 	{
-		TryStartDodgeAction();
+		return;
 	}
+
+	ApplyMovementStateByModifier();
 }
 
 void ABAPlayerController::UpdateSprintHoldState()
@@ -398,21 +447,34 @@ bool ABAPlayerController::IsSprintDodgeTap() const
 	return World->GetTimeSeconds() - SprintDodgePressedTime <= SprintDodgeTapMaxTime;
 }
 
-void ABAPlayerController::TryStartDodgeAction() const
+bool ABAPlayerController::TryStartDodgeAction() const
 {
 	ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
 	if (!PC)
 	{
-		return;
+		return false;
 	}
 
-	const FVector2D DodgeInput = PC->IsLandingRecoveryActive()
+	FVector2D DodgeInput = PC->IsLandingRecoveryActive()
 		? LastMoveInputVector
 		: PC->GetMoveInputVector();
+	if (DodgeInput.IsNearlyZero())
+	{
+		DodgeInput = LastMoveInputVector;
+	}
+	if (PC->IsRecoveryEscapeRequiredForCurrentState())
+	{
+		const FVector2D RecoveryDodgeInput = DodgeInput.IsNearlyZero()
+			? LastMoveInputVector
+			: DodgeInput;
+		const EActionDirection RecoveryDodgeDirection = PC->GetActionDirectionFromMoveInput(RecoveryDodgeInput);
+		return PC->TryStartRecoveryEscapeAction(EActionCommand::Dodge, RecoveryDodgeDirection);
+	}
+
 	const EActionDirection DodgeDirection = PC->GetActionDirectionFromMoveInput(DodgeInput);
 	if (!PC->ResolveLandingRecoveryBeforeAction(EActionCommand::Dodge, DodgeDirection))
 	{
-		return;
+		return false;
 	}
 
 	if (!PC->CanAcceptActionInput())
@@ -421,16 +483,18 @@ void ABAPlayerController::TryStartDodgeAction() const
 		{
 			PC->RequestKnockDownGetUpDodgeEscape(DodgeDirection);
 		}
-		return;
+		return false;
 	}
 
 	UActionComponent* ActionComponent = PC->GetActionComponent();
 	if (!ActionComponent)
 	{
-		return;
+		return false;
 	}
 
-	ActionComponent->TryStartAction(EActionCommand::Dodge, DodgeDirection);
+	return DodgeInput.IsNearlyZero()
+		? ActionComponent->TryStartAction(EActionCommand::Dodge, DodgeDirection)
+		: ActionComponent->TryStartActionOfType(EActionCommand::Dodge, DodgeDirection, EActionType::DodgeRoll);
 }
 
 void ABAPlayerController::OnGuardStarted()
