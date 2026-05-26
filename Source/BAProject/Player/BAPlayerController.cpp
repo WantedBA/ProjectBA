@@ -453,7 +453,7 @@ void ABAPlayerController::UpdateSprintHoldState()
 void ABAPlayerController::UpdateGamepadLookInput(const float DeltaTime)
 {
 	const FVector2D TargetInput = bHasPendingGamepadLookInput ? PendingGamepadLookInput : FVector2D::ZeroVector;
-	SmoothedGamepadLookInput = GamepadLookInputInterpRate <= 0.f
+	SmoothedGamepadLookInput = !bSmoothGamepadLookInput || GamepadLookInputInterpRate <= 0.f
 		? TargetInput
 		: FMath::Vector2DInterpTo(SmoothedGamepadLookInput, TargetInput, DeltaTime, GamepadLookInputInterpRate);
 

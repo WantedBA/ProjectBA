@@ -345,7 +345,7 @@ protected:
 	bool bEnableCameraLag = true;
 
 	UPROPERTY(EditAnywhere, Category = "Camera|Lag", meta = (ClampMin = "0.0"))
-	float CameraLagSpeed = 12.f;
+	float CameraLagSpeed = 10.f;
 
 	UPROPERTY(EditAnywhere, Category = "Camera|Lag", meta = (ClampMin = "0.0", Units = "cm"))
 	float CameraLagMaxDistance = 80.f;
@@ -355,7 +355,7 @@ protected:
 	bool bEnableCameraRotationLag = true;
 
 	UPROPERTY(EditAnywhere, Category = "Camera|Lag", meta = (ClampMin = "0.0"))
-	float CameraRotationLagSpeed = 16.f;
+	float CameraRotationLagSpeed = 12.f;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMeshComponent> WeaponMeshComponent;
@@ -719,7 +719,18 @@ private:
 
 	// 락온 타겟 화면 높이 보정 PitchOffset
 	UPROPERTY(EditAnywhere, Category = "LockOn|Camera", meta = (Units = "deg"))
-	float LockOnAdditionalControllerPitchOffset = -10.f;
+	float LockOnAdditionalControllerPitchOffset = 0.f;
+
+	// 근접 락온 시 카메라가 과하게 땅을 향하지 않도록 컨트롤러 pitch를 제한한다.
+	UPROPERTY(EditAnywhere, Category = "LockOn|Camera")
+	bool bOverrideLockOnControllerPitchClamp = true;
+
+	UPROPERTY(EditAnywhere, Category = "LockOn|Camera", meta = (Units = "deg", EditCondition = "bOverrideLockOnControllerPitchClamp"))
+	FVector2D LockOnControllerPitchClamp = FVector2D(-25.f, 30.f);
+
+	// 락온 카메라 회전 보간 속도. 낮을수록 타겟을 더 부드럽게 따라간다.
+	UPROPERTY(EditAnywhere, Category = "LockOn|Camera", meta = (ClampMin = "0.0"))
+	float LockOnControllerRotationInterpSpeed = 10.f;
 
 	// 공격 성공 시 플레이어 공격 몽타주 정지 시간
 	UPROPERTY(EditAnywhere, Category = "Combat|Attack|HitStop", meta = (ClampMin = "0.0", Units = "s"))

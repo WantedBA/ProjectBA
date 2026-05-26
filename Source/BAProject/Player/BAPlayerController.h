@@ -82,7 +82,7 @@ private:
 
 	// 전투 중 바닥/천장 쪽으로 시야가 과하게 기울지 않도록 제한한다.
 	UPROPERTY(EditDefaultsOnly, Category = "Camera|View", meta = (Units = "deg"))
-	float ViewPitchMin = -30.f;
+	float ViewPitchMin = -60.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Camera|View", meta = (Units = "deg"))
 	float ViewPitchMax = 60.f;
@@ -95,14 +95,17 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Input", meta = (ClampMin = "0.0"))
 	float SprintHoldRequiredTime = 0.5f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Input|Gamepad", meta = (ClampMin = "0.0"))
-	float GamepadLookInputInterpRate = 14.f;
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Gamepad")
+	bool bSmoothGamepadLookInput = true;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input|Gamepad", meta = (ClampMin = "0.0", EditCondition = "bSmoothGamepadLookInput"))
+	float GamepadLookInputInterpRate = 10.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input|Gamepad", meta = (ClampMin = "0.0"))
-	float GamepadLookYawScale = 1.f;
+	float GamepadLookYawScale = 0.85f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input|Gamepad", meta = (ClampMin = "0.0"))
-	float GamepadLookPitchScale = 0.85f;
+	float GamepadLookPitchScale = 0.75f;
 	
 	UPROPERTY(EditDefaultsOnly, Category="Input")
 	TObjectPtr<UInputAction> InteractAction;
