@@ -5,6 +5,7 @@
 #include "BAPlayerController.generated.h"
 
 struct FInputActionValue;
+struct FKey;
 class UInputAction;
 class UInputMappingContext;
 class USkillTreeWidget;
@@ -58,6 +59,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> GuardAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> UseConsumableAction;
 
 // 체크포인트 인풋
 	// 체크포인트에서 활성화할 IMC
@@ -137,6 +141,9 @@ private:
 	void OnGuardStarted();
 	void OnGuardCompleted();
 
+	// 아이템 사용 입력을 UseConsumable 액션 명령으로 전달한다.
+	void OnUseConsumable();
+
 	// 사다리 상태면 이탈하고, 아니면 현재 상호작용 대상을 실행한다.
 	void OnInteract();
 
@@ -145,6 +152,12 @@ private:
 	
 	// 스킬트리 열기
 	void ToggleSkillTree();
+
+	// 기본 입력 컨텍스트에 런타임 게임패드 매핑을 보강한다.
+	void ConfigureGamepadInputMappings();
+
+	// 지정 액션에 키가 없을 때만 매핑을 추가한다.
+	void MapActionKeyIfMissing(const UInputAction* Action, const FKey& Key);
 
 	bool bWalkToggleEnabled = false;
 	bool bSprintInputHeld = false;

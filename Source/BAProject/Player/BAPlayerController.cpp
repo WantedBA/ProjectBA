@@ -4,15 +4,27 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/GameInstance.h"
+#include "InputAction.h"
+#include "InputCoreTypes.h"
 #include "InputMappingContext.h"
 #include "Component/ActionComponent.h"
 #include "Component/InteractorComponent.h"
 #include "UI/SkillTree/SkillTreeWidget.h"
 #include "UI/System/SubSystemUI.h"
 
+namespace
+{
+	FKey GenericUSBControllerButton(const int32 ButtonNumber)
+	{
+		return FKey(FName(*FString::Printf(TEXT("GenericUSBController_Button%d"), ButtonNumber)));
+	}
+}
+
 ABAPlayerController::ABAPlayerController()
 {
 	// IMC, Input Action 설정은 BP_PlayerController에서 설정함
+	UseConsumableAction = CreateDefaultSubobject<UInputAction>(TEXT("UseConsumableAction"));
+	UseConsumableAction->ValueType = EInputActionValueType::Boolean;
 	
 	// static ConstructorHelpers::FClassFinder<UHUDWidget> HUDWidgetRef(TEXT("/Game/BAProject/UI/WBP_HUD.WBP_HUD_C"));
 	// if (HUDWidgetRef.Succeeded())
@@ -37,6 +49,7 @@ void ABAPlayerController::BeginPlay()
 		{
 			if (InputMappingContext)
 			{
+				ConfigureGamepadInputMappings();
 				InputSystem->AddMappingContext(InputMappingContext, 0);
 			}
 			
@@ -113,6 +126,15 @@ void ABAPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(GuardAction, ETriggerEvent::Started, this, &ABAPlayerController::OnGuardStarted);
 		EnhancedInputComponent->BindAction(GuardAction, ETriggerEvent::Completed, this, &ABAPlayerController::OnGuardCompleted);
 		EnhancedInputComponent->BindAction(GuardAction, ETriggerEvent::Canceled, this, &ABAPlayerController::OnGuardCompleted);
+	}
+
+	if (ensureMsgf(UseConsumableAction, TEXT("UseConsumableAction is not configured on %s"), *GetName()))
+	{
+		EnhancedInputComponent->BindAction(
+			UseConsumableAction,
+			ETriggerEvent::Started,
+			this,
+			&ABAPlayerController::OnUseConsumable);
 	}
 	
 	if (ensureMsgf(InteractAction, TEXT("InteractAction is not configured on %s"), *GetName()))
@@ -513,6 +535,33 @@ void ABAPlayerController::OnGuardCompleted()
 	}
 }
 
+void ABAPlayerController::OnUseConsumable()
+{
+	ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
+	if (!PC)
+	{
+		return;
+	}
+
+	if (!PC->ResolveLandingRecoveryBeforeAction(EActionCommand::UseConsumable))
+	{
+		return;
+	}
+
+	if (!PC->CanAcceptActionInput())
+	{
+		return;
+	}
+
+	UActionComponent* ActionComponent = PC->GetActionComponent();
+	if (!ActionComponent)
+	{
+		return;
+	}
+
+	ActionComponent->TryStartAction(EActionCommand::UseConsumable);
+}
+
 void ABAPlayerController::OnInteract()
 {
 	ABAPlayerCharacter* PC = 
@@ -584,4 +633,49 @@ void ABAPlayerController::ToggleSkillTree()
 	}
 
 	SkillTreeWidget = Cast<USkillTreeWidget>(UISubsystem->PushUIByClass(SkillTreeWidgetClass));
+}
+
+void ABAPlayerController::ConfigureGamepadInputMappings()
+{
+	MapActionKeyIfMissing(RunAction, EKeys::Gamepad_Left2D);
+	MapActionKeyIfMissing(LookAction, EKeys::Gamepad_Right2D);
+
+	MapActionKeyIfMissing(LightAttackAction, EKeys::Gamepad_RightShoulder);
+	MapActionKeyIfMissing(LightAttackAction, GenericUSBControllerButton(6)); // DualSense R1
+
+	MapActionKeyIfMissing(HeavyAttackAction, EKeys::Gamepad_RightTrigger);
+	MapActionKeyIfMissing(HeavyAttackAction, GenericUSBControllerButton(8)); // DualSense R2
+
+	MapActionKeyIfMissing(GuardAction, EKeys::Gamepad_LeftShoulder);
+	MapActionKeyIfMissing(GuardAction, GenericUSBControllerButton(5)); // DualSense L1
+
+	MapActionKeyIfMissing(SprintAction, EKeys::Gamepad_FaceButton_Right);
+	MapActionKeyIfMissing(SprintAction, GenericUSBControllerButton(3)); // DualSense Circle
+
+	MapActionKeyIfMissing(InteractAction, EKeys::Gamepad_FaceButton_Bottom);
+	MapActionKeyIfMissing(InteractAction, GenericUSBControllerButton(2)); // DualSense Cross
+
+	MapActionKeyIfMissing(UseConsumableAction, EKeys::Gamepad_FaceButton_Left);
+	MapActionKeyIfMissing(UseConsumableAction, GenericUSBControllerButton(1)); // DualSense Square
+
+	MapActionKeyIfMissing(LockOnAction, EKeys::Gamepad_RightThumbstick);
+	MapActionKeyIfMissing(LockOnAction, GenericUSBControllerButton(12)); // DualSense R3
+}
+
+void ABAPlayerController::MapActionKeyIfMissing(const UInputAction* Action, const FKey& Key)
+{
+	if (!InputMappingContext || !Action || !Key.IsValid())
+	{
+		return;
+	}
+
+	for (const FEnhancedActionKeyMapping& Mapping : InputMappingContext->GetMappings())
+	{
+		if (Mapping.Action == Action && Mapping.Key == Key)
+		{
+			return;
+		}
+	}
+
+	InputMappingContext->MapKey(Action, Key);
 }
