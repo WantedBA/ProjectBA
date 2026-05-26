@@ -14,7 +14,7 @@
 
 namespace
 {
-	FKey GenericUSBControllerButton(const int32 ButtonNumber)
+	FKey PlayerControllerGenericUSBControllerButton(const int32 ButtonNumber)
 	{
 		return FKey(FName(*FString::Printf(TEXT("GenericUSBController_Button%d"), ButtonNumber)));
 	}
@@ -645,25 +645,25 @@ void ABAPlayerController::ConfigureGamepadInputMappings()
 	MapActionKeyIfMissing(LookAction, EKeys::Gamepad_Right2D);
 
 	MapActionKeyIfMissing(LightAttackAction, EKeys::Gamepad_RightShoulder);
-	MapActionKeyIfMissing(LightAttackAction, GenericUSBControllerButton(6)); // DualSense R1
+	MapActionKeyIfMissing(LightAttackAction, PlayerControllerGenericUSBControllerButton(6)); // DualSense R1
 
 	MapActionKeyIfMissing(HeavyAttackAction, EKeys::Gamepad_RightTrigger);
-	MapActionKeyIfMissing(HeavyAttackAction, GenericUSBControllerButton(8)); // DualSense R2
+	MapActionKeyIfMissing(HeavyAttackAction, PlayerControllerGenericUSBControllerButton(8)); // DualSense R2
 
 	MapActionKeyIfMissing(GuardAction, EKeys::Gamepad_LeftShoulder);
-	MapActionKeyIfMissing(GuardAction, GenericUSBControllerButton(5)); // DualSense L1
+	MapActionKeyIfMissing(GuardAction, PlayerControllerGenericUSBControllerButton(5)); // DualSense L1
 
 	MapActionKeyIfMissing(SprintAction, EKeys::Gamepad_FaceButton_Right);
-	MapActionKeyIfMissing(SprintAction, GenericUSBControllerButton(3)); // DualSense Circle
+	MapActionKeyIfMissing(SprintAction, PlayerControllerGenericUSBControllerButton(3)); // DualSense Circle
 
 	MapActionKeyIfMissing(InteractAction, EKeys::Gamepad_FaceButton_Bottom);
-	MapActionKeyIfMissing(InteractAction, GenericUSBControllerButton(2)); // DualSense Cross
+	MapActionKeyIfMissing(InteractAction, PlayerControllerGenericUSBControllerButton(2)); // DualSense Cross
 
 	MapActionKeyIfMissing(UseConsumableAction, EKeys::Gamepad_FaceButton_Left);
-	MapActionKeyIfMissing(UseConsumableAction, GenericUSBControllerButton(1)); // DualSense Square
+	MapActionKeyIfMissing(UseConsumableAction, PlayerControllerGenericUSBControllerButton(1)); // DualSense Square
 
 	MapActionKeyIfMissing(LockOnAction, EKeys::Gamepad_RightThumbstick);
-	MapActionKeyIfMissing(LockOnAction, GenericUSBControllerButton(12)); // DualSense R3
+	MapActionKeyIfMissing(LockOnAction, PlayerControllerGenericUSBControllerButton(12)); // DualSense R3
 }
 
 void ABAPlayerController::MapActionKeyIfMissing(const UInputAction* Action, const FKey& Key)

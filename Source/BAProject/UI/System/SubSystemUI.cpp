@@ -23,7 +23,7 @@
 
 namespace
 {
-	FKey GenericUSBControllerButton(const int32 ButtonNumber)
+	FKey UINavigationGenericUSBControllerButton(const int32 ButtonNumber)
 	{
 		return FKey(FName(*FString::Printf(TEXT("GenericUSBController_Button%d"), ButtonNumber)));
 	}
@@ -34,10 +34,10 @@ namespace
 		FBAUINavigationConfig()
 		{
 			KeyActionRules.Emplace(EKeys::Gamepad_FaceButton_Bottom, EUINavigationAction::Accept); // Xbox A
-			KeyActionRules.Emplace(GenericUSBControllerButton(2), EUINavigationAction::Accept); // DualSense Cross
+			KeyActionRules.Emplace(UINavigationGenericUSBControllerButton(2), EUINavigationAction::Accept); // DualSense Cross
 
 			KeyActionRules.Emplace(EKeys::Gamepad_FaceButton_Right, EUINavigationAction::Back); // Xbox B
-			KeyActionRules.Emplace(GenericUSBControllerButton(3), EUINavigationAction::Back); // DualSense Circle
+			KeyActionRules.Emplace(UINavigationGenericUSBControllerButton(3), EUINavigationAction::Back); // DualSense Circle
 		}
 	};
 }

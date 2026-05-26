@@ -6,7 +6,7 @@
 
 namespace
 {
-	FKey GenericUSBControllerButton(const int32 ButtonNumber)
+	FKey PopupGenericUSBControllerButton(const int32 ButtonNumber)
 	{
 		return FKey(FName(*FString::Printf(TEXT("GenericUSBController_Button%d"), ButtonNumber)));
 	}
@@ -17,7 +17,7 @@ namespace
 			|| Key == EKeys::Three
 			|| Key == EKeys::Virtual_Back
 			|| Key == EKeys::Gamepad_FaceButton_Right
-			|| Key == GenericUSBControllerButton(3);
+			|| Key == PopupGenericUSBControllerButton(3);
 	}
 }
 
