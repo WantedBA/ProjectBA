@@ -145,7 +145,7 @@ void USubSystemUI::HandleWorldInit(UWorld* World, const UWorld::InitializationVa
 	CleanupUI();
 
 	// 실제 플레이 시에만 실행
-	if (World && World->IsGameWorld())
+	if (!World || World->IsGameWorld())
 	{
 		// 프로젝트 세팅에 등록된 설정값 가져오기
 		const UUISettings* Settings = GetDefault<UUISettings>();
@@ -182,6 +182,7 @@ void USubSystemUI::HandleWorldInit(UWorld* World, const UWorld::InitializationVa
 									Stat->OnDead.AddDynamic(this, &USubSystemUI::HandlePlayerDeath);
 
 									UE_LOG(LogTemp, Warning, TEXT(">>> Success: Bound to Player Death Signal!"));
+									RefreshInputMode();
 								}
 							}
 						}
@@ -272,20 +273,23 @@ void USubSystemUI::RefreshInputMode()
 	{
 		if (bHasPopup)
 		{
-			// 팝업이 있다면 UI 전용 입력 모드로 변경후 커서 활성화
-			FInputModeUIOnly InputMode;
+			FInputModeGameAndUI InputMode;
 			if (TopWidget)
 			{
 				InputMode.SetWidgetToFocus(TopWidget->GetCachedWidget());
 			}
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+
 			PC->SetInputMode(InputMode);
 			PC->bShowMouseCursor = true;
+
+			PC->bEnableClickEvents = true;
+			PC->bEnableMouseOverEvents = true;
 		}
 		else
 		{
-			// 팝업이 없다면 마우스 커서 비활성화, 게임 조작 재활성화
-			FInputModeGameOnly InputMode;
-			PC->SetInputMode(InputMode);
+			FInputModeGameOnly GameMode;
+			PC->SetInputMode(GameMode);
 			PC->bShowMouseCursor = false;
 		}
 	}
@@ -327,7 +331,11 @@ void USubSystemUI::ClearAllUI()
 	// 캐싱된 변수 초기화
 	CachedMainHUD = nullptr;
 	CachedNotifyLayer = nullptr;
-	GlobalBlurWidget = nullptr;
+	if (GlobalBlurWidget)
+	{
+		GlobalBlurWidget->RemoveFromParent();
+		GlobalBlurWidget = nullptr;
+	}
 
 	UE_LOG(LogTemp, Log, TEXT(">>> SubSystemUI: All UI Cleared for Level Transition."));
 }
