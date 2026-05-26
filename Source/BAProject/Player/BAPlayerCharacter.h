@@ -630,7 +630,9 @@ private:
 		bool bGuardBreak) const;
 	void PlayPerfectGuardForceFeedback() const;
 	void PlayGuardStartForceFeedback() const;
+	void PlayDeathForceFeedback() const;
 	void PlayConfiguredForceFeedback(float Intensity, float Duration) const;
+	float ResolveForceFeedbackIntensity(float Intensity) const;
 	void PlayXInputForceFeedback(float Intensity, float Duration) const;
 	void StopXInputForceFeedback() const;
 	void StopXInputForceFeedback(int32 PlaybackId) const;
@@ -871,47 +873,65 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0", ClampMax = "3"))
 	int32 XInputForceFeedbackUserIndex = 0;
 
-	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float HitReactForceFeedbackIntensity = 0.3f;
+	// 기존 피드백별 세기 값에 곱하는 전체 체감 보정값.
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0"))
+	float ForceFeedbackIntensityMultiplier = 1.75f;
 
-	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
-	float HitReactForceFeedbackDuration = 0.12f;
+	// Xbox/XInput 기준 왼쪽 저주파 모터. 그립/핸들 쪽 둔탁한 진동 체감에 가깝다.
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback|XInput", meta = (ClampMin = "0.0", ClampMax = "2.0"))
+	float XInputLeftMotorScale = 1.15f;
 
-	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float LargeHitReactForceFeedbackIntensity = 0.55f;
-
-	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
-	float LargeHitReactForceFeedbackDuration = 0.16f;
-
-	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float KnockDownForceFeedbackIntensity = 0.75f;
-
-	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
-	float KnockDownForceFeedbackDuration = 0.22f;
+	// Xbox/XInput 기준 오른쪽 고주파 모터. 날카로운 진동 체감에 가깝다.
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback|XInput", meta = (ClampMin = "0.0", ClampMax = "2.0"))
+	float XInputRightMotorScale = 0.9f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float GuardHitForceFeedbackIntensity = 0.35f;
+	float HitReactForceFeedbackIntensity = 0.45f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
-	float GuardHitForceFeedbackDuration = 0.1f;
+	float HitReactForceFeedbackDuration = 0.14f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float GuardStartForceFeedbackIntensity = 0.18f;
+	float LargeHitReactForceFeedbackIntensity = 0.65f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
-	float GuardStartForceFeedbackDuration = 0.06f;
+	float LargeHitReactForceFeedbackDuration = 0.18f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float PerfectGuardForceFeedbackIntensity = 0.6f;
+	float KnockDownForceFeedbackIntensity = 0.85f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
-	float PerfectGuardForceFeedbackDuration = 0.12f;
+	float KnockDownForceFeedbackDuration = 0.24f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float GuardBreakForceFeedbackIntensity = 0.7f;
+	float GuardHitForceFeedbackIntensity = 0.45f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
-	float GuardBreakForceFeedbackDuration = 0.2f;
+	float GuardHitForceFeedbackDuration = 0.12f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float GuardStartForceFeedbackIntensity = 0.25f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
+	float GuardStartForceFeedbackDuration = 0.08f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float PerfectGuardForceFeedbackIntensity = 0.7f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
+	float PerfectGuardForceFeedbackDuration = 0.14f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float GuardBreakForceFeedbackIntensity = 0.85f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
+	float GuardBreakForceFeedbackDuration = 0.22f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float DeathForceFeedbackIntensity = 0.9f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
+	float DeathForceFeedbackDuration = 0.35f;
 
 	// 일반 피격 사망 방향별 몽타주
 	UPROPERTY(EditAnywhere, Category = "Combat|Death|Montage", meta = (DisplayName = "Hit React Death Montages"))

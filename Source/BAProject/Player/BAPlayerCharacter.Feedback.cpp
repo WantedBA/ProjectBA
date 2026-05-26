@@ -115,6 +115,11 @@ void ABAPlayerCharacter::PlayGuardStartForceFeedback() const
 	PlayConfiguredForceFeedback(GuardStartForceFeedbackIntensity, GuardStartForceFeedbackDuration);
 }
 
+void ABAPlayerCharacter::PlayDeathForceFeedback() const
+{
+	PlayConfiguredForceFeedback(DeathForceFeedbackIntensity, DeathForceFeedbackDuration);
+}
+
 void ABAPlayerCharacter::PlayConfiguredForceFeedback(const float Intensity, const float Duration) const
 {
 	if (!bEnableGamepadForceFeedback || Intensity <= 0.f || Duration <= 0.f)
@@ -128,8 +133,9 @@ void ABAPlayerCharacter::PlayConfiguredForceFeedback(const float Intensity, cons
 		return;
 	}
 
+	const float ResolvedIntensity = ResolveForceFeedbackIntensity(Intensity);
 	PlayerController->PlayDynamicForceFeedback(
-		FMath::Clamp(Intensity, 0.f, 1.f),
+		ResolvedIntensity,
 		Duration,
 		true,
 		true,
@@ -137,7 +143,12 @@ void ABAPlayerCharacter::PlayConfiguredForceFeedback(const float Intensity, cons
 		true,
 		EDynamicForceFeedbackAction::Start);
 
-	PlayXInputForceFeedback(Intensity, Duration);
+	PlayXInputForceFeedback(ResolvedIntensity, Duration);
+}
+
+float ABAPlayerCharacter::ResolveForceFeedbackIntensity(const float Intensity) const
+{
+	return FMath::Clamp(Intensity * FMath::Max(0.f, ForceFeedbackIntensityMultiplier), 0.f, 1.f);
 }
 
 void ABAPlayerCharacter::PlayXInputForceFeedback(const float Intensity, const float Duration) const
@@ -149,7 +160,9 @@ void ABAPlayerCharacter::PlayXInputForceFeedback(const float Intensity, const fl
 
 #if PLATFORM_WINDOWS
 	const float ClampedIntensity = FMath::Clamp(Intensity, 0.f, 1.f);
-	if (!SetXInputRumble(XInputForceFeedbackUserIndex, ClampedIntensity, ClampedIntensity))
+	const float LeftMotor = ClampedIntensity * FMath::Max(0.f, XInputLeftMotorScale);
+	const float RightMotor = ClampedIntensity * FMath::Max(0.f, XInputRightMotorScale);
+	if (!SetXInputRumble(XInputForceFeedbackUserIndex, LeftMotor, RightMotor))
 	{
 		return;
 	}
