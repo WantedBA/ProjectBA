@@ -39,6 +39,11 @@ void ABAPlayerCharacter::PlayPerfectGuardForceFeedback() const
 	PlayConfiguredForceFeedback(PerfectGuardForceFeedbackIntensity, PerfectGuardForceFeedbackDuration);
 }
 
+void ABAPlayerCharacter::PlayGuardStartForceFeedback() const
+{
+	PlayConfiguredForceFeedback(GuardStartForceFeedbackIntensity, GuardStartForceFeedbackDuration);
+}
+
 void ABAPlayerCharacter::PlayConfiguredForceFeedback(const float Intensity, const float Duration) const
 {
 	if (!bEnableGamepadForceFeedback || Intensity <= 0.f || Duration <= 0.f)
@@ -56,8 +61,8 @@ void ABAPlayerCharacter::PlayConfiguredForceFeedback(const float Intensity, cons
 		FMath::Clamp(Intensity, 0.f, 1.f),
 		Duration,
 		true,
-		false,
 		true,
-		false,
+		true,
+		true,
 		EDynamicForceFeedbackAction::Start);
 }

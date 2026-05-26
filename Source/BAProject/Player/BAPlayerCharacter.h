@@ -629,6 +629,7 @@ private:
 		bool bGuarding,
 		bool bGuardBreak) const;
 	void PlayPerfectGuardForceFeedback() const;
+	void PlayGuardStartForceFeedback() const;
 	void PlayConfiguredForceFeedback(float Intensity, float Duration) const;
 	void PlayDeathCameraShake();
 	void PlayConfiguredCameraShake(TSubclassOf<UCameraShakeBase> ShakeClass, float Scale) const;
@@ -883,6 +884,12 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
 	float GuardHitForceFeedbackDuration = 0.1f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float GuardStartForceFeedbackIntensity = 0.18f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
+	float GuardStartForceFeedbackDuration = 0.06f;
 
 	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float PerfectGuardForceFeedbackIntensity = 0.6f;

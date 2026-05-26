@@ -118,6 +118,7 @@ bool ABAPlayerCharacter::TryStartGuard()
 	ConfigureGuardMontageSections();
 	SetBAPlayerState(EBAPlayerState::Guarding);
 	SetCombatMode(EPlayerCombatMode::Block);
+	PlayGuardStartForceFeedback();
 	return true;
 }
 
