@@ -266,7 +266,11 @@
         },
         {
             "SkillTid": 10,
-            "ApplyType": "Action"
+            "ApplyType": "Action",
+            "Target": "ComboOverride",
+            "Value": 0,
+            "Value2": "HeavyAttack",
+            "Value3": 72004
         },
         {
             "SkillTid": 11,
@@ -278,9 +282,9 @@
             "SkillTid": 12,
             "ApplyType": "Action",
             "Target": "ComboOverride",
-            "Value": 71001,
-            "Value2": "HeavyAttack",
-            "Value3": 72011
+            "Value": 71003,
+            "Value2": "LightAttack",
+            "Value3": 71011
         },
         {
             "SkillTid": 13,
@@ -320,7 +324,11 @@
         },
         {
             "SkillTid": 20,
-            "ApplyType": "Action"
+            "ApplyType": "Action",
+            "Target": "ComboOverride",
+            "Value": 71001,
+            "Value2": "HeavyAttack",
+            "Value3": 72011
         },
         {
             "SkillTid": 21,
