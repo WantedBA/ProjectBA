@@ -17,6 +17,7 @@ class UCameraComponent;
 class UCharacterMovementComponent;
 class UActionComponent;
 class UActionAnimationComponent;
+class UCameraOcclusionFadeComponent;
 class UInteractorComponent;
 class UAnimInstance;
 class AMapLadder;
@@ -311,6 +312,19 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = Camera)
 	TObjectPtr<UCameraComponent> Camera;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera)
+	TObjectPtr<UCameraOcclusionFadeComponent> CameraOcclusionFadeComponent;
+
+	// SpringArm 충돌은 벽만 안정적으로 밀어내고 근접 전투 대상에는 덜 민감하게 둔다.
+	UPROPERTY(EditAnywhere, Category = "Camera|Collision")
+	bool bEnableCameraCollision = true;
+
+	UPROPERTY(EditAnywhere, Category = "Camera|Collision", meta = (ClampMin = "0.0", Units = "cm"))
+	float CameraProbeSize = 8.f;
+
+	UPROPERTY(EditAnywhere, Category = "Camera|Collision")
+	TEnumAsByte<ECollisionChannel> CameraProbeChannel = ECC_Camera;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Weapon")
 	TObjectPtr<UStaticMeshComponent> WeaponMeshComponent;
 	
@@ -328,6 +342,8 @@ protected:
 	void BindGuardActionCallbacks();
 	void BindDodgeActionCallbacks();
 	void BindLockOnTargetCallbacks();
+	void InitializeCameraDefaults();
+	void ApplyCameraCollisionSettings() const;
 	void ConfigureLockOnCameraDefaults();
 
 	UFUNCTION()
@@ -406,6 +422,13 @@ private:
 	bool IsActiveAttackMontagePlaying() const;
 	int64 MakeComboOverrideKey(int32 NowComboTid, EActionCommand ActionCommand) const;
 	
+	void BindAttackCallbacks();
+	void HandleAttackDamageResolved(AActor* Victim, const FHitResult& HitResult, float AppliedDamage);
+	bool ShouldTriggerAttackHitStop(const AActor* Victim, float AppliedDamage) const;
+	void StartAttackHitStop();
+	void FinishAttackHitStop(int32 PlaybackId);
+	void ClearAttackHitStop(bool bResumePausedMontage);
+
 	// 이동 런타임
 	void ResolveInitialGroundedMovementMode();
 	void TickMovementRuntime(float DeltaTime);
@@ -556,6 +579,13 @@ private:
 		EBADamageReactionType DamageReactionType,
 		bool bGuarding,
 		bool bGuardBreak);
+	void PlayPerfectGuardCameraShake();
+	void PlayDeathCameraShake();
+	void PlayConfiguredCameraShake(TSubclassOf<UCameraShakeBase> ShakeClass, float Scale) const;
+	float ResolveDamageReactionCameraShakeScale(
+		EBADamageReactionType DamageReactionType,
+		bool bGuarding,
+		bool bGuardBreak) const;
 	void FinishDamageReaction(int32 PlaybackId);
 
 	UFUNCTION()
@@ -628,7 +658,11 @@ private:
 
 	// 락온 타겟 화면 높이 보정 PitchOffset
 	UPROPERTY(EditAnywhere, Category = "LockOn|Camera", meta = (Units = "deg"))
-	float LockOnAdditionalControllerPitchOffset = 0.f;
+	float LockOnAdditionalControllerPitchOffset = -10.f;
+
+	// 공격 성공 시 플레이어 공격 몽타주 정지 시간
+	UPROPERTY(EditAnywhere, Category = "Combat|Attack|HitStop", meta = (ClampMin = "0.0", Units = "s"))
+	float AttackHitStopDuration = 0.2f;
 
 	// 피격 반응 설정
 	// 가드 정면 판정 좌우 허용 각도
@@ -715,9 +749,32 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Camera")
 	TSubclassOf<UCameraShakeBase> DamageReactionCameraShakeClass;
 
-	// 피격 카메라 셰이크 강도 배율
-	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Camera", meta = (ClampMin = "0.0"))
+	// 피격/가드 카메라 셰이크 전체 내부 배율
 	float DamageReactionCameraShakeScale = 1.f;
+
+	// 일반 피격 카메라 셰이크 강도 배율
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Camera", meta = (ClampMin = "0.0"))
+	float HitReactCameraShakeScale = 0.15f;
+
+	// 큰 피격 카메라 셰이크 강도 배율
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Camera", meta = (ClampMin = "0.0"))
+	float LargeHitReactCameraShakeScale = 1.f;
+
+	// 넉다운/에어본 카메라 셰이크 강도 배율
+	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Camera", meta = (ClampMin = "0.0"))
+	float KnockDownCameraShakeScale = 1.75f;
+
+	// 일반 가드 카메라 셰이크 강도 배율
+	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Camera", meta = (ClampMin = "0.0"))
+	float GuardHitCameraShakeScale = 0.7f;
+
+	// 퍼펙트 가드 카메라 셰이크 강도 배율
+	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Camera", meta = (ClampMin = "0.0"))
+	float PerfectGuardCameraShakeScale = 1.25f;
+
+	// 가드 브레이크 카메라 셰이크 강도 배율
+	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Camera", meta = (ClampMin = "0.0"))
+	float GuardBreakCameraShakeScale = 1.25f;
 
 	// 일반 피격 사망 방향별 몽타주
 	UPROPERTY(EditAnywhere, Category = "Combat|Death|Montage", meta = (DisplayName = "Hit React Death Montages"))
@@ -730,6 +787,14 @@ private:
 	// 사망 몽타주 중단/마지막 자세 고정 전 blend-out 시간
 	UPROPERTY(EditAnywhere, Category = "Combat|Death|Montage", meta = (ClampMin = "0.0"))
 	float DeathMontageStopBlendOut = 0.1f;
+
+	// 사망 카메라 셰이크 클래스
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|Camera")
+	TSubclassOf<UCameraShakeBase> DeathCameraShakeClass;
+
+	// 사망 카메라 셰이크 강도 배율
+	UPROPERTY(EditAnywhere, Category = "Combat|Death|Camera", meta = (ClampMin = "0.0"))
+	float DeathCameraShakeScale = 1.8f;
 
 	// 사망 시 장착 무기 드랍 여부
 	UPROPERTY(EditAnywhere, Category = "Combat|Death|WeaponDrop")
@@ -819,6 +884,9 @@ private:
 	UPROPERTY(VisibleAnywhere) bool bIsCharging = false;
 	UPROPERTY(VisibleAnywhere) bool bIsChargeInputCompleted = false;
 	UPROPERTY(Transient) UAnimMontage* PausedMontage = nullptr;
+	UPROPERTY(Transient) UAnimMontage* HitStopPausedMontage = nullptr;
+	FTimerHandle AttackHitStopTimerHandle;
+	int32 AttackHitStopPlaybackId = 0;
 	
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimMontage> ActiveDamageReactionMontage;
