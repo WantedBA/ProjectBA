@@ -37,6 +37,10 @@
 		{
 			"Name": "LockOnTarget",
 			"Enabled": true
+		},
+		{
+			"Name": "RawInput",
+			"Enabled": true
 		}
 	]
 }

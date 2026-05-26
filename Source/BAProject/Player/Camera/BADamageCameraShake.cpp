@@ -1,4 +1,4 @@
-#include "Player/BADamageCameraShake.h"
+#include "Player/Camera/BADamageCameraShake.h"
 
 UBADamageCameraShakePattern::UBADamageCameraShakePattern(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

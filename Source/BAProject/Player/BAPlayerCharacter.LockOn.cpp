@@ -1,8 +1,6 @@
 #include "Player/BAPlayerCharacter.h"
 
-#include "Camera/CameraComponent.h"
 #include "LockOnTargetComponent.h"
-#include "LockOnTargetExtensions/ControllerRotationExtension.h"
 #include "TargetComponent.h"
 
 /*
@@ -74,27 +72,6 @@ void ABAPlayerCharacter::BindLockOnTargetCallbacks()
 
 	LockOnTargetComponent->OnTargetLocked.AddUniqueDynamic(this, &ABAPlayerCharacter::HandleLockOnTargetLocked);
 	LockOnTargetComponent->OnTargetUnlocked.AddUniqueDynamic(this, &ABAPlayerCharacter::HandleLockOnTargetUnlocked);
-}
-
-void ABAPlayerCharacter::ConfigureLockOnCameraDefaults()
-{
-	if (!bAutoCalibrateLockOnControllerPitch)
-	{
-		return;
-	}
-
-	ULockOnTargetComponent* LockOnTargetComponent = FindComponentByClass<ULockOnTargetComponent>();
-	UControllerRotationExtension* RotationExtension = LockOnTargetComponent
-		? Cast<UControllerRotationExtension>(LockOnTargetComponent->FindExtensionByClass(UControllerRotationExtension::StaticClass()))
-		: nullptr;
-
-	if (!RotationExtension)
-	{
-		return;
-	}
-
-	const float CameraRelativePitch = Camera ? Camera->GetRelativeRotation().Pitch : 0.f;
-	RotationExtension->PitchOffset = -CameraRelativePitch + LockOnAdditionalControllerPitchOffset;
 }
 
 void ABAPlayerCharacter::HandleLockOnTargetLocked(UTargetComponent* /*Target*/, FName /*Socket*/)

@@ -177,6 +177,17 @@ void UQuestManageSubsystem::AbortQuest(int32 QuestTid)
     }
 }
 
+void UQuestManageSubsystem::ResetActiveQuests()
+{
+    TArray<int32> ActiveTids;
+    ActiveQuests.GetKeys(ActiveTids);
+
+    for (int32 Tid : ActiveTids)
+    {
+        AbortQuest(Tid);
+    }
+}
+
 void UQuestManageSubsystem::ClearQuestMonsters(int32 QuestTid)
 {
     TArray<TWeakObjectPtr<AActor>>* Monsters = AllSpawnedMonsters.Find(QuestTid);
