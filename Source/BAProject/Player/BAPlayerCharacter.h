@@ -325,11 +325,14 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Camera|Collision")
 	TEnumAsByte<ECollisionChannel> CameraProbeChannel = ECC_Camera;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components|Weapon")
+	UPROPERTY(Transient)
 	TObjectPtr<UStaticMeshComponent> WeaponMeshComponent;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Components")
 	TObjectPtr<UPlayerWeaponVFX> PlayerWeaponVFX;
+
+	FVector DefaultWeaponRelativeLocation;
+	FRotator DefaultWeaponRelativeRotation;
 
 	// 스탯 및 액션 콜백
 	UFUNCTION()

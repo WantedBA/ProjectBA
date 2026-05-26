@@ -131,6 +131,12 @@ void ABAPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (WeaponMeshComponent)
+	{
+		DefaultWeaponRelativeLocation = WeaponMeshComponent->GetRelativeLocation();
+		DefaultWeaponRelativeRotation = WeaponMeshComponent->GetRelativeRotation();
+	}
+
 	InitializeFromTable();
 	SyncFreeStrafeFacingMode();
 	SetActiveGaitAndSpeed(EMovementState::Run);
