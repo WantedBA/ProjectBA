@@ -252,6 +252,7 @@ void ABAPlayerCharacter::PrepareDeathState()
 	ResetKnockDownRecovery();
 	ResetLandingRecovery();
 	PlayDeathCameraShake();
+	PlayDeathForceFeedback();
 	DamageReactionState = EPlayerDamageReactionState::None;
 	ActiveDamageReactionMontage = nullptr;
 	ActiveDamageReactionPlaybackId = 0;

@@ -11,6 +11,7 @@
 void ABAPlayerCharacter::InitializeCameraDefaults()
 {
 	ApplyCameraCollisionSettings();
+	ApplyCameraLagSettings();
 	DamageReactionCameraShakeClass = UBADamageCameraShake::StaticClass();
 	LandingRecoveryCameraShakeClass = UBALandingRecoveryCameraShake::StaticClass();
 	DeathCameraShakeClass = UBADamageCameraShake::StaticClass();
@@ -26,6 +27,20 @@ void ABAPlayerCharacter::ApplyCameraCollisionSettings() const
 	SpringArm->bDoCollisionTest = bEnableCameraCollision;
 	SpringArm->ProbeSize = CameraProbeSize;
 	SpringArm->ProbeChannel = CameraProbeChannel;
+}
+
+void ABAPlayerCharacter::ApplyCameraLagSettings() const
+{
+	if (!SpringArm)
+	{
+		return;
+	}
+
+	SpringArm->bEnableCameraLag = bEnableCameraLag;
+	SpringArm->CameraLagSpeed = CameraLagSpeed;
+	SpringArm->CameraLagMaxDistance = CameraLagMaxDistance;
+	SpringArm->bEnableCameraRotationLag = bEnableCameraRotationLag;
+	SpringArm->CameraRotationLagSpeed = CameraRotationLagSpeed;
 }
 
 void ABAPlayerCharacter::ConfigureLockOnCameraDefaults()
@@ -47,6 +62,13 @@ void ABAPlayerCharacter::ConfigureLockOnCameraDefaults()
 
 	const float CameraRelativePitch = Camera ? Camera->GetRelativeRotation().Pitch : 0.f;
 	RotationExtension->PitchOffset = -CameraRelativePitch + LockOnAdditionalControllerPitchOffset;
+	RotationExtension->InterpolationSpeed = LockOnControllerRotationInterpSpeed;
+
+	if (bOverrideLockOnControllerPitchClamp)
+	{
+		RotationExtension->PitchClamp.X = FMath::Min(LockOnControllerPitchClamp.X, LockOnControllerPitchClamp.Y);
+		RotationExtension->PitchClamp.Y = FMath::Max(LockOnControllerPitchClamp.X, LockOnControllerPitchClamp.Y);
+	}
 }
 
 void ABAPlayerCharacter::PlayConfiguredCameraShake(
