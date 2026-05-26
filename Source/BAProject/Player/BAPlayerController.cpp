@@ -25,6 +25,8 @@ ABAPlayerController::ABAPlayerController()
 	// IMC, Input Action 설정은 BP_PlayerController에서 설정함
 	UseConsumableAction = CreateDefaultSubobject<UInputAction>(TEXT("UseConsumableAction"));
 	UseConsumableAction->ValueType = EInputActionValueType::Boolean;
+	GamepadLookAction = CreateDefaultSubobject<UInputAction>(TEXT("GamepadLookAction"));
+	GamepadLookAction->ValueType = EInputActionValueType::Axis2D;
 	
 	// static ConstructorHelpers::FClassFinder<UHUDWidget> HUDWidgetRef(TEXT("/Game/BAProject/UI/WBP_HUD.WBP_HUD_C"));
 	// if (HUDWidgetRef.Succeeded())
@@ -96,6 +98,15 @@ void ABAPlayerController::SetupInputComponent()
 	if (ensureMsgf(LookAction, TEXT("LookAction is not configured on %s"), *GetName()))
 	{
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABAPlayerController::Look);
+	}
+
+	if (ensureMsgf(GamepadLookAction, TEXT("GamepadLookAction is not configured on %s"), *GetName()))
+	{
+		EnhancedInputComponent->BindAction(
+			GamepadLookAction,
+			ETriggerEvent::Triggered,
+			this,
+			&ABAPlayerController::LookGamepad);
 	}
 
 	if (ensureMsgf(LightAttackAction, TEXT("LightAttackAction is not configured on %s"), *GetName()))
@@ -172,6 +183,7 @@ void ABAPlayerController::PlayerTick(const float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
 
+	UpdateGamepadLookInput(DeltaTime);
 	UpdateSprintHoldState();
 }
 
@@ -251,15 +263,25 @@ void ABAPlayerController::OnMoveCompleted()
 
 void ABAPlayerController::Look(const FInputActionValue& Value)
 {
-	const FVector2D Rotation = Value.Get<FVector2D>();
+	ApplyLookInput(Value.Get<FVector2D>());
+}
+
+void ABAPlayerController::LookGamepad(const FInputActionValue& Value)
+{
+	PendingGamepadLookInput = Value.Get<FVector2D>();
+	bHasPendingGamepadLookInput = true;
+}
+
+void ABAPlayerController::ApplyLookInput(const FVector2D& LookInput)
+{
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()); PC && PC->IsLockOnTargetLocked())
 	{
-		PC->SwitchLockOnTargetInput(Rotation);
+		PC->SwitchLockOnTargetInput(LookInput);
 		return;
 	}
 
-	AddYawInput(Rotation.X);
-	AddPitchInput(Rotation.Y);
+	AddYawInput(LookInput.X);
+	AddPitchInput(LookInput.Y);
 }
 
 void ABAPlayerController::LightAttack()
@@ -426,6 +448,24 @@ void ABAPlayerController::UpdateSprintHoldState()
 
 	bSprintModifierHeld = true;
 	ApplyMovementStateByModifier();
+}
+
+void ABAPlayerController::UpdateGamepadLookInput(const float DeltaTime)
+{
+	const FVector2D TargetInput = bHasPendingGamepadLookInput ? PendingGamepadLookInput : FVector2D::ZeroVector;
+	SmoothedGamepadLookInput = GamepadLookInputInterpRate <= 0.f
+		? TargetInput
+		: FMath::Vector2DInterpTo(SmoothedGamepadLookInput, TargetInput, DeltaTime, GamepadLookInputInterpRate);
+
+	if (!SmoothedGamepadLookInput.IsNearlyZero(0.001f))
+	{
+		ApplyLookInput(FVector2D(
+			SmoothedGamepadLookInput.X * GamepadLookYawScale,
+			SmoothedGamepadLookInput.Y * GamepadLookPitchScale));
+	}
+
+	PendingGamepadLookInput = FVector2D::ZeroVector;
+	bHasPendingGamepadLookInput = false;
 }
 
 void ABAPlayerController::ApplyMovementStateByModifier() const
@@ -638,7 +678,11 @@ void ABAPlayerController::ToggleSkillTree()
 void ABAPlayerController::ConfigureGamepadInputMappings()
 {
 	MapActionKeyIfMissing(RunAction, EKeys::Gamepad_Left2D);
-	MapActionKeyIfMissing(LookAction, EKeys::Gamepad_Right2D);
+	if (LookAction)
+	{
+		InputMappingContext->UnmapKey(LookAction, EKeys::Gamepad_Right2D);
+	}
+	MapActionKeyIfMissing(GamepadLookAction, EKeys::Gamepad_Right2D);
 
 	MapActionKeyIfMissing(LightAttackAction, EKeys::Gamepad_RightShoulder);
 	MapActionKeyIfMissing(LightAttackAction, GenericUSBControllerButton(6)); // DualSense R1

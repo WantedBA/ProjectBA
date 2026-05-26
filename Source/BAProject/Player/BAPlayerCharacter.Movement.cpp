@@ -526,7 +526,44 @@ EMovementState ABAPlayerCharacter::GetMovementAllowedGait(const EMovementState R
 		return EMovementState::Run;
 	}
 
+	if (ShouldUseAnalogWalkGait(RequestedGait))
+	{
+		return EMovementState::Walk;
+	}
+
 	return RequestedGait;
+}
+
+bool ABAPlayerCharacter::ShouldUseAnalogWalkGait(const EMovementState RequestedGait) const
+{
+	if (RequestedGait != EMovementState::Run || !MovementRuntime.bHasMoveInput)
+	{
+		return false;
+	}
+
+	const float InputSize = MovementRuntime.MoveInputVector.Size();
+	return InputSize > KINDA_SMALL_NUMBER && InputSize <= GetAnalogWalkInputThreshold();
+}
+
+float ABAPlayerCharacter::GetAnalogWalkInputThreshold() const
+{
+	if (SpeedSettings.RunSpeed <= KINDA_SMALL_NUMBER)
+	{
+		return 1.f;
+	}
+
+	return FMath::Clamp(SpeedSettings.WalkSpeed / SpeedSettings.RunSpeed, 0.05f, 1.f);
+}
+
+float ABAPlayerCharacter::GetMoveInputScaleForActiveGait() const
+{
+	const float InputSize = MovementRuntime.MoveInputVector.Size();
+	if (MovementRuntime.ActiveGait == EMovementState::Walk && MovementRuntime.DesiredGait == EMovementState::Run)
+	{
+		return FMath::Clamp(InputSize / GetAnalogWalkInputThreshold(), 0.f, 1.f);
+	}
+
+	return InputSize;
 }
 
 // Gait별 Phase 설정을 반환한다.

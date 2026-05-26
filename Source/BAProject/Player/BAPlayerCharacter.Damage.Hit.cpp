@@ -305,6 +305,7 @@ void ABAPlayerCharacter::PlayDamageReactionAnimation(
 		SetInvincible(true);
 	}
 	PlayDamageReactionCameraShake(DamageReactionType, bGuarding, bGuardBreak);
+	PlayDamageReactionForceFeedback(DamageReactionType, bGuarding, bGuardBreak);
 
 	// 연속 피격 시 이전 종료 타이머가 새 반응 상태를 해제하지 못하게 식별자를 갱신한다.
 	GetWorldTimerManager().ClearTimer(DamageReactionTimerHandle);

@@ -79,7 +79,7 @@ void ABAPlayerCharacter::ApplyBufferedMoveInput()
 	const FVector MoveDirection = ConvertMoveInputToWorldDirection(MovementRuntime.MoveInputVector);
 	if (!MoveDirection.IsNearlyZero())
 	{
-		AddMovementInput(MoveDirection, MovementRuntime.MoveInputVector.Size());
+		AddMovementInput(MoveDirection, GetMoveInputScaleForActiveGait());
 	}
 }
 

@@ -340,6 +340,23 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Camera|Collision")
 	TEnumAsByte<ECollisionChannel> CameraProbeChannel = ECC_Camera;
 
+	// 플레이어 이동을 따라가는 카메라 위치 보간 사용 여부
+	UPROPERTY(EditAnywhere, Category = "Camera|Lag")
+	bool bEnableCameraLag = true;
+
+	UPROPERTY(EditAnywhere, Category = "Camera|Lag", meta = (ClampMin = "0.0"))
+	float CameraLagSpeed = 12.f;
+
+	UPROPERTY(EditAnywhere, Category = "Camera|Lag", meta = (ClampMin = "0.0", Units = "cm"))
+	float CameraLagMaxDistance = 80.f;
+
+	// 카메라 회전 입력의 급격한 전환을 SpringArm에서 한 번 더 완화한다.
+	UPROPERTY(EditAnywhere, Category = "Camera|Lag")
+	bool bEnableCameraRotationLag = true;
+
+	UPROPERTY(EditAnywhere, Category = "Camera|Lag", meta = (ClampMin = "0.0"))
+	float CameraRotationLagSpeed = 16.f;
+
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMeshComponent> WeaponMeshComponent;
 	
@@ -362,6 +379,7 @@ protected:
 	void BindLockOnTargetCallbacks();
 	void InitializeCameraDefaults();
 	void ApplyCameraCollisionSettings() const;
+	void ApplyCameraLagSettings() const;
 	void ConfigureLockOnCameraDefaults();
 
 	UFUNCTION()
@@ -456,6 +474,9 @@ private:
 	void SetActiveGaitAndSpeed(EMovementState NewGait);
 	void UpdateMaxWalkSpeed(float DeltaTime);
 	EMovementState GetMovementAllowedGait(EMovementState RequestedGait) const;
+	bool ShouldUseAnalogWalkGait(EMovementState RequestedGait) const;
+	float GetAnalogWalkInputThreshold() const;
+	float GetMoveInputScaleForActiveGait() const;
 	const FBAPlayerMovementPhaseSettings& GetPhaseSettings(EMovementState Gait) const;
 	float GetSpeedForGait(EMovementState Gait) const;
 	bool IsPhaseEnabledForGait(EPlayerMovementPhase Phase, EMovementState Gait) const;
@@ -603,6 +624,12 @@ private:
 		bool bGuarding,
 		bool bGuardBreak);
 	void PlayPerfectGuardCameraShake();
+	void PlayDamageReactionForceFeedback(
+		EBADamageReactionType DamageReactionType,
+		bool bGuarding,
+		bool bGuardBreak) const;
+	void PlayPerfectGuardForceFeedback() const;
+	void PlayConfiguredForceFeedback(float Intensity, float Duration) const;
 	void PlayDeathCameraShake();
 	void PlayConfiguredCameraShake(TSubclassOf<UCameraShakeBase> ShakeClass, float Scale) const;
 	float ResolveDamageReactionCameraShakeScale(
@@ -813,6 +840,46 @@ private:
 	// 가드 브레이크 카메라 셰이크 강도 배율
 	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Camera", meta = (ClampMin = "0.0"))
 	float GuardBreakCameraShakeScale = 1.25f;
+
+	// 피격/가드 시 게임패드 Force Feedback 사용 여부
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback")
+	bool bEnableGamepadForceFeedback = true;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float HitReactForceFeedbackIntensity = 0.3f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
+	float HitReactForceFeedbackDuration = 0.12f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float LargeHitReactForceFeedbackIntensity = 0.55f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
+	float LargeHitReactForceFeedbackDuration = 0.16f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float KnockDownForceFeedbackIntensity = 0.75f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
+	float KnockDownForceFeedbackDuration = 0.22f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float GuardHitForceFeedbackIntensity = 0.35f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
+	float GuardHitForceFeedbackDuration = 0.1f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float PerfectGuardForceFeedbackIntensity = 0.6f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
+	float PerfectGuardForceFeedbackDuration = 0.12f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float GuardBreakForceFeedbackIntensity = 0.7f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
+	float GuardBreakForceFeedbackDuration = 0.2f;
 
 	// 일반 피격 사망 방향별 몽타주
 	UPROPERTY(EditAnywhere, Category = "Combat|Death|Montage", meta = (DisplayName = "Hit React Death Montages"))
