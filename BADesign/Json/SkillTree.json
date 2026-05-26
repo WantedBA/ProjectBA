@@ -242,7 +242,7 @@
             "Target": "WeaponVFX",
             "Value": "/Game/Assets/WeaponVFX/Weapon/MeleeWeaponAura_VFX/VFX/V4/NS_StylizedWeapon_V4_05.NS_StylizedWeapon_V4_05",
             "Value2": "/Game/Assets/WeaponVFX/Trail/SlashTrailElemental/Niagara/SlashTrail/NS_SlashTrail_Fire.NS_SlashTrail_Fire",
-            "Value3": 100,
+            "Value3": 160,
             "Value4": 0.8
         },
         {
@@ -260,7 +260,7 @@
             "Target": "WeaponVFX",
             "Value": "/Game/Assets/WeaponVFX/Weapon/MeleeWeaponAura_VFX/VFX/V3/NS_StylizedWeapon_V3_09.NS_StylizedWeapon_V3_09",
             "Value2": "/Game/Assets/WeaponVFX/Trail/SlashTrailElemental/Niagara/SlashTrail/NS_SlashTrail_Electric.NS_SlashTrail_Electric",
-            "Value3": 120,
+            "Value3": 160,
             "Value4": 0.8
         },
         {
