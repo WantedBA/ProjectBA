@@ -27,3 +27,21 @@ void UBossHPBar::SetAppearance(bool bVisible)
 	// 인자(bVisible)에 따라 보스 체력바의 화면 표시 여부를 동적으로 전환
 	SetVisibility(bVisible ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 }
+
+void UBossHPBar::InitializeBossBar(FText Name, float MaxHP)
+{
+	if (HPBar)
+	{
+		// 체력을 0 으로 리셋
+		HPBar->SetProgressImmediate(0.0f);
+
+		// 보스 이름 설정
+		SetBossName(Name);
+
+		// 외형 보이기
+		SetAppearance(true);
+
+		// 체력을 100%로 올리기
+		HPBar->SetProgress(MaxHP, MaxHP);
+	}
+}
