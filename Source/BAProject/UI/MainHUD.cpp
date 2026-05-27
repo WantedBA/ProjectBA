@@ -5,6 +5,9 @@
 #include "UI/PlayerStatus.h"
 #include "UI/BossHPBar.h"
 #include "UI/TooltipWidget.h"
+#include "UI/QuickSlotBase.h"
+
+#include "Component/StatComponent.h"
 
 void UMainHUD::NativeConstruct()
 {
@@ -14,6 +17,24 @@ void UMainHUD::NativeConstruct()
 	if (TooltipClass)
 	{
 		TooltipInstance = CreateWidget<UTooltipWidget>(GetWorld(), TooltipClass);
+	}
+}
+
+void UMainHUD::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+
+	if (APawn* Pawn = GetOwningPlayerPawn())
+	{
+		if (UStatComponent* Stat = Pawn->FindComponentByClass<UStatComponent>())
+		{
+			int32 LeftHealCount = Stat->GetLeftHealCount();
+
+			if (HPSlot)
+			{
+				HPSlot->UpdateCount(LeftHealCount);
+			}
+		}
 	}
 }
 

@@ -83,6 +83,25 @@ void UNotifyLayer::OnFadeInAnimationFinished()
 	}
 }
 
+void UNotifyLayer::SetInteractionText(bool bShow, FText CustomText)
+{
+	if (!InteractionText)
+	{
+		return;
+	}
+
+	if (bShow)
+	{
+		InteractionText->SetText(CustomText);
+		InteractionText->SetVisibility(ESlateVisibility::HitTestInvisible);
+		UE_LOG(LogTemp, Warning, TEXT(">>> NotifyLayer Received Text: %s"), *CustomText.ToString());
+	}
+	else
+	{
+		InteractionText->SetVisibility(ESlateVisibility::Collapsed);
+	}
+}
+
 void UNotifyLayer::NativeConstruct()
 {
 	Super::NativeConstruct();

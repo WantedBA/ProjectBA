@@ -33,6 +33,10 @@ public:
 	UFUNCTION()
 	void OnFadeInAnimationFinished();
 
+	// 상호작용 안내 문구 제어 함수
+	UFUNCTION(BlueprintCallable, Category = "BA|UI|Notify")
+	void SetInteractionText(bool bShow, FText CustomText = FText::GetEmpty());
+
 protected:
 	virtual void NativeConstruct() override;
 
