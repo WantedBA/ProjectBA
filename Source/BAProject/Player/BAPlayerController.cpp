@@ -385,16 +385,10 @@ void ABAPlayerController::OnSprintCompleted()
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
 		PC && PC->IsRecoveryEscapeRequiredForCurrentState())
 	{
-		const FVector2D DodgeInput = PC->GetMoveInputVector().IsNearlyZero()
-			? LastMoveInputVector
-			: PC->GetMoveInputVector();
-		const EActionDirection DodgeDirection = PC->GetActionDirectionFromMoveInput(DodgeInput);
-		if (PC->TryStartRecoveryEscapeAction(EActionCommand::Dodge, DodgeDirection))
-		{
-			bSprintInputHeld = false;
-			bSprintModifierHeld = false;
-			return;
-		}
+		bSprintInputHeld = false;
+		bSprintModifierHeld = false;
+		ApplyMovementStateByModifier();
+		return;
 	}
 
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
