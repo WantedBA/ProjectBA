@@ -4,8 +4,6 @@
 #include "MoviePlayer.h"
 #include "Modules/ModuleManager.h"
 #include "Styling/CoreStyle.h"
-#include "TimerManager.h"
-#include "UObject/UObjectGlobals.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 
@@ -22,13 +20,11 @@ public:
 		FDefaultGameModuleImpl::StartupModule();
 
 		FCoreUObjectDelegates::PreLoadMap.AddRaw(this, &FBAProjectModule::HandlePreLoadMap);
-		FCoreUObjectDelegates::PostLoadMapWithWorld.AddRaw(this, &FBAProjectModule::HandlePostLoadMap);
 	}
 
 	virtual void ShutdownModule() override
 	{
 		FCoreUObjectDelegates::PreLoadMap.RemoveAll(this);
-		FCoreUObjectDelegates::PostLoadMapWithWorld.RemoveAll(this);
 
 		FDefaultGameModuleImpl::ShutdownModule();
 	}
@@ -49,39 +45,14 @@ private:
 			[
 				SNew(SBox)
 			];
-		LoadingScreen.MinimumLoadingScreenDisplayTime = 0.0f;
-		LoadingScreen.bAutoCompleteWhenLoadingCompletes = false;
-		LoadingScreen.bWaitForManualStop = true;
+		LoadingScreen.MinimumLoadingScreenDisplayTime = PostLoadScreenHoldSeconds;
+		LoadingScreen.bAutoCompleteWhenLoadingCompletes = true;
+		LoadingScreen.bWaitForManualStop = false;
 		LoadingScreen.bMoviesAreSkippable = false;
 		LoadingScreen.bAllowEngineTick = true;
 
 		GetMoviePlayer()->SetupLoadingScreen(LoadingScreen);
 	}
-
-	void HandlePostLoadMap(UWorld* LoadedWorld)
-	{
-		if (!LoadedWorld || !IsMoviePlayerEnabled())
-		{
-			StopLoadingScreen();
-			return;
-		}
-
-		LoadedWorld->GetTimerManager().SetTimer(
-			PostLoadScreenTimerHandle,
-			FTimerDelegate::CreateRaw(this, &FBAProjectModule::StopLoadingScreen),
-			PostLoadScreenHoldSeconds,
-			false);
-	}
-
-	void StopLoadingScreen()
-	{
-		if (IsMoviePlayerEnabled())
-		{
-			GetMoviePlayer()->StopMovie();
-		}
-	}
-
-	FTimerHandle PostLoadScreenTimerHandle;
 };
 
 IMPLEMENT_PRIMARY_GAME_MODULE(FBAProjectModule, BAProject, "BAProject");
