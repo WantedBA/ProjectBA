@@ -52,12 +52,6 @@ void ABAPlayerController::BeginPlay()
 				ConfigureGamepadInputMappings();
 				InputSystem->AddMappingContext(InputMappingContext, 0);
 			}
-			
-			// TODO: 체크포인트 제작 후 이동
-			if (CheckpointInputMappingContext)
-			{
-				InputSystem->AddMappingContext(CheckpointInputMappingContext, 1);
-			}
 		}
 	}
 	
@@ -630,24 +624,8 @@ void ABAPlayerController::ToggleSkillTree()
 		return;
 	}
 
-	if (!ensureMsgf(SkillTreeWidgetClass, TEXT("SkillTreeWidgetClass is not configured on %s"), *GetName()))
-	{
-		return;
-	}
-
-	UGameInstance* GameInstance = GetGameInstance();
-	if (!GameInstance)
-	{
-		return;
-	}
-
-	USubSystemUI* UISubsystem = GameInstance->GetSubsystem<USubSystemUI>();
-	if (!ensureMsgf(UISubsystem, TEXT("USubSystemUI is not available.")))
-	{
-		return;
-	}
-
-	SkillTreeWidget = Cast<USkillTreeWidget>(UISubsystem->PushUIByClass(SkillTreeWidgetClass));
+	// 스킬트리는 체크포인트 상호작용 시퀀스에서 열어야 앉기/페이드/서기 흐름이 보장된다.
+	OnInteract();
 }
 
 void ABAPlayerController::ConfigureGamepadInputMappings()

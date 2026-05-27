@@ -6,8 +6,11 @@
 #include "Instance/QuestManageSubsystem.h"
 #include "SaveGame/SaveGameManager.h"
 #include "Player/BAPlayerCharacter.h"
+#include "UI/NotifyLayer.h"
 #include "UI/SkillTree/SkillTreeWidget.h"
+#include "UI/System/LayerBase.h"
 #include "UI/System/SubSystemUI.h"
+#include "TimerManager.h"
 
 AMapResetPoint::AMapResetPoint()
 {
@@ -39,33 +42,77 @@ void AMapResetPoint::BeginPlay()
 	Super::BeginPlay();
 }
 
-void AMapResetPoint::ToggleSkillTreeInResetPoint()
+void AMapResetPoint::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if (SkillTreeWidget && SkillTreeWidget->IsInViewport())
+	if (UWorld* World = GetWorld())
 	{
-		SkillTreeWidget->ClosePopup();
-		SkillTreeWidget = nullptr;
-		return;
+		World->GetTimerManager().ClearTimer(OpenSkillTreeTimerHandle);
+		World->GetTimerManager().ClearTimer(FinishRestExitTimerHandle);
 	}
 
+	if (SkillTreeWidget)
+	{
+		SkillTreeWidget->OnCloseAnimationFinished.RemoveDynamic(this, &AMapResetPoint::HandleSkillTreeClosed);
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
+void AMapResetPoint::OpenSkillTreeInResetPoint()
+{
 	if (!ensureMsgf(SkillTreeWidgetClass, TEXT("SkillTreeWidgetClass is not configured on %s"), *GetName()))
 	{
+		BeginRestExit();
 		return;
 	}
 
 	UGameInstance* GameInstance = GetGameInstance();
 	if (GameInstance == nullptr)
 	{
+		BeginRestExit();
 		return;
 	}
 
 	USubSystemUI* UISubsystem = GameInstance->GetSubsystem<USubSystemUI>();
 	if (!ensureMsgf(UISubsystem, TEXT("USubSystemUI is not available.")))
 	{
+		BeginRestExit();
 		return;
 	}
 
 	SkillTreeWidget = Cast<USkillTreeWidget>(UISubsystem->PushUIByClass(SkillTreeWidgetClass));
+	if (!SkillTreeWidget)
+	{
+		BeginRestExit();
+		return;
+	}
+
+	SkillTreeWidget->OnCloseAnimationFinished.RemoveDynamic(this, &AMapResetPoint::HandleSkillTreeClosed);
+	SkillTreeWidget->OnCloseAnimationFinished.AddDynamic(this, &AMapResetPoint::HandleSkillTreeClosed);
+	bRestTransitionInProgress = false;
+}
+
+void AMapResetPoint::CloseSkillTreeInResetPoint()
+{
+	if (SkillTreeWidget && SkillTreeWidget->IsInViewport())
+	{
+		SkillTreeWidget->ClosePopup();
+		return;
+	}
+
+	BeginRestExit();
+}
+
+void AMapResetPoint::HandleSkillTreeClosed(ULayerBase* ClosedWidget)
+{
+	if (ClosedWidget != SkillTreeWidget)
+	{
+		return;
+	}
+
+	SkillTreeWidget->OnCloseAnimationFinished.RemoveDynamic(this, &AMapResetPoint::HandleSkillTreeClosed);
+	SkillTreeWidget = nullptr;
+	BeginRestExit();
 }
 
 bool AMapResetPoint::CanInteract_Implementation(AActor* Interactor) const
@@ -78,82 +125,195 @@ bool AMapResetPoint::CanInteract_Implementation(AActor* Interactor) const
 	{
 		return false;
 	}
+
+	if (bRestTransitionInProgress)
+	{
+		return false;
+	}
 	
 	return true;
 }
 
 void AMapResetPoint::Interact_Implementation(AActor* Interactor)
 {
-	ABAPlayerCharacter* Player = Cast<ABAPlayerCharacter>(Interactor);
-	if (Player == nullptr)
+	if (bRestTransitionInProgress)
 	{
 		return;
 	}
 
 	if (bIsPlayerResting == true)
 	{
-		bIsPlayerResting = false;
+		CloseSkillTreeInResetPoint();
+		return;
+	}
 
-		if (RestMontage)
+	ABAPlayerCharacter* Player = Cast<ABAPlayerCharacter>(Interactor);
+	if (Player == nullptr)
+	{
+		return;
+	}
+
+	BeginRest(*Player);
+}
+
+void AMapResetPoint::BeginRest(ABAPlayerCharacter& Player)
+{
+	bIsPlayerResting = true;
+	bRestTransitionInProgress = true;
+	RestingPlayer = &Player;
+
+	MovePlayerToRestPosition(Player);
+	Player.LockMovementForCutscene();
+	PlayPlayerMontage(Player, RestMontage);
+	ApplyRestEffects(Player);
+	SaveRespawnProgress();
+	PlayCheckpointFade(false);
+
+	if (UWorld* World = GetWorld())
+	{
+		const float OpenDelay = FMath::Max(0.f, SkillTreeOpenDelay);
+		World->GetTimerManager().ClearTimer(OpenSkillTreeTimerHandle);
+		if (OpenDelay <= KINDA_SMALL_NUMBER)
 		{
-			Player->StopAnimMontage(RestMontage);
+			World->GetTimerManager().SetTimerForNextTick(this, &AMapResetPoint::OpenSkillTreeInResetPoint);
 		}
-
-		Player->UnlockMovementForCutscene();
+		else
+		{
+			World->GetTimerManager().SetTimer(
+				OpenSkillTreeTimerHandle,
+				this,
+				&AMapResetPoint::OpenSkillTreeInResetPoint,
+				OpenDelay,
+				false);
+		}
 	}
 	else
 	{
-		bIsPlayerResting = true;
-
-		// 1. 플레이어를 상호작용 위치로 고정
-		if (InteractionPivot)
-		{
-			Player->SetActorLocationAndRotation(
-				InteractionPivot->GetComponentLocation(),
-				InteractionPivot->GetComponentRotation(),
-				false, nullptr, ETeleportType::TeleportPhysics
-			);
-
-			if (APlayerController* PC = Cast<APlayerController>(Player->GetController()))
-			{
-				PC->SetControlRotation(InteractionPivot->GetComponentRotation());
-			}
-		}
-
-		// 2. 휴식 애니메이션 재생
-		if (RestMontage)
-		{
-			Player->PlayAnimMontage(RestMontage);
-		}
-
-		// RecoverPlayer
-		if (UStatComponent* StatComp = Player->FindComponentByClass<UStatComponent>())
-		{
-			StatComp->RestoreAll();
-		}
-
-		// RespawnEnemies
-		if (UQuestManageSubsystem* QM = UQuestManageSubsystem::Get(this))
-		{
-			QM->ResetActiveQuests();
-			QM->RespawnQuestZoneEnemies();
-		}
-
-		// OpenSkillTree
-		ToggleSkillTreeInResetPoint();
-
-		// SaveProgress
-		if (UGameInstance* GI = GetGameInstance())
-		{
-			if (USaveGameManager* SaveManager = GI->GetSubsystem<USaveGameManager>())
-			{
-				SaveManager->SetRespawnPoint(RespawnPoint->GetComponentLocation(), RespawnPoint->GetComponentRotation());
-				SaveManager->SaveGame();
-			}
-		}
-
-		Player->LockMovementForCutscene();
+		OpenSkillTreeInResetPoint();
 	}
+}
+
+void AMapResetPoint::BeginRestExit()
+{
+	if (!bIsPlayerResting && !RestingPlayer)
+	{
+		return;
+	}
+
+	bRestTransitionInProgress = true;
+	PlayCheckpointFade(true);
+
+	ABAPlayerCharacter* Player = RestingPlayer.Get();
+	if (Player && RestMontage)
+	{
+		Player->StopAnimMontage(RestMontage);
+	}
+	const float StandDuration = Player ? PlayPlayerMontage(*Player, StandUpMontage) : 0.f;
+	const float UnlockDelay = ExitUnlockDelay > 0.f ? ExitUnlockDelay : StandDuration;
+	if (UWorld* World = GetWorld())
+	{
+		const float ResolvedUnlockDelay = FMath::Max(0.f, UnlockDelay);
+		World->GetTimerManager().ClearTimer(FinishRestExitTimerHandle);
+		if (ResolvedUnlockDelay <= KINDA_SMALL_NUMBER)
+		{
+			World->GetTimerManager().SetTimerForNextTick(this, &AMapResetPoint::FinishRestExit);
+		}
+		else
+		{
+			World->GetTimerManager().SetTimer(
+				FinishRestExitTimerHandle,
+				this,
+				&AMapResetPoint::FinishRestExit,
+				ResolvedUnlockDelay,
+				false);
+		}
+	}
+	else
+	{
+		FinishRestExit();
+	}
+}
+
+void AMapResetPoint::FinishRestExit()
+{
+	if (ABAPlayerCharacter* Player = RestingPlayer.Get())
+	{
+		Player->UnlockMovementForCutscene();
+	}
+
+	RestingPlayer = nullptr;
+	bIsPlayerResting = false;
+	bRestTransitionInProgress = false;
+}
+
+void AMapResetPoint::MovePlayerToRestPosition(ABAPlayerCharacter& Player) const
+{
+	if (!InteractionPivot)
+	{
+		return;
+	}
+
+	Player.SetActorLocationAndRotation(
+		InteractionPivot->GetComponentLocation(),
+		InteractionPivot->GetComponentRotation(),
+		false,
+		nullptr,
+		ETeleportType::TeleportPhysics);
+
+	if (APlayerController* PlayerController = Cast<APlayerController>(Player.GetController()))
+	{
+		PlayerController->SetControlRotation(InteractionPivot->GetComponentRotation());
+	}
+}
+
+void AMapResetPoint::ApplyRestEffects(ABAPlayerCharacter& Player) const
+{
+	if (UStatComponent* StatComp = Player.FindComponentByClass<UStatComponent>())
+	{
+		StatComp->RestoreAll();
+	}
+
+	if (UQuestManageSubsystem* QM = UQuestManageSubsystem::Get(this))
+	{
+		QM->ResetActiveQuests();
+		QM->RespawnQuestZoneEnemies();
+	}
+}
+
+void AMapResetPoint::SaveRespawnProgress() const
+{
+	if (!RespawnPoint)
+	{
+		return;
+	}
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (USaveGameManager* SaveManager = GI->GetSubsystem<USaveGameManager>())
+		{
+			SaveManager->SetRespawnPoint(RespawnPoint->GetComponentLocation(), RespawnPoint->GetComponentRotation());
+			SaveManager->SaveGame();
+		}
+	}
+}
+
+void AMapResetPoint::PlayCheckpointFade(const bool bFadeIn) const
+{
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (USubSystemUI* UISubsystem = GI->GetSubsystem<USubSystemUI>())
+		{
+			if (UNotifyLayer* NotifyLayer = UISubsystem->GetNotifyLayer())
+			{
+				NotifyLayer->PlayFadeEffect(bFadeIn);
+			}
+		}
+	}
+}
+
+float AMapResetPoint::PlayPlayerMontage(ABAPlayerCharacter& Player, UAnimMontage* Montage) const
+{
+	return Montage ? Player.PlayAnimMontage(Montage) : 0.f;
 }
 
 FText AMapResetPoint::GetInteractionPrompt_Implementation() const
