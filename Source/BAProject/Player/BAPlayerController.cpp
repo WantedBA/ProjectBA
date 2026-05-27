@@ -557,13 +557,7 @@ void ABAPlayerController::OnUseConsumable()
 		return;
 	}
 
-	UActionComponent* ActionComponent = PC->GetActionComponent();
-	if (!ActionComponent)
-	{
-		return;
-	}
-
-	ActionComponent->TryStartAction(EActionCommand::UseConsumable);
+	PC->TryHeal();
 }
 
 void ABAPlayerController::OnInteract()

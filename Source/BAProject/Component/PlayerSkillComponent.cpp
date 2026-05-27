@@ -248,6 +248,7 @@ void UPlayerSkillComponent::ApplyStat(const FSkillModifierRow* SkillModifier)
 	static const FName MaxStaminaTarget = FName(TEXT("MaxStamina"));
 	static const FName GuardTarget = FName(TEXT("Guard"));
 	static const FName StaminaRecoveryTarget = FName(TEXT("StaminaRecovery"));
+	static const FName HealCountTarget = FName(TEXT("HealCount"));
 	
 	// Target 값에 따라 StatComponent에 적용
 	if (SkillModifier->Target == AttackSpeedTarget)
@@ -269,6 +270,11 @@ void UPlayerSkillComponent::ApplyStat(const FSkillModifierRow* SkillModifier)
 	{
 		const float NewStaminaRecoveryModifier = FCString::Atof(*SkillModifier->Value); 
 		StatComponent->SetStaminaRecoveryModifier(NewStaminaRecoveryModifier);
+	}
+	else if (SkillModifier->Target == HealCountTarget)
+	{
+		const int32 NewHealCountModifier = FCString::Atoi(*SkillModifier->Value); 
+		StatComponent->SetHealCountModifier(NewHealCountModifier);
 	}
 	else
 	{
