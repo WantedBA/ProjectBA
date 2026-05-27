@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "SkillNodeWidget.h"
+#include "TimerManager.h"
 #include "UI/System/PopupBase.h"
 #include "SkillTreeWidget.generated.h"
 
@@ -20,7 +21,9 @@ protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 	virtual FReply NativeOnAnalogValueChanged(const FGeometry& InGeometry, const FAnalogInputEvent& InAnalogEvent) override;
+	virtual FReply NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+	virtual FReply NativeOnKeyUp(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	
 public:
@@ -57,6 +60,9 @@ protected:
 	void ClearGamepadSelectedSkillNode();
 	bool IsRightStickNavigationKey(const FKey& Key) const;
 	FVector2D GetRightStickNavigationVector() const;
+	bool HandleGamepadAcceptInput(const FKeyEvent& InKeyEvent);
+	bool HandleGamepadBackInput(const FKeyEvent& InKeyEvent);
+	void ResetGamepadAcceptDebounce();
 	
 	
 // 데이터
@@ -85,5 +91,7 @@ protected:
 	FVector2D LastGamepadCursorAbsolute = FVector2D::ZeroVector;
 	bool bRightStickNavigationReady = true;
 	bool bGamepadNavigationActive = false;
+	bool bGamepadAcceptDebounced = false;
+	FTimerHandle GamepadAcceptDebounceTimerHandle;
 	
 };
