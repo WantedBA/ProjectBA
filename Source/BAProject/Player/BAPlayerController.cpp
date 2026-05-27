@@ -647,6 +647,10 @@ void ABAPlayerController::ConfigureGamepadInputMappings()
 	MapActionKeyIfMissing(GuardAction, EKeys::Gamepad_LeftShoulder);
 	MapActionKeyIfMissing(GuardAction, PlayerControllerGenericUSBControllerButton(5)); // DualSense L1
 
+	// B/Circle은 사다리 위에서 빠른 등반에 쓰이는 Sprint 입력이다.
+	// 기존 IMC에 Interact로 남아 있으면 OnInteract가 같이 호출되어 사다리에서 즉시 이탈한다.
+	UnmapActionKeyIfPresent(InteractAction, EKeys::Gamepad_FaceButton_Right);
+	UnmapActionKeyIfPresent(InteractAction, PlayerControllerGenericUSBControllerButton(3));
 	MapActionKeyIfMissing(SprintAction, EKeys::Gamepad_FaceButton_Right);
 	MapActionKeyIfMissing(SprintAction, PlayerControllerGenericUSBControllerButton(3)); // DualSense Circle
 
@@ -676,4 +680,27 @@ void ABAPlayerController::MapActionKeyIfMissing(const UInputAction* Action, cons
 	}
 
 	InputMappingContext->MapKey(Action, Key);
+}
+
+void ABAPlayerController::UnmapActionKeyIfPresent(const UInputAction* Action, const FKey& Key)
+{
+	if (!InputMappingContext || !Action || !Key.IsValid())
+	{
+		return;
+	}
+
+	bool bHasMapping = false;
+	for (const FEnhancedActionKeyMapping& Mapping : InputMappingContext->GetMappings())
+	{
+		if (Mapping.Action == Action && Mapping.Key == Key)
+		{
+			bHasMapping = true;
+			break;
+		}
+	}
+
+	if (bHasMapping)
+	{
+		InputMappingContext->UnmapKey(Action, Key);
+	}
 }

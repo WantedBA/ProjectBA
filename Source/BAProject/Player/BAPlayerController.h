@@ -165,6 +165,9 @@ private:
 	// 지정 액션에 키가 없을 때만 매핑을 추가한다.
 	void MapActionKeyIfMissing(const UInputAction* Action, const FKey& Key);
 
+	// 지정 액션에 잘못 남아 있는 키 매핑을 제거한다.
+	void UnmapActionKeyIfPresent(const UInputAction* Action, const FKey& Key);
+
 	bool bWalkToggleEnabled = false;
 	bool bSprintInputHeld = false;
 	bool bSprintModifierHeld = false;
