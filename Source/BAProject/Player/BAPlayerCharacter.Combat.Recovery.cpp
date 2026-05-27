@@ -314,26 +314,8 @@ void ABAPlayerCharacter::ExitCurrentRecoveryForEscape(const bool bKeepQueuedAtta
 
 void ABAPlayerCharacter::ExitAttackRecoveryForEscape(const bool bKeepQueuedAttack)
 {
-	ClearRecoveryEscapeWindow();
-	ClearAttackHitStop(true);
-	GetWorldTimerManager().ClearTimer(ChargeAttackTimerHandle);
-
-	bIsBeforeCharge = false;
-	bIsCharging = false;
-	bIsChargeInputCompleted = false;
-	PausedMontage = nullptr;
-
 	UAnimMontage* MontageToStop = ActiveAttackMontage;
-	ActiveAttackMontage = nullptr;
-	ActiveAttackPlaybackId = 0;
-
-	if (!bKeepQueuedAttack)
-	{
-		NowComboTransitionTid = 0;
-		NextComboTransitionTid = 0;
-		NextAttackMontage = nullptr;
-		NextAttackActionType = EActionType::None;
-	}
+	ClearAttackRuntimeState(bKeepQueuedAttack);
 
 	if (USkeletalMeshComponent* MeshComponent = GetMesh())
 	{
