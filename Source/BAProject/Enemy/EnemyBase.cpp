@@ -8,6 +8,7 @@
 #include "Constants/BAProjectConstant.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/MeshComponent.h"
+#include "Components/PrimitiveComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "BrainComponent.h"
 #include "DrawDebugHelpers.h"
@@ -17,11 +18,23 @@
 
 namespace
 {
-	void IgnoreCameraChannelForEnemyBody(AEnemyBase& Enemy)
+	void ConfigureEnemyCollisionResponses(AEnemyBase& Enemy)
 	{
+		TArray<UPrimitiveComponent*> PrimitiveComponents;
+		Enemy.GetComponents<UPrimitiveComponent>(PrimitiveComponents);
+		for (UPrimitiveComponent* PrimitiveComponent : PrimitiveComponents)
+		{
+			if (PrimitiveComponent)
+			{
+				PrimitiveComponent->SetCollisionResponseToChannel(CollisionChannel::PlayerAttackTrace, ECR_Ignore);
+				PrimitiveComponent->SetCollisionResponseToChannel(CollisionChannel::EnemyAttackTrace, ECR_Ignore);
+			}
+		}
+
 		if (UCapsuleComponent* CapsuleComponent = Enemy.GetCapsuleComponent())
 		{
 			CapsuleComponent->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+			CapsuleComponent->SetCollisionResponseToChannel(CollisionChannel::PlayerAttackTrace, ECR_Block);
 		}
 
 		TArray<UMeshComponent*> MeshComponents;
@@ -32,6 +45,11 @@ namespace
 			{
 				MeshComponent->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 			}
+		}
+
+		if (USkeletalMeshComponent* BodyMeshComponent = Enemy.GetMesh())
+		{
+			BodyMeshComponent->SetCollisionResponseToChannel(CollisionChannel::PlayerAttackTrace, ECR_Block);
 		}
 	}
 }
@@ -59,7 +77,7 @@ AEnemyBase::AEnemyBase()
 	AlertDuration = 3.0f;
 	bShowDebugRanges = true;
 
-	IgnoreCameraChannelForEnemyBody(*this);
+	ConfigureEnemyCollisionResponses(*this);
 }
 
 void AEnemyBase::PostInitializeComponents()
@@ -72,7 +90,7 @@ void AEnemyBase::PostInitializeComponents()
 	}
 
 	OnAttackPerfectGuarded.AddUObject(this, &AEnemyBase::HandleAttackPerfectGuarded);
-	IgnoreCameraChannelForEnemyBody(*this);
+	ConfigureEnemyCollisionResponses(*this);
 }
 
 void AEnemyBase::PossessedBy(AController* NewController)

@@ -14,6 +14,8 @@
 #include "Component/PlayerSkillComponent.h"
 #include "Component/PlayerWeaponVFX.h"
 #include "Component/StatComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/PrimitiveComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Constants/BAProjectConstant.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -32,6 +34,25 @@ namespace
 	// TODO: id 하드코딩
 	constexpr int32 SprintActionTid = 10020;
 	constexpr float DefaultSprintRestartStaminaPercent = 70.f;
+
+	void ConfigurePlayerCombatCollisionResponses(ABAPlayerCharacter& Player)
+	{
+		TArray<UPrimitiveComponent*> PrimitiveComponents;
+		Player.GetComponents<UPrimitiveComponent>(PrimitiveComponents);
+		for (UPrimitiveComponent* PrimitiveComponent : PrimitiveComponents)
+		{
+			if (PrimitiveComponent)
+			{
+				PrimitiveComponent->SetCollisionResponseToChannel(CollisionChannel::PlayerAttackTrace, ECR_Ignore);
+				PrimitiveComponent->SetCollisionResponseToChannel(CollisionChannel::EnemyAttackTrace, ECR_Ignore);
+			}
+		}
+
+		if (UCapsuleComponent* CapsuleComponent = Player.GetCapsuleComponent())
+		{
+			CapsuleComponent->SetCollisionResponseToChannel(CollisionChannel::EnemyAttackTrace, ECR_Block);
+		}
+	}
 }
 
 // 플레이어 캐릭터의 기본 메시, 애니메이션, 컴포넌트, 카메라, 이동 기본값을 구성한다.
@@ -123,6 +144,7 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	MovementRuntime.CurrentMaxWalkSpeed = SpeedSettings.RunSpeed;
 	MovementRuntime.TargetMaxWalkSpeed = SpeedSettings.RunSpeed;
 	GetCharacterMovement()->MaxWalkSpeed = MovementRuntime.CurrentMaxWalkSpeed;
+	ConfigurePlayerCombatCollisionResponses(*this);
 	InitializeCameraDefaults();
 }
 
@@ -141,6 +163,7 @@ void ABAPlayerCharacter::BeginPlay()
 	SyncFreeStrafeFacingMode();
 	SetActiveGaitAndSpeed(EMovementState::Run);
 	ResolveInitialGroundedMovementMode();
+	ConfigurePlayerCombatCollisionResponses(*this);
 
 	if (StatComponent)
 	{

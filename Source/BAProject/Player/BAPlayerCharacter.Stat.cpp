@@ -61,6 +61,13 @@ void ABAPlayerCharacter::Respawn()
 			CharacterState = ECharacterState::Alive;
 			SetBAPlayerState(EBAPlayerState::Respawning);
 
+			// FreezeMontageAtFinalFrame(bPauseAnims=true)으로 고정된 메시 애니메이션 해제
+			// 이 플래그가 남아있으면 RespawnMontage가 재생돼도 프레임이 진행되지 않는다.
+			if (USkeletalMeshComponent* SkMesh = GetMesh())
+			{
+				SkMesh->bPauseAnims = false;
+			}
+
 			if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 			{
 				MoveComp->SetMovementMode(MOVE_Walking);
@@ -102,6 +109,9 @@ void ABAPlayerCharacter::Respawn()
 				QM->ResetActiveQuests();
 				QM->RespawnQuestZoneEnemies();
 			}
+
+			// 5. PrePlaced 적(보스 등)이 FullReset 할 수 있도록 신호
+			OnRespawned.Broadcast();
 
 			UE_LOG(LogTemp, Log, TEXT("Player Respawned at %s"), *RespawnLoc.ToString());
 		}

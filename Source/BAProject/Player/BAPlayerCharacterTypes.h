@@ -55,6 +55,22 @@ enum class EPlayerDamageReactionState : uint8
 	GuardBreak
 };
 
+// 공격/피격 후딜에서 어떤 입력 탈출을 허용할지 ANS별로 설정한다.
+USTRUCT(BlueprintType)
+struct FBAPlayerRecoveryEscapeWindowSettings
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery")
+	bool bAllowDodge = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery")
+	bool bAllowGuard = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery")
+	bool bAllowMove = true;
+};
+
 // UserDataSubsystem 또는 디자이너 설정으로부터 채워지는 기본 이동 속도.
 USTRUCT(BlueprintType)
 struct FBAPlayerMovementSpeedSettings

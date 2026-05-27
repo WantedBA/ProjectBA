@@ -289,6 +289,7 @@ void ABAPlayerCharacter::PlayDamageReactionAnimation(
 	const bool bGuarding,
 	const bool bGuardBreak)
 {
+	ClearRecoveryEscapeWindow();
 	ResetKnockDownRecovery();
 	bFallTrackingActive = false;
 
@@ -304,6 +305,7 @@ void ABAPlayerCharacter::PlayDamageReactionAnimation(
 		SetInvincible(true);
 	}
 	PlayDamageReactionCameraShake(DamageReactionType, bGuarding, bGuardBreak);
+	PlayDamageReactionForceFeedback(DamageReactionType, bGuarding, bGuardBreak);
 
 	// 연속 피격 시 이전 종료 타이머가 새 반응 상태를 해제하지 못하게 식별자를 갱신한다.
 	GetWorldTimerManager().ClearTimer(DamageReactionTimerHandle);
@@ -499,6 +501,7 @@ void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)
 		return;
 	}
 
+	ClearRecoveryEscapeWindow();
 	const EPlayerDamageReactionState FinishedDamageReactionState = DamageReactionState;
 	if (bDeathFinalizationDeferred)
 	{
@@ -516,9 +519,12 @@ void ABAPlayerCharacter::FinishDamageReaction(const int32 PlaybackId)
 	ActiveDamageReactionPlaybackId = 0;
 	ActiveDamageReactionMontage = nullptr;
 
-	const bool bFinishedGuardReaction = FinishedDamageReactionState == EPlayerDamageReactionState::GuardHit
-		|| FinishedDamageReactionState == EPlayerDamageReactionState::GuardBreak;
-	const bool bShouldResumeGuard = bFinishedGuardReaction && ShouldResumeGuardAfterGuardReaction();
+	const bool bFinishedGuardHitReaction = FinishedDamageReactionState == EPlayerDamageReactionState::GuardHit;
+	const bool bFinishedGuardBreakReaction = FinishedDamageReactionState == EPlayerDamageReactionState::GuardBreak;
+	const bool bFinishedGuardReaction = bFinishedGuardHitReaction || bFinishedGuardBreakReaction;
+	const bool bShouldResumeGuard = bFinishedGuardHitReaction
+		? ShouldResumeGuardAfterGuardReaction()
+		: bFinishedGuardBreakReaction && bGuardInputHeld && IsAlive() && !IsOnLadder();
 	if (bFinishedGuardReaction && ActionComponent)
 	{
 		// GuardBreak 리액션 중에는 무방비였으므로 종료 시 상태를 비운 뒤, 입력이 유지되어 있으면 아래에서 재시작한다.

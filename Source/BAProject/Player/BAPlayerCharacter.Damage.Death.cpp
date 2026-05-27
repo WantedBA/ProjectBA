@@ -252,6 +252,7 @@ void ABAPlayerCharacter::PrepareDeathState()
 	ResetKnockDownRecovery();
 	ResetLandingRecovery();
 	PlayDeathCameraShake();
+	PlayDeathForceFeedback();
 	DamageReactionState = EPlayerDamageReactionState::None;
 	ActiveDamageReactionMontage = nullptr;
 	ActiveDamageReactionPlaybackId = 0;
@@ -259,6 +260,7 @@ void ABAPlayerCharacter::PrepareDeathState()
 	bDeathFinalizationDeferred = false;
 	bDeathMovementDisableDeferred = false;
 	bWeaponDroppedForDeath = false;
+	ClearGuardReleaseGrace();
 	bGuardInputHeld = false;
 	SetGuardWindowActive(false);
 

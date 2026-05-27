@@ -52,6 +52,9 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction", meta = (AllowPrivateAccess = "true"))
 	FText PromptExit = NSLOCTEXT("Interaction", "RestExit", "E - 일어나기");
 
+	UPROPERTY(EditAnywhere, Category = "Interaction|Animation")
+	TObjectPtr<UAnimMontage> RestMontage;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Interaction|UI|SkillTree")
 	TSubclassOf<USkillTreeWidget> SkillTreeWidgetClass;
 

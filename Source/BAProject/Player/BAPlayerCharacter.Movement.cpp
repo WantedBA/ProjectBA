@@ -69,10 +69,10 @@ EMovementState ABAPlayerCharacter::GetMovementState() const
 	return MovementRuntime.ActiveGait;
 }
 
-// 컨트롤러 입력이 요청한 Walk/Run/Sprint를 반환한다.
+// AnimBP가 사용할 Walk/Run/Sprint를 반환한다.
 EMovementState ABAPlayerCharacter::GetDesiredMovementState() const
 {
-	return MovementRuntime.DesiredGait;
+	return GetMovementAllowedGait(MovementRuntime.DesiredGait);
 }
 
 // 현재 Free/Strafe 제어 방식을 반환한다.
@@ -274,7 +274,7 @@ void ABAPlayerCharacter::HandleDodgeActionStarted(
 		return;
 	}
 
-	if (ActionType == EActionType::DodgeRoll)
+	if (ActionType == EActionType::DodgeRoll || ActionType == EActionType::Backstep)
 	{
 		SetBAPlayerState(EBAPlayerState::DodgeRolling);
 	}
@@ -286,7 +286,7 @@ void ABAPlayerCharacter::HandleDodgeActionMontageEnded(
 	UAnimMontage* /*Montage*/,
 	const bool bInterrupted)
 {
-	if (ActionType == EActionType::DodgeRoll
+	if ((ActionType == EActionType::DodgeRoll || ActionType == EActionType::Backstep)
 		&& !bInterrupted
 		&& BAPlayerState == EBAPlayerState::DodgeRolling)
 	{
@@ -300,7 +300,7 @@ void ABAPlayerCharacter::HandleDodgeActionMontageEnded(
 		SnapInterpolatedMoveInputTo(FVector2D::ZeroVector);
 	}
 
-	if (ActionType == EActionType::DodgeRoll)
+	if (ActionType == EActionType::DodgeRoll || ActionType == EActionType::Backstep)
 	{
 		ApplyPendingLockOnStrafeMode();
 	}
@@ -526,7 +526,33 @@ EMovementState ABAPlayerCharacter::GetMovementAllowedGait(const EMovementState R
 		return EMovementState::Run;
 	}
 
+	if (ShouldUseAnalogWalkGait(RequestedGait))
+	{
+		return EMovementState::Walk;
+	}
+
 	return RequestedGait;
+}
+
+bool ABAPlayerCharacter::ShouldUseAnalogWalkGait(const EMovementState RequestedGait) const
+{
+	if (RequestedGait != EMovementState::Run || !MovementRuntime.bHasMoveInput)
+	{
+		return false;
+	}
+
+	const float InputSize = MovementRuntime.MoveInputVector.Size();
+	return InputSize > KINDA_SMALL_NUMBER && InputSize <= GetAnalogWalkInputThreshold();
+}
+
+float ABAPlayerCharacter::GetAnalogWalkInputThreshold() const
+{
+	return FMath::Clamp(AnalogWalkInputThreshold, 0.05f, 1.f);
+}
+
+float ABAPlayerCharacter::GetMoveInputScaleForActiveGait() const
+{
+	return MovementRuntime.bHasMoveInput ? 1.f : 0.f;
 }
 
 // Gait별 Phase 설정을 반환한다.

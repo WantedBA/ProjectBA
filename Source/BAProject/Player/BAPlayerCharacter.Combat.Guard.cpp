@@ -4,6 +4,7 @@
 #include "Component/ActionAnimationComponent.h"
 #include "Component/StatComponent.h"
 #include "Engine/Engine.h"
+#include "TimerManager.h"
 
 /*
  * Guard Policy Summary
@@ -13,10 +14,10 @@
  *
  * 1. 기본 흐름
  * - 가드 입력을 누르면 Loop 섹션이 바로 재생되고, Loop 섹션을 반복한다.
- * - 가드 해제는 별도 End 섹션 없이 몽타주 BlendOut으로 locomotion에 복귀한다.
+ * - 평상시 가드 해제는 별도 End 섹션 없이 몽타주 BlendOut으로 locomotion에 복귀한다.
  * - 이동 중 가드를 누르면 하체 이동은 유지하고, 이동 속도는 Walk로 낮춘다.
  * - 가드 윈도우가 열린 동안만 정면 방어가 가능하며, 이때 스태미너 회복 속도도 가드용 배율로 낮아진다.
- * - 가드 윈도우가 열리기 전후와 관계없이 키를 떼면 별도 종료 섹션 없이 블렌딩으로 빠진다.
+ * - GuardHit/PerfectGuard 이후에는 입력을 뗀 뒤 짧은 유지 시간을 허용한다.
  *
  * 2. 상태 의미
  * - Guarding: 방어 자세가 실제로 성립한 상태다.
@@ -65,6 +66,8 @@ namespace
 
 bool ABAPlayerCharacter::TryStartGuard()
 {
+	const bool bWasGuardReleaseGraceActive = GetWorldTimerManager().IsTimerActive(GuardReleaseGraceTimerHandle);
+	ClearGuardReleaseGrace();
 	bGuardInputHeld = true;
 
 	if (!ActionComponent)
@@ -77,9 +80,26 @@ bool ABAPlayerCharacter::TryStartGuard()
 		return false;
 	}
 
+	if (IsRecoveryEscapeRequiredForCurrentState())
+	{
+		if (!CanUseRecoveryEscapeGuard())
+		{
+			bGuardInputHeld = false;
+			return false;
+		}
+
+		ExitCurrentRecoveryForEscape(false);
+	}
+
 	if (!CanAcceptActionInput())
 	{
+		bGuardInputHeld = false;
 		return false;
+	}
+
+	if (bWasGuardReleaseGraceActive && ActionComponent->GetActiveActionType() == EActionType::Guard)
+	{
+		return true;
 	}
 
 	SetGuardWindowActive(false);
@@ -104,6 +124,21 @@ bool ABAPlayerCharacter::TryStartGuard()
 void ABAPlayerCharacter::StopGuard()
 {
 	bGuardInputHeld = false;
+	if (CanUseGuardReleaseGraceAfterSuccess())
+	{
+		bGuardReleaseGraceAvailable = false;
+		ScheduleGuardReleaseGrace();
+		return;
+	}
+
+	StopGuardImmediately();
+}
+
+void ABAPlayerCharacter::StopGuardImmediately()
+{
+	bGuardInputHeld = false;
+	bGuardReleaseGraceAvailable = false;
+	ClearGuardReleaseGrace();
 	if (LandingRecoveryQueuedCommand == EActionCommand::Guard)
 	{
 		ClearQueuedLandingRecoveryAction();
@@ -170,6 +205,8 @@ void ABAPlayerCharacter::CancelGuardForActionInterrupt()
 	// 공격/구르기는 가드 몽타주를 BlendOut시키고 즉시 자기 액션으로 전환한다.
 	// 가드 입력 유지 플래그까지 내려야 인터럽트 액션 종료 후 GuardHit 복귀 같은 경로가 재진입하지 않는다.
 	bGuardInputHeld = false;
+	bGuardReleaseGraceAvailable = false;
+	ClearGuardReleaseGrace();
 	SetGuardWindowActive(false);
 	SetPerfectGuardWindowActive(false);
 
@@ -222,9 +259,53 @@ void ABAPlayerCharacter::HandleGuardActionMontageEnded(
 		return;
 	}
 
+	bGuardReleaseGraceAvailable = false;
+	ClearGuardReleaseGrace();
 	SetGuardWindowActive(false);
 	SetBAPlayerState(EBAPlayerState::None);
 	SetCombatMode(EPlayerCombatMode::None);
+}
+
+void ABAPlayerCharacter::ScheduleGuardReleaseGrace(const float OverrideDelay)
+{
+	const float Delay = FMath::Max(0.f, OverrideDelay >= 0.f ? OverrideDelay : GuardReleaseGraceDuration);
+	if (Delay <= 0.f)
+	{
+		StopGuardImmediately();
+		return;
+	}
+
+	GetWorldTimerManager().ClearTimer(GuardReleaseGraceTimerHandle);
+	GetWorldTimerManager().SetTimer(
+		GuardReleaseGraceTimerHandle,
+		this,
+		&ABAPlayerCharacter::StopGuardImmediately,
+		Delay,
+		false);
+}
+
+void ABAPlayerCharacter::ClearGuardReleaseGrace()
+{
+	GetWorldTimerManager().ClearTimer(GuardReleaseGraceTimerHandle);
+}
+
+bool ABAPlayerCharacter::ShouldDelayGuardRelease() const
+{
+	if (GuardReleaseGraceDuration <= 0.f || !ActionComponent || !IsAlive() || IsOnLadder())
+	{
+		return false;
+	}
+
+	const EGuardState GuardState = ActionComponent->GetGuardState();
+	const bool bGuardStateActive = GuardState == EGuardState::Guarding || GuardState == EGuardState::Blocking;
+	return ActionComponent->GetActiveActionType() == EActionType::Guard
+		|| bGuardStateActive
+		|| BAPlayerState == EBAPlayerState::Guarding;
+}
+
+bool ABAPlayerCharacter::CanUseGuardReleaseGraceAfterSuccess() const
+{
+	return bGuardReleaseGraceAvailable && ShouldDelayGuardRelease();
 }
 
 void ABAPlayerCharacter::ConfigureGuardMontageSections()
@@ -322,6 +403,7 @@ void ABAPlayerCharacter::KeepGuardActiveAfterGuardSuccess()
 		return;
 	}
 
+	bGuardReleaseGraceAvailable = true;
 	ActionComponent->SetGuardState(EGuardState::Blocking);
 	SetBAPlayerState(EBAPlayerState::Guarding);
 	SetCombatMode(EPlayerCombatMode::Block);
@@ -329,14 +411,28 @@ void ABAPlayerCharacter::KeepGuardActiveAfterGuardSuccess()
 
 bool ABAPlayerCharacter::ShouldResumeGuardAfterGuardReaction() const
 {
-	return bGuardInputHeld && IsAlive() && !IsOnLadder();
+	return (bGuardInputHeld || GetWorldTimerManager().IsTimerActive(GuardReleaseGraceTimerHandle))
+		&& IsAlive()
+		&& !IsOnLadder();
 }
 
 bool ABAPlayerCharacter::ResumeGuardAfterGuardReaction()
 {
+	const bool bResumeFromReleaseGrace = !bGuardInputHeld
+		&& GetWorldTimerManager().IsTimerActive(GuardReleaseGraceTimerHandle);
+	const float RemainingReleaseGrace = bResumeFromReleaseGrace
+		? GetWorldTimerManager().GetTimerRemaining(GuardReleaseGraceTimerHandle)
+		: 0.f;
+
 	if (!TryStartGuard())
 	{
 		return false;
+	}
+
+	if (bResumeFromReleaseGrace)
+	{
+		bGuardInputHeld = false;
+		ScheduleGuardReleaseGrace(RemainingReleaseGrace);
 	}
 
 	if (ActionAnimationComponent)
@@ -370,6 +466,7 @@ void ABAPlayerCharacter::HandlePerfectGuardSucceeded(const FHitResult& HitResult
 	ConsumePerfectGuardStaminaCost();
 	ShowGuardJudgementDebugMessage(TEXT("Perfect Guard"), FColor::Cyan);
 	PlayPerfectGuardCameraShake();
+	PlayPerfectGuardForceFeedback();
 	K2_OnPerfectGuardSucceeded(HitResult, DamageCauser);
 
 	if (ACharacterBase* DamageCauserCharacter = Cast<ACharacterBase>(DamageCauser))

@@ -49,6 +49,8 @@ enum class EBAPlayerState : uint8
 	Dead
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerRespawned);
+
 UCLASS()
 class BAPROJECT_API ABAPlayerCharacter : public ACharacterBase
 {
@@ -200,6 +202,21 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Action")
 	bool CanAcceptActionInput() const;
 
+	UFUNCTION(BlueprintCallable, Category = "Combat|Recovery")
+	void OpenRecoveryEscapeWindow(const FBAPlayerRecoveryEscapeWindowSettings& Settings);
+
+	UFUNCTION(BlueprintCallable, Category = "Combat|Recovery")
+	void CloseRecoveryEscapeWindow(const FBAPlayerRecoveryEscapeWindowSettings& Settings);
+
+	UFUNCTION(BlueprintPure, Category = "Combat|Recovery")
+	bool IsRecoveryEscapeWindowOpen() const;
+
+	UFUNCTION(BlueprintPure, Category = "Combat|Recovery")
+	bool IsRecoveryEscapeRequiredForCurrentState() const;
+
+	bool TryStartRecoveryEscapeAction(EActionCommand Command, EActionDirection Direction = EActionDirection::Any);
+	bool TryStartRecoveryEscapeMove(const FVector2D& MoveInput);
+
 	UFUNCTION(BlueprintPure, Category = "Animation|Falling")
 	bool IsLandingRecoveryActive() const;
 
@@ -267,6 +284,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void Respawn();
 
+	UPROPERTY(BlueprintAssignable, Category = "Combat")
+	FOnPlayerRespawned OnRespawned;
+
 	/** 사망 시 드롭된 무기를 다시 손에 부착 */
 	void ResetWeaponAttachment();
 	
@@ -329,6 +349,23 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Camera|Collision")
 	TEnumAsByte<ECollisionChannel> CameraProbeChannel = ECC_Camera;
 
+	// 플레이어 이동을 따라가는 카메라 위치 보간 사용 여부
+	UPROPERTY(EditAnywhere, Category = "Camera|Lag")
+	bool bEnableCameraLag = true;
+
+	UPROPERTY(EditAnywhere, Category = "Camera|Lag", meta = (ClampMin = "0.0"))
+	float CameraLagSpeed = 10.f;
+
+	UPROPERTY(EditAnywhere, Category = "Camera|Lag", meta = (ClampMin = "0.0", Units = "cm"))
+	float CameraLagMaxDistance = 80.f;
+
+	// 카메라 회전 입력의 급격한 전환을 SpringArm에서 한 번 더 완화한다.
+	UPROPERTY(EditAnywhere, Category = "Camera|Lag")
+	bool bEnableCameraRotationLag = true;
+
+	UPROPERTY(EditAnywhere, Category = "Camera|Lag", meta = (ClampMin = "0.0"))
+	float CameraRotationLagSpeed = 12.f;
+
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMeshComponent> WeaponMeshComponent;
 	
@@ -351,6 +388,7 @@ protected:
 	void BindLockOnTargetCallbacks();
 	void InitializeCameraDefaults();
 	void ApplyCameraCollisionSettings() const;
+	void ApplyCameraLagSettings() const;
 	void ConfigureLockOnCameraDefaults();
 
 	UFUNCTION()
@@ -445,6 +483,9 @@ private:
 	void SetActiveGaitAndSpeed(EMovementState NewGait);
 	void UpdateMaxWalkSpeed(float DeltaTime);
 	EMovementState GetMovementAllowedGait(EMovementState RequestedGait) const;
+	bool ShouldUseAnalogWalkGait(EMovementState RequestedGait) const;
+	float GetAnalogWalkInputThreshold() const;
+	float GetMoveInputScaleForActiveGait() const;
 	const FBAPlayerMovementPhaseSettings& GetPhaseSettings(EMovementState Gait) const;
 	float GetSpeedForGait(EMovementState Gait) const;
 	bool IsPhaseEnabledForGait(EPlayerMovementPhase Phase, EMovementState Gait) const;
@@ -487,6 +528,11 @@ private:
 	// 가드
 	void CancelGuardForActionInterrupt();
 	void ConfigureGuardMontageSections();
+	void StopGuardImmediately();
+	void ScheduleGuardReleaseGrace(float OverrideDelay = -1.f);
+	void ClearGuardReleaseGrace();
+	bool ShouldDelayGuardRelease() const;
+	bool CanUseGuardReleaseGraceAfterSuccess() const;
 	float GetGuardAbsorptionMultiplier() const;
 	float GetPerfectGuardStaminaCostMultiplier() const;
 	bool ConsumeGuardStaminaForDamage();
@@ -587,6 +633,17 @@ private:
 		bool bGuarding,
 		bool bGuardBreak);
 	void PlayPerfectGuardCameraShake();
+	void PlayDamageReactionForceFeedback(
+		EBADamageReactionType DamageReactionType,
+		bool bGuarding,
+		bool bGuardBreak) const;
+	void PlayPerfectGuardForceFeedback() const;
+	void PlayDeathForceFeedback() const;
+	void PlayConfiguredForceFeedback(float Intensity, float Duration) const;
+	float ResolveForceFeedbackIntensity(float Intensity) const;
+	void PlayXInputForceFeedback(float Intensity, float Duration) const;
+	void StopXInputForceFeedback() const;
+	void StopXInputForceFeedback(int32 PlaybackId) const;
 	void PlayDeathCameraShake();
 	void PlayConfiguredCameraShake(TSubclassOf<UCameraShakeBase> ShakeClass, float Scale) const;
 	float ResolveDamageReactionCameraShakeScale(
@@ -594,6 +651,17 @@ private:
 		bool bGuarding,
 		bool bGuardBreak) const;
 	void FinishDamageReaction(int32 PlaybackId);
+
+	// 공격/피격 후딜 탈출
+	bool IsAttackRecoveryEscapeState() const;
+	bool IsDamageReactionRecoveryEscapeState() const;
+	bool CanUseRecoveryEscapeDodge() const;
+	bool CanUseRecoveryEscapeGuard() const;
+	bool CanUseRecoveryEscapeMove() const;
+	void ClearRecoveryEscapeWindow();
+	void ExitCurrentRecoveryForEscape(bool bKeepQueuedAttack);
+	void ExitAttackRecoveryForEscape(bool bKeepQueuedAttack);
+	void ExitDamageReactionRecoveryForEscape();
 
 	UFUNCTION()
 	void HandleRespawnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
@@ -606,6 +674,10 @@ private:
 	// 이동 설정
 	UPROPERTY(EditAnywhere, Category = "Movement", meta = (ShowOnlyInnerProperties))
 	FBAPlayerMovementSpeedSettings SpeedSettings;
+
+	// Run 요청 중에도 스틱 기울기가 이 값 이하면 Walk로 스냅한다. 초과 입력은 Run 정속으로 처리한다.
+	UPROPERTY(EditAnywhere, Category = "Movement|Analog", meta = (ClampMin = "0.05", ClampMax = "1.0"))
+	float AnalogWalkInputThreshold = 0.4f;
 
 	UPROPERTY(EditAnywhere, Category = "Movement|Locomotion", meta = (ShowOnlyInnerProperties))
 	FBAPlayerLocomotionSettings LocomotionSettings;
@@ -665,11 +737,22 @@ private:
 
 	// 락온 타겟 화면 높이 보정 PitchOffset
 	UPROPERTY(EditAnywhere, Category = "LockOn|Camera", meta = (Units = "deg"))
-	float LockOnAdditionalControllerPitchOffset = -10.f;
+	float LockOnAdditionalControllerPitchOffset = 0.f;
+
+	// 근접 락온 시 카메라가 과하게 땅을 향하지 않도록 컨트롤러 pitch를 제한한다.
+	UPROPERTY(EditAnywhere, Category = "LockOn|Camera")
+	bool bOverrideLockOnControllerPitchClamp = true;
+
+	UPROPERTY(EditAnywhere, Category = "LockOn|Camera", meta = (Units = "deg", EditCondition = "bOverrideLockOnControllerPitchClamp"))
+	FVector2D LockOnControllerPitchClamp = FVector2D(-25.f, 30.f);
+
+	// 락온 카메라 회전 보간 속도. 낮을수록 타겟을 더 부드럽게 따라간다.
+	UPROPERTY(EditAnywhere, Category = "LockOn|Camera", meta = (ClampMin = "0.0"))
+	float LockOnControllerRotationInterpSpeed = 10.f;
 
 	// 공격 성공 시 플레이어 공격 몽타주 정지 시간
 	UPROPERTY(EditAnywhere, Category = "Combat|Attack|HitStop", meta = (ClampMin = "0.0", Units = "s"))
-	float AttackHitStopDuration = 0.2f;
+	float AttackHitStopDuration = 0.1f;
 
 	// 피격 반응 설정
 	// 가드 정면 판정 좌우 허용 각도
@@ -703,6 +786,10 @@ private:
 	// 일반 피격/가드 수평 넉백 유지 시간
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Knockback", meta = (ClampMin = "0.0", Units = "s"))
 	float GroundDamageReactionKnockbackDuration = 0.12f;
+
+	// 후딜 탈출 시 현재 공격/피격 몽타주를 정리하는 blend-out 시간
+	UPROPERTY(EditAnywhere, Category = "Combat|Recovery", meta = (ClampMin = "0.0", Units = "s"))
+	float RecoveryEscapeMontageBlendOut = 0.05f;
 
 	// 일반 피격 방향별 리액션 몽타주
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Montage")
@@ -787,6 +874,71 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Camera", meta = (ClampMin = "0.0"))
 	float GuardBreakCameraShakeScale = 1.25f;
 
+	// 피격/가드 시 게임패드 Force Feedback 사용 여부
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback")
+	bool bEnableGamepadForceFeedback = true;
+
+	// PC Xbox 컨트롤러용 XInput 럼블 fallback. 표준 Force Feedback이 무반응일 때도 Xbox 패드는 이 경로로 울린다.
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback")
+	bool bEnableXInputForceFeedbackFallback = true;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0", ClampMax = "3"))
+	int32 XInputForceFeedbackUserIndex = 0;
+
+	// 기존 피드백별 세기 값에 곱하는 전체 체감 보정값.
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0"))
+	float ForceFeedbackIntensityMultiplier = 7.f;
+
+	// Xbox/XInput 기준 왼쪽 저주파 모터. 그립/핸들 쪽 둔탁한 진동 체감에 가깝다.
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback|XInput", meta = (ClampMin = "0.0", ClampMax = "2.0"))
+	float XInputLeftMotorScale = 1.15f;
+
+	// Xbox/XInput 기준 오른쪽 고주파 모터. 날카로운 진동 체감에 가깝다.
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback|XInput", meta = (ClampMin = "0.0", ClampMax = "2.0"))
+	float XInputRightMotorScale = 0.9f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float HitReactForceFeedbackIntensity = 0.35f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
+	float HitReactForceFeedbackDuration = 0.2f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float LargeHitReactForceFeedbackIntensity = 0.5f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
+	float LargeHitReactForceFeedbackDuration = 0.25f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float KnockDownForceFeedbackIntensity = 0.8f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
+	float KnockDownForceFeedbackDuration = 0.3f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float GuardHitForceFeedbackIntensity = 0.35f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
+	float GuardHitForceFeedbackDuration = 0.12f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float PerfectGuardForceFeedbackIntensity = 0.8f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
+	float PerfectGuardForceFeedbackDuration = 0.2f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float GuardBreakForceFeedbackIntensity = 0.85f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
+	float GuardBreakForceFeedbackDuration = 0.4f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float DeathForceFeedbackIntensity = 0.9f;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Feedback|ForceFeedback", meta = (ClampMin = "0.0", Units = "s"))
+	float DeathForceFeedbackDuration = 0.35f;
+
 	// 일반 피격 사망 방향별 몽타주
 	UPROPERTY(EditAnywhere, Category = "Combat|Death|Montage", meta = (DisplayName = "Hit React Death Montages"))
 	TMap<EActionDirection, TObjectPtr<UAnimMontage>> DeathMontages;
@@ -847,6 +999,10 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Combat|Guard|Montage")
 	FName GuardLoopSection = TEXT("Loop");
 
+	// 가드 입력을 뗀 뒤에도 방어 자세를 유지하는 시간
+	UPROPERTY(EditAnywhere, Category = "Combat|Guard", meta = (ClampMin = "0.0", Units = "s"))
+	float GuardReleaseGraceDuration = 1.f;
+
 	UPROPERTY(EditAnywhere, Category = "Combat|Respawn|Montage")
 	TObjectPtr<UAnimMontage> RespawnMontage;
 
@@ -876,7 +1032,9 @@ private:
 	bool bDeathMovementDisableDeferred = false;
 	bool bWeaponDroppedForDeath = false;
 	bool bGuardInputHeld = false;
+	bool bGuardReleaseGraceAvailable = false;
 	bool bPerfectGuardWindowActive = false;
+	FTimerHandle GuardReleaseGraceTimerHandle;
 	bool bFallTrackingActive = false;
 	bool bLandingRecoveryActive = false;
 	bool bLandingRecoveryInputLocked = false;
@@ -891,6 +1049,12 @@ private:
 	bool bKnockDownGetUpMoveInputShortcut = false;
 	EActionDirection KnockDownGetUpQueuedDodgeDirection = EActionDirection::Any;
 	EActionDirection KnockDownGetUpHeldDodgeDirection = EActionDirection::Any;
+	int32 RecoveryEscapeWindowCount = 0;
+	int32 RecoveryEscapeDodgeWindowCount = 0;
+	int32 RecoveryEscapeGuardWindowCount = 0;
+	int32 RecoveryEscapeMoveWindowCount = 0;
+	mutable FTimerHandle XInputForceFeedbackStopTimerHandle;
+	mutable int32 XInputForceFeedbackPlaybackId = 0;
 	UPROPERTY(VisibleAnywhere) bool bIsBeforeCharge = false;
 	UPROPERTY(VisibleAnywhere) bool bIsCharging = false;
 	UPROPERTY(VisibleAnywhere) bool bIsChargeInputCompleted = false;
