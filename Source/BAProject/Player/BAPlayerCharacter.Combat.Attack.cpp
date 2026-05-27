@@ -491,18 +491,28 @@ void ABAPlayerCharacter::ResetComboTransitionOverrides()
 	ComboTransitionOverrides.Empty();
 }
 
-void ABAPlayerCharacter::ClearAttackRuntimeState()
+void ABAPlayerCharacter::ClearAttackRuntimeState(const bool bKeepQueuedAttack)
 {
 	ClearRecoveryEscapeWindow();
 	ClearAttackHitStop(true);
+	GetWorldTimerManager().ClearTimer(ChargeAttackTimerHandle);
+
+	bIsBeforeCharge = false;
+	bIsCharging = false;
+	bIsChargeInputCompleted = false;
+	PausedMontage = nullptr;
+
 	if (StatComponent)
 	{
 		StatComponent->ResumeStaminaRecovery(AttackStaminaRecoveryPauseSource, false);
 	}
-	NowComboTransitionTid = 0;
-	NextComboTransitionTid = 0;
-	NextAttackMontage = nullptr;
-	NextAttackActionType = EActionType::None;
+	if (!bKeepQueuedAttack)
+	{
+		NowComboTransitionTid = 0;
+		NextComboTransitionTid = 0;
+		NextAttackMontage = nullptr;
+		NextAttackActionType = EActionType::None;
+	}
 	ActiveAttackMontage = nullptr;
 	ActiveAttackPlaybackId = 0;
 }

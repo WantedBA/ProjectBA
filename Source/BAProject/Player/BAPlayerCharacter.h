@@ -474,7 +474,7 @@ protected:
 	
 private:
 	// 공격 런타임
-	void ClearAttackRuntimeState();
+	void ClearAttackRuntimeState(bool bKeepQueuedAttack = false);
 	bool IsActiveAttackMontagePlaying() const;
 	int64 MakeComboOverrideKey(int32 NowComboTid, EActionCommand ActionCommand) const;
 	
