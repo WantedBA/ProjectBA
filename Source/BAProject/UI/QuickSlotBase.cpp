@@ -27,16 +27,16 @@ void UQuickSlotBase::NativeTick(const FGeometry& MyGeomtry, float InDeltaTime)
 	// 쿨타임이 활성화된 상태라면 매 프레임 남은 시간을 깎고 머티리얼 마스크를 조절
 	if (bIsCooldownActive && IconMID)
 	{
-		CurrnetCooldown -= InDeltaTime;
+		CurrentCooldown -= InDeltaTime;
 
 		// 쿨타임 진행 비율 계산 (1.0 -> 0.0)
-		float Percent =1.0f - FMath::Clamp(CurrnetCooldown / MaxCooldown, 0.0f, 1.0f);
+		float Percent =1.0f - FMath::Clamp(CurrentCooldown / MaxCooldown, 0.0f, 1.0f);
 
 		// 머티리얼 그래프에서 만든 'CooldownPercent' 파라미터에 값을 주입
 		IconMID->SetScalarParameterValue(TEXT("CooldownPercent"), Percent);
 
 		// 쿨타임 종료 판정
-		if (CurrnetCooldown <= 0.0f)
+		if (CurrentCooldown <= 0.0f)
 		{
 			bIsCooldownActive = false;
 
@@ -88,14 +88,10 @@ void UQuickSlotBase::NativePreConstruct()
 
 void UQuickSlotBase::StartCooldown(float Duration)
 {
-	// 쿨타임 지속 시간을 설정하고 타이머를 시작함
-	if (Duration <= 0.0f)
-	{
-		return;
-	}
+	float FixedDuration = 1.44f;
 
-	MaxCooldown = Duration;
-	CurrnetCooldown = Duration;
+	MaxCooldown = FixedDuration;
+	CurrentCooldown = FixedDuration;
 	bIsCooldownActive = true;
 
 	// 쿨타임이 시작되면 슬롯을 어둡게 만듦

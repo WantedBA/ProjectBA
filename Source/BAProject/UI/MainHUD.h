@@ -35,11 +35,6 @@ protected:
 	UPROPERTY(meta = (BindWidget), BlueprintReadOnly, Category = "BA|UI")
 	class UBossHPBar* BossHPBar;
 
-	// 삭제 예정 
-	//// 툴팁 위젯 (WBP 이름 맞출 것) 
-	//UPROPERTY(meta = (BindWidget), BlueprintReadOnly, Category = "BA|UI")
-	//class UTooltipWidget* Tooltip;
-
 	// 툴팁 클래스 정보를 받을 변수
 	UPROPERTY(EditAnywhere, Category = "BA|UI")
 	TSubclassOf<class UTooltipWidget> TooltipClass;
@@ -50,6 +45,8 @@ protected:
 
 protected:
 	virtual void NativeConstruct() override;
+
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 public:
 	// 값 업데이트
