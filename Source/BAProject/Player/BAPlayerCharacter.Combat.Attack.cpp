@@ -414,7 +414,18 @@ void ABAPlayerCharacter::SetNextCombo(EActionCommand InActionCommand)
 		// 다음 콤보가 없는 경우
 		if (NextComboTransitionTid == 0)
 		{
-			return;
+			NowComboTransitionTid = 0;
+			NowComboTransition = TableManager->FindComboTransition(NowComboTransitionTid);
+			if (InActionCommand == EActionCommand::LightAttack)
+			{
+				NextComboTransitionTid = NowComboTransition->NextOnL;
+			}
+			else if (InActionCommand == EActionCommand::HeavyAttack)
+			{
+				NextComboTransitionTid = NowComboTransition->NextOnR;
+			}
+			// SetNextCombo(InActionCommand);
+			// return;
 		}
 	}
 	
