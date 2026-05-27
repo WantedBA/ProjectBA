@@ -3,6 +3,7 @@
 #include "MapDoor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
+#include "Instance/QuestManageSubsystem.h"
 
 AMapDoor::AMapDoor()
 {
@@ -72,6 +73,21 @@ void AMapDoor::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (LockQuestTid <= 0)
+	{
+		bQuestUnlocked = true;
+		return;
+	}
+	
+	if (UQuestManageSubsystem* QM = UQuestManageSubsystem::Get(this))
+	{
+		QM->OnQuestCompleted.AddWeakLambda(this, [this](int32 Tid)
+			{
+				if (Tid == LockQuestTid)
+					bQuestUnlocked = true;
+			});
+	}
+	
 	HingeAClosedRelative = HingePivotA
 		? HingePivotA->GetRelativeTransform()
 		: FTransform::Identity;
@@ -127,6 +143,7 @@ void AMapDoor::Tick(float DeltaTime)
 
 bool AMapDoor::CanInteract_Implementation(AActor* /*Interactor*/) const
 {
+	if (!bQuestUnlocked) return false;
 	if (bOnce && bUsed) return false;
 	if (DoorState == EDoorState::Opening || DoorState == EDoorState::Closing)
 	{
