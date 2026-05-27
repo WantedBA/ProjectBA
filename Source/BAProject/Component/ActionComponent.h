@@ -78,6 +78,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	bool TryStartActionOfType(EActionCommand Command, EActionDirection Direction, EActionType RequiredActionType);
 
+	// 후딜 탈출 윈도우에서 현재 액션 잠금/쿨다운을 무시하고 액션 시작을 시도한다.
+	bool TryStartActionForRecoveryEscape(EActionCommand Command, EActionDirection Direction = EActionDirection::Any);
+	bool TryStartActionOfTypeForRecoveryEscape(
+		EActionCommand Command,
+		EActionDirection Direction,
+		EActionType RequiredActionType);
+
 	// Moveset 검색 없이 ActionTid를 직접 지정해 시작을 시도한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	bool TryStartActionByTid(int32 ActionTid);
@@ -208,6 +215,7 @@ private:
 	const FActionDataRow* FindFirstActionDataByType(EActionType ActionType) const;
 	float GetStartStaminaCost(const FActionDataRow& ActionData, float CostMultiplier = 1.f) const;
 	float GetOnDemandStaminaCost(const FActionDataRow& ActionData, float CostMultiplier = 1.f) const;
+	bool TryStartResolvedActionForRecoveryEscape(const FActionDataRow& ActionData, EActionDirection Direction);
 	void BufferAction(int32 ActionTid, EActionDirection Direction);
 	void ClearBufferedAction();
 	void TryStartBufferedAction();

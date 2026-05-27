@@ -128,6 +128,9 @@ private:
 	// 질주/회피 공용 입력 종료 시 회피 탭 여부를 판단한다.
 	void OnSprintCompleted();
 
+	// 사다리 위에서 빠른 등반에 쓰는 게임패드 버튼 입력인지 확인한다.
+	bool IsLadderSprintGamepadButtonActive() const;
+
 	// 홀드 시간이 충족되면 질주 modifier를 활성화한다.
 	void UpdateSprintHoldState();
 
@@ -171,6 +174,7 @@ private:
 	bool bWalkToggleEnabled = false;
 	bool bSprintInputHeld = false;
 	bool bSprintModifierHeld = false;
+	bool bSprintInputHandledByRecoveryEscape = false;
 	bool bHasMoveInput = false;
 	FVector2D LastMoveInputVector = FVector2D::ZeroVector;
 	double SprintDodgePressedTime = 0.0;

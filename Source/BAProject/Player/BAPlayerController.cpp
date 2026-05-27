@@ -304,6 +304,8 @@ void ABAPlayerController::ToggleWalk()
 
 void ABAPlayerController::OnSprintStarted()
 {
+	bSprintInputHandledByRecoveryEscape = false;
+
 	// 사다리 위에서는 탭=닷지 체계 무시 — Space 누르면 즉시 빨리오르기
 	if (ABAPlayerCharacter* LadderPC = Cast<ABAPlayerCharacter>(GetPawn());
 		LadderPC && LadderPC->IsOnLadder())
@@ -322,12 +324,12 @@ void ABAPlayerController::OnSprintStarted()
 				? LastMoveInputVector
 				: PC->GetMoveInputVector();
 			const EActionDirection DodgeDirection = PC->GetActionDirectionFromMoveInput(DodgeInput);
-			if (PC->TryStartRecoveryEscapeAction(EActionCommand::Dodge, DodgeDirection))
-			{
-				bSprintInputHeld = false;
-				bSprintModifierHeld = false;
-				return;
-			}
+			PC->TryStartRecoveryEscapeAction(EActionCommand::Dodge, DodgeDirection);
+			bSprintInputHandledByRecoveryEscape = true;
+			bSprintInputHeld = false;
+			bSprintModifierHeld = false;
+			ApplyMovementStateByModifier();
+			return;
 		}
 
 		if (PC->IsDamageReacting())
@@ -373,6 +375,15 @@ void ABAPlayerController::OnSprintCompleted()
 		return;
 	}
 
+	if (bSprintInputHandledByRecoveryEscape)
+	{
+		bSprintInputHandledByRecoveryEscape = false;
+		bSprintInputHeld = false;
+		bSprintModifierHeld = false;
+		ApplyMovementStateByModifier();
+		return;
+	}
+
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
 		PC && PC->IsRecoveryEscapeRequiredForCurrentState())
 	{
@@ -408,6 +419,15 @@ void ABAPlayerController::OnSprintCompleted()
 	}
 
 	ApplyMovementStateByModifier();
+}
+
+bool ABAPlayerController::IsLadderSprintGamepadButtonActive() const
+{
+	const FKey GenericCircleButton = PlayerControllerGenericUSBControllerButton(3);
+	return IsInputKeyDown(EKeys::Gamepad_FaceButton_Right)
+		|| WasInputKeyJustPressed(EKeys::Gamepad_FaceButton_Right)
+		|| IsInputKeyDown(GenericCircleButton)
+		|| WasInputKeyJustPressed(GenericCircleButton);
 }
 
 void ABAPlayerController::UpdateSprintHoldState()
@@ -572,6 +592,11 @@ void ABAPlayerController::OnInteract()
 	// 사다리 매달린 상태: 카메라 방향과 무관하게 즉시 이탈
 	if (PC->IsOnLadder())
 	{
+		if (IsLadderSprintGamepadButtonActive())
+		{
+			return;
+		}
+
 		PC->ExitLadder(PC->GetActorLocation());
 		return;
 	}

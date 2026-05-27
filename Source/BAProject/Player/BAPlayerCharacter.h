@@ -655,13 +655,20 @@ private:
 	// 공격/피격 후딜 탈출
 	bool IsAttackRecoveryEscapeState() const;
 	bool IsDamageReactionRecoveryEscapeState() const;
+	bool IsDodgeRecoveryEscapeState() const;
 	bool CanUseRecoveryEscapeDodge() const;
 	bool CanUseRecoveryEscapeGuard() const;
 	bool CanUseRecoveryEscapeMove() const;
+	bool QueueRecoveryEscapeAction(EActionCommand Command, EActionDirection Direction);
+	bool TryConsumeQueuedRecoveryEscapeAction(const FBAPlayerRecoveryEscapeWindowSettings& Settings);
+	bool CanQueuedRecoveryEscapeActionUseWindow(const FBAPlayerRecoveryEscapeWindowSettings& Settings) const;
 	void ClearRecoveryEscapeWindow();
+	void ClearQueuedRecoveryEscapeAction();
+	void ClearQueuedRecoveryEscapeAction(EActionCommand Command);
 	void ExitCurrentRecoveryForEscape(bool bKeepQueuedAttack);
 	void ExitAttackRecoveryForEscape(bool bKeepQueuedAttack);
 	void ExitDamageReactionRecoveryForEscape();
+	void ExitDodgeRecoveryForEscape();
 
 	UFUNCTION()
 	void HandleRespawnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
@@ -1053,6 +1060,9 @@ private:
 	int32 RecoveryEscapeDodgeWindowCount = 0;
 	int32 RecoveryEscapeGuardWindowCount = 0;
 	int32 RecoveryEscapeMoveWindowCount = 0;
+	EActionCommand QueuedRecoveryEscapeCommand = EActionCommand::None;
+	EActionDirection QueuedRecoveryEscapeDirection = EActionDirection::Any;
+	bool bConsumingQueuedRecoveryEscapeAction = false;
 	mutable FTimerHandle XInputForceFeedbackStopTimerHandle;
 	mutable int32 XInputForceFeedbackPlaybackId = 0;
 	UPROPERTY(VisibleAnywhere) bool bIsBeforeCharge = false;

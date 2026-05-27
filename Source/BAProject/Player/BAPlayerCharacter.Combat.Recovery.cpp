@@ -22,6 +22,8 @@ void ABAPlayerCharacter::OpenRecoveryEscapeWindow(const FBAPlayerRecoveryEscapeW
 	{
 		++RecoveryEscapeMoveWindowCount;
 	}
+
+	TryConsumeQueuedRecoveryEscapeAction(Settings);
 }
 
 void ABAPlayerCharacter::CloseRecoveryEscapeWindow(const FBAPlayerRecoveryEscapeWindowSettings& Settings)
@@ -48,7 +50,10 @@ bool ABAPlayerCharacter::IsRecoveryEscapeWindowOpen() const
 
 bool ABAPlayerCharacter::IsRecoveryEscapeRequiredForCurrentState() const
 {
-	return IsAlive() && (IsAttackRecoveryEscapeState() || IsDamageReactionRecoveryEscapeState());
+	return IsAlive()
+		&& (IsAttackRecoveryEscapeState()
+			|| IsDamageReactionRecoveryEscapeState()
+			|| IsDodgeRecoveryEscapeState());
 }
 
 bool ABAPlayerCharacter::TryStartRecoveryEscapeAction(
@@ -70,6 +75,7 @@ bool ABAPlayerCharacter::TryStartRecoveryEscapeAction(
 	{
 		if (!CanUseRecoveryEscapeDodge())
 		{
+			QueueRecoveryEscapeAction(Command, Direction);
 			return false;
 		}
 
@@ -80,14 +86,18 @@ bool ABAPlayerCharacter::TryStartRecoveryEscapeAction(
 		}
 
 		return Direction == EActionDirection::Any
-			? ActionComponent->TryStartAction(EActionCommand::Dodge, Direction)
-			: ActionComponent->TryStartActionOfType(EActionCommand::Dodge, Direction, EActionType::DodgeRoll);
+			? ActionComponent->TryStartActionForRecoveryEscape(EActionCommand::Dodge, Direction)
+			: ActionComponent->TryStartActionOfTypeForRecoveryEscape(
+				EActionCommand::Dodge,
+				Direction,
+				EActionType::DodgeRoll);
 	}
 
 	if (Command == EActionCommand::Guard)
 	{
 		if (!CanUseRecoveryEscapeGuard())
 		{
+			QueueRecoveryEscapeAction(Command, Direction);
 			return false;
 		}
 
@@ -144,6 +154,17 @@ bool ABAPlayerCharacter::IsDamageReactionRecoveryEscapeState() const
 			|| DamageReactionState == EPlayerDamageReactionState::LargeHitReact);
 }
 
+bool ABAPlayerCharacter::IsDodgeRecoveryEscapeState() const
+{
+	if (BAPlayerState != EBAPlayerState::DodgeRolling || !ActionComponent)
+	{
+		return false;
+	}
+
+	const EActionType ActiveActionType = ActionComponent->GetActiveActionType();
+	return ActiveActionType == EActionType::DodgeRoll || ActiveActionType == EActionType::Backstep;
+}
+
 bool ABAPlayerCharacter::CanUseRecoveryEscapeDodge() const
 {
 	return IsRecoveryEscapeRequiredForCurrentState()
@@ -165,12 +186,83 @@ bool ABAPlayerCharacter::CanUseRecoveryEscapeMove() const
 		&& RecoveryEscapeMoveWindowCount > 0;
 }
 
+bool ABAPlayerCharacter::QueueRecoveryEscapeAction(
+	const EActionCommand Command,
+	const EActionDirection Direction)
+{
+	if (bConsumingQueuedRecoveryEscapeAction || !IsRecoveryEscapeRequiredForCurrentState())
+	{
+		return false;
+	}
+
+	if (Command != EActionCommand::Dodge && Command != EActionCommand::Guard)
+	{
+		return false;
+	}
+
+	if (QueuedRecoveryEscapeCommand != EActionCommand::None)
+	{
+		return false;
+	}
+
+	QueuedRecoveryEscapeCommand = Command;
+	QueuedRecoveryEscapeDirection = Direction;
+	return true;
+}
+
+bool ABAPlayerCharacter::TryConsumeQueuedRecoveryEscapeAction(const FBAPlayerRecoveryEscapeWindowSettings& Settings)
+{
+	if (QueuedRecoveryEscapeCommand == EActionCommand::None
+		|| !CanQueuedRecoveryEscapeActionUseWindow(Settings))
+	{
+		return false;
+	}
+
+	const EActionCommand CommandToStart = QueuedRecoveryEscapeCommand;
+	const EActionDirection DirectionToStart = QueuedRecoveryEscapeDirection;
+	ClearQueuedRecoveryEscapeAction();
+
+	TGuardValue<bool> ConsumingGuard(bConsumingQueuedRecoveryEscapeAction, true);
+	return TryStartRecoveryEscapeAction(CommandToStart, DirectionToStart);
+}
+
+bool ABAPlayerCharacter::CanQueuedRecoveryEscapeActionUseWindow(
+	const FBAPlayerRecoveryEscapeWindowSettings& Settings) const
+{
+	if (QueuedRecoveryEscapeCommand == EActionCommand::Dodge)
+	{
+		return Settings.bAllowDodge && CanUseRecoveryEscapeDodge();
+	}
+
+	if (QueuedRecoveryEscapeCommand == EActionCommand::Guard)
+	{
+		return Settings.bAllowGuard && CanUseRecoveryEscapeGuard();
+	}
+
+	return false;
+}
+
 void ABAPlayerCharacter::ClearRecoveryEscapeWindow()
 {
 	RecoveryEscapeWindowCount = 0;
 	RecoveryEscapeDodgeWindowCount = 0;
 	RecoveryEscapeGuardWindowCount = 0;
 	RecoveryEscapeMoveWindowCount = 0;
+	ClearQueuedRecoveryEscapeAction();
+}
+
+void ABAPlayerCharacter::ClearQueuedRecoveryEscapeAction()
+{
+	QueuedRecoveryEscapeCommand = EActionCommand::None;
+	QueuedRecoveryEscapeDirection = EActionDirection::Any;
+}
+
+void ABAPlayerCharacter::ClearQueuedRecoveryEscapeAction(const EActionCommand Command)
+{
+	if (QueuedRecoveryEscapeCommand == Command)
+	{
+		ClearQueuedRecoveryEscapeAction();
+	}
 }
 
 void ABAPlayerCharacter::ExitCurrentRecoveryForEscape(const bool bKeepQueuedAttack)
@@ -184,6 +276,12 @@ void ABAPlayerCharacter::ExitCurrentRecoveryForEscape(const bool bKeepQueuedAtta
 	if (IsDamageReactionRecoveryEscapeState())
 	{
 		ExitDamageReactionRecoveryForEscape();
+		return;
+	}
+
+	if (IsDodgeRecoveryEscapeState())
+	{
+		ExitDodgeRecoveryForEscape();
 	}
 }
 
@@ -254,6 +352,21 @@ void ABAPlayerCharacter::ExitDamageReactionRecoveryForEscape()
 	}
 
 	if (BAPlayerState == EBAPlayerState::HitReacting)
+	{
+		SetBAPlayerState(EBAPlayerState::None);
+	}
+}
+
+void ABAPlayerCharacter::ExitDodgeRecoveryForEscape()
+{
+	ClearRecoveryEscapeWindow();
+
+	if (ActionComponent)
+	{
+		ActionComponent->CancelCurrentAction();
+	}
+
+	if (BAPlayerState == EBAPlayerState::DodgeRolling)
 	{
 		SetBAPlayerState(EBAPlayerState::None);
 	}

@@ -90,6 +90,63 @@ bool UActionComponent::TryStartActionOfType(
 	return TryStartActionByTid(Moveset->ActionTid, Direction);
 }
 
+bool UActionComponent::TryStartActionForRecoveryEscape(
+	const EActionCommand Command,
+	const EActionDirection Direction)
+{
+	const FMovesetRow* Moveset = FindBestMoveset(Command, Direction);
+	if (!Moveset)
+	{
+		LastStartResult = EActionStartResult::MovesetNotFound;
+		return false;
+	}
+
+	const UBATableManager* TableManager = UBATableManager::Get(this);
+	if (!TableManager)
+	{
+		LastStartResult = EActionStartResult::TableManagerUnavailable;
+		return false;
+	}
+
+	const FActionDataRow* ActionData = TableManager->FindActionData(Moveset->ActionTid);
+	if (!ActionData)
+	{
+		LastStartResult = EActionStartResult::ActionDataNotFound;
+		return false;
+	}
+
+	return TryStartResolvedActionForRecoveryEscape(*ActionData, Direction);
+}
+
+bool UActionComponent::TryStartActionOfTypeForRecoveryEscape(
+	const EActionCommand Command,
+	const EActionDirection Direction,
+	const EActionType RequiredActionType)
+{
+	const FMovesetRow* Moveset = FindBestMoveset(Command, Direction, RequiredActionType);
+	if (!Moveset)
+	{
+		LastStartResult = EActionStartResult::MovesetNotFound;
+		return false;
+	}
+
+	const UBATableManager* TableManager = UBATableManager::Get(this);
+	if (!TableManager)
+	{
+		LastStartResult = EActionStartResult::TableManagerUnavailable;
+		return false;
+	}
+
+	const FActionDataRow* ActionData = TableManager->FindActionData(Moveset->ActionTid);
+	if (!ActionData)
+	{
+		LastStartResult = EActionStartResult::ActionDataNotFound;
+		return false;
+	}
+
+	return TryStartResolvedActionForRecoveryEscape(*ActionData, Direction);
+}
+
 bool UActionComponent::TryStartActionByTid(const int32 ActionTid)
 {
 	return TryStartActionByTid(ActionTid, EActionDirection::Any);
@@ -573,6 +630,23 @@ float UActionComponent::GetOnDemandStaminaCost(
 	return ActionData.StaminaCostType == EActionStaminaCostType::OnDemand
 		? FMath::Max(0.f, ActionData.StaminaCost) * FMath::Max(0.f, CostMultiplier)
 		: 0.f;
+}
+
+bool UActionComponent::TryStartResolvedActionForRecoveryEscape(
+	const FActionDataRow& ActionData,
+	const EActionDirection Direction)
+{
+	if (CachedStatComponent)
+	{
+		if (!CanConsumeStamina(ActionData, GetStartStaminaCost(ActionData)))
+		{
+			LastStartResult = EActionStartResult::NotEnoughStamina;
+			return false;
+		}
+	}
+
+	BeginAction(ActionData, Direction);
+	return true;
 }
 
 void UActionComponent::BufferAction(const int32 ActionTid, const EActionDirection Direction)
