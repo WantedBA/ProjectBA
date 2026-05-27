@@ -5,13 +5,45 @@
 #include "SkillNodeWidget.h"
 #include "SkillConnectionLine.h"
 #include "Instance/SkillTreeSubsystem.h"
+#include "Blueprint/SlateBlueprintLibrary.h"
+#include "Components/Button.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
+#include "GameFramework/PlayerController.h"
+#include "InputCoreTypes.h"
 #include "UI/System/SubSystemUI.h"
 #include "UI/MainHUD.h"
 
 #include "Tables/BATableManager.h"
 #include "Tables/SkillRows.h"
+
+namespace
+{
+	constexpr float RightStickNavigationThreshold = 0.99f;
+	constexpr float RightStickNavigationResetThreshold = 0.5f;
+	constexpr float SkillNavigationMinDirectionDot = 0.35f;
+	constexpr float SkillNavigationSmallDistance = 1.0f;
+	constexpr float GamepadMouseMoveTolerance = 3.0f;
+
+	FKey SkillTreeGenericUSBControllerButton(const int32 ButtonNumber)
+	{
+		return FKey(FName(*FString::Printf(TEXT("GenericUSBController_Button%d"), ButtonNumber)));
+	}
+
+	bool IsSkillTreeAcceptKey(const FKey& Key)
+	{
+		return Key == EKeys::Enter
+			|| Key == EKeys::Virtual_Accept
+			|| Key == EKeys::Gamepad_FaceButton_Bottom
+			|| Key == SkillTreeGenericUSBControllerButton(1)
+			|| Key == SkillTreeGenericUSBControllerButton(2);
+	}
+
+	FVector2D NormalizeSkillTreeNavigationVector(const FVector2D& DirectionVector)
+	{
+		return DirectionVector.GetSafeNormal();
+	}
+}
 
 void USkillTreeWidget::NativeConstruct()
 {
@@ -24,11 +56,70 @@ void USkillTreeWidget::NativeConstruct()
 
 void USkillTreeWidget::NativeDestruct()
 {
+	ClearGamepadSelectedSkillNode();
 	Super::NativeDestruct();
 	
 	// 화면에서 해제될 때 델리게이트 해제
 	GetGameInstance()->GetSubsystem<USkillTreeSubsystem>()->OnSkillNodeStateChange.RemoveDynamic(
 		this, &USkillTreeWidget::HandleSkillNodeStateChanged);
+}
+
+FReply USkillTreeWidget::NativeOnAnalogValueChanged(
+	const FGeometry& InGeometry,
+	const FAnalogInputEvent& InAnalogEvent)
+{
+	if (!IsRightStickNavigationKey(InAnalogEvent.GetKey()))
+	{
+		return Super::NativeOnAnalogValueChanged(InGeometry, InAnalogEvent);
+	}
+
+	if (InAnalogEvent.GetKey() == EKeys::Gamepad_RightX)
+	{
+		RightStickNavigationInput.X = InAnalogEvent.GetAnalogValue();
+	}
+	else if (InAnalogEvent.GetKey() == EKeys::Gamepad_RightY)
+	{
+		RightStickNavigationInput.Y = InAnalogEvent.GetAnalogValue();
+	}
+
+	const float StrongestInput = FMath::Max(FMath::Abs(RightStickNavigationInput.X), FMath::Abs(RightStickNavigationInput.Y));
+	if (StrongestInput < RightStickNavigationResetThreshold)
+	{
+		bRightStickNavigationReady = true;
+		return FReply::Handled();
+	}
+
+	if (!bRightStickNavigationReady || StrongestInput < RightStickNavigationThreshold)
+	{
+		return FReply::Handled();
+	}
+
+	bRightStickNavigationReady = false;
+	return TryNavigateSkillNode(GetRightStickNavigationVector())
+		? FReply::Handled()
+		: FReply::Handled();
+}
+
+FReply USkillTreeWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (IsSkillTreeAcceptKey(InKeyEvent.GetKey()) && ActivateGamepadSelectedSkillNode())
+	{
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+}
+
+FReply USkillTreeWidget::NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	if (bGamepadNavigationActive
+		&& FVector2D::Distance(InMouseEvent.GetScreenSpacePosition(), LastGamepadCursorAbsolute) > GamepadMouseMoveTolerance)
+	{
+		bGamepadNavigationActive = false;
+		ClearGamepadSelectedSkillNode();
+	}
+
+	return Super::NativeOnMouseMove(InGeometry, InMouseEvent);
 }
 
 void USkillTreeWidget::OnPopped()
@@ -125,6 +216,333 @@ void USkillTreeWidget::CreateSkillLines()
 			}
 		}
 	}
+}
+
+bool USkillTreeWidget::TryNavigateSkillNode(const FVector2D& DirectionVector)
+{
+	const int32 CurrentSkillId = SkillNodeMap.Contains(GamepadSelectedSkillId)
+		? GamepadSelectedSkillId
+		: ResolveInitialGamepadSkillNodeId();
+	if (!SkillNodeMap.Contains(CurrentSkillId))
+	{
+		return false;
+	}
+
+	const int32 TargetSkillId = FindBestSkillNodeInDirection(CurrentSkillId, DirectionVector);
+	if (!SkillNodeMap.Contains(TargetSkillId))
+	{
+		return SelectSkillNodeByGamepad(CurrentSkillId);
+	}
+
+	return SelectSkillNodeByGamepad(TargetSkillId);
+}
+
+bool USkillTreeWidget::SelectSkillNodeByGamepad(const int32 SkillId)
+{
+	TObjectPtr<USkillNodeWidget>* NodePtr = SkillNodeMap.Find(SkillId);
+	USkillNodeWidget* SkillNode = NodePtr ? NodePtr->Get() : nullptr;
+	if (!SkillNode)
+	{
+		return false;
+	}
+
+	if (GamepadSelectedSkillId != SkillId)
+	{
+		ClearGamepadSelectedSkillNode();
+	}
+
+	GamepadSelectedSkillId = SkillId;
+	bGamepadNavigationActive = true;
+	MoveMouseToSkillNode(SkillId);
+	SkillNode->SetGamepadHoverActive(true);
+
+	if (APlayerController* OwningPlayer = GetOwningPlayer())
+	{
+		SetUserFocus(OwningPlayer);
+	}
+	SetKeyboardFocus();
+
+	return true;
+}
+
+bool USkillTreeWidget::ActivateGamepadSelectedSkillNode()
+{
+	if (!SkillNodeMap.Contains(GamepadSelectedSkillId))
+	{
+		const int32 InitialSkillId = ResolveInitialGamepadSkillNodeId();
+		if (!SelectSkillNodeByGamepad(InitialSkillId))
+		{
+			return false;
+		}
+	}
+
+	TObjectPtr<USkillNodeWidget>* NodePtr = SkillNodeMap.Find(GamepadSelectedSkillId);
+	USkillNodeWidget* SkillNode = NodePtr ? NodePtr->Get() : nullptr;
+	if (!SkillNode)
+	{
+		return false;
+	}
+
+	MoveMouseToSkillNode(GamepadSelectedSkillId);
+	SkillNode->ActivateSkillNodeButtonByGamepad();
+	return true;
+}
+
+int32 USkillTreeWidget::ResolveInitialGamepadSkillNodeId() const
+{
+	if (SkillNodeMap.Contains(GamepadSelectedSkillId))
+	{
+		return GamepadSelectedSkillId;
+	}
+
+	const int32 MouseSkillId = FindSkillNodeUnderMouse();
+	if (SkillNodeMap.Contains(MouseSkillId))
+	{
+		return MouseSkillId;
+	}
+
+	for (const TPair<int32, TObjectPtr<USkillNodeWidget>>& NodePair : SkillNodeMap)
+	{
+		if (NodePair.Value)
+		{
+			return NodePair.Key;
+		}
+	}
+
+	return INDEX_NONE;
+}
+
+int32 USkillTreeWidget::FindSkillNodeUnderMouse() const
+{
+	const APlayerController* OwningPlayer = GetOwningPlayer();
+	if (!OwningPlayer)
+	{
+		return INDEX_NONE;
+	}
+
+	float MouseX = 0.f;
+	float MouseY = 0.f;
+	if (!OwningPlayer->GetMousePosition(MouseX, MouseY))
+	{
+		return INDEX_NONE;
+	}
+
+	FVector2D MousePosition(MouseX, MouseY);
+	for (const TPair<int32, TObjectPtr<USkillNodeWidget>>& NodePair : SkillNodeMap)
+	{
+		const USkillNodeWidget* SkillNode = NodePair.Value.Get();
+		const UButton* SkillButton = SkillNode ? SkillNode->GetSkillNodeButton() : nullptr;
+		if (!SkillButton)
+		{
+			continue;
+		}
+
+		FVector2D PixelPosition;
+		FVector2D ViewportPosition;
+		FVector2D BottomRightPixelPosition;
+		FVector2D BottomRightViewportPosition;
+		USlateBlueprintLibrary::LocalToViewport(
+			const_cast<USkillTreeWidget*>(this),
+			SkillButton->GetCachedGeometry(),
+			FVector2D::ZeroVector,
+			PixelPosition,
+			ViewportPosition);
+		USlateBlueprintLibrary::LocalToViewport(
+			const_cast<USkillTreeWidget*>(this),
+			SkillButton->GetCachedGeometry(),
+			SkillButton->GetCachedGeometry().GetLocalSize(),
+			BottomRightPixelPosition,
+			BottomRightViewportPosition);
+		if (MousePosition.X >= PixelPosition.X
+			&& MousePosition.X <= BottomRightPixelPosition.X
+			&& MousePosition.Y >= PixelPosition.Y
+			&& MousePosition.Y <= BottomRightPixelPosition.Y)
+		{
+			return NodePair.Key;
+		}
+	}
+
+	return INDEX_NONE;
+}
+
+int32 USkillTreeWidget::FindBestSkillNodeInDirection(const int32 SkillId, const FVector2D& DirectionVector) const
+{
+	const FVector2D NormalizedDirection = NormalizeSkillTreeNavigationVector(DirectionVector);
+	if (NormalizedDirection.IsNearlyZero())
+	{
+		return INDEX_NONE;
+	}
+
+	const FVector2D SourcePosition = GetSkillNodeCenterAbsolute(SkillId);
+	const TArray<int32> ConnectedIds = GetConnectedSkillNodeIds(SkillId);
+
+	int32 BestSkillId = INDEX_NONE;
+	float BestScore = TNumericLimits<float>::Max();
+
+	for (const int32 CandidateId : ConnectedIds)
+	{
+		const FVector2D CandidatePosition = GetSkillNodeCenterAbsolute(CandidateId);
+		const FVector2D Delta = CandidatePosition - SourcePosition;
+		const float DistanceSquared = Delta.SizeSquared();
+		if (DistanceSquared <= SkillNavigationSmallDistance)
+		{
+			continue;
+		}
+
+		const float DirectionDot = FVector2D::DotProduct(Delta.GetSafeNormal(), NormalizedDirection);
+		if (DirectionDot < SkillNavigationMinDirectionDot)
+		{
+			continue;
+		}
+
+		const float Score = DistanceSquared * (2.0f - DirectionDot);
+		if (Score < BestScore)
+		{
+			BestScore = Score;
+			BestSkillId = CandidateId;
+		}
+	}
+
+	return BestSkillId != INDEX_NONE ? BestSkillId : FindAdjacentSkillNodeInDirection(SkillId, DirectionVector);
+}
+
+int32 USkillTreeWidget::FindAdjacentSkillNodeInDirection(const int32 SkillId, const FVector2D& DirectionVector) const
+{
+	const FVector2D NormalizedDirection = NormalizeSkillTreeNavigationVector(DirectionVector);
+	if (NormalizedDirection.IsNearlyZero())
+	{
+		return INDEX_NONE;
+	}
+
+	const FVector2D SourcePosition = GetSkillNodeCenterAbsolute(SkillId);
+
+	int32 BestSkillId = INDEX_NONE;
+	float BestScore = TNumericLimits<float>::Max();
+
+	for (const TPair<int32, TObjectPtr<USkillNodeWidget>>& NodePair : SkillNodeMap)
+	{
+		if (NodePair.Key == SkillId || !NodePair.Value)
+		{
+			continue;
+		}
+
+		const FVector2D CandidatePosition = GetSkillNodeCenterAbsolute(NodePair.Key);
+		const FVector2D Delta = CandidatePosition - SourcePosition;
+		const float DistanceSquared = Delta.SizeSquared();
+		if (DistanceSquared <= SkillNavigationSmallDistance)
+		{
+			continue;
+		}
+
+		const float DirectionDot = FVector2D::DotProduct(Delta.GetSafeNormal(), NormalizedDirection);
+		if (DirectionDot < SkillNavigationMinDirectionDot)
+		{
+			continue;
+		}
+
+		const float Score = DistanceSquared * (2.0f - DirectionDot);
+		if (Score < BestScore)
+		{
+			BestScore = Score;
+			BestSkillId = NodePair.Key;
+		}
+	}
+
+	return BestSkillId;
+}
+
+TArray<int32> USkillTreeWidget::GetConnectedSkillNodeIds(const int32 SkillId) const
+{
+	TArray<int32> ConnectedIds;
+	const UBATableManager* TableManager = UBATableManager::Get(this);
+	if (!TableManager)
+	{
+		return ConnectedIds;
+	}
+
+	if (const FSkillRow* SkillRow = TableManager->FindSkill(SkillId))
+	{
+		for (const int32 ParentId : SkillRow->PrerequisiteIds)
+		{
+			if (SkillNodeMap.Contains(ParentId))
+			{
+				ConnectedIds.AddUnique(ParentId);
+			}
+		}
+
+		for (const int32 ChildId : SkillRow->ChildIds)
+		{
+			if (SkillNodeMap.Contains(ChildId))
+			{
+				ConnectedIds.AddUnique(ChildId);
+			}
+		}
+	}
+
+	for (const TPair<int32, FSkillRow*>& SkillPair : TableManager->GetSkillMap())
+	{
+		const FSkillRow* CandidateRow = SkillPair.Value;
+		if (!CandidateRow || SkillPair.Key == SkillId || !SkillNodeMap.Contains(SkillPair.Key))
+		{
+			continue;
+		}
+
+		if (CandidateRow->PrerequisiteIds.Contains(SkillId))
+		{
+			ConnectedIds.AddUnique(SkillPair.Key);
+		}
+	}
+
+	return ConnectedIds;
+}
+
+FVector2D USkillTreeWidget::GetSkillNodeCenterAbsolute(const int32 SkillId) const
+{
+	const TObjectPtr<USkillNodeWidget>* NodePtr = SkillNodeMap.Find(SkillId);
+	const USkillNodeWidget* SkillNode = NodePtr ? NodePtr->Get() : nullptr;
+	const UButton* SkillButton = SkillNode ? SkillNode->GetSkillNodeButton() : nullptr;
+	if (!SkillButton)
+	{
+		return FVector2D::ZeroVector;
+	}
+
+	const FGeometry& Geometry = SkillButton->GetCachedGeometry();
+	return Geometry.LocalToAbsolute(Geometry.GetLocalSize() * 0.5f);
+}
+
+void USkillTreeWidget::MoveMouseToSkillNode(const int32 SkillId)
+{
+	APlayerController* OwningPlayer = GetOwningPlayer();
+	if (!OwningPlayer)
+	{
+		return;
+	}
+
+	LastGamepadCursorAbsolute = GetSkillNodeCenterAbsolute(SkillId);
+	FVector2D PixelPosition;
+	FVector2D ViewportPosition;
+	USlateBlueprintLibrary::AbsoluteToViewport(this, LastGamepadCursorAbsolute, PixelPosition, ViewportPosition);
+	OwningPlayer->SetMouseLocation(FMath::RoundToInt(PixelPosition.X), FMath::RoundToInt(PixelPosition.Y));
+}
+
+void USkillTreeWidget::ClearGamepadSelectedSkillNode()
+{
+	TObjectPtr<USkillNodeWidget>* NodePtr = SkillNodeMap.Find(GamepadSelectedSkillId);
+	if (USkillNodeWidget* SkillNode = NodePtr ? NodePtr->Get() : nullptr)
+	{
+		SkillNode->SetGamepadHoverActive(false);
+	}
+	GamepadSelectedSkillId = INDEX_NONE;
+}
+
+bool USkillTreeWidget::IsRightStickNavigationKey(const FKey& Key) const
+{
+	return Key == EKeys::Gamepad_RightX || Key == EKeys::Gamepad_RightY;
+}
+
+FVector2D USkillTreeWidget::GetRightStickNavigationVector() const
+{
+	return FVector2D(RightStickNavigationInput.X, -RightStickNavigationInput.Y).GetSafeNormal();
 }
 
 void USkillTreeWidget::HandleSkillNodeStateChanged(int32 SkillId, ESkillNodeState NewState)

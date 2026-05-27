@@ -72,7 +72,7 @@ bool UActionComponent::TryStartAction(const EActionCommand Command, const EActio
 		return false;
 	}
 
-	return TryStartActionByTid(Moveset->ActionTid, Direction);
+	return TryStartActionByTid(Moveset->ActionTid, Direction, Command);
 }
 
 bool UActionComponent::TryStartActionOfType(
@@ -87,15 +87,124 @@ bool UActionComponent::TryStartActionOfType(
 		return false;
 	}
 
-	return TryStartActionByTid(Moveset->ActionTid, Direction);
+	return TryStartActionByTid(Moveset->ActionTid, Direction, Command);
+}
+
+bool UActionComponent::TryStartActionExcludingType(
+	const EActionCommand Command,
+	const EActionDirection Direction,
+	const EActionType ExcludedActionType)
+{
+	const FMovesetRow* Moveset = FindBestMoveset(Command, Direction, EActionType::None, ExcludedActionType);
+	if (!Moveset)
+	{
+		LastStartResult = EActionStartResult::MovesetNotFound;
+		return false;
+	}
+
+	return TryStartActionByTid(Moveset->ActionTid, Direction, Command);
+}
+
+bool UActionComponent::TryStartActionForRecoveryEscape(
+	const EActionCommand Command,
+	const EActionDirection Direction)
+{
+	const FMovesetRow* Moveset = FindBestMoveset(Command, Direction);
+	if (!Moveset)
+	{
+		LastStartResult = EActionStartResult::MovesetNotFound;
+		return false;
+	}
+
+	const UBATableManager* TableManager = UBATableManager::Get(this);
+	if (!TableManager)
+	{
+		LastStartResult = EActionStartResult::TableManagerUnavailable;
+		return false;
+	}
+
+	const FActionDataRow* ActionData = TableManager->FindActionData(Moveset->ActionTid);
+	if (!ActionData)
+	{
+		LastStartResult = EActionStartResult::ActionDataNotFound;
+		return false;
+	}
+
+	return TryStartResolvedActionForRecoveryEscape(*ActionData, Direction, Command);
+}
+
+bool UActionComponent::TryStartActionOfTypeForRecoveryEscape(
+	const EActionCommand Command,
+	const EActionDirection Direction,
+	const EActionType RequiredActionType)
+{
+	const FMovesetRow* Moveset = FindBestMoveset(Command, Direction, RequiredActionType);
+	if (!Moveset)
+	{
+		LastStartResult = EActionStartResult::MovesetNotFound;
+		return false;
+	}
+
+	const UBATableManager* TableManager = UBATableManager::Get(this);
+	if (!TableManager)
+	{
+		LastStartResult = EActionStartResult::TableManagerUnavailable;
+		return false;
+	}
+
+	const FActionDataRow* ActionData = TableManager->FindActionData(Moveset->ActionTid);
+	if (!ActionData)
+	{
+		LastStartResult = EActionStartResult::ActionDataNotFound;
+		return false;
+	}
+
+	return TryStartResolvedActionForRecoveryEscape(*ActionData, Direction, Command);
+}
+
+bool UActionComponent::TryStartActionExcludingTypeForRecoveryEscape(
+	const EActionCommand Command,
+	const EActionDirection Direction,
+	const EActionType ExcludedActionType)
+{
+	const FMovesetRow* Moveset = FindBestMoveset(Command, Direction, EActionType::None, ExcludedActionType);
+	if (!Moveset)
+	{
+		LastStartResult = EActionStartResult::MovesetNotFound;
+		return false;
+	}
+
+	const UBATableManager* TableManager = UBATableManager::Get(this);
+	if (!TableManager)
+	{
+		LastStartResult = EActionStartResult::TableManagerUnavailable;
+		return false;
+	}
+
+	const FActionDataRow* ActionData = TableManager->FindActionData(Moveset->ActionTid);
+	if (!ActionData)
+	{
+		LastStartResult = EActionStartResult::ActionDataNotFound;
+		return false;
+	}
+
+	return TryStartResolvedActionForRecoveryEscape(*ActionData, Direction, Command);
 }
 
 bool UActionComponent::TryStartActionByTid(const int32 ActionTid)
 {
-	return TryStartActionByTid(ActionTid, EActionDirection::Any);
+	return TryStartActionByTid(ActionTid, EActionDirection::Any, EActionCommand::None);
 }
 
 bool UActionComponent::TryStartActionByTid(const int32 ActionTid, const EActionDirection Direction)
+{
+	return TryStartActionByTid(ActionTid, Direction, EActionCommand::None);
+}
+
+bool UActionComponent::TryStartActionByTid(
+	const int32 ActionTid,
+	const EActionDirection Direction,
+	const EActionCommand SourceCommand)
 {
 	const UBATableManager* TableManager = UBATableManager::Get(this);
 	if (!TableManager)
@@ -111,12 +220,12 @@ bool UActionComponent::TryStartActionByTid(const int32 ActionTid, const EActionD
 		return false;
 	}
 
-	if (!CanStartAction(*ActionData, Direction))
+	if (!CanStartAction(*ActionData, Direction, SourceCommand))
 	{
 		return false;
 	}
 
-	BeginAction(*ActionData, Direction);
+	BeginAction(*ActionData, Direction, SourceCommand);
 	return true;
 }
 
@@ -132,6 +241,7 @@ void UActionComponent::CompleteCurrentAction()
 
 	ActiveActionTid = ActionComponentInvalidActionTid;
 	ActiveActionType = EActionType::None;
+	ActiveActionCommand = EActionCommand::None;
 	RuntimeState = EActionRuntimeState::None;
 	ActiveActionDirection = EActionDirection::Any;
 	bActiveActionInterruptLocked = false;
@@ -285,7 +395,8 @@ bool UActionComponent::IsActiveActionUsingRootMotion() const
 const FMovesetRow* UActionComponent::FindBestMoveset(
 	const EActionCommand Command,
 	const EActionDirection Direction,
-	const EActionType RequiredActionType) const
+	const EActionType RequiredActionType,
+	const EActionType ExcludedActionType) const
 {
 	const UBATableManager* TableManager = UBATableManager::Get(this);
 	if (!TableManager)
@@ -314,10 +425,18 @@ const FMovesetRow* UActionComponent::FindBestMoveset(
 		}
 
 		const FActionDataRow* RowActionData = nullptr;
-		if (RequiredActionType != EActionType::None)
+		if (RequiredActionType != EActionType::None || ExcludedActionType != EActionType::None)
 		{
 			RowActionData = TableManager->FindActionData(Row->ActionTid);
-			if (!RowActionData || RowActionData->ActionType != RequiredActionType)
+			if (!RowActionData)
+			{
+				continue;
+			}
+			if (RequiredActionType != EActionType::None && RowActionData->ActionType != RequiredActionType)
+			{
+				continue;
+			}
+			if (ExcludedActionType != EActionType::None && RowActionData->ActionType == ExcludedActionType)
 			{
 				continue;
 			}
@@ -364,13 +483,16 @@ const FMovesetRow* UActionComponent::FindBestMoveset(
 	return BestRow;
 }
 
-bool UActionComponent::CanStartAction(const FActionDataRow& ActionData, const EActionDirection Direction)
+bool UActionComponent::CanStartAction(
+	const FActionDataRow& ActionData,
+	const EActionDirection Direction,
+	const EActionCommand SourceCommand)
 {
 	if (ActiveActionTid != ActionComponentInvalidActionTid)
 	{
 		if (bActiveActionInputBufferOpen && !bConsumingBufferedAction)
 		{
-			BufferAction(ActionData.Tid, Direction);
+			BufferAction(ActionData.Tid, Direction, SourceCommand);
 			LastStartResult = EActionStartResult::Buffered;
 			return false;
 		}
@@ -409,7 +531,10 @@ bool UActionComponent::CanStartAction(const FActionDataRow& ActionData, const EA
 	return true;
 }
 
-void UActionComponent::BeginAction(const FActionDataRow& ActionData, const EActionDirection Direction)
+void UActionComponent::BeginAction(
+	const FActionDataRow& ActionData,
+	const EActionDirection Direction,
+	const EActionCommand SourceCommand)
 {
 	const bool bInterruptingGuard = ActiveActionType == EActionType::Guard
 		&& ActionData.ActionType != EActionType::Guard;
@@ -422,6 +547,7 @@ void UActionComponent::BeginAction(const FActionDataRow& ActionData, const EActi
 
 	ActiveActionTid = ActionData.Tid;
 	ActiveActionType = ActionData.ActionType;
+	ActiveActionCommand = SourceCommand;
 	RuntimeState = GetRuntimeStateForAction(ActionData);
 	ActiveActionDirection = Direction;
 	bActiveActionInterruptLocked = false;
@@ -575,16 +701,39 @@ float UActionComponent::GetOnDemandStaminaCost(
 		: 0.f;
 }
 
-void UActionComponent::BufferAction(const int32 ActionTid, const EActionDirection Direction)
+bool UActionComponent::TryStartResolvedActionForRecoveryEscape(
+	const FActionDataRow& ActionData,
+	const EActionDirection Direction,
+	const EActionCommand SourceCommand)
+{
+	if (CachedStatComponent)
+	{
+		if (!CanConsumeStamina(ActionData, GetStartStaminaCost(ActionData)))
+		{
+			LastStartResult = EActionStartResult::NotEnoughStamina;
+			return false;
+		}
+	}
+
+	BeginAction(ActionData, Direction, SourceCommand);
+	return true;
+}
+
+void UActionComponent::BufferAction(
+	const int32 ActionTid,
+	const EActionDirection Direction,
+	const EActionCommand SourceCommand)
 {
 	BufferedActionTid = ActionTid;
 	BufferedActionDirection = Direction;
+	BufferedActionCommand = SourceCommand;
 }
 
 void UActionComponent::ClearBufferedAction()
 {
 	BufferedActionTid = ActionComponentInvalidActionTid;
 	BufferedActionDirection = EActionDirection::Any;
+	BufferedActionCommand = EActionCommand::None;
 }
 
 void UActionComponent::TryStartBufferedAction()
@@ -600,6 +749,7 @@ void UActionComponent::TryStartBufferedAction()
 
 	const int32 ActionTidToStart = BufferedActionTid;
 	EActionDirection DirectionToStart = BufferedActionDirection;
+	const EActionCommand CommandToStart = BufferedActionCommand;
 	if (ResolveBufferedActionDirection.IsBound())
 	{
 		DirectionToStart = ResolveBufferedActionDirection.Execute(ActionTidToStart, DirectionToStart);
@@ -607,7 +757,7 @@ void UActionComponent::TryStartBufferedAction()
 	ClearBufferedAction();
 
 	TGuardValue<bool> ConsumingGuard(bConsumingBufferedAction, true);
-	TryStartActionByTid(ActionTidToStart, DirectionToStart);
+	TryStartActionByTid(ActionTidToStart, DirectionToStart, CommandToStart);
 }
 
 void UActionComponent::RefreshTickEnabled()

@@ -84,6 +84,7 @@ bool ABAPlayerCharacter::TryStartGuard()
 	{
 		if (!CanUseRecoveryEscapeGuard())
 		{
+			QueueRecoveryEscapeAction(EActionCommand::Guard, EActionDirection::Any);
 			bGuardInputHeld = false;
 			return false;
 		}
@@ -123,6 +124,7 @@ bool ABAPlayerCharacter::TryStartGuard()
 
 void ABAPlayerCharacter::StopGuard()
 {
+	ClearQueuedRecoveryEscapeAction(EActionCommand::Guard);
 	bGuardInputHeld = false;
 	if (CanUseGuardReleaseGraceAfterSuccess())
 	{

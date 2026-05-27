@@ -22,6 +22,8 @@ void ABAPlayerCharacter::OpenRecoveryEscapeWindow(const FBAPlayerRecoveryEscapeW
 	{
 		++RecoveryEscapeMoveWindowCount;
 	}
+
+	TryConsumeQueuedRecoveryEscapeAction(Settings);
 }
 
 void ABAPlayerCharacter::CloseRecoveryEscapeWindow(const FBAPlayerRecoveryEscapeWindowSettings& Settings)
@@ -48,7 +50,10 @@ bool ABAPlayerCharacter::IsRecoveryEscapeWindowOpen() const
 
 bool ABAPlayerCharacter::IsRecoveryEscapeRequiredForCurrentState() const
 {
-	return IsAlive() && (IsAttackRecoveryEscapeState() || IsDamageReactionRecoveryEscapeState());
+	return IsAlive()
+		&& (IsAttackRecoveryEscapeState()
+			|| IsDamageReactionRecoveryEscapeState()
+			|| IsDodgeRecoveryEscapeState());
 }
 
 bool ABAPlayerCharacter::TryStartRecoveryEscapeAction(
@@ -68,8 +73,15 @@ bool ABAPlayerCharacter::TryStartRecoveryEscapeAction(
 
 	if (Command == EActionCommand::Dodge)
 	{
+		if (IsDodgeRecoveryEscapeState() && !CanChainDodgeRecoveryEscape())
+		{
+			ClearQueuedRecoveryEscapeAction(Command);
+			return false;
+		}
+
 		if (!CanUseRecoveryEscapeDodge())
 		{
+			QueueRecoveryEscapeAction(Command, Direction);
 			return false;
 		}
 
@@ -80,14 +92,18 @@ bool ABAPlayerCharacter::TryStartRecoveryEscapeAction(
 		}
 
 		return Direction == EActionDirection::Any
-			? ActionComponent->TryStartAction(EActionCommand::Dodge, Direction)
-			: ActionComponent->TryStartActionOfType(EActionCommand::Dodge, Direction, EActionType::DodgeRoll);
+			? ActionComponent->TryStartActionForRecoveryEscape(EActionCommand::Dodge, Direction)
+			: ActionComponent->TryStartActionExcludingTypeForRecoveryEscape(
+				EActionCommand::Dodge,
+				Direction,
+				EActionType::Backstep);
 	}
 
 	if (Command == EActionCommand::Guard)
 	{
 		if (!CanUseRecoveryEscapeGuard())
 		{
+			QueueRecoveryEscapeAction(Command, Direction);
 			return false;
 		}
 
@@ -144,11 +160,29 @@ bool ABAPlayerCharacter::IsDamageReactionRecoveryEscapeState() const
 			|| DamageReactionState == EPlayerDamageReactionState::LargeHitReact);
 }
 
+bool ABAPlayerCharacter::IsDodgeRecoveryEscapeState() const
+{
+	if (BAPlayerState != EBAPlayerState::DodgeRolling || !ActionComponent)
+	{
+		return false;
+	}
+
+	return ActionComponent->GetActiveActionCommand() == EActionCommand::Dodge
+		|| IsDodgeAction(ActionComponent->GetActiveActionType());
+}
+
+bool ABAPlayerCharacter::CanChainDodgeRecoveryEscape() const
+{
+	constexpr int32 MaxConsecutiveDodgeActions = 2;
+	return ConsecutiveDodgeActionCount < MaxConsecutiveDodgeActions;
+}
+
 bool ABAPlayerCharacter::CanUseRecoveryEscapeDodge() const
 {
 	return IsRecoveryEscapeRequiredForCurrentState()
 		&& IsRecoveryEscapeWindowOpen()
-		&& RecoveryEscapeDodgeWindowCount > 0;
+		&& RecoveryEscapeDodgeWindowCount > 0
+		&& (!IsDodgeRecoveryEscapeState() || CanChainDodgeRecoveryEscape());
 }
 
 bool ABAPlayerCharacter::CanUseRecoveryEscapeGuard() const
@@ -165,12 +199,79 @@ bool ABAPlayerCharacter::CanUseRecoveryEscapeMove() const
 		&& RecoveryEscapeMoveWindowCount > 0;
 }
 
+bool ABAPlayerCharacter::QueueRecoveryEscapeAction(
+	const EActionCommand Command,
+	const EActionDirection Direction)
+{
+	if (bConsumingQueuedRecoveryEscapeAction || !IsRecoveryEscapeRequiredForCurrentState())
+	{
+		return false;
+	}
+
+	if (Command != EActionCommand::Dodge && Command != EActionCommand::Guard)
+	{
+		return false;
+	}
+
+	// 단일 슬롯 큐처럼 새 입력이 기존 예약을 밀어내고, 윈도우가 열릴 때 가장 최근 입력만 실행한다.
+	QueuedRecoveryEscapeCommand = Command;
+	QueuedRecoveryEscapeDirection = Direction;
+	return true;
+}
+
+bool ABAPlayerCharacter::TryConsumeQueuedRecoveryEscapeAction(const FBAPlayerRecoveryEscapeWindowSettings& Settings)
+{
+	if (QueuedRecoveryEscapeCommand == EActionCommand::None
+		|| !CanQueuedRecoveryEscapeActionUseWindow(Settings))
+	{
+		return false;
+	}
+
+	const EActionCommand CommandToStart = QueuedRecoveryEscapeCommand;
+	const EActionDirection DirectionToStart = QueuedRecoveryEscapeDirection;
+	ClearQueuedRecoveryEscapeAction();
+
+	TGuardValue<bool> ConsumingGuard(bConsumingQueuedRecoveryEscapeAction, true);
+	return TryStartRecoveryEscapeAction(CommandToStart, DirectionToStart);
+}
+
+bool ABAPlayerCharacter::CanQueuedRecoveryEscapeActionUseWindow(
+	const FBAPlayerRecoveryEscapeWindowSettings& Settings) const
+{
+	if (QueuedRecoveryEscapeCommand == EActionCommand::Dodge)
+	{
+		return Settings.bAllowDodge && CanUseRecoveryEscapeDodge();
+	}
+
+	if (QueuedRecoveryEscapeCommand == EActionCommand::Guard)
+	{
+		return Settings.bAllowGuard && CanUseRecoveryEscapeGuard();
+	}
+
+	return false;
+}
+
 void ABAPlayerCharacter::ClearRecoveryEscapeWindow()
 {
 	RecoveryEscapeWindowCount = 0;
 	RecoveryEscapeDodgeWindowCount = 0;
 	RecoveryEscapeGuardWindowCount = 0;
 	RecoveryEscapeMoveWindowCount = 0;
+	ClearQueuedRecoveryEscapeAction();
+}
+
+void ABAPlayerCharacter::ClearQueuedRecoveryEscapeAction()
+{
+	QueuedRecoveryEscapeCommand = EActionCommand::None;
+	QueuedRecoveryEscapeDirection = EActionDirection::Any;
+}
+
+void ABAPlayerCharacter::ClearQueuedRecoveryEscapeAction(const EActionCommand Command)
+{
+	if (QueuedRecoveryEscapeCommand == Command)
+	{
+		ClearQueuedRecoveryEscapeAction();
+	}
 }
 
 void ABAPlayerCharacter::ExitCurrentRecoveryForEscape(const bool bKeepQueuedAttack)
@@ -184,6 +285,12 @@ void ABAPlayerCharacter::ExitCurrentRecoveryForEscape(const bool bKeepQueuedAtta
 	if (IsDamageReactionRecoveryEscapeState())
 	{
 		ExitDamageReactionRecoveryForEscape();
+		return;
+	}
+
+	if (IsDodgeRecoveryEscapeState())
+	{
+		ExitDodgeRecoveryForEscape();
 	}
 }
 
@@ -257,4 +364,25 @@ void ABAPlayerCharacter::ExitDamageReactionRecoveryForEscape()
 	{
 		SetBAPlayerState(EBAPlayerState::None);
 	}
+}
+
+void ABAPlayerCharacter::ExitDodgeRecoveryForEscape()
+{
+	ClearRecoveryEscapeWindow();
+
+	if (ActionComponent)
+	{
+		ActionComponent->CancelCurrentAction();
+	}
+
+	if (BAPlayerState == EBAPlayerState::DodgeRolling)
+	{
+		SetBAPlayerState(EBAPlayerState::None);
+	}
+}
+
+void ABAPlayerCharacter::ResetConsecutiveDodgeActions()
+{
+	ConsecutiveDodgeActionCount = 0;
+	ClearQueuedRecoveryEscapeAction(EActionCommand::Dodge);
 }

@@ -70,16 +70,18 @@ void ABAPlayerCharacter::Respawn()
 
 			if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 			{
-				MoveComp->SetMovementMode(MOVE_Walking);
 				MoveComp->StopMovementImmediately();
+				MoveComp->DisableMovement();
 			}
 
 			// 3. 애니메이션 재생
+			bool bRespawnMontageStarted = false;
 			if (RespawnMontage)
 			{
 				const float Duration = PlayAnimMontage(RespawnMontage);
 				if (Duration > 0.f)
 				{
+					bRespawnMontageStarted = true;
 					if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
 					{
 						FOnMontageEnded EndedDelegate;
@@ -95,6 +97,14 @@ void ABAPlayerCharacter::Respawn()
 			else
 			{
 				SetBAPlayerState(EBAPlayerState::None);
+			}
+
+			if (!bRespawnMontageStarted)
+			{
+				if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+				{
+					MoveComp->SetMovementMode(MOVE_Walking);
+				}
 			}
 
 			// 4. 스탯 복구
@@ -184,5 +194,11 @@ void ABAPlayerCharacter::HandleRespawnMontageEnded(UAnimMontage* Montage, bool b
 	if (BAPlayerState == EBAPlayerState::Respawning)
 	{
 		SetBAPlayerState(EBAPlayerState::None);
+	}
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->SetMovementMode(MOVE_Walking);
+		MoveComp->StopMovementImmediately();
 	}
 }
