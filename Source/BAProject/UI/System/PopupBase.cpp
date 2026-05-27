@@ -25,6 +25,15 @@ namespace
 			|| Key == PopupGenericUSBControllerButton(3);
 	}
 
+	bool IsAcceptKey(const FKey& Key)
+	{
+		return Key == EKeys::Enter
+			|| Key == EKeys::Virtual_Accept
+			|| Key == EKeys::Gamepad_FaceButton_Bottom
+			|| Key == PopupGenericUSBControllerButton(1)
+			|| Key == PopupGenericUSBControllerButton(2);
+	}
+
 	void CollectFocusableButtons(UWidgetTree* InWidgetTree, UUserWidget* OwnerWidget, TArray<UButton*>& OutButtons)
 	{
 		if (!InWidgetTree)
@@ -43,7 +52,7 @@ namespace
 
 			if (UButton* Button = Cast<UButton>(Widget))
 			{
-				if (Button->GetIsEnabled() && Button->GetIsFocusable() && Button->GetVisibility() != ESlateVisibility::Collapsed)
+				if (Button->GetIsEnabled() && Button->GetVisibility() != ESlateVisibility::Collapsed)
 				{
 					OutButtons.Add(Button);
 				}
@@ -88,6 +97,11 @@ void UPopupBase::ClosePopup()
 
 FReply UPopupBase::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
+	if (IsAcceptKey(InKeyEvent.GetKey()) && HandleAcceptKey())
+	{
+		return FReply::Handled();
+	}
+
 	if (IsBackKey(InKeyEvent.GetKey()))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Key Pressed: %s"), *InKeyEvent.GetKey().ToString());
@@ -103,6 +117,44 @@ FReply UPopupBase::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent&
 	}
 
 	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+}
+
+bool UPopupBase::HandleAcceptKey()
+{
+	UButton* ButtonToClick = FindFocusedButton();
+	if (!ButtonToClick)
+	{
+		FocusFirstGamepadNavigableWidget();
+		ButtonToClick = FindFocusedButton();
+	}
+
+	if (!ButtonToClick)
+	{
+		return false;
+	}
+
+	ButtonToClick->OnClicked.Broadcast();
+	return true;
+}
+
+UButton* UPopupBase::FindFocusedButton() const
+{
+	if (!WidgetTree)
+	{
+		return nullptr;
+	}
+
+	TArray<UButton*> Buttons;
+	CollectFocusableButtons(WidgetTree, const_cast<UPopupBase*>(this), Buttons);
+	for (UButton* Button : Buttons)
+	{
+		if (Button && (Button->HasKeyboardFocus() || Button->HasAnyUserFocus()))
+		{
+			return Button;
+		}
+	}
+
+	return Buttons.IsEmpty() ? nullptr : Buttons[0];
 }
 
 void UPopupBase::FocusFirstGamepadNavigableWidget()

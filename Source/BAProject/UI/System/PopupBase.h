@@ -33,5 +33,7 @@ protected:
 
 private:
 	void FocusFirstGamepadNavigableWidget();
+	bool HandleAcceptKey();
+	class UButton* FindFocusedButton() const;
 	
 };
