@@ -292,6 +292,8 @@ public:
 	
 	// 회복 시도. 회복 시도 가능한 상태인지 검사 후 몽타주 재생. 몽타주에서 회복 타이밍에 AnimNotify를 통해 OnHealAnimNotify 호출
 	void TryHeal();
+
+	UFUNCTION(BlueprintNativeEvent)
 	void OnHealAnimNotify();
 
 protected:
