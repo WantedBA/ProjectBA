@@ -26,15 +26,7 @@ public:
 	virtual void ClosePopup();
 
 protected:
-	virtual void NativeConstruct() override;
-
 	// 위젯이 키보드 입력을 받았을 때 실행되는 함수
 	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
-
-private:
-	void FocusFirstGamepadNavigableWidget();
-	bool HandleAcceptKey();
-	class UButton* FindFocusedButton() const;
-	void ActivateFocusedButton(class UButton* ButtonToClick) const;
 	
 };

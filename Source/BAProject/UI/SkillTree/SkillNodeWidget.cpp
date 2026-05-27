@@ -12,17 +12,10 @@
 
 void USkillNodeWidget::SetSkillNodeState(const ESkillNodeState InSkillNodeState)
 {
-	if (SkillNodeButton && bSelectionFeedbackActive && bHasDefaultButtonStyle)
-	{
-		SkillNodeButton->SetStyle(DefaultButtonStyle);
-	}
-
 	SkillNodeState = InSkillNodeState;
 	
 	// UI 갱신
 	OnSkillNodeStateChanged();
-	CacheDefaultButtonStyle();
-	RefreshSkillNodeSelectionFeedback();
 	
 	// TODO: 디버그용 임시 코드 
 	FString StateString = StaticEnum<ESkillNodeState>()->GetNameStringByValue(static_cast<int64>(SkillNodeState));
@@ -43,8 +36,6 @@ void USkillNodeWidget::NativeOnInitialized()
 	
 	if (SkillNodeButton)
 	{
-		CacheDefaultButtonStyle();
-
 		SkillNodeButton->OnClicked.AddDynamic(this, &USkillNodeWidget::HandleSkillNodeButtonClicked);
 
 		// 마우스 올린 경우 및 뗐을 때 이벤트 연결
@@ -57,91 +48,69 @@ void USkillNodeWidget::NativeOnInitialized()
 	}
 }
 
-void USkillNodeWidget::NativeOnAddedToFocusPath(const FFocusEvent& InFocusEvent)
-{
-	Super::NativeOnAddedToFocusPath(InFocusEvent);
-
-	bNavigationFocused = true;
-	RefreshSkillNodeSelectionFeedback();
-}
-
-void USkillNodeWidget::NativeOnRemovedFromFocusPath(const FFocusEvent& InFocusEvent)
-{
-	Super::NativeOnRemovedFromFocusPath(InFocusEvent);
-
-	bNavigationFocused = false;
-	RefreshSkillNodeSelectionFeedback();
-}
-
 void USkillNodeWidget::HandleSkillNodeButtonClicked()
 {
 	OnSkillNodeClicked.Broadcast(SkillId);
 }
 
-void USkillNodeWidget::HandleSkillNodeButtonHovered()
+void USkillNodeWidget::SetGamepadHoverActive(const bool bActive)
 {
-	bPointerHovered = true;
-	RefreshSkillNodeSelectionFeedback();
-}
-
-void USkillNodeWidget::HandleSkillNodeButtonUnhovered()
-{
-	bPointerHovered = false;
-	RefreshSkillNodeSelectionFeedback();
-}
-
-void USkillNodeWidget::RefreshSkillNodeSelectionFeedback()
-{
-	const bool bShouldShowSelectionFeedback = bPointerHovered || bNavigationFocused;
-	const bool bWasSelectionFeedbackActive = bSelectionFeedbackActive;
-	bSelectionFeedbackActive = bShouldShowSelectionFeedback;
-
-	ApplySkillNodeButtonSelectionStyle(bSelectionFeedbackActive);
-
-	if (!bWasSelectionFeedbackActive && bSelectionFeedbackActive)
+	if (!SkillNodeButton || bGamepadHoverActive == bActive)
 	{
-		ShowSkillNodeTooltip();
+		return;
 	}
-	else if (bWasSelectionFeedbackActive && !bSelectionFeedbackActive)
+
+	bGamepadHoverActive = bActive;
+	if (bGamepadHoverActive)
 	{
-		HideSkillNodeTooltip();
+		SkillNodeButton->OnHovered.Broadcast();
+	}
+	else
+	{
+		SkillNodeButton->OnUnhovered.Broadcast();
 	}
 }
 
-void USkillNodeWidget::CacheDefaultButtonStyle()
+void USkillNodeWidget::ActivateSkillNodeButtonByGamepad()
+{
+	if (!SkillNodeButton || bGamepadClickPending)
+	{
+		return;
+	}
+
+	bGamepadClickPending = true;
+	SkillNodeButton->OnPressed.Broadcast();
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(
+			GamepadClickTimerHandle,
+			this,
+			&USkillNodeWidget::FinishGamepadButtonClick,
+			0.05f,
+			false);
+		return;
+	}
+
+	FinishGamepadButtonClick();
+}
+
+void USkillNodeWidget::FinishGamepadButtonClick()
 {
 	if (!SkillNodeButton)
 	{
-		bHasDefaultButtonStyle = false;
+		bGamepadClickPending = false;
 		return;
 	}
 
-	DefaultButtonStyle = SkillNodeButton->GetStyle();
-	bHasDefaultButtonStyle = true;
+	SkillNodeButton->OnReleased.Broadcast();
+	SkillNodeButton->OnClicked.Broadcast();
+	bGamepadClickPending = false;
 }
 
-void USkillNodeWidget::ApplySkillNodeButtonSelectionStyle(const bool bSelected)
+void USkillNodeWidget::HandleSkillNodeButtonHovered()
 {
-	if (!SkillNodeButton || !bHasDefaultButtonStyle)
-	{
-		return;
-	}
-
-	if (!bSelected)
-	{
-		SkillNodeButton->SetStyle(DefaultButtonStyle);
-		return;
-	}
-
-	FButtonStyle SelectedStyle = DefaultButtonStyle;
-	SelectedStyle.Normal = DefaultButtonStyle.Hovered;
-	SelectedStyle.NormalForeground = DefaultButtonStyle.HoveredForeground;
-	SkillNodeButton->SetStyle(SelectedStyle);
-}
-
-void USkillNodeWidget::ShowSkillNodeTooltip()
-{
-	UE_LOG(LogTemp, Warning, TEXT("!!! SkillNode Selected !!! ID: %d"), SkillId);
+	UE_LOG(LogTemp, Warning, TEXT("!!! SkillNode Hovered !!! ID: %d"), SkillId);
 
 	// GameInstance 가져오기
 	UGameInstance* GI = GetGameInstance();
@@ -164,7 +133,7 @@ void USkillNodeWidget::ShowSkillNodeTooltip()
 	}
 }
 
-void USkillNodeWidget::HideSkillNodeTooltip()
+void USkillNodeWidget::HandleSkillNodeButtonUnhovered()
 {
 	// SubSystemUI 찾기
 	if (UGameInstance* GI = GetGameInstance())

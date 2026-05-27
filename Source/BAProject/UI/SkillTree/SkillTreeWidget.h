@@ -21,6 +21,9 @@ protected:
 // 재정의 함수
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+	virtual FReply NativeOnAnalogValueChanged(const FGeometry& InGeometry, const FAnalogInputEvent& InAnalogEvent) override;
+	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	
 public:
 	virtual void OnPopped() override;
@@ -43,13 +46,19 @@ protected:
 	UFUNCTION(BlueprintCallable, Category=SkillTree)
 	void RefreshAllSkillNodeState();
 
-	UFUNCTION(BlueprintCallable, Category=SkillTree)
-	void ConfigureSkillNodeNavigation();
-
-	TArray<int32> GetConnectedSkillNodeIds(int32 SkillId) const;
+	bool TryNavigateSkillNode(EUINavigation Direction);
+	bool SelectSkillNodeByGamepad(int32 SkillId);
+	bool ActivateGamepadSelectedSkillNode();
+	int32 ResolveInitialGamepadSkillNodeId() const;
+	int32 FindSkillNodeUnderMouse() const;
 	int32 FindBestSkillNodeInDirection(int32 SkillId, EUINavigation Direction) const;
 	int32 FindAdjacentSkillNodeInDirection(int32 SkillId, EUINavigation Direction) const;
-	FVector2D GetSkillNodePosition(int32 SkillId) const;
+	TArray<int32> GetConnectedSkillNodeIds(int32 SkillId) const;
+	FVector2D GetSkillNodeCenterAbsolute(int32 SkillId) const;
+	void MoveMouseToSkillNode(int32 SkillId);
+	void ClearGamepadSelectedSkillNode();
+	bool IsRightStickNavigationKey(const FKey& Key) const;
+	EUINavigation GetRightStickNavigationDirection() const;
 	
 	
 // 데이터
@@ -73,5 +82,10 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	class UCanvasPanel* LineCanvas;
 
+	int32 GamepadSelectedSkillId = INDEX_NONE;
+	FVector2D RightStickNavigationInput = FVector2D::ZeroVector;
+	FVector2D LastGamepadCursorAbsolute = FVector2D::ZeroVector;
+	bool bRightStickNavigationReady = true;
+	bool bGamepadNavigationActive = false;
 	
 };

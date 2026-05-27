@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Instance/SkillTreeTypes.h"
-#include "Styling/SlateTypes.h"
+#include "TimerManager.h"
 #include "SkillNodeWidget.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSkillNodeClickedDelegate, int32, SkillId);
@@ -35,6 +35,9 @@ public:
 		return SkillNodeButton;
 	}
 
+	void SetGamepadHoverActive(bool bActive);
+	void ActivateSkillNodeButtonByGamepad();
+
 	// Setter
 	UFUNCTION(BlueprintCallable)
 	void SetSkillNodeState(const ESkillNodeState InSkillNodeState);
@@ -47,8 +50,6 @@ protected:
 	// 재정의 함수
 	virtual void NativePreConstruct() override;
 	virtual void NativeOnInitialized() override;
-	virtual void NativeOnAddedToFocusPath(const FFocusEvent& InFocusEvent) override;
-	virtual void NativeOnRemovedFromFocusPath(const FFocusEvent& InFocusEvent) override;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class UButton> SkillNodeButton;
@@ -66,6 +67,8 @@ private:
 	// 브로드캐스팅 -> SkillTree에서 수신
 	UFUNCTION()
 	void HandleSkillNodeButtonClicked();
+
+	void FinishGamepadButtonClick();
 	
 protected:
 	// 상태 변경 시 블루프린트에서 값 수정
@@ -80,15 +83,7 @@ protected:
 	UFUNCTION()
 	void HandleSkillNodeButtonUnhovered();
 
-	void RefreshSkillNodeSelectionFeedback();
-	void CacheDefaultButtonStyle();
-	void ApplySkillNodeButtonSelectionStyle(bool bSelected);
-	void ShowSkillNodeTooltip();
-	void HideSkillNodeTooltip();
-
-	FButtonStyle DefaultButtonStyle;
-	bool bHasDefaultButtonStyle = false;
-	bool bPointerHovered = false;
-	bool bNavigationFocused = false;
-	bool bSelectionFeedbackActive = false;
+	bool bGamepadHoverActive = false;
+	bool bGamepadClickPending = false;
+	FTimerHandle GamepadClickTimerHandle;
 };
