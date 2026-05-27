@@ -73,21 +73,6 @@ void AMapDoor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (LockQuestTid <= 0)
-	{
-		bQuestUnlocked = true;
-		return;
-	}
-	
-	if (UQuestManageSubsystem* QM = UQuestManageSubsystem::Get(this))
-	{
-		QM->OnQuestCompleted.AddWeakLambda(this, [this](int32 Tid)
-			{
-				if (Tid == LockQuestTid)
-					bQuestUnlocked = true;
-			});
-	}
-	
 	HingeAClosedRelative = HingePivotA
 		? HingePivotA->GetRelativeTransform()
 		: FTransform::Identity;
@@ -106,6 +91,28 @@ void AMapDoor::BeginPlay()
 		CurrentAlpha = 0.f;
 		ApplyAlpha(0.f);
 		SetDoorState(EDoorState::Closed);
+	}
+
+	if (LockQuestTid <= 0)
+	{
+		bQuestUnlocked = true;
+		return;
+	}
+
+	if (UQuestManageSubsystem* QM = UQuestManageSubsystem::Get(this))
+	{
+		if (QM->IsQuestCompleted(LockQuestTid))
+		{
+			bQuestUnlocked = true;
+		}
+		else
+		{
+			QM->OnQuestCompleted.AddWeakLambda(this, [this](int32 Tid)
+				{
+					if (Tid == LockQuestTid)
+						bQuestUnlocked = true;
+				});
+		}
 	}
 }
 
