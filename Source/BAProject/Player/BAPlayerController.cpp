@@ -322,12 +322,12 @@ void ABAPlayerController::OnSprintStarted()
 				? LastMoveInputVector
 				: PC->GetMoveInputVector();
 			const EActionDirection DodgeDirection = PC->GetActionDirectionFromMoveInput(DodgeInput);
-			if (PC->TryStartRecoveryEscapeAction(EActionCommand::Dodge, DodgeDirection))
-			{
-				bSprintInputHeld = false;
-				bSprintModifierHeld = false;
-				return;
-			}
+			PC->TryStartRecoveryEscapeAction(EActionCommand::Dodge, DodgeDirection);
+			++RecoveryEscapeSprintInputReleaseBlockCount;
+			bSprintInputHeld = false;
+			bSprintModifierHeld = false;
+			ApplyMovementStateByModifier();
+			return;
 		}
 
 		if (PC->IsDamageReacting())
@@ -373,19 +373,22 @@ void ABAPlayerController::OnSprintCompleted()
 		return;
 	}
 
+	if (RecoveryEscapeSprintInputReleaseBlockCount > 0)
+	{
+		--RecoveryEscapeSprintInputReleaseBlockCount;
+		bSprintInputHeld = false;
+		bSprintModifierHeld = false;
+		ApplyMovementStateByModifier();
+		return;
+	}
+
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
 		PC && PC->IsRecoveryEscapeRequiredForCurrentState())
 	{
-		const FVector2D DodgeInput = PC->GetMoveInputVector().IsNearlyZero()
-			? LastMoveInputVector
-			: PC->GetMoveInputVector();
-		const EActionDirection DodgeDirection = PC->GetActionDirectionFromMoveInput(DodgeInput);
-		if (PC->TryStartRecoveryEscapeAction(EActionCommand::Dodge, DodgeDirection))
-		{
-			bSprintInputHeld = false;
-			bSprintModifierHeld = false;
-			return;
-		}
+		bSprintInputHeld = false;
+		bSprintModifierHeld = false;
+		ApplyMovementStateByModifier();
+		return;
 	}
 
 	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn());
@@ -408,6 +411,15 @@ void ABAPlayerController::OnSprintCompleted()
 	}
 
 	ApplyMovementStateByModifier();
+}
+
+bool ABAPlayerController::IsLadderSprintGamepadButtonActive() const
+{
+	const FKey GenericCircleButton = PlayerControllerGenericUSBControllerButton(3);
+	return IsInputKeyDown(EKeys::Gamepad_FaceButton_Right)
+		|| WasInputKeyJustPressed(EKeys::Gamepad_FaceButton_Right)
+		|| IsInputKeyDown(GenericCircleButton)
+		|| WasInputKeyJustPressed(GenericCircleButton);
 }
 
 void ABAPlayerController::UpdateSprintHoldState()
@@ -520,7 +532,7 @@ bool ABAPlayerController::TryStartDodgeAction() const
 
 	return DodgeInput.IsNearlyZero()
 		? ActionComponent->TryStartAction(EActionCommand::Dodge, DodgeDirection)
-		: ActionComponent->TryStartActionOfType(EActionCommand::Dodge, DodgeDirection, EActionType::DodgeRoll);
+		: ActionComponent->TryStartActionExcludingType(EActionCommand::Dodge, DodgeDirection, EActionType::Backstep);
 }
 
 void ABAPlayerController::OnGuardStarted()
@@ -572,6 +584,11 @@ void ABAPlayerController::OnInteract()
 	// 사다리 매달린 상태: 카메라 방향과 무관하게 즉시 이탈
 	if (PC->IsOnLadder())
 	{
+		if (IsLadderSprintGamepadButtonActive())
+		{
+			return;
+		}
+
 		PC->ExitLadder(PC->GetActorLocation());
 		return;
 	}
@@ -647,14 +664,21 @@ void ABAPlayerController::ConfigureGamepadInputMappings()
 	MapActionKeyIfMissing(GuardAction, EKeys::Gamepad_LeftShoulder);
 	MapActionKeyIfMissing(GuardAction, PlayerControllerGenericUSBControllerButton(5)); // DualSense L1
 
+	// B/Circle은 사다리 위에서 빠른 등반에 쓰이는 Sprint 입력이다.
+	// 기존 IMC에 Interact로 남아 있으면 OnInteract가 같이 호출되어 사다리에서 즉시 이탈한다.
+	UnmapActionKeyIfPresent(InteractAction, EKeys::Gamepad_FaceButton_Right);
+	UnmapActionKeyIfPresent(InteractAction, PlayerControllerGenericUSBControllerButton(3));
 	MapActionKeyIfMissing(SprintAction, EKeys::Gamepad_FaceButton_Right);
 	MapActionKeyIfMissing(SprintAction, PlayerControllerGenericUSBControllerButton(3)); // DualSense Circle
 
 	MapActionKeyIfMissing(InteractAction, EKeys::Gamepad_FaceButton_Bottom);
 	MapActionKeyIfMissing(InteractAction, PlayerControllerGenericUSBControllerButton(2)); // DualSense Cross
 
-	MapActionKeyIfMissing(UseConsumableAction, EKeys::Gamepad_FaceButton_Left);
-	MapActionKeyIfMissing(UseConsumableAction, PlayerControllerGenericUSBControllerButton(1)); // DualSense Square
+	UnmapActionKeyIfPresent(UseConsumableAction, EKeys::Gamepad_FaceButton_Left);
+	UnmapActionKeyIfPresent(UseConsumableAction, PlayerControllerGenericUSBControllerButton(1));
+	MapActionKeyIfMissing(UseConsumableAction, EKeys::One);
+	MapActionKeyIfMissing(UseConsumableAction, EKeys::Gamepad_FaceButton_Top);
+	MapActionKeyIfMissing(UseConsumableAction, PlayerControllerGenericUSBControllerButton(4)); // DualSense Triangle
 
 	MapActionKeyIfMissing(LockOnAction, EKeys::Gamepad_RightThumbstick);
 	MapActionKeyIfMissing(LockOnAction, PlayerControllerGenericUSBControllerButton(12)); // DualSense R3
@@ -676,4 +700,27 @@ void ABAPlayerController::MapActionKeyIfMissing(const UInputAction* Action, cons
 	}
 
 	InputMappingContext->MapKey(Action, Key);
+}
+
+void ABAPlayerController::UnmapActionKeyIfPresent(const UInputAction* Action, const FKey& Key)
+{
+	if (!InputMappingContext || !Action || !Key.IsValid())
+	{
+		return;
+	}
+
+	bool bHasMapping = false;
+	for (const FEnhancedActionKeyMapping& Mapping : InputMappingContext->GetMappings())
+	{
+		if (Mapping.Action == Action && Mapping.Key == Key)
+		{
+			bHasMapping = true;
+			break;
+		}
+	}
+
+	if (bHasMapping)
+	{
+		InputMappingContext->UnmapKey(Action, Key);
+	}
 }

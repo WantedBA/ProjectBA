@@ -254,6 +254,11 @@ bool ABAPlayerCharacter::IsActionMovementLocked() const
 		return false;
 	}
 
+	if (IsUseConsumableActionActive())
+	{
+		return false;
+	}
+
 	return BAPlayerState != EBAPlayerState::None 
 	|| !IsAlive()
 	|| IsDamageReacting()

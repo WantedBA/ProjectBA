@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Instance/SkillTreeTypes.h"
+#include "TimerManager.h"
 #include "SkillNodeWidget.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSkillNodeClickedDelegate, int32, SkillId);
@@ -23,6 +24,19 @@ public:
 	{
 		return SkillNodeState;
 	}
+
+	[[nodiscard]] int32 GetSkillId() const
+	{
+		return SkillId;
+	}
+
+	[[nodiscard]] class UButton* GetSkillNodeButton() const
+	{
+		return SkillNodeButton;
+	}
+
+	void SetGamepadHoverActive(bool bActive);
+	void ActivateSkillNodeButtonByGamepad();
 
 	// Setter
 	UFUNCTION(BlueprintCallable)
@@ -53,6 +67,8 @@ private:
 	// 브로드캐스팅 -> SkillTree에서 수신
 	UFUNCTION()
 	void HandleSkillNodeButtonClicked();
+
+	void FinishGamepadButtonClick();
 	
 protected:
 	// 상태 변경 시 블루프린트에서 값 수정
@@ -67,4 +83,7 @@ protected:
 	UFUNCTION()
 	void HandleSkillNodeButtonUnhovered();
 
+	bool bGamepadHoverActive = false;
+	bool bGamepadClickPending = false;
+	FTimerHandle GamepadClickTimerHandle;
 };

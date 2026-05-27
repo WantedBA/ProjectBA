@@ -128,6 +128,9 @@ private:
 	// 질주/회피 공용 입력 종료 시 회피 탭 여부를 판단한다.
 	void OnSprintCompleted();
 
+	// 사다리 위에서 빠른 등반에 쓰는 게임패드 버튼 입력인지 확인한다.
+	bool IsLadderSprintGamepadButtonActive() const;
+
 	// 홀드 시간이 충족되면 질주 modifier를 활성화한다.
 	void UpdateSprintHoldState();
 
@@ -165,9 +168,13 @@ private:
 	// 지정 액션에 키가 없을 때만 매핑을 추가한다.
 	void MapActionKeyIfMissing(const UInputAction* Action, const FKey& Key);
 
+	// 지정 액션에 잘못 남아 있는 키 매핑을 제거한다.
+	void UnmapActionKeyIfPresent(const UInputAction* Action, const FKey& Key);
+
 	bool bWalkToggleEnabled = false;
 	bool bSprintInputHeld = false;
 	bool bSprintModifierHeld = false;
+	int32 RecoveryEscapeSprintInputReleaseBlockCount = 0;
 	bool bHasMoveInput = false;
 	FVector2D LastMoveInputVector = FVector2D::ZeroVector;
 	double SprintDodgePressedTime = 0.0;

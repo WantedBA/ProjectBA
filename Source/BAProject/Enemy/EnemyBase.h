@@ -127,10 +127,10 @@ protected:
 	FTimerHandle LockOnReleaseDelayTimerHandle;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Debug")
-	bool bShowDebugState = true;
+	bool bShowDebugState = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy|Debug")
-	bool bShowDebugRanges = true;
+	bool bShowDebugRanges = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|LockOn")
 	bool bDisableLockOnCaptureOnDeath = true;
