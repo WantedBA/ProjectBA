@@ -10,6 +10,11 @@
 #include "Tables/BATableManager.h"
 #include "TimerManager.h"
 
+namespace
+{
+	const FName AttackStaminaRecoveryPauseSource(TEXT("AttackMontage"));
+}
+
 void ABAPlayerCharacter::BindAttackCallbacks()
 {
 	if (CombatComponent)
@@ -368,7 +373,14 @@ void ABAPlayerCharacter::StartAttack(UAnimMontage* InAnimMontage)
 	// 스태미나 소모
 	if (ActionComponent)
 	{
-		ActionComponent->ConsumeActionStartStaminaCostByType(AttackActionType);
+		const bool bConsumedStamina = ActionComponent->ConsumeActionStartStaminaCostByType(
+			AttackActionType,
+			1.f,
+			false);
+		if (bConsumedStamina && StatComponent)
+		{
+			StatComponent->PauseStaminaRecovery(AttackStaminaRecoveryPauseSource);
+		}
 	}
 
 	FOnMontageEnded MontageEnded;
@@ -483,6 +495,10 @@ void ABAPlayerCharacter::ClearAttackRuntimeState()
 {
 	ClearRecoveryEscapeWindow();
 	ClearAttackHitStop(true);
+	if (StatComponent)
+	{
+		StatComponent->ResumeStaminaRecovery(AttackStaminaRecoveryPauseSource, false);
+	}
 	NowComboTransitionTid = 0;
 	NextComboTransitionTid = 0;
 	NextAttackMontage = nullptr;
