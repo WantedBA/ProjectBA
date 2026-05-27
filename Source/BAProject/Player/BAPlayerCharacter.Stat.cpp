@@ -202,3 +202,8 @@ void ABAPlayerCharacter::HandleRespawnMontageEnded(UAnimMontage* Montage, bool b
 		MoveComp->StopMovementImmediately();
 	}
 }
+
+bool ABAPlayerCharacter::IsHealing() const
+{
+	return ActionComponent->GetActiveActionType() == EActionType::UseConsumable;
+}
