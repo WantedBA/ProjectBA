@@ -409,11 +409,16 @@ protected:
 	void HandleDodgeActionStarted(int32 ActionTid, EActionType ActionType);
 
 	UFUNCTION()
+	void HandleDodgeActionCompleted(int32 ActionTid, EActionType ActionType);
+
+	UFUNCTION()
 	void HandleGuardActionMontageEnded(int32 ActionTid, EActionType ActionType, UAnimMontage* Montage, bool bInterrupted);
 
 	UFUNCTION()
 	void HandleDodgeActionMontageEnded(int32 ActionTid, EActionType ActionType, UAnimMontage* Montage, bool bInterrupted);
+	bool IsTrackedDodgeAction(int32 ActionTid, EActionType ActionType) const;
 	bool IsDodgeAction(EActionType ActionType) const;
+	bool ShouldUseDodgeChainStartSection(EActionType ActionType) const;
 
 	// 피격 반응을 C++ 기본 처리 이후 블루프린트 연출로 확장한다.
 	UFUNCTION(BlueprintImplementableEvent, Category = "Combat|DamageReaction", meta = (DisplayName = "OnDamageReaction"))
@@ -518,6 +523,7 @@ private:
 	EActionDirection ResolveBufferedActionDirection(int32 ActionTid, EActionDirection BufferedDirection) const;
 	EActionDirection ResolveActionAnimationDirection(int32 ActionTid, EActionDirection ActionDirection) const;
 	EActionDirection ResolveActionOrientationDirection(int32 ActionTid, EActionDirection ActionDirection) const;
+	FName ResolveActionStartSection(int32 ActionTid, EActionType ActionType, FName DefaultStartSection) const;
 	FVector2D ConvertWorldDirectionToMoveInput(const FVector& WorldDirection) const;
 	FVector ConvertMoveInputToWorldDirection(const FVector2D& MoveInput) const;
 
@@ -696,6 +702,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Movement|Locomotion", meta = (ShowOnlyInnerProperties))
 	FBAPlayerLocomotionSettings LocomotionSettings;
+
+	UPROPERTY(EditAnywhere, Category = "Movement|Dodge")
+	FName DodgeChainStartSection = TEXT("ChainStart");
 
 	UPROPERTY(EditAnywhere, Category = "Movement|Gait", meta = (ShowOnlyInnerProperties))
 	FBAPlayerMovementGaitSettings GaitSettings;
@@ -1074,9 +1083,12 @@ private:
 	int32 RecoveryEscapeGuardWindowCount = 0;
 	int32 RecoveryEscapeMoveWindowCount = 0;
 	int32 ConsecutiveDodgeActionCount = 0;
+	int32 ActiveDodgeChainActionTid = 0;
+	mutable bool bUseChainStartForNextDodgeAction = false;
 	EActionCommand QueuedRecoveryEscapeCommand = EActionCommand::None;
 	EActionDirection QueuedRecoveryEscapeDirection = EActionDirection::Any;
 	bool bConsumingQueuedRecoveryEscapeAction = false;
+	bool bCompletingDodgeForRecoveryEscape = false;
 	mutable FTimerHandle XInputForceFeedbackStopTimerHandle;
 	mutable int32 XInputForceFeedbackPlaybackId = 0;
 	UPROPERTY(VisibleAnywhere) bool bIsBeforeCharge = false;

@@ -103,7 +103,10 @@ public:
 
 	// 지정 액션 타입의 Instant 스태미너 비용을 명시적으로 소비한다.
 	UFUNCTION(BlueprintCallable, Category = "Action|Stamina")
-	bool ConsumeActionStartStaminaCostByType(EActionType ActionType, float CostMultiplier = 1.f);
+	bool ConsumeActionStartStaminaCostByType(
+		EActionType ActionType,
+		float CostMultiplier = 1.f,
+		bool bRestartRecoveryDelay = true);
 
 	// 지정 액션 타입의 OnDemand 스태미너 비용을 명시적으로 소비한다.
 	UFUNCTION(BlueprintCallable, Category = "Action|Stamina")

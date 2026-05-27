@@ -24,6 +24,7 @@ namespace
 	constexpr float SkillNavigationMinDirectionDot = 0.35f;
 	constexpr float SkillNavigationSmallDistance = 1.0f;
 	constexpr float GamepadMouseMoveTolerance = 3.0f;
+	constexpr float SkillTreeAcceptDebounceSeconds = 0.2f;
 
 	FKey SkillTreeGenericUSBControllerButton(const int32 ButtonNumber)
 	{
@@ -37,6 +38,15 @@ namespace
 			|| Key == EKeys::Gamepad_FaceButton_Bottom
 			|| Key == SkillTreeGenericUSBControllerButton(1)
 			|| Key == SkillTreeGenericUSBControllerButton(2);
+	}
+
+	bool IsSkillTreeBackKey(const FKey& Key)
+	{
+		return Key == EKeys::Escape
+			|| Key == EKeys::Three
+			|| Key == EKeys::Virtual_Back
+			|| Key == EKeys::Gamepad_FaceButton_Right
+			|| Key == SkillTreeGenericUSBControllerButton(3);
 	}
 
 	FVector2D NormalizeSkillTreeNavigationVector(const FVector2D& DirectionVector)
@@ -56,6 +66,11 @@ void USkillTreeWidget::NativeConstruct()
 
 void USkillTreeWidget::NativeDestruct()
 {
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(GamepadAcceptDebounceTimerHandle);
+	}
+
 	ClearGamepadSelectedSkillNode();
 	Super::NativeDestruct();
 	
@@ -100,14 +115,35 @@ FReply USkillTreeWidget::NativeOnAnalogValueChanged(
 		: FReply::Handled();
 }
 
+FReply USkillTreeWidget::NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (HandleGamepadBackInput(InKeyEvent) || HandleGamepadAcceptInput(InKeyEvent))
+	{
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnPreviewKeyDown(InGeometry, InKeyEvent);
+}
+
 FReply USkillTreeWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
-	if (IsSkillTreeAcceptKey(InKeyEvent.GetKey()) && ActivateGamepadSelectedSkillNode())
+	if (HandleGamepadBackInput(InKeyEvent) || HandleGamepadAcceptInput(InKeyEvent))
 	{
 		return FReply::Handled();
 	}
 
 	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+}
+
+FReply USkillTreeWidget::NativeOnKeyUp(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	if (IsSkillTreeAcceptKey(InKeyEvent.GetKey()))
+	{
+		ResetGamepadAcceptDebounce();
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnKeyUp(InGeometry, InKeyEvent);
 }
 
 FReply USkillTreeWidget::NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -543,6 +579,56 @@ bool USkillTreeWidget::IsRightStickNavigationKey(const FKey& Key) const
 FVector2D USkillTreeWidget::GetRightStickNavigationVector() const
 {
 	return FVector2D(RightStickNavigationInput.X, -RightStickNavigationInput.Y).GetSafeNormal();
+}
+
+bool USkillTreeWidget::HandleGamepadAcceptInput(const FKeyEvent& InKeyEvent)
+{
+	if (!IsSkillTreeAcceptKey(InKeyEvent.GetKey()))
+	{
+		return false;
+	}
+
+	if (InKeyEvent.IsRepeat() || bGamepadAcceptDebounced)
+	{
+		return true;
+	}
+
+	bGamepadAcceptDebounced = true;
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(
+			GamepadAcceptDebounceTimerHandle,
+			this,
+			&USkillTreeWidget::ResetGamepadAcceptDebounce,
+			SkillTreeAcceptDebounceSeconds,
+			false);
+	}
+
+	ActivateGamepadSelectedSkillNode();
+	return true;
+}
+
+bool USkillTreeWidget::HandleGamepadBackInput(const FKeyEvent& InKeyEvent)
+{
+	if (!IsSkillTreeBackKey(InKeyEvent.GetKey()))
+	{
+		return false;
+	}
+
+	if (!InKeyEvent.IsRepeat())
+	{
+		ClosePopup();
+	}
+	return true;
+}
+
+void USkillTreeWidget::ResetGamepadAcceptDebounce()
+{
+	bGamepadAcceptDebounced = false;
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(GamepadAcceptDebounceTimerHandle);
+	}
 }
 
 void USkillTreeWidget::HandleSkillNodeStateChanged(int32 SkillId, ESkillNodeState NewState)

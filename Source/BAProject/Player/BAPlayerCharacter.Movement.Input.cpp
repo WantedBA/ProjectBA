@@ -243,6 +243,20 @@ EActionDirection ABAPlayerCharacter::ResolveActionOrientationDirection(
 		: ActionDirection;
 }
 
+FName ABAPlayerCharacter::ResolveActionStartSection(
+	const int32 /*ActionTid*/,
+	const EActionType ActionType,
+	const FName DefaultStartSection) const
+{
+	if (!ShouldUseDodgeChainStartSection(ActionType))
+	{
+		return DefaultStartSection;
+	}
+
+	bUseChainStartForNextDodgeAction = false;
+	return DodgeChainStartSection;
+}
+
 bool ABAPlayerCharacter::IsActionMovementLocked() const
 {
 	// 상태 관리 중복됨 - 추후 통합 필요

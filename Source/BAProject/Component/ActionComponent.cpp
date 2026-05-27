@@ -261,7 +261,10 @@ void UActionComponent::CompleteCurrentAction()
 	RefreshTickEnabled();
 }
 
-bool UActionComponent::ConsumeActionStartStaminaCostByType(const EActionType ActionType, const float CostMultiplier)
+bool UActionComponent::ConsumeActionStartStaminaCostByType(
+	const EActionType ActionType,
+	const float CostMultiplier,
+	const bool bRestartRecoveryDelay)
 {
 	const FActionDataRow* ActionData = FindCostActionDataByType(ActionType);
 	if (!ActionData)
@@ -270,7 +273,7 @@ bool UActionComponent::ConsumeActionStartStaminaCostByType(const EActionType Act
 		return false;
 	}
 
-	return ConsumeStamina(*ActionData, GetStartStaminaCost(*ActionData, CostMultiplier), false, true);
+	return ConsumeStamina(*ActionData, GetStartStaminaCost(*ActionData, CostMultiplier), false, bRestartRecoveryDelay);
 }
 
 bool UActionComponent::ConsumeActionStaminaCostByType(const EActionType ActionType, const float CostMultiplier)

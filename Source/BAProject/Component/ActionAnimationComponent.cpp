@@ -54,6 +54,13 @@ namespace
 			Detail.IsEmpty() ? TEXT("") : TEXT(" - "),
 			*Detail);
 	}
+
+	bool ShouldUseInstantBlendInForAction(const EActionType ActionType, const UActionComponent* ActionComponent)
+	{
+		return ActionType == EActionType::DodgeRoll
+			|| ActionType == EActionType::Backstep
+			|| (ActionComponent && ActionComponent->GetActiveActionCommand() == EActionCommand::Dodge);
+	}
 }
 
 UActionAnimationComponent::UActionAnimationComponent()
@@ -164,7 +171,10 @@ bool UActionAnimationComponent::PlayActionAnimation(const int32 ActionTid, const
 	OrientOwnerToActionDirection(ResolveOrientationDirection(ActionTid, CachedActionComponent->GetActiveActionDirection()));
 
 	const float PlayRate = AnimationData->PlayRate > 0.f ? AnimationData->PlayRate : 1.f;
-	const FMontageBlendSettings BlendInSettings(FMath::Max(0.f, AnimationData->BlendIn));
+	const float BlendIn = ShouldUseInstantBlendInForAction(ActionType, CachedActionComponent.Get())
+		? 0.f
+		: FMath::Max(0.f, AnimationData->BlendIn);
+	const FMontageBlendSettings BlendInSettings(BlendIn);
 	const float PlayDuration = AnimInstance->Montage_PlayWithBlendSettings(
 		Montage,
 		BlendInSettings,
@@ -181,9 +191,14 @@ bool UActionAnimationComponent::PlayActionAnimation(const int32 ActionTid, const
 
 	ApplyRootMotionModeForAnimation(*AnimInstance, *AnimationData);
 
-	if (!AnimationData->StartSection.IsNone())
+	FName StartSection = ResolveStartSection(ActionTid, ActionType, AnimationData->StartSection);
+	if (!StartSection.IsNone() && !Montage->IsValidSectionName(StartSection))
 	{
-		AnimInstance->Montage_JumpToSection(AnimationData->StartSection, Montage);
+		StartSection = AnimationData->StartSection;
+	}
+	if (!StartSection.IsNone() && Montage->IsValidSectionName(StartSection))
+	{
+		AnimInstance->Montage_JumpToSection(StartSection, Montage);
 	}
 
 	const int32 PlaybackInstanceId = NextPlaybackInstanceId++;
@@ -412,6 +427,16 @@ EActionDirection UActionAnimationComponent::ResolveOrientationDirection(
 	return ResolveActionOrientationDirection.IsBound()
 		? ResolveActionOrientationDirection.Execute(ActionTid, ActionDirection)
 		: ActionDirection;
+}
+
+FName UActionAnimationComponent::ResolveStartSection(
+	const int32 ActionTid,
+	const EActionType ActionType,
+	const FName DefaultStartSection) const
+{
+	return ResolveActionStartSection.IsBound()
+		? ResolveActionStartSection.Execute(ActionTid, ActionType, DefaultStartSection)
+		: DefaultStartSection;
 }
 
 void UActionAnimationComponent::OrientOwnerToActionDirection(const EActionDirection Direction) const

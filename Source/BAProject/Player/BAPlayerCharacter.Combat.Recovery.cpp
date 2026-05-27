@@ -85,18 +85,26 @@ bool ABAPlayerCharacter::TryStartRecoveryEscapeAction(
 			return false;
 		}
 
+		const bool bStartFromDodgeChainSection = IsDodgeRecoveryEscapeState();
 		ExitCurrentRecoveryForEscape(false);
 		if (!ActionComponent)
 		{
+			bUseChainStartForNextDodgeAction = false;
 			return false;
 		}
 
-		return Direction == EActionDirection::Any
+		bUseChainStartForNextDodgeAction = bStartFromDodgeChainSection;
+		const bool bStarted = Direction == EActionDirection::Any
 			? ActionComponent->TryStartActionForRecoveryEscape(EActionCommand::Dodge, Direction)
 			: ActionComponent->TryStartActionExcludingTypeForRecoveryEscape(
 				EActionCommand::Dodge,
 				Direction,
 				EActionType::Backstep);
+		if (!bStarted)
+		{
+			bUseChainStartForNextDodgeAction = false;
+		}
+		return bStarted;
 	}
 
 	if (Command == EActionCommand::Guard)
@@ -134,6 +142,14 @@ bool ABAPlayerCharacter::TryStartRecoveryEscapeMove(const FVector2D& MoveInput)
 		return true;
 	}
 
+	const bool bDodgeRecoveryState = IsDodgeRecoveryEscapeState();
+	if (bDodgeRecoveryState)
+	{
+		SetMoveInputVector(MoveInput);
+		SnapInterpolatedMoveInputTo(MoveInput);
+		return true;
+	}
+
 	if (!CanUseRecoveryEscapeMove())
 	{
 		return false;
@@ -142,9 +158,11 @@ bool ABAPlayerCharacter::TryStartRecoveryEscapeMove(const FVector2D& MoveInput)
 	ExitCurrentRecoveryForEscape(false);
 	SetMoveInputVector(MoveInput);
 	SnapInterpolatedMoveInputTo(MoveInput);
-	BeginMovementPhase(IsPhaseEnabledForGait(EPlayerMovementPhase::Start, MovementRuntime.ActiveGait)
-		? EPlayerMovementPhase::Start
-		: EPlayerMovementPhase::Loop);
+	const EPlayerMovementPhase MovementPhaseAfterEscape =
+		IsPhaseEnabledForGait(EPlayerMovementPhase::Start, MovementRuntime.ActiveGait)
+			? EPlayerMovementPhase::Start
+			: EPlayerMovementPhase::Loop;
+	BeginMovementPhase(MovementPhaseAfterEscape);
 	return true;
 }
 
@@ -372,6 +390,7 @@ void ABAPlayerCharacter::ExitDodgeRecoveryForEscape()
 
 	if (ActionComponent)
 	{
+		TGuardValue<bool> CompletingGuard(bCompletingDodgeForRecoveryEscape, true);
 		ActionComponent->CancelCurrentAction();
 	}
 
@@ -384,5 +403,6 @@ void ABAPlayerCharacter::ExitDodgeRecoveryForEscape()
 void ABAPlayerCharacter::ResetConsecutiveDodgeActions()
 {
 	ConsecutiveDodgeActionCount = 0;
+	bUseChainStartForNextDodgeAction = false;
 	ClearQueuedRecoveryEscapeAction(EActionCommand::Dodge);
 }

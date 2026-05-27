@@ -253,6 +253,7 @@ void ABAPlayerCharacter::BindDodgeActionCallbacks()
 	if (ActionComponent)
 	{
 		ActionComponent->OnActionStarted.AddUniqueDynamic(this, &ABAPlayerCharacter::HandleDodgeActionStarted);
+		ActionComponent->OnActionCompleted.AddUniqueDynamic(this, &ABAPlayerCharacter::HandleDodgeActionCompleted);
 		ActionComponent->ResolveBufferedActionDirection.BindUObject(
 			this,
 			&ABAPlayerCharacter::ResolveBufferedActionDirection);
@@ -266,12 +267,15 @@ void ABAPlayerCharacter::BindDodgeActionCallbacks()
 		ActionAnimationComponent->ResolveActionOrientationDirection.BindUObject(
 			this,
 			&ABAPlayerCharacter::ResolveActionOrientationDirection);
+		ActionAnimationComponent->ResolveActionStartSection.BindUObject(
+			this,
+			&ABAPlayerCharacter::ResolveActionStartSection);
 		ActionAnimationComponent->OnActionMontageEnded.AddUniqueDynamic(this, &ABAPlayerCharacter::HandleDodgeActionMontageEnded);
 	}
 }
 
 void ABAPlayerCharacter::HandleDodgeActionStarted(
-	const int32 /*ActionTid*/,
+	const int32 ActionTid,
 	const EActionType ActionType)
 {
 	if (IsDamageReacting())
@@ -286,17 +290,61 @@ void ABAPlayerCharacter::HandleDodgeActionStarted(
 	if (IsDodgeAction(ActionType))
 	{
 		++ConsecutiveDodgeActionCount;
+		ActiveDodgeChainActionTid = ActionTid;
 		SetBAPlayerState(EBAPlayerState::DodgeRolling);
+		if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
+		{
+			MovementComponent->StopMovementImmediately();
+		}
+		ClearMovementPhase();
+	}
+}
+
+void ABAPlayerCharacter::HandleDodgeActionCompleted(
+	const int32 ActionTid,
+	const EActionType ActionType)
+{
+	if (!IsTrackedDodgeAction(ActionTid, ActionType))
+	{
+		return;
+	}
+
+	ActiveDodgeChainActionTid = 0;
+	if (bCompletingDodgeForRecoveryEscape)
+	{
+		return;
+	}
+
+	if (BAPlayerState == EBAPlayerState::DodgeRolling)
+	{
+		SetBAPlayerState(EBAPlayerState::None);
+	}
+	ResetConsecutiveDodgeActions();
+
+	if (MovementRuntime.bHasMoveInput)
+	{
+		if (const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+			!MovementComponent || !MovementComponent->IsFalling())
+		{
+			const EMovementState AllowedGait = GetMovementAllowedGait(MovementRuntime.DesiredGait);
+			if (AllowedGait != MovementRuntime.ActiveGait)
+			{
+				SetActiveGaitAndSpeed(AllowedGait);
+			}
+
+			SnapInterpolatedMoveInputTo(MovementRuntime.MoveInputVector);
+			BeginMovementPhase(EPlayerMovementPhase::Loop);
+		}
 	}
 }
 
 void ABAPlayerCharacter::HandleDodgeActionMontageEnded(
-	const int32 /*ActionTid*/,
+	const int32 ActionTid,
 	const EActionType ActionType,
 	UAnimMontage* /*Montage*/,
 	const bool bInterrupted)
 {
-	const bool bEndedDodgeAction = IsDodgeAction(ActionType);
+	const bool bEndedDodgeAction = IsTrackedDodgeAction(ActionTid, ActionType);
 	if (!bEndedDodgeAction)
 	{
 		return;
@@ -320,11 +368,23 @@ void ABAPlayerCharacter::HandleDodgeActionMontageEnded(
 	ApplyPendingLockOnStrafeMode();
 }
 
+bool ABAPlayerCharacter::IsTrackedDodgeAction(const int32 ActionTid, const EActionType ActionType) const
+{
+	return ActionTid == ActiveDodgeChainActionTid || IsDodgeAction(ActionType);
+}
+
 bool ABAPlayerCharacter::IsDodgeAction(const EActionType ActionType) const
 {
 	return ActionType == EActionType::DodgeRoll
 		|| ActionType == EActionType::Backstep
 		|| (ActionComponent && ActionComponent->GetActiveActionCommand() == EActionCommand::Dodge);
+}
+
+bool ABAPlayerCharacter::ShouldUseDodgeChainStartSection(const EActionType ActionType) const
+{
+	return bUseChainStartForNextDodgeAction
+		&& IsDodgeAction(ActionType)
+		&& !DodgeChainStartSection.IsNone();
 }
 
 // Movement 전체를 갱신한다.
@@ -366,6 +426,12 @@ void ABAPlayerCharacter::UpdatePhaseFromInputAndGait(const float DeltaTime)
 
 	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
 	if (MovementComponent && MovementComponent->IsFalling())
+	{
+		ClearMovementPhase();
+		return;
+	}
+
+	if (IsActionMovementLocked())
 	{
 		ClearMovementPhase();
 		return;
