@@ -78,6 +78,21 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	bool TryStartActionOfType(EActionCommand Command, EActionDirection Direction, EActionType RequiredActionType);
 
+	// 현재 Moveset 문맥에서 Command와 Direction에 맞는 액션 중 지정 타입을 제외하고 시작한다.
+	UFUNCTION(BlueprintCallable, Category = "Action")
+	bool TryStartActionExcludingType(EActionCommand Command, EActionDirection Direction, EActionType ExcludedActionType);
+
+	// 후딜 탈출 윈도우에서 현재 액션 잠금/쿨다운을 무시하고 액션 시작을 시도한다.
+	bool TryStartActionForRecoveryEscape(EActionCommand Command, EActionDirection Direction = EActionDirection::Any);
+	bool TryStartActionOfTypeForRecoveryEscape(
+		EActionCommand Command,
+		EActionDirection Direction,
+		EActionType RequiredActionType);
+	bool TryStartActionExcludingTypeForRecoveryEscape(
+		EActionCommand Command,
+		EActionDirection Direction,
+		EActionType ExcludedActionType);
+
 	// Moveset 검색 없이 ActionTid를 직접 지정해 시작을 시도한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	bool TryStartActionByTid(int32 ActionTid);
@@ -129,6 +144,10 @@ public:
 	// 현재 실행 중인 액션의 분류를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action")
 	EActionType GetActiveActionType() const { return ActiveActionType; }
+
+	// 현재 실행 중인 액션이 어떤 입력 명령에서 선택되었는지 반환한다.
+	UFUNCTION(BlueprintPure, Category = "Action")
+	EActionCommand GetActiveActionCommand() const { return ActiveActionCommand; }
 
 	// 현재 액션이 사용하는 런타임 상태 플래그를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action")
@@ -194,21 +213,27 @@ protected:
 
 private:
 	bool TryStartActionByTid(int32 ActionTid, EActionDirection Direction);
-	void BeginAction(const FActionDataRow& ActionData, EActionDirection Direction);
+	bool TryStartActionByTid(int32 ActionTid, EActionDirection Direction, EActionCommand SourceCommand);
+	void BeginAction(const FActionDataRow& ActionData, EActionDirection Direction, EActionCommand SourceCommand);
 	void StartCooldown(const FActionDataRow& ActionData);
 	void ApplyStaminaRecoveryRateMultiplier(const FActionDataRow& ActionData);
 	const FMovesetRow* FindBestMoveset(
 		EActionCommand Command,
 		EActionDirection Direction,
-		EActionType RequiredActionType = EActionType::None) const;
-	bool CanStartAction(const FActionDataRow& ActionData, EActionDirection Direction);
+		EActionType RequiredActionType = EActionType::None,
+		EActionType ExcludedActionType = EActionType::None) const;
+	bool CanStartAction(const FActionDataRow& ActionData, EActionDirection Direction, EActionCommand SourceCommand);
 	bool CanConsumeStamina(const FActionDataRow& ActionData, float StaminaCost) const;
 	bool ConsumeStamina(const FActionDataRow& ActionData, float StaminaCost, bool bPauseRecovery, bool bRestartRecoveryDelay);
 	const FActionDataRow* FindCostActionDataByType(EActionType ActionType) const;
 	const FActionDataRow* FindFirstActionDataByType(EActionType ActionType) const;
 	float GetStartStaminaCost(const FActionDataRow& ActionData, float CostMultiplier = 1.f) const;
 	float GetOnDemandStaminaCost(const FActionDataRow& ActionData, float CostMultiplier = 1.f) const;
-	void BufferAction(int32 ActionTid, EActionDirection Direction);
+	bool TryStartResolvedActionForRecoveryEscape(
+		const FActionDataRow& ActionData,
+		EActionDirection Direction,
+		EActionCommand SourceCommand);
+	void BufferAction(int32 ActionTid, EActionDirection Direction, EActionCommand SourceCommand);
 	void ClearBufferedAction();
 	void TryStartBufferedAction();
 	void RefreshTickEnabled();
@@ -234,6 +259,9 @@ private:
 	EActionType ActiveActionType = EActionType::None;
 
 	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
+	EActionCommand ActiveActionCommand = EActionCommand::None;
+
+	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
 	EActionRuntimeState RuntimeState = EActionRuntimeState::None;
 
 	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
@@ -256,6 +284,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
 	EActionDirection BufferedActionDirection = EActionDirection::Any;
+
+	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
+	EActionCommand BufferedActionCommand = EActionCommand::None;
 
 	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
 	EActionStartResult LastStartResult = EActionStartResult::Success;

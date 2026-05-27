@@ -53,6 +53,61 @@ void USkillNodeWidget::HandleSkillNodeButtonClicked()
 	OnSkillNodeClicked.Broadcast(SkillId);
 }
 
+void USkillNodeWidget::SetGamepadHoverActive(const bool bActive)
+{
+	if (!SkillNodeButton || bGamepadHoverActive == bActive)
+	{
+		return;
+	}
+
+	bGamepadHoverActive = bActive;
+	if (bGamepadHoverActive)
+	{
+		SkillNodeButton->OnHovered.Broadcast();
+	}
+	else
+	{
+		SkillNodeButton->OnUnhovered.Broadcast();
+	}
+}
+
+void USkillNodeWidget::ActivateSkillNodeButtonByGamepad()
+{
+	if (!SkillNodeButton || bGamepadClickPending)
+	{
+		return;
+	}
+
+	bGamepadClickPending = true;
+	SkillNodeButton->OnPressed.Broadcast();
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(
+			GamepadClickTimerHandle,
+			this,
+			&USkillNodeWidget::FinishGamepadButtonClick,
+			0.05f,
+			false);
+		return;
+	}
+
+	FinishGamepadButtonClick();
+}
+
+void USkillNodeWidget::FinishGamepadButtonClick()
+{
+	if (!SkillNodeButton)
+	{
+		bGamepadClickPending = false;
+		return;
+	}
+
+	SkillNodeButton->OnReleased.Broadcast();
+	SkillNodeButton->OnClicked.Broadcast();
+	bGamepadClickPending = false;
+}
+
 void USkillNodeWidget::HandleSkillNodeButtonHovered()
 {
 	UE_LOG(LogTemp, Warning, TEXT("!!! SkillNode Hovered !!! ID: %d"), SkillId);

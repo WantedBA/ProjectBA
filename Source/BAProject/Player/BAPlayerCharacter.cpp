@@ -338,11 +338,16 @@ void ABAPlayerCharacter::BindActionCallbacks()
 
 // 액션별 예외 처리는 가드/구르기 등 각 도메인 콜백에서 처리한다.
 // 이 공통 콜백은 액션이 이동을 잠그는 경우 Movement 런타임만 정리한다.
-void ABAPlayerCharacter::HandleActionStarted(const int32 /*ActionTid*/, const EActionType /*ActionType*/)
+void ABAPlayerCharacter::HandleActionStarted(const int32 /*ActionTid*/, const EActionType ActionType)
 {
 	if (!ActionComponent)
 	{
 		return;
+	}
+
+	if (!IsDodgeAction(ActionType))
+	{
+		ResetConsecutiveDodgeActions();
 	}
 
 	if (IsDamageReacting())
