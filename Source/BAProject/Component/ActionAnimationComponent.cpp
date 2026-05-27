@@ -54,6 +54,13 @@ namespace
 			Detail.IsEmpty() ? TEXT("") : TEXT(" - "),
 			*Detail);
 	}
+
+	bool ShouldUseInstantBlendInForAction(const EActionType ActionType, const UActionComponent* ActionComponent)
+	{
+		return ActionType == EActionType::DodgeRoll
+			|| ActionType == EActionType::Backstep
+			|| (ActionComponent && ActionComponent->GetActiveActionCommand() == EActionCommand::Dodge);
+	}
 }
 
 UActionAnimationComponent::UActionAnimationComponent()
@@ -164,7 +171,10 @@ bool UActionAnimationComponent::PlayActionAnimation(const int32 ActionTid, const
 	OrientOwnerToActionDirection(ResolveOrientationDirection(ActionTid, CachedActionComponent->GetActiveActionDirection()));
 
 	const float PlayRate = AnimationData->PlayRate > 0.f ? AnimationData->PlayRate : 1.f;
-	const FMontageBlendSettings BlendInSettings(FMath::Max(0.f, AnimationData->BlendIn));
+	const float BlendIn = ShouldUseInstantBlendInForAction(ActionType, CachedActionComponent.Get())
+		? 0.f
+		: FMath::Max(0.f, AnimationData->BlendIn);
+	const FMontageBlendSettings BlendInSettings(BlendIn);
 	const float PlayDuration = AnimInstance->Montage_PlayWithBlendSettings(
 		Montage,
 		BlendInSettings,

@@ -407,10 +407,14 @@ protected:
 	void HandleDodgeActionStarted(int32 ActionTid, EActionType ActionType);
 
 	UFUNCTION()
+	void HandleDodgeActionCompleted(int32 ActionTid, EActionType ActionType);
+
+	UFUNCTION()
 	void HandleGuardActionMontageEnded(int32 ActionTid, EActionType ActionType, UAnimMontage* Montage, bool bInterrupted);
 
 	UFUNCTION()
 	void HandleDodgeActionMontageEnded(int32 ActionTid, EActionType ActionType, UAnimMontage* Montage, bool bInterrupted);
+	bool IsTrackedDodgeAction(int32 ActionTid, EActionType ActionType) const;
 	bool IsDodgeAction(EActionType ActionType) const;
 
 	// 피격 반응을 C++ 기본 처리 이후 블루프린트 연출로 확장한다.
@@ -1072,9 +1076,11 @@ private:
 	int32 RecoveryEscapeGuardWindowCount = 0;
 	int32 RecoveryEscapeMoveWindowCount = 0;
 	int32 ConsecutiveDodgeActionCount = 0;
+	int32 ActiveDodgeChainActionTid = 0;
 	EActionCommand QueuedRecoveryEscapeCommand = EActionCommand::None;
 	EActionDirection QueuedRecoveryEscapeDirection = EActionDirection::Any;
 	bool bConsumingQueuedRecoveryEscapeAction = false;
+	bool bCompletingDodgeForRecoveryEscape = false;
 	mutable FTimerHandle XInputForceFeedbackStopTimerHandle;
 	mutable int32 XInputForceFeedbackPlaybackId = 0;
 	UPROPERTY(VisibleAnywhere) bool bIsBeforeCharge = false;
