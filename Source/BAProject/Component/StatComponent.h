@@ -46,16 +46,16 @@ public:
 	// 플레이어 기본 스탯 전체를 초기화하고 HP/스태미너를 최대치로 채운다.
 	void InitializeStats
 	(
-		const float InMaxHP, 
-		const float InMaxStamina, 
-		const float InStaminaRecoveryPerSecond,
-		const float InStaminaRecoveryDelay,
-		const float InWalkSpeed, 
-		const float InRunSpeed, 
-		const float InSprintSpeed, 
-		const float InAttack, 
-		const float InAttackSpeed, 
-		const float InDefence
+		float InMaxHP,
+		float InMaxStamina,
+		float InStaminaRecoveryPerSecond,
+		float InStaminaRecoveryDelay,
+		float InWalkSpeed,
+		float InRunSpeed,
+		float InSprintSpeed,
+		float InAttack,
+		float InAttackSpeed,
+		float InDefence, int InHealCount, float InHealAmount
 	);
 
 	// 모든 스탯을 최대치로 복구하고 이벤트를 발행한다.
@@ -83,6 +83,10 @@ public:
 	
 	FORCEINLINE float GetAttackSpeed() const { return AttackSpeed * AttackSpeedModifier; }
 	FORCEINLINE void SetAttackSpeed(const float NewAttackSpeed) { AttackSpeed = NewAttackSpeed; }
+	
+	FORCEINLINE float GetHealAmount() const { return HealAmount + HealAmountModifier; }
+	
+	FORCEINLINE int32 GetLeftHealCount() const { return MaxHealCount + HealCountModifier - UsedHealCount; }
 	
 	// 스태미너를 지정량 소비하고 회복 Tick 상태를 갱신한다.
 	UFUNCTION(BlueprintCallable, Category = "Stat")
@@ -118,6 +122,9 @@ public:
 
 	// 스태미너 현재값을 범위 안으로 보정하고 변경 이벤트를 발행한다.
 	void SetCurrentStamina(const float NewCurrentStamina);
+	
+	// 체력 회복 처리
+	void Heal();
 
 	FORCEINLINE float GetWalkSpeed() const { return WalkSpeed; }
 	FORCEINLINE float GetRunSpeed() const { return RunSpeed; }
@@ -129,6 +136,7 @@ public:
 	void SetMaxStaminaModifier(const float NewModifier);
 	void SetGuardDamageReductionRateModifier(const float NewModifier);
 	void SetStaminaRecoveryModifier(const float NewModifier);
+	void SetHealCountModifier(const int32 NewModifier);
 
 protected:
 	// 스태미너 회복이 필요한 동안만 활성화된다.
@@ -138,6 +146,14 @@ protected:
 	float MaxHP;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Health")
 	float CurrentHP;
+	// 기본 힐량
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Health")
+	float HealAmount;
+	// 회복 가능 횟수
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Health")
+	int32 MaxHealCount;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Health")
+	int32 UsedHealCount;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stat|Stamina")
 	float MaxStamina;
@@ -176,6 +192,8 @@ protected:
 	float MaxStaminaModifier = 1.f;
 	float GuardDamageReductionRateModifier = 1.f;
 	float StaminaRecoveryModifier = 1.f;
+	int32 HealCountModifier = 0;
+	float HealAmountModifier = 0.f;
 	
 private:
 	void RefreshStaminaRecoveryTick();
