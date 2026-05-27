@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Instance/SkillTreeTypes.h"
+#include "Styling/SlateTypes.h"
 #include "SkillNodeWidget.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSkillNodeClickedDelegate, int32, SkillId);
@@ -36,6 +37,8 @@ protected:
 	// 재정의 함수
 	virtual void NativePreConstruct() override;
 	virtual void NativeOnInitialized() override;
+	virtual void NativeOnAddedToFocusPath(const FFocusEvent& InFocusEvent) override;
+	virtual void NativeOnRemovedFromFocusPath(const FFocusEvent& InFocusEvent) override;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<class UButton> SkillNodeButton;
@@ -67,4 +70,15 @@ protected:
 	UFUNCTION()
 	void HandleSkillNodeButtonUnhovered();
 
+	void RefreshSkillNodeSelectionFeedback();
+	void CacheDefaultButtonStyle();
+	void ApplySkillNodeButtonSelectionStyle(bool bSelected);
+	void ShowSkillNodeTooltip();
+	void HideSkillNodeTooltip();
+
+	FButtonStyle DefaultButtonStyle;
+	bool bHasDefaultButtonStyle = false;
+	bool bPointerHovered = false;
+	bool bNavigationFocused = false;
+	bool bSelectionFeedbackActive = false;
 };

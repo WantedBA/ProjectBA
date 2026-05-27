@@ -12,10 +12,17 @@
 
 void USkillNodeWidget::SetSkillNodeState(const ESkillNodeState InSkillNodeState)
 {
+	if (SkillNodeButton && bSelectionFeedbackActive && bHasDefaultButtonStyle)
+	{
+		SkillNodeButton->SetStyle(DefaultButtonStyle);
+	}
+
 	SkillNodeState = InSkillNodeState;
 	
 	// UI 갱신
 	OnSkillNodeStateChanged();
+	CacheDefaultButtonStyle();
+	RefreshSkillNodeSelectionFeedback();
 	
 	// TODO: 디버그용 임시 코드 
 	FString StateString = StaticEnum<ESkillNodeState>()->GetNameStringByValue(static_cast<int64>(SkillNodeState));
@@ -36,6 +43,8 @@ void USkillNodeWidget::NativeOnInitialized()
 	
 	if (SkillNodeButton)
 	{
+		CacheDefaultButtonStyle();
+
 		SkillNodeButton->OnClicked.AddDynamic(this, &USkillNodeWidget::HandleSkillNodeButtonClicked);
 
 		// 마우스 올린 경우 및 뗐을 때 이벤트 연결
@@ -48,6 +57,22 @@ void USkillNodeWidget::NativeOnInitialized()
 	}
 }
 
+void USkillNodeWidget::NativeOnAddedToFocusPath(const FFocusEvent& InFocusEvent)
+{
+	Super::NativeOnAddedToFocusPath(InFocusEvent);
+
+	bNavigationFocused = true;
+	RefreshSkillNodeSelectionFeedback();
+}
+
+void USkillNodeWidget::NativeOnRemovedFromFocusPath(const FFocusEvent& InFocusEvent)
+{
+	Super::NativeOnRemovedFromFocusPath(InFocusEvent);
+
+	bNavigationFocused = false;
+	RefreshSkillNodeSelectionFeedback();
+}
+
 void USkillNodeWidget::HandleSkillNodeButtonClicked()
 {
 	OnSkillNodeClicked.Broadcast(SkillId);
@@ -55,7 +80,68 @@ void USkillNodeWidget::HandleSkillNodeButtonClicked()
 
 void USkillNodeWidget::HandleSkillNodeButtonHovered()
 {
-	UE_LOG(LogTemp, Warning, TEXT("!!! SkillNode Hovered !!! ID: %d"), SkillId);
+	bPointerHovered = true;
+	RefreshSkillNodeSelectionFeedback();
+}
+
+void USkillNodeWidget::HandleSkillNodeButtonUnhovered()
+{
+	bPointerHovered = false;
+	RefreshSkillNodeSelectionFeedback();
+}
+
+void USkillNodeWidget::RefreshSkillNodeSelectionFeedback()
+{
+	const bool bShouldShowSelectionFeedback = bPointerHovered || bNavigationFocused;
+	const bool bWasSelectionFeedbackActive = bSelectionFeedbackActive;
+	bSelectionFeedbackActive = bShouldShowSelectionFeedback;
+
+	ApplySkillNodeButtonSelectionStyle(bSelectionFeedbackActive);
+
+	if (!bWasSelectionFeedbackActive && bSelectionFeedbackActive)
+	{
+		ShowSkillNodeTooltip();
+	}
+	else if (bWasSelectionFeedbackActive && !bSelectionFeedbackActive)
+	{
+		HideSkillNodeTooltip();
+	}
+}
+
+void USkillNodeWidget::CacheDefaultButtonStyle()
+{
+	if (!SkillNodeButton)
+	{
+		bHasDefaultButtonStyle = false;
+		return;
+	}
+
+	DefaultButtonStyle = SkillNodeButton->GetStyle();
+	bHasDefaultButtonStyle = true;
+}
+
+void USkillNodeWidget::ApplySkillNodeButtonSelectionStyle(const bool bSelected)
+{
+	if (!SkillNodeButton || !bHasDefaultButtonStyle)
+	{
+		return;
+	}
+
+	if (!bSelected)
+	{
+		SkillNodeButton->SetStyle(DefaultButtonStyle);
+		return;
+	}
+
+	FButtonStyle SelectedStyle = DefaultButtonStyle;
+	SelectedStyle.Normal = DefaultButtonStyle.Hovered;
+	SelectedStyle.NormalPadding = DefaultButtonStyle.PressedPadding;
+	SkillNodeButton->SetStyle(SelectedStyle);
+}
+
+void USkillNodeWidget::ShowSkillNodeTooltip()
+{
+	UE_LOG(LogTemp, Warning, TEXT("!!! SkillNode Selected !!! ID: %d"), SkillId);
 
 	// GameInstance 가져오기
 	UGameInstance* GI = GetGameInstance();
@@ -78,7 +164,7 @@ void USkillNodeWidget::HandleSkillNodeButtonHovered()
 	}
 }
 
-void USkillNodeWidget::HandleSkillNodeButtonUnhovered()
+void USkillNodeWidget::HideSkillNodeTooltip()
 {
 	// SubSystemUI 찾기
 	if (UGameInstance* GI = GetGameInstance())
