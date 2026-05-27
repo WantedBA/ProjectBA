@@ -276,6 +276,10 @@ void USubSystemUI::HandlePlayerDeath()
 		}, 3.5f, false);
 }
 
+void USubSystemUI::OnF1Pressed()
+{
+}
+
 void USubSystemUI::RefreshInputMode()
 {
 	APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
