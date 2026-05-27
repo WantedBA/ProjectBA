@@ -109,6 +109,13 @@ void AEnemyBase::PossessedBy(AController* NewController)
 	}
 }
 
+void AEnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	OnAttackPerfectGuarded.RemoveAll(this);
+
+	Super::EndPlay(EndPlayReason);
+}
+
 void AEnemyBase::InitializeFromTable(int32 InTid)
 {
 	MonsterTid = InTid;
@@ -392,6 +399,9 @@ void AEnemyBase::OnEnemyAttackAniFinished(EEnemyState NewState)
 		else
 		{
 			SetState(EEnemyState::Idle);
+			// 하나의 몽타주 공격(단일이든 2연격이든)이 완전히 끝났으므로 
+			// AI 템포 조절을 위해 바로 공격하기보다 Alert(경계/서성임)로 밀어주어 빈틈을 만들어줍니다.
+			SetState(EEnemyState::Alert);
 		}
 	}
 
@@ -532,6 +542,30 @@ void AEnemyBase::ResetStateToIdle()
 	}
 }
 
+UAnimMontage* AEnemyBase::GetCurrentAttackMontage() const
+{
+	UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	if (AnimInstance == nullptr)
+	{
+		return nullptr;
+	}
+
+	for (UAnimMontage* Montage : AttackMontages)
+	{
+		if (AnimInstance->Montage_IsPlaying(Montage))
+		{
+			return Montage;
+		}
+	}
+
+	return nullptr;
+}
+
+void AEnemyBase::ResetAttackIndex()
+{
+	CurrentAttackIndex = 0;
+}
+
 bool AEnemyBase::CanAttack() const
 {
 	return CurrentAttackCount < MaxAttackCount && CurrentState != EEnemyState::Hit && CurrentState != EEnemyState::Stagger;
@@ -622,26 +656,31 @@ void AEnemyBase::OnStartDissolve()
 
 void AEnemyBase::Attack()
 {
-	if (IsDead() || CanAttack() == false)
+	if (IsDead() || CanAttack() == false || CurrentState == EEnemyState::Attack)
 	{
 		return;
 	}
 
-	if (CurrentState == EEnemyState::Attack)
+	if (AttackMontages.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] AttackMontages 배열이 비어있습니다."), *GetName());
+		return;
+	}
+
+	int32 RandomIndex = FMath::RandRange(0, AttackMontages.Num() - 1);
+	UAnimMontage* TargetMontage = AttackMontages[RandomIndex];
+
+	if (TargetMontage == nullptr)
 	{
 		return;
 	}
 
 	SetState(EEnemyState::Attack);
-	if (CombatComponent && AttackMontage)
-	{
-		float AttackDamage = 10.0f;
-		if (StatComponent)
-		{
-			AttackDamage = StatComponent->GetAttack();
-		}
 
-		CombatComponent->SetAttackData(20.0f, AttackDamage);
-		CombatComponent->ExecuteAttack(AttackMontage);
+	if (CombatComponent)
+	{
+		float AttackDamage = StatComponent ? StatComponent->GetAttack() : 10.0f;
+		CombatComponent->SetAttackData(0.0f, AttackDamage); // An_Collision에서 Radius 설정함
+		CombatComponent->ExecuteAttack(TargetMontage);
 	}
 }

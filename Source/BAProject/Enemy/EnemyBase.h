@@ -69,7 +69,7 @@ public:
 
 	void SetState(EEnemyState NewState);
 
-	UAnimMontage* GetEnemyAttackMontage() const { return AttackMontage; }
+	UAnimMontage* GetCurrentAttackMontage() const;
 	UAnimMontage* GetEnemyHitMontage() const { return HitMontage; }
 	UAnimMontage* GetEnemyStaggerMontage() const { return PerfectGuardedMontage; }
 
@@ -94,9 +94,12 @@ public:
 
 	void ResetStateToIdle();// 상태 복구 관리
 
+	void ResetAttackIndex();
+
 protected:
 	virtual void PostInitializeComponents() override;
 	virtual void PossessedBy(AController* NewController) override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	virtual void OnDamaged(float FinalDamage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 	void HandleAttackPerfectGuarded(AActor* GuardingActor, const FHitResult& HitResult);
@@ -175,7 +178,9 @@ protected:
 	bool bIsSuperArmor;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat")
-	TObjectPtr<UAnimMontage> AttackMontage;
+	TArray<TObjectPtr<UAnimMontage>> AttackMontages;
+
+	int32 CurrentAttackIndex = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Enemy|Combat|Effects")
 	TObjectPtr<class UNiagaraSystem> HitVFX;
@@ -211,7 +216,7 @@ protected:
 	TArray<UMaterialInterface*> DissolveMaterialsInput;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Enemy|Effects")
-	TArray<UMaterialInstanceDynamic*> DynamicDissolveMaterials;
+	TArray<TObjectPtr<UMaterialInstanceDynamic>> DynamicDissolveMaterials;
 
 	UPROPERTY(BlueprintAssignable, Category = "Enemy|Effects")
 	FOnDissolveStarted OnDissolveStarted;
