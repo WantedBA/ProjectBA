@@ -38,6 +38,11 @@ namespace
 
 			KeyActionRules.Emplace(EKeys::Gamepad_FaceButton_Right, EUINavigationAction::Back); // Xbox B
 			KeyActionRules.Emplace(UINavigationGenericUSBControllerButton(3), EUINavigationAction::Back); // DualSense Circle
+
+			KeyEventRules.Emplace(EKeys::Gamepad_RightStick_Up, EUINavigation::Up);
+			KeyEventRules.Emplace(EKeys::Gamepad_RightStick_Down, EUINavigation::Down);
+			KeyEventRules.Emplace(EKeys::Gamepad_RightStick_Left, EUINavigation::Left);
+			KeyEventRules.Emplace(EKeys::Gamepad_RightStick_Right, EUINavigation::Right);
 		}
 	};
 }
