@@ -164,7 +164,7 @@ void AMapResetPoint::BeginRest(ABAPlayerCharacter& Player)
 
 	MovePlayerToRestPosition(Player);
 	Player.LockMovementForCutscene();
-	PlayPlayerMontage(Player, RestMontage);
+	PlayPlayerMontage(Player, SitDownMontage);
 	ApplyRestEffects(Player);
 	SaveRespawnProgress();
 	PlayCheckpointFade(false);
@@ -204,12 +204,12 @@ void AMapResetPoint::BeginRestExit()
 	PlayCheckpointFade(true);
 
 	ABAPlayerCharacter* Player = RestingPlayer.Get();
-	if (Player && RestMontage)
+	if (Player && SitDownMontage)
 	{
-		Player->StopAnimMontage(RestMontage);
+		Player->StopAnimMontage(SitDownMontage);
 	}
-	const float StandDuration = Player ? PlayPlayerMontage(*Player, StandUpMontage) : 0.f;
-	const float UnlockDelay = ExitUnlockDelay > 0.f ? ExitUnlockDelay : StandDuration;
+	const float StandUpDuration = Player ? PlayPlayerMontage(*Player, StandUpMontage) : 0.f;
+	const float UnlockDelay = ExitUnlockDelay > 0.f ? ExitUnlockDelay : StandUpDuration;
 	if (UWorld* World = GetWorld())
 	{
 		const float ResolvedUnlockDelay = FMath::Max(0.f, UnlockDelay);

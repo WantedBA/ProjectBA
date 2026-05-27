@@ -69,7 +69,7 @@ private:
 	FText PromptExit = NSLOCTEXT("Interaction", "RestExit", "E - 일어나기");
 
 	UPROPERTY(EditAnywhere, Category = "Interaction|Animation")
-	TObjectPtr<UAnimMontage> RestMontage;
+	TObjectPtr<UAnimMontage> SitDownMontage;
 
 	UPROPERTY(EditAnywhere, Category = "Interaction|Animation")
 	TObjectPtr<UAnimMontage> StandUpMontage;
