@@ -254,7 +254,7 @@ FName ABAPlayerCharacter::ResolveActionStartSection(
 	}
 
 	bUseChainStartForNextDodgeAction = false;
-	return DodgeDisplacementSettings.ChainStartSection;
+	return DodgeChainStartSection;
 }
 
 bool ABAPlayerCharacter::IsActionMovementLocked() const

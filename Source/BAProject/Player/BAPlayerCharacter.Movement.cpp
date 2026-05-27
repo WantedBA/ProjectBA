@@ -297,7 +297,6 @@ void ABAPlayerCharacter::HandleDodgeActionStarted(
 			MovementComponent->StopMovementImmediately();
 		}
 		ClearMovementPhase();
-		StartDodgeDisplacement(ActionTid, ActionType);
 	}
 }
 
@@ -311,7 +310,6 @@ void ABAPlayerCharacter::HandleDodgeActionCompleted(
 	}
 
 	ActiveDodgeChainActionTid = 0;
-	StopDodgeDisplacement(ActionTid);
 	if (bCompletingDodgeForRecoveryEscape)
 	{
 		return;
@@ -386,107 +384,7 @@ bool ABAPlayerCharacter::ShouldUseDodgeChainStartSection(const EActionType Actio
 {
 	return bUseChainStartForNextDodgeAction
 		&& IsDodgeAction(ActionType)
-		&& !DodgeDisplacementSettings.ChainStartSection.IsNone();
-}
-
-void ABAPlayerCharacter::StartDodgeDisplacement(const int32 ActionTid, const EActionType ActionType)
-{
-	if (!DodgeDisplacementSettings.bEnableDirectDisplacement)
-	{
-		DodgeDisplacementRuntime = FBAPlayerDodgeDisplacementRuntimeState();
-		return;
-	}
-
-	const FVector Direction = ResolveDodgeDisplacementDirection(ActionType);
-	const float Distance = ResolveDodgeDisplacementDistance(ActionType);
-	const float Duration = FMath::Max(0.01f, DodgeDisplacementSettings.DisplacementDuration);
-	if (Direction.IsNearlyZero() || Distance <= 0.f)
-	{
-		DodgeDisplacementRuntime = FBAPlayerDodgeDisplacementRuntimeState();
-		return;
-	}
-
-	DodgeDisplacementRuntime.bActive = true;
-	DodgeDisplacementRuntime.ActionTid = ActionTid;
-	DodgeDisplacementRuntime.Direction = Direction;
-	DodgeDisplacementRuntime.Distance = Distance;
-	DodgeDisplacementRuntime.Duration = Duration;
-	DodgeDisplacementRuntime.ElapsedTime = 0.f;
-	DodgeDisplacementRuntime.PreviousProgress = 0.f;
-}
-
-void ABAPlayerCharacter::StopDodgeDisplacement(const int32 ActionTid)
-{
-	if (!DodgeDisplacementRuntime.bActive)
-	{
-		return;
-	}
-
-	if (ActionTid == 0 || DodgeDisplacementRuntime.ActionTid == ActionTid)
-	{
-		DodgeDisplacementRuntime = FBAPlayerDodgeDisplacementRuntimeState();
-	}
-}
-
-float ABAPlayerCharacter::ResolveDodgeDisplacementDistance(const EActionType ActionType) const
-{
-	const float RollDistance = FMath::Max(0.f, DodgeDisplacementSettings.RollDistance);
-	return ActionType == EActionType::Backstep
-		? RollDistance * FMath::Clamp(DodgeDisplacementSettings.BackstepDistanceRatio, 0.f, 1.f)
-		: RollDistance;
-}
-
-FVector ABAPlayerCharacter::ResolveDodgeDisplacementDirection(const EActionType ActionType) const
-{
-	const EActionDirection ActionDirection = ActionComponent
-		? ActionComponent->GetActiveActionDirection()
-		: EActionDirection::Any;
-	if (ActionDirection != EActionDirection::Any)
-	{
-		return ConvertMoveInputToWorldDirection(GetActionDirectionInputVector(ActionDirection));
-	}
-
-	if (ActionType == EActionType::Backstep)
-	{
-		FVector BackwardDirection = -GetActorForwardVector();
-		BackwardDirection.Z = 0.f;
-		return BackwardDirection.GetSafeNormal();
-	}
-
-	if (MovementRuntime.bHasMoveInput)
-	{
-		return ConvertMoveInputToWorldDirection(MovementRuntime.MoveInputVector);
-	}
-
-	FVector ForwardDirection = GetActorForwardVector();
-	ForwardDirection.Z = 0.f;
-	return ForwardDirection.GetSafeNormal();
-}
-
-FVector2D ABAPlayerCharacter::GetActionDirectionInputVector(const EActionDirection Direction) const
-{
-	switch (Direction)
-	{
-	case EActionDirection::Forward:
-		return FVector2D(0.f, 1.f);
-	case EActionDirection::Backward:
-		return FVector2D(0.f, -1.f);
-	case EActionDirection::Left:
-		return FVector2D(-1.f, 0.f);
-	case EActionDirection::Right:
-		return FVector2D(1.f, 0.f);
-	case EActionDirection::ForwardLeft:
-		return FVector2D(-1.f, 1.f).GetSafeNormal();
-	case EActionDirection::ForwardRight:
-		return FVector2D(1.f, 1.f).GetSafeNormal();
-	case EActionDirection::BackwardLeft:
-		return FVector2D(-1.f, -1.f).GetSafeNormal();
-	case EActionDirection::BackwardRight:
-		return FVector2D(1.f, -1.f).GetSafeNormal();
-	case EActionDirection::Any:
-	default:
-		return FVector2D::ZeroVector;
-	}
+		&& !DodgeChainStartSection.IsNone();
 }
 
 // Movement 전체를 갱신한다.
@@ -499,59 +397,8 @@ void ABAPlayerCharacter::TickMovementRuntime(const float DeltaTime)
 	UpdateMaxWalkSpeed(DeltaTime);
 	SyncFreeStrafeFacingMode();
 	UpdateInterpolatedFacingRotation(DeltaTime);
-	TickDodgeDisplacement(DeltaTime);
 	ApplyBufferedMoveInput();
 	DrainSprintStaminaDuringLoop(DeltaTime);
-}
-
-void ABAPlayerCharacter::TickDodgeDisplacement(const float DeltaTime)
-{
-	if (!DodgeDisplacementRuntime.bActive || DeltaTime <= 0.f)
-	{
-		return;
-	}
-
-	if (DodgeDisplacementRuntime.Direction.IsNearlyZero()
-		|| DodgeDisplacementRuntime.Distance <= 0.f
-		|| DodgeDisplacementRuntime.Duration <= 0.f)
-	{
-		DodgeDisplacementRuntime = FBAPlayerDodgeDisplacementRuntimeState();
-		return;
-	}
-
-	const float PreviousProgress = DodgeDisplacementRuntime.PreviousProgress;
-	DodgeDisplacementRuntime.ElapsedTime = FMath::Min(
-		DodgeDisplacementRuntime.ElapsedTime + DeltaTime,
-		DodgeDisplacementRuntime.Duration);
-
-	const float Alpha = FMath::Clamp(
-		DodgeDisplacementRuntime.ElapsedTime / DodgeDisplacementRuntime.Duration,
-		0.f,
-		1.f);
-	const float CurrentProgress = 0.5f - 0.5f * FMath::Cos(PI * Alpha);
-	const float DeltaProgress = FMath::Max(0.f, CurrentProgress - PreviousProgress);
-	DodgeDisplacementRuntime.PreviousProgress = CurrentProgress;
-
-	const FVector MoveDelta = DodgeDisplacementRuntime.Direction * DodgeDisplacementRuntime.Distance * DeltaProgress;
-	if (!MoveDelta.IsNearlyZero())
-	{
-		FHitResult Hit;
-		AddActorWorldOffset(MoveDelta, true, &Hit);
-		if (Hit.IsValidBlockingHit())
-		{
-			const FVector RemainingDelta = MoveDelta * (1.f - Hit.Time);
-			const FVector SlideDelta = FVector::VectorPlaneProject(RemainingDelta, Hit.Normal);
-			if (!SlideDelta.IsNearlyZero())
-			{
-				AddActorWorldOffset(SlideDelta, true);
-			}
-		}
-	}
-
-	if (DodgeDisplacementRuntime.ElapsedTime >= DodgeDisplacementRuntime.Duration)
-	{
-		DodgeDisplacementRuntime = FBAPlayerDodgeDisplacementRuntimeState();
-	}
 }
 
 // 현재 입력과 요청 Gait를 기준으로 공통 Phase를 갱신한다.

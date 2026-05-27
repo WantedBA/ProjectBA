@@ -417,11 +417,6 @@ protected:
 	bool IsTrackedDodgeAction(int32 ActionTid, EActionType ActionType) const;
 	bool IsDodgeAction(EActionType ActionType) const;
 	bool ShouldUseDodgeChainStartSection(EActionType ActionType) const;
-	void StartDodgeDisplacement(int32 ActionTid, EActionType ActionType);
-	void StopDodgeDisplacement(int32 ActionTid);
-	float ResolveDodgeDisplacementDistance(EActionType ActionType) const;
-	FVector ResolveDodgeDisplacementDirection(EActionType ActionType) const;
-	FVector2D GetActionDirectionInputVector(EActionDirection Direction) const;
 
 	// 피격 반응을 C++ 기본 처리 이후 블루프린트 연출로 확장한다.
 	UFUNCTION(BlueprintImplementableEvent, Category = "Combat|DamageReaction", meta = (DisplayName = "OnDamageReaction"))
@@ -489,7 +484,6 @@ private:
 	void ResolveInitialGroundedMovementMode();
 	void TickMovementRuntime(float DeltaTime);
 	void UpdatePhaseFromInputAndGait(float DeltaTime);
-	void TickDodgeDisplacement(float DeltaTime);
 	void BeginMovementPhase(EPlayerMovementPhase NewPhase);
 	void FinishCurrentMovementPhase();
 	void ClearMovementPhase();
@@ -707,8 +701,8 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Movement|Locomotion", meta = (ShowOnlyInnerProperties))
 	FBAPlayerLocomotionSettings LocomotionSettings;
 
-	UPROPERTY(EditAnywhere, Category = "Movement|Dodge", meta = (ShowOnlyInnerProperties))
-	FBAPlayerDodgeDisplacementSettings DodgeDisplacementSettings;
+	UPROPERTY(EditAnywhere, Category = "Movement|Dodge")
+	FName DodgeChainStartSection = TEXT("ChainStart");
 
 	UPROPERTY(EditAnywhere, Category = "Movement|Gait", meta = (ShowOnlyInnerProperties))
 	FBAPlayerMovementGaitSettings GaitSettings;
@@ -1040,7 +1034,6 @@ private:
 
 	// 런타임 상태
 	FBAPlayerMovementRuntimeState MovementRuntime;
-	FBAPlayerDodgeDisplacementRuntimeState DodgeDisplacementRuntime;
 	FBAPlayerSprintRuntimeState SprintRuntime;
 	FBAPlayerLadderRuntimeState LadderRuntime;
 	EPlayerLocomotionMode LocomotionModeBeforeLockOn = EPlayerLocomotionMode::Free;

@@ -136,28 +136,6 @@ struct FBAPlayerLocomotionSettings
 	float MoveInputDirectionVelocitySeedMinSpeed = 50.f;
 };
 
-// 루트모션을 끈 회피 액션의 실제 이동거리를 코드에서 제어한다.
-USTRUCT(BlueprintType)
-struct FBAPlayerDodgeDisplacementSettings
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, Category = "Movement|Dodge")
-	bool bEnableDirectDisplacement = true;
-
-	UPROPERTY(EditAnywhere, Category = "Movement|Dodge", meta = (ClampMin = "0.0", Units = "cm"))
-	float RollDistance = 420.f;
-
-	UPROPERTY(EditAnywhere, Category = "Movement|Dodge", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float BackstepDistanceRatio = 0.5f;
-
-	UPROPERTY(EditAnywhere, Category = "Movement|Dodge", meta = (ClampMin = "0.01", Units = "s"))
-	float DisplacementDuration = 0.45f;
-
-	UPROPERTY(EditAnywhere, Category = "Movement|Dodge")
-	FName ChainStartSection = TEXT("ChainStart");
-};
-
 // 특정 gait에서 Start/Stop/Turn 페이즈를 사용할지와 루트 모션 여부를 정의한다.
 USTRUCT(BlueprintType)
 struct FBAPlayerMovementPhaseSettings
@@ -267,17 +245,6 @@ struct FBAPlayerMovementRuntimeState
 	float PhaseElapsedTime = 0.f;
 	float CurrentMaxWalkSpeed = 0.f;
 	float TargetMaxWalkSpeed = 0.f;
-};
-
-struct FBAPlayerDodgeDisplacementRuntimeState
-{
-	bool bActive = false;
-	int32 ActionTid = 0;
-	FVector Direction = FVector::ZeroVector;
-	float Distance = 0.f;
-	float Duration = 0.f;
-	float ElapsedTime = 0.f;
-	float PreviousProgress = 0.f;
 };
 
 // 질주 고갈 잠금과 스태미너 회복 일시정지 상태.
