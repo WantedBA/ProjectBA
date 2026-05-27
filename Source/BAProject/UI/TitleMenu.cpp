@@ -75,7 +75,7 @@ namespace
 		}
 	}
 
-	FVector2D NormalizeNavigationVector(const FVector2D& DirectionVector)
+	FVector2D NormalizeTitleNavigationVector(const FVector2D& DirectionVector)
 	{
 		return DirectionVector.GetSafeNormal();
 	}
@@ -362,7 +362,7 @@ UButton* UTitleMenu::FindBestTitleButtonInDirection(UButton* SourceButton, const
 		return nullptr;
 	}
 
-	const FVector2D NormalizedDirection = NormalizeNavigationVector(DirectionVector);
+	const FVector2D NormalizedDirection = NormalizeTitleNavigationVector(DirectionVector);
 	if (NormalizedDirection.IsNearlyZero())
 	{
 		return nullptr;

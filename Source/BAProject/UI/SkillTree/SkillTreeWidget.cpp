@@ -39,7 +39,7 @@ namespace
 			|| Key == SkillTreeGenericUSBControllerButton(2);
 	}
 
-	FVector2D NormalizeNavigationVector(const FVector2D& DirectionVector)
+	FVector2D NormalizeSkillTreeNavigationVector(const FVector2D& DirectionVector)
 	{
 		return DirectionVector.GetSafeNormal();
 	}
@@ -367,7 +367,7 @@ int32 USkillTreeWidget::FindSkillNodeUnderMouse() const
 
 int32 USkillTreeWidget::FindBestSkillNodeInDirection(const int32 SkillId, const FVector2D& DirectionVector) const
 {
-	const FVector2D NormalizedDirection = NormalizeNavigationVector(DirectionVector);
+	const FVector2D NormalizedDirection = NormalizeSkillTreeNavigationVector(DirectionVector);
 	if (NormalizedDirection.IsNearlyZero())
 	{
 		return INDEX_NONE;
@@ -408,7 +408,7 @@ int32 USkillTreeWidget::FindBestSkillNodeInDirection(const int32 SkillId, const 
 
 int32 USkillTreeWidget::FindAdjacentSkillNodeInDirection(const int32 SkillId, const FVector2D& DirectionVector) const
 {
-	const FVector2D NormalizedDirection = NormalizeNavigationVector(DirectionVector);
+	const FVector2D NormalizedDirection = NormalizeSkillTreeNavigationVector(DirectionVector);
 	if (NormalizedDirection.IsNearlyZero())
 	{
 		return INDEX_NONE;
