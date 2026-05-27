@@ -92,6 +92,8 @@ void UStatComponent::RestoreAll()
 
 	OnHPChanged.Broadcast(CurrentHP, MaxHP);
 	OnStaminaChanged.Broadcast(CurrentStamina, GetMaxStamina());
+	
+	UsedHealCount = 0;
 
 	RefreshStaminaRecoveryTick();
 }
