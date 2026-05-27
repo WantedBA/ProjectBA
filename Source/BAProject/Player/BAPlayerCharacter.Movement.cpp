@@ -296,25 +296,28 @@ void ABAPlayerCharacter::HandleDodgeActionMontageEnded(
 	UAnimMontage* /*Montage*/,
 	const bool bInterrupted)
 {
-	if (IsDodgeAction(ActionType)
-		&& !bInterrupted
-		&& BAPlayerState == EBAPlayerState::DodgeRolling)
+	const bool bEndedDodgeAction = IsDodgeAction(ActionType);
+	if (!bEndedDodgeAction)
 	{
-		SetBAPlayerState(EBAPlayerState::None);
+		return;
+	}
+
+	if (!bInterrupted)
+	{
+		if (BAPlayerState == EBAPlayerState::DodgeRolling)
+		{
+			SetBAPlayerState(EBAPlayerState::None);
+		}
 		ResetConsecutiveDodgeActions();
 	}
 
-	if (IsDodgeAction(ActionType)
-		&& !MovementRuntime.bHasMoveInput)
+	if (!MovementRuntime.bHasMoveInput)
 	{
 		MovementRuntime.bSuppressVelocityFacingUntilMoveInput = true;
 		SnapInterpolatedMoveInputTo(FVector2D::ZeroVector);
 	}
 
-	if (IsDodgeAction(ActionType))
-	{
-		ApplyPendingLockOnStrafeMode();
-	}
+	ApplyPendingLockOnStrafeMode();
 }
 
 bool ABAPlayerCharacter::IsDodgeAction(const EActionType ActionType) const
