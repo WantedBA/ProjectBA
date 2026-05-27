@@ -295,6 +295,9 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent)
 	void OnHealAnimNotify();
+	
+	UFUNCTION(BlueprintCallable)
+	bool IsHealing() const;
 
 protected:
 	// CharacterBase 훅
