@@ -13,6 +13,13 @@ void ABAPlayerCharacter::SetMovementState(const EMovementState NewState)
 // 2D 이동 입력을 저장한다. 입력의 소비는 캐릭터 Tick에서 일괄 처리한다.
 void ABAPlayerCharacter::SetMoveInputVector(const FVector2D& NewMoveInput)
 {
+	if (BAPlayerState == EBAPlayerState::Respawning || BAPlayerState == EBAPlayerState::Dead)
+	{
+		MovementRuntime.MoveInputVector = FVector2D::ZeroVector;
+		SetHasMoveInput(false);
+		return;
+	}
+
 	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
 	if (!IsDamageReacting() && MovementComponent && MovementComponent->IsFalling())
 	{
@@ -35,6 +42,8 @@ void ABAPlayerCharacter::SetHasMoveInput(const bool bNewHasMoveInput)
 {
 	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
 	MovementRuntime.bHasMoveInput = bNewHasMoveInput
+		&& BAPlayerState != EBAPlayerState::Respawning
+		&& BAPlayerState != EBAPlayerState::Dead
 		&& (IsDamageReacting() || !MovementComponent || !MovementComponent->IsFalling());
 	if (!MovementRuntime.bHasMoveInput)
 	{
@@ -276,6 +285,7 @@ void ABAPlayerCharacter::HandleDodgeActionStarted(
 
 	if (ActionType == EActionType::DodgeRoll || ActionType == EActionType::Backstep)
 	{
+		++ConsecutiveDodgeActionCount;
 		SetBAPlayerState(EBAPlayerState::DodgeRolling);
 	}
 }
@@ -291,6 +301,7 @@ void ABAPlayerCharacter::HandleDodgeActionMontageEnded(
 		&& BAPlayerState == EBAPlayerState::DodgeRolling)
 	{
 		SetBAPlayerState(EBAPlayerState::None);
+		ResetConsecutiveDodgeActions();
 	}
 
 	if ((ActionType == EActionType::DodgeRoll || ActionType == EActionType::Backstep)
@@ -310,6 +321,7 @@ void ABAPlayerCharacter::HandleDodgeActionMontageEnded(
 void ABAPlayerCharacter::TickMovementRuntime(const float DeltaTime)
 {
 	UnlockSprintAfterRecovery();
+	UpdateFallLoopNotification(DeltaTime);
 	UpdateInterpolatedMoveInputDirection(DeltaTime);
 	UpdatePhaseFromInputAndGait(DeltaTime);
 	UpdateMaxWalkSpeed(DeltaTime);
@@ -324,28 +336,28 @@ void ABAPlayerCharacter::UpdatePhaseFromInputAndGait(const float DeltaTime)
 {
 	MovementRuntime.PhaseElapsedTime += DeltaTime;
 
+	if (BAPlayerState == EBAPlayerState::Respawning || BAPlayerState == EBAPlayerState::Dead)
+	{
+		ClearMovementPhase();
+		return;
+	}
+
 	if (DamageReactionState == EPlayerDamageReactionState::KnockDown)
 	{
-		MovementRuntime.Phase = EPlayerMovementPhase::None;
-		MovementRuntime.PhaseElapsedTime = 0.f;
-		MovementRuntime.bWaitingForPhaseAnimation = false;
+		ClearMovementPhase();
 		return;
 	}
 
 	if (bLandingRecoveryActive)
 	{
-		MovementRuntime.Phase = EPlayerMovementPhase::None;
-		MovementRuntime.PhaseElapsedTime = 0.f;
-		MovementRuntime.bWaitingForPhaseAnimation = false;
+		ClearMovementPhase();
 		return;
 	}
 
 	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
 	if (MovementComponent && MovementComponent->IsFalling())
 	{
-		MovementRuntime.Phase = EPlayerMovementPhase::None;
-		MovementRuntime.PhaseElapsedTime = 0.f;
-		MovementRuntime.bWaitingForPhaseAnimation = false;
+		ClearMovementPhase();
 		return;
 	}
 
@@ -453,6 +465,13 @@ void ABAPlayerCharacter::FinishCurrentMovementPhase()
 	}
 }
 
+void ABAPlayerCharacter::ClearMovementPhase()
+{
+	MovementRuntime.Phase = EPlayerMovementPhase::None;
+	MovementRuntime.PhaseElapsedTime = 0.f;
+	MovementRuntime.bWaitingForPhaseAnimation = false;
+}
+
 // 실제 적용 중인 Gait를 바꾸고 MovementComponent 속도를 갱신한다.
 void ABAPlayerCharacter::SetActiveGaitAndSpeed(const EMovementState NewGait)
 {
@@ -521,6 +540,11 @@ EMovementState ABAPlayerCharacter::GetMovementAllowedGait(const EMovementState R
 		return EMovementState::Walk;
 	}
 
+	if (IsUseConsumableActionActive())
+	{
+		return EMovementState::Walk;
+	}
+
 	if (RequestedGait == EMovementState::Sprint && !IsSprintAllowedByStamina())
 	{
 		return EMovementState::Run;
@@ -532,6 +556,11 @@ EMovementState ABAPlayerCharacter::GetMovementAllowedGait(const EMovementState R
 	}
 
 	return RequestedGait;
+}
+
+bool ABAPlayerCharacter::IsUseConsumableActionActive() const
+{
+	return ActionComponent && ActionComponent->GetActiveActionType() == EActionType::UseConsumable;
 }
 
 bool ABAPlayerCharacter::ShouldUseAnalogWalkGait(const EMovementState RequestedGait) const

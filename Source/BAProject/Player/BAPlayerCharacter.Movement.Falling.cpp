@@ -83,6 +83,7 @@ void ABAPlayerCharacter::ResolveInitialGroundedMovementMode()
 	}
 
 	bFallTrackingActive = false;
+	bFallStartNotified = false;
 	LastFallDistance = 0.f;
 	MovementComponent->SetMovementMode(MOVE_Walking);
 }
@@ -163,20 +164,35 @@ bool ABAPlayerCharacter::ShouldTrackFall() const
 void ABAPlayerCharacter::BeginFallTracking()
 {
 	bFallTrackingActive = true;
+	bFallStartNotified = false;
 	LastFallDistance = 0.f;
 	FallStartZ = GetActorLocation().Z;
 	ResetLandingRecovery();
 
-	MovementRuntime.Phase = EPlayerMovementPhase::None;
-	MovementRuntime.PhaseElapsedTime = 0.f;
-	MovementRuntime.bWaitingForPhaseAnimation = false;
+	ClearMovementPhase();
+}
 
+void ABAPlayerCharacter::UpdateFallLoopNotification(const float /*DeltaTime*/)
+{
+	if (!bFallTrackingActive || bFallStartNotified)
+	{
+		return;
+	}
+
+	const float CurrentFallDistance = FMath::Max(0.f, FallStartZ - GetActorLocation().Z);
+	if (CurrentFallDistance < FMath::Max(0.f, FallLoopStartMinDistance))
+	{
+		return;
+	}
+
+	bFallStartNotified = true;
 	K2_OnFallStarted();
 }
 
 void ABAPlayerCharacter::EndFallTrackingFromLanding()
 {
 	bFallTrackingActive = false;
+	bFallStartNotified = false;
 	LastFallDistance = FMath::Max(0.f, FallStartZ - GetActorLocation().Z);
 
 	bool bFatalFall = false;
@@ -333,6 +349,10 @@ void ABAPlayerCharacter::ResetLandingRecovery()
 	GetWorldTimerManager().ClearTimer(LandingRecoveryTimerHandle);
 	bLandingRecoveryActive = false;
 	bLandingRecoveryInputLocked = false;
+	if (!bFallTrackingActive)
+	{
+		bFallStartNotified = false;
+	}
 	ClearQueuedLandingRecoveryAction();
 }
 

@@ -73,6 +73,12 @@ bool ABAPlayerCharacter::TryStartRecoveryEscapeAction(
 
 	if (Command == EActionCommand::Dodge)
 	{
+		if (IsDodgeRecoveryEscapeState() && !CanChainDodgeRecoveryEscape())
+		{
+			ClearQueuedRecoveryEscapeAction(Command);
+			return false;
+		}
+
 		if (!CanUseRecoveryEscapeDodge())
 		{
 			QueueRecoveryEscapeAction(Command, Direction);
@@ -165,11 +171,18 @@ bool ABAPlayerCharacter::IsDodgeRecoveryEscapeState() const
 	return ActiveActionType == EActionType::DodgeRoll || ActiveActionType == EActionType::Backstep;
 }
 
+bool ABAPlayerCharacter::CanChainDodgeRecoveryEscape() const
+{
+	constexpr int32 MaxConsecutiveDodgeActions = 2;
+	return ConsecutiveDodgeActionCount < MaxConsecutiveDodgeActions;
+}
+
 bool ABAPlayerCharacter::CanUseRecoveryEscapeDodge() const
 {
 	return IsRecoveryEscapeRequiredForCurrentState()
 		&& IsRecoveryEscapeWindowOpen()
-		&& RecoveryEscapeDodgeWindowCount > 0;
+		&& RecoveryEscapeDodgeWindowCount > 0
+		&& (!IsDodgeRecoveryEscapeState() || CanChainDodgeRecoveryEscape());
 }
 
 bool ABAPlayerCharacter::CanUseRecoveryEscapeGuard() const
@@ -366,4 +379,10 @@ void ABAPlayerCharacter::ExitDodgeRecoveryForEscape()
 	{
 		SetBAPlayerState(EBAPlayerState::None);
 	}
+}
+
+void ABAPlayerCharacter::ResetConsecutiveDodgeActions()
+{
+	ConsecutiveDodgeActionCount = 0;
+	ClearQueuedRecoveryEscapeAction(EActionCommand::Dodge);
 }

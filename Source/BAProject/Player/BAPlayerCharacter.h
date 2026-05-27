@@ -480,9 +480,11 @@ private:
 	void UpdatePhaseFromInputAndGait(float DeltaTime);
 	void BeginMovementPhase(EPlayerMovementPhase NewPhase);
 	void FinishCurrentMovementPhase();
+	void ClearMovementPhase();
 	void SetActiveGaitAndSpeed(EMovementState NewGait);
 	void UpdateMaxWalkSpeed(float DeltaTime);
 	EMovementState GetMovementAllowedGait(EMovementState RequestedGait) const;
+	bool IsUseConsumableActionActive() const;
 	bool ShouldUseAnalogWalkGait(EMovementState RequestedGait) const;
 	float GetAnalogWalkInputThreshold() const;
 	float GetMoveInputScaleForActiveGait() const;
@@ -551,6 +553,7 @@ private:
 	// 낙하/착지
 	bool ShouldTrackFall() const;
 	void BeginFallTracking();
+	void UpdateFallLoopNotification(float DeltaTime);
 	void EndFallTrackingFromLanding();
 	float CalculateFallDamage(float FallDistance) const;
 	float ApplyFallDamage(float FallDistance, bool& bOutFatalFall);
@@ -656,6 +659,7 @@ private:
 	bool IsAttackRecoveryEscapeState() const;
 	bool IsDamageReactionRecoveryEscapeState() const;
 	bool IsDodgeRecoveryEscapeState() const;
+	bool CanChainDodgeRecoveryEscape() const;
 	bool CanUseRecoveryEscapeDodge() const;
 	bool CanUseRecoveryEscapeGuard() const;
 	bool CanUseRecoveryEscapeMove() const;
@@ -669,6 +673,7 @@ private:
 	void ExitAttackRecoveryForEscape(bool bKeepQueuedAttack);
 	void ExitDamageReactionRecoveryForEscape();
 	void ExitDodgeRecoveryForEscape();
+	void ResetConsecutiveDodgeActions();
 
 	UFUNCTION()
 	void HandleRespawnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
@@ -717,6 +722,10 @@ private:
 	// 약착지 입력 잠금 시작 높이
 	UPROPERTY(EditAnywhere, Category = "Movement|Falling|Recovery", meta = (ClampMin = "0.0", Units = "cm"))
 	float LandingInputLockMinFallDistance = 100.f;
+
+	// 이 높이보다 낮은 짧은 단차에서는 FallLoop 진입 이벤트를 보내지 않는다.
+	UPROPERTY(EditAnywhere, Category = "Movement|Falling", meta = (ClampMin = "0.0", Units = "cm"))
+	float FallLoopStartMinDistance = 80.f;
 
 	// 강착지 판정 시작 높이
 	UPROPERTY(EditAnywhere, Category = "Movement|Falling|Recovery", meta = (ClampMin = "0.0", Units = "cm"))
@@ -1043,6 +1052,7 @@ private:
 	bool bPerfectGuardWindowActive = false;
 	FTimerHandle GuardReleaseGraceTimerHandle;
 	bool bFallTrackingActive = false;
+	bool bFallStartNotified = false;
 	bool bLandingRecoveryActive = false;
 	bool bLandingRecoveryInputLocked = false;
 	bool bLockOnForcedStrafeActive = false;
@@ -1060,6 +1070,7 @@ private:
 	int32 RecoveryEscapeDodgeWindowCount = 0;
 	int32 RecoveryEscapeGuardWindowCount = 0;
 	int32 RecoveryEscapeMoveWindowCount = 0;
+	int32 ConsecutiveDodgeActionCount = 0;
 	EActionCommand QueuedRecoveryEscapeCommand = EActionCommand::None;
 	EActionDirection QueuedRecoveryEscapeDirection = EActionDirection::Any;
 	bool bConsumingQueuedRecoveryEscapeAction = false;
