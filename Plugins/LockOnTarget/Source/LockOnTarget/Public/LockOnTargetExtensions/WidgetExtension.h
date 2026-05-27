@@ -37,6 +37,12 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UWidgetComponent> Widget;
 
+	//----------------------------------------------------------------------//
+	UPROPERTY(Transient)
+	TObjectPtr<UWidgetComponent> HPWidget;
+	//----------------------------------------------------------------------//
+
+
 	//Stores the last async loaded widget class in memory.
 	TSharedPtr<FStreamableHandle> StreamableHandle;
 
@@ -45,6 +51,8 @@ private:
 	
 	//Whether the widget was successfully initialized or not.
 	bool bWidgetIsInitialized;
+
+
 
 public:
 

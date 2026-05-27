@@ -31,7 +31,7 @@
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Dodge-Icon-_3_.Img_Dodge-Icon-_3_",
             "PositionX": 900,
             "PositionY": 250,
-            "VideoPathString": "/Game/Movies/SkillTest.SkillTest"
+            "VideoPathString": "/Game/Movies/Test1.Test1"
         },
         {
             "SkillTid": 4,
@@ -144,7 +144,7 @@
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Invincible-Dash-_13_.Img_Invincible-Dash-_13_",
             "PositionX": 700,
             "PositionY": 500,
-            "VideoPathString": "/Game/Movies/SkillTest.SkillTest"
+            "VideoPathString": "/Game/Movies/Test2.Test2"
         },
         {
             "SkillTid": 14,

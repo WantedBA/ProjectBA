@@ -4,6 +4,7 @@
 #include "UI/DeathWIdget.h"
 #include "UI/System/SubSystemUI.h"
 #include "UI/MainHUD.h"
+#include "UI/NotifyLayer.h"
 #include "Player/BAPlayerCharacter.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -18,6 +19,14 @@ void UDeathWidget::RetryGame()
 	if (ABAPlayerCharacter* Player = Cast<ABAPlayerCharacter>(GetOwningPlayerPawn()))
 	{
 		Player->Respawn();
+	}
+
+	if (USubSystemUI* UISub = GetGameInstance()->GetSubsystem<USubSystemUI>())
+	{
+		if (UNotifyLayer* Notify = UISub->GetNotifyLayer())
+		{
+			Notify->PlayFadeEffect(true);
+		}
 	}
 
 	if (USubSystemUI* UISub = GetGameInstance()->GetSubsystem<USubSystemUI>())
