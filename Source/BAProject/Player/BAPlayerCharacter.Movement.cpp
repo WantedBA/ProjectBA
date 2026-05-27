@@ -287,6 +287,11 @@ void ABAPlayerCharacter::HandleDodgeActionStarted(
 	{
 		++ConsecutiveDodgeActionCount;
 		SetBAPlayerState(EBAPlayerState::DodgeRolling);
+		if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
+		{
+			MovementComponent->StopMovementImmediately();
+		}
+		ClearMovementPhase();
 	}
 }
 
@@ -366,6 +371,12 @@ void ABAPlayerCharacter::UpdatePhaseFromInputAndGait(const float DeltaTime)
 
 	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
 	if (MovementComponent && MovementComponent->IsFalling())
+	{
+		ClearMovementPhase();
+		return;
+	}
+
+	if (IsActionMovementLocked())
 	{
 		ClearMovementPhase();
 		return;
