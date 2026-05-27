@@ -10,7 +10,7 @@ public class BAProject : ModuleRules
 	
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "Slate", "SlateCore", "AIModule", "NavigationSystem", "Niagara", "MediaAssets", "LockOnTarget" });
 
-		PrivateDependencyModuleNames.AddRange(new string[] {  });
+		PrivateDependencyModuleNames.AddRange(new string[] { "MoviePlayer" });
 
 		PublicIncludePaths.Add(ModuleDirectory);
 
