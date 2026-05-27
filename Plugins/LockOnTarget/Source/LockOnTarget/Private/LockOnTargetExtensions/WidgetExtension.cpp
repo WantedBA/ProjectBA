@@ -39,7 +39,19 @@ void UWidgetExtension::Initialize(ULockOnTargetComponent* Instigator)
 			Widget->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			bWidgetIsInitialized = true;
 		}
+//----------------------------------------------------------------------------//
+		HPWidget = NewObject<UWidgetComponent>(this, MakeUniqueObjectName(this, UWidgetComponent::StaticClass(), TEXT("LockOnTarget_HP_WIdget")), RF_Transient);
+		
+		if (HPWidget)
+		{
+			HPWidget->RegisterComponent();
+			HPWidget->SetWidgetSpace(EWidgetSpace::Screen);
+			HPWidget->SetVisibility(false);
+			HPWidget->SetDrawAtDesiredSize(true);
+			HPWidget->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
 	}
+	//----------------------------------------------------------------------------//
 }
 
 void UWidgetExtension::Deinitialize(ULockOnTargetComponent* Instigator)
@@ -48,6 +60,12 @@ void UWidgetExtension::Deinitialize(ULockOnTargetComponent* Instigator)
 	{
 		bWidgetIsInitialized = false;
 		Widget->DestroyComponent();
+		//----------------------------------------------------------------------------//
+		if (HPWidget)
+		{
+			HPWidget->DestroyComponent();
+		}
+		//----------------------------------------------------------------------------//
 	}
 
 	if (StreamableHandle.IsValid())
@@ -78,6 +96,22 @@ void UWidgetExtension::OnTargetLocked(UTargetComponent* Target, FName Socket)
 			Widget->SetVisibility(true);
 			Widget->SetRelativeLocation(Target->WidgetRelativeOffset);
 			SetWidgetClass(Target->CustomWidgetClass.IsNull() ? DefaultWidgetClass : Target->CustomWidgetClass);
+
+			//----------------------------------------------------------------------------//
+			if (Target->bWantsDisplayHPWidget && HPWidget)
+			{
+				HPWidget->AttachToComponent(Target->GetAssociatedComponent(),
+					FAttachmentTransformRules::SnapToTargetNotIncludingScale, Target->HPWidgetSocket);
+
+				HPWidget->SetRelativeLocation(Target->HPWidgetRelativeOffset);
+
+				if (!Target->CustomHPWidgetClass.IsNull())
+				{
+					HPWidget->SetWidgetClass(Target->CustomHPWidgetClass.LoadSynchronous());
+				}
+				HPWidget->SetVisibility(true);
+			}
+			//----------------------------------------------------------------------------//
 			bWidgetIsActive = true;
 		}
 	}
@@ -91,6 +125,13 @@ void UWidgetExtension::OnTargetUnlocked(UTargetComponent* UnlockedTarget, FName 
 	{
 		Widget->SetVisibility(false);
 		Widget->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+		//----------------------------------------------------------------------------//
+		if (HPWidget)
+		{
+			HPWidget->SetVisibility(false);
+			HPWidget->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+		}
+		//----------------------------------------------------------------------------//
 		bWidgetIsActive = false;
 	}
 }

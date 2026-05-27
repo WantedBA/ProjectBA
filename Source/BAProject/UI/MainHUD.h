@@ -70,5 +70,8 @@ public:
 	// 현재 툴팁 숨기기
 	UFUNCTION(BlueprintCallable, Category = "BA|UI|Tooltip")
 	void HideTooltip();
+
+	UFUNCTION(BlueprintCallable)
+	void HideBossHPBar();
 	
 };

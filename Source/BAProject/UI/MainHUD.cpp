@@ -63,7 +63,7 @@ void UMainHUD::RequestShowTooltip(int32 InTid)
 		// 툴팁이 MainhHUD인 경우 최상단에 띄움
 		if (!TooltipInstance->IsInViewport())
 		{
-			TooltipInstance->AddToViewport(10);
+			TooltipInstance->AddToViewport(1000);
 		}
 
 		// HUD가 들고 있는 Tooltip 위젯에게 전달
@@ -77,5 +77,13 @@ void UMainHUD::HideTooltip()
 	{
 		// HUD가 들고 있는 Tooltip 위젯을 숨김
 		TooltipInstance->HideTooltip();
+	}
+}
+
+void UMainHUD::HideBossHPBar()
+{
+	if (BossHPBar)
+	{
+		BossHPBar->ResetBossBar();
 	}
 }

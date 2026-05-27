@@ -45,3 +45,21 @@ void UBossHPBar::InitializeBossBar(FText Name, float MaxHP)
 		HPBar->SetProgress(MaxHP, MaxHP);
 	}
 }
+
+void UBossHPBar::ResetBossBar()
+{
+	// 이름 텍스트 비우기
+	if (BossNameText)
+	{
+		BossNameText->SetText(FText::GetEmpty());
+	}
+
+	// 게이지 초기화
+	if (HPBar)
+	{
+		HPBar->SetProgress(0.f, 100.f);
+	}
+
+	// 화면에서 숨기기
+	SetAppearance(false);
+}
