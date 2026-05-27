@@ -1,57 +1,42 @@
-﻿// Copyright TeamBA. All Rights Reserved.
+// Copyright TeamBA. All Rights Reserved.
 
 #include "World/InvisibleWall.h"
-#include "Components/SphereComponent.h"
-#include "Player/BAPlayerCharacter.h"
 #include "Components/BoxComponent.h"
+#include "Player/BAPlayerCharacter.h"
 
 AInvisibleWall::AInvisibleWall()
 {
-    PrimaryActorTick.bCanEverTick = true;
-    PrimaryActorTick.bStartWithTickEnabled = false; // 플레이어가 근접할 때만 Tick
+    PrimaryActorTick.bCanEverTick = false;
 
-    bStartActive = true; // 일반 투명벽은 항상 활성화
+    bStartActive = true;
 
-    ProximitySphere = CreateDefaultSubobject<USphereComponent>(TEXT("ProximitySphere"));
-    ProximitySphere->SetupAttachment(GetRootComponent());
-    ProximitySphere->SetSphereRadius(FadeStartDistance);
-    ProximitySphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-    ProximitySphere->SetCollisionObjectType(ECC_WorldDynamic);
-    ProximitySphere->SetCollisionResponseToAllChannels(ECR_Ignore);
-    ProximitySphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-    ProximitySphere->SetGenerateOverlapEvents(true);
+    ProximityBox = CreateDefaultSubobject<UBoxComponent>(TEXT("ProximityBox"));
+    ProximityBox->SetupAttachment(GetRootComponent());
+    ProximityBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    ProximityBox->SetCollisionObjectType(ECC_WorldDynamic);
+    ProximityBox->SetCollisionResponseToAllChannels(ECR_Ignore);
+    ProximityBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+    ProximityBox->SetGenerateOverlapEvents(true);
+}
+
+void AInvisibleWall::OnConstruction(const FTransform& Transform)
+{
+    Super::OnConstruction(Transform); // WallMesh 크기 동기화 포함
+
+    if (ProximityBox && BlockingBox)
+    {
+        // BlockingBox 크기 + ProximityExpansion으로 감지 영역 결정.
+        // BlockingBox 크기를 바꾸면 ProximityBox도 자동으로 맞춰진다.
+        ProximityBox->SetBoxExtent(BlockingBox->GetUnscaledBoxExtent() + ProximityExpansion);
+    }
 }
 
 void AInvisibleWall::BeginPlay()
 {
     Super::BeginPlay();
 
-    ProximitySphere->SetSphereRadius(FadeStartDistance);
-    ProximitySphere->OnComponentBeginOverlap.AddDynamic(this, &AInvisibleWall::HandleProximityBegin);
-    ProximitySphere->OnComponentEndOverlap.AddDynamic(this, &AInvisibleWall::HandleProximityEnd);
-}
-
-void AInvisibleWall::Tick(float DeltaTime)
-{
-    Super::Tick(DeltaTime);
-
-    if (!TrackedActor)
-    {
-        return;
-    }
-
-    FVector ClosestPoint;
-    float Distance = BlockingBox->GetDistanceToCollision(TrackedActor->GetActorLocation(), ClosestPoint);
-    if (Distance < 0.f)
-    {
-        Distance = 0.f; // 쿼리 실패시 → 완전 표시
-    }
-
-    const float Opacity = FMath::GetMappedRangeValueClamped(
-        FVector2D(FadeStartDistance, FadeEndDistance),
-        FVector2D(0.f, 1.f),
-        Distance);
-    SetWallOpacity(Opacity);
+    ProximityBox->OnComponentBeginOverlap.AddDynamic(this, &AInvisibleWall::HandleProximityBegin);
+    ProximityBox->OnComponentEndOverlap.AddDynamic(this, &AInvisibleWall::HandleProximityEnd);
 }
 
 void AInvisibleWall::HandleProximityBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -61,18 +46,15 @@ void AInvisibleWall::HandleProximityBegin(UPrimitiveComponent* OverlappedCompone
         return;
     }
 
-    TrackedActor = OtherActor;
-    SetActorTickEnabled(true);
+    SetWallOpacity(1.f);
 }
 
 void AInvisibleWall::HandleProximityEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-    if (OtherActor != TrackedActor)
+    if (!OtherActor || !OtherActor->IsA(ABAPlayerCharacter::StaticClass()))
     {
         return;
     }
 
-    TrackedActor = nullptr;
-    SetActorTickEnabled(false);
-	SetWallOpacity(0.f); // 플레이어가 멀어지면 다시 완전히 투명하게 설정
+    SetWallOpacity(0.f);
 }
