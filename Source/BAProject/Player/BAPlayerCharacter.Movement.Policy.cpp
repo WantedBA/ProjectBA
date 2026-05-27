@@ -11,8 +11,6 @@ void ABAPlayerCharacter::SyncFreeStrafeFacingMode()
 		return;
 	}
 
-	MovementComponent->MaxWalkSpeed = GetSpeedForGait(MovementRuntime.ActiveGait);
-
 	if (MovementRuntime.ActiveGait == EMovementState::Sprint)
 	{
 		UseMovementDirectionFacing(*MovementComponent);
@@ -43,7 +41,7 @@ void ABAPlayerCharacter::UseMovementDirectionFacing(UCharacterMovementComponent&
 }
 
 // 이동 시 캐릭터 가속방향 회전 보간 처리
-void ABAPlayerCharacter::UpdateInterpolatedFacingRotation()
+void ABAPlayerCharacter::UpdateInterpolatedFacingRotation(const float DeltaTime)
 {
 	if (!ShouldUseInterpolatedFacingRotation())
 	{
@@ -57,12 +55,33 @@ void ABAPlayerCharacter::UpdateInterpolatedFacingRotation()
 	}
 
 	const FRotator CurrentRotation = GetActorRotation();
-	SetActorRotation(FRotator(CurrentRotation.Pitch, FacingDirection.Rotation().Yaw, CurrentRotation.Roll));
+	const float TargetYaw = FacingDirection.Rotation().Yaw;
+	const float NextYaw = ShouldBlendMovementFacingRotation()
+		? FMath::FixedTurn(
+			CurrentRotation.Yaw,
+			TargetYaw,
+			FMath::Max(0.f, LocomotionSettings.StrafeSprintFacingRotationRateYaw) * DeltaTime)
+		: TargetYaw;
+
+	SetActorRotation(FRotator(CurrentRotation.Pitch, NextYaw, CurrentRotation.Roll));
 }
 
 // 캐릭터 가속방향 회전 보간 처리 적용 판단
 bool ABAPlayerCharacter::ShouldUseInterpolatedFacingRotation() const
 {
+	if (MovementRuntime.CombatMode == EPlayerCombatMode::Block
+		&& MovementRuntime.LocomotionMode == EPlayerLocomotionMode::Strafe)
+	{
+		// Strafe 가드는 카메라/컨트롤러 방향을 유지한다.
+		// Free 가드는 아래 일반 Free 회전 규칙을 타서 이동 입력 방향을 바라본다.
+		return false;
+	}
+
+	if (IsActionMovementLocked())
+	{
+		return false;
+	}
+
 	if (MovementRuntime.Phase != EPlayerMovementPhase::Loop && IsMovementPhaseUsingRootMotion())
 	{
 		return false;
@@ -70,6 +89,13 @@ bool ABAPlayerCharacter::ShouldUseInterpolatedFacingRotation() const
 
 	return MovementRuntime.ActiveGait == EMovementState::Sprint
 		|| MovementRuntime.LocomotionMode == EPlayerLocomotionMode::Free;
+}
+
+// Strafe Run에서 Sprint로 넘어갈 때는 컨트롤러 yaw 기준에서 이동 방향 기준으로 부드럽게 회전한다.
+bool ABAPlayerCharacter::ShouldBlendMovementFacingRotation() const
+{
+	return MovementRuntime.LocomotionMode == EPlayerLocomotionMode::Strafe
+		&& MovementRuntime.ActiveGait == EMovementState::Sprint;
 }
 
 // Strafe는 컨트롤러 yaw를 기준으로 캐릭터 방향을 유지한다.

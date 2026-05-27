@@ -38,6 +38,9 @@ public:
     float GetTotalHeight() const { return SegmentCount * SegmentHeight; }
 
 protected:
+    virtual void BeginPlay() override;
+
+protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     TObjectPtr<USceneComponent> LadderRoot;
 
@@ -69,4 +72,10 @@ protected:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction|Ladder|UI")
     FText PromptExit = NSLOCTEXT("Ladder", "Exit", "E - 내리기");
+
+private:
+    UPROPERTY(EditAnywhere, Category = "Quest")
+    int32 LockQuestTid = 0;
+
+    bool bQuestUnlocked = false;
 };

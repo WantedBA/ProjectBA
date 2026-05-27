@@ -4,8 +4,8 @@
             "Tid": 1,
             "MaxHp": 200,
             "MaxStamina": 100,
-            "StaminaRecoveryPerSecond": 33.3333333333,
-            "StaminaRecoveryDelay": 0.15,
+            "StaminaRecoveryPerSecond": 45,
+            "StaminaRecoveryDelay": 0,
             "WalkSpeed": 180,
             "RunSpeed": 500,
             "SprintSpeed": 700,
@@ -15,7 +15,9 @@
             "LadderClimbSpeedSlow": 120,
             "LadderClimbSpeedFast": 280,
             "LadderSlideDownSpeed": 600,
-            "LadderExitClearance": 80
+            "LadderExitClearance": 80,
+            "HealCount": 3,
+            "HealAmount": 35
         }
     ]
 }

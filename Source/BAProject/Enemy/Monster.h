@@ -12,6 +12,10 @@ class BAPROJECT_API AMonster : public AEnemyBase
 public:
 	AMonster();
 
+	virtual void InitializeFromTable(int32 InTid) override;
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
+	virtual void OnDeath() override;
 };

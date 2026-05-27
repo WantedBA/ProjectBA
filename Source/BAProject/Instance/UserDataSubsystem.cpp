@@ -78,6 +78,10 @@ void UUserDataSubsystem::SetBaseStat()
 	BaseStat.LadderClimbSpeedFast = BaseStatRow->LadderClimbSpeedFast;
 	BaseStat.LadderSlideDownSpeed = BaseStatRow->LadderSlideDownSpeed;
 	BaseStat.LadderExitClearance = BaseStatRow->LadderExitClearance;
+	
+	// 회복 횟수, 회복량
+	BaseStat.HealCount = BaseStatRow->HealCount;
+	BaseStat.HealAmount = BaseStatRow->HealAmount;
 
 	UE_LOG(LogTemp, Log, TEXT("[UserDataSubsystem] BaseStat loaded."));
 }

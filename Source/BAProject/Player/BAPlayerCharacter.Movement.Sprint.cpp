@@ -2,6 +2,11 @@
 
 #include "Component/StatComponent.h"
 
+namespace
+{
+	const FName SprintStaminaRecoveryPauseSource(TEXT("Sprint"));
+}
+
 // 탈진으로 인해 Sprint 재진입이 잠겨 있는지 반환한다.
 bool ABAPlayerCharacter::IsSprintLockedAfterExhausted() const
 {
@@ -40,9 +45,8 @@ void ABAPlayerCharacter::DrainSprintStaminaDuringLoop(const float DeltaTime)
 		return;
 	}
 
-	const float CurrentStamina = StatComponent->GetCurrentStamina();
 	const float ConsumeAmount = CalculateSprintStaminaDrain(DeltaTime);
-	StatComponent->SetCurrentStamina(CurrentStamina - ConsumeAmount);
+	StatComponent->ConsumeStamina(ConsumeAmount);
 
 	LockSprintUntilRecovered();
 }
@@ -60,9 +64,37 @@ float ABAPlayerCharacter::CalculateSprintStaminaDrain(const float DeltaTime) con
 	case EActionStaminaCostType::PerSecond:
 		return StatComponent->GetMaxStamina() * SprintCostSettings.StaminaCost / 100.f * DeltaTime;
 	case EActionStaminaCostType::Instant:
-	default:
 		return SprintCostSettings.StaminaCost;
+	case EActionStaminaCostType::OnDemand:
+	default:
+		return 0.f;
 	}
+}
+
+void ABAPlayerCharacter::PauseSprintStaminaRecovery()
+{
+	if (SprintRuntime.bStaminaRecoveryPaused
+		|| !StatComponent
+		|| !SprintCostSettings.bHasActionData
+		|| SprintCostSettings.StaminaCost <= 0.f)
+	{
+		return;
+	}
+
+	StatComponent->PauseStaminaRecovery(SprintStaminaRecoveryPauseSource);
+	SprintRuntime.bStaminaRecoveryPaused = true;
+}
+
+void ABAPlayerCharacter::ResumeSprintStaminaRecovery(const bool bApplyDelay)
+{
+	if (!SprintRuntime.bStaminaRecoveryPaused || !StatComponent)
+	{
+		SprintRuntime.bStaminaRecoveryPaused = false;
+		return;
+	}
+
+	StatComponent->ResumeStaminaRecovery(SprintStaminaRecoveryPauseSource, bApplyDelay);
+	SprintRuntime.bStaminaRecoveryPaused = false;
 }
 
 // 스태미나가 0 이하가 되면 Sprint 재진입을 잠근다.

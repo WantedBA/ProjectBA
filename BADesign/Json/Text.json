@@ -62,7 +62,7 @@
         },
         {
             "TextTid": 10011,
-            "KoreanText": "오크",
+            "KoreanText": "검은기사",
             "EnglishText": "Orc"
         },
         {
@@ -74,6 +74,195 @@
             "TextTid": 10013,
             "KoreanText": "Empty",
             "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33001,
+            "KoreanText": "빠르게 이어지는 4단 콤보 공격입니다.",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33002,
+            "KoreanText": "대검을 크게 휘둘러 강력한 일격을 가합니다.",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33003,
+            "KoreanText": "빠르게 구르며 적의 공격을 피합니다.",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33004,
+            "KoreanText": "대검을 들어 전방의 공격을 방어합니다.",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33005,
+            "KoreanText": "회복 물약을 사용해 체력을 회복합니다.",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33006,
+            "KoreanText": "검에 불꽃의 힘을 부여합니다. ",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33007,
+            "KoreanText": "검에 차가운 냉기의 힘을 부여합니다. ",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33008,
+            "KoreanText": "검에 전격의 힘을 부여합니다.",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33009,
+            "KoreanText": "미구현 스킬입니다 =ㅅ=",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33010,
+            "KoreanText": "대검을 더 빠르게 휘둘러 강력한 일격을 가합니다",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33011,
+            "KoreanText": "공격속도가 증가합니다",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33012,
+            "KoreanText": "기본 공격의 마지막 타격이 강해집니다.",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33013,
+            "KoreanText": "구르지 않고 더 멋있게 회피합니다.",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33014,
+            "KoreanText": "미구현 스킬입니다 =ㅅ=",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33015,
+            "KoreanText": "스태미나 최대치가 증가합니다.",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33016,
+            "KoreanText": "스태미나 회복 속도가 증가합니다.",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33017,
+            "KoreanText": "가드 시 피해 감소율이 증가합니다.",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33018,
+            "KoreanText": "회복 물약의 회복량이 증가합니다.",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33019,
+            "KoreanText": "회복 물약의 개수가 증가합니다.",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33020,
+            "KoreanText": "(LRR) 새로운 공격 콤보를 사용합니다.",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 33021,
+            "KoreanText": "강공격이 차징 공격으로 대체됩니다.",
+            "EnglishText": "Empty"
+        },
+        {
+            "TextTid": 34001,
+            "KoreanText": "일반 공격"
+        },
+        {
+            "TextTid": 34002,
+            "KoreanText": "강공격"
+        },
+        {
+            "TextTid": 34003,
+            "KoreanText": "회피"
+        },
+        {
+            "TextTid": 34004,
+            "KoreanText": "가드"
+        },
+        {
+            "TextTid": 34005,
+            "KoreanText": "회복 물약"
+        },
+        {
+            "TextTid": 34006,
+            "KoreanText": "불 속성 강화"
+        },
+        {
+            "TextTid": 34007,
+            "KoreanText": "얼음 속성 강화"
+        },
+        {
+            "TextTid": 34008,
+            "KoreanText": "전격 속성 강화"
+        },
+        {
+            "TextTid": 34009,
+            "KoreanText": "특수공격 추가"
+        },
+        {
+            "TextTid": 34010,
+            "KoreanText": "강공격 강화"
+        },
+        {
+            "TextTid": 34011,
+            "KoreanText": "공격속도 증가"
+        },
+        {
+            "TextTid": 34012,
+            "KoreanText": "마지막 타격 강화"
+        },
+        {
+            "TextTid": 34013,
+            "KoreanText": "대시"
+        },
+        {
+            "TextTid": 34014,
+            "KoreanText": "대시 연계 공격"
+        },
+        {
+            "TextTid": 34015,
+            "KoreanText": "스태미나 최대치 증가"
+        },
+        {
+            "TextTid": 34016,
+            "KoreanText": "스태미나 회복 속도 증가"
+        },
+        {
+            "TextTid": 34017,
+            "KoreanText": "가드 시 피해 감소율 증가"
+        },
+        {
+            "TextTid": 34018,
+            "KoreanText": "회복량 증가"
+        },
+        {
+            "TextTid": 34019,
+            "KoreanText": "물약 개수 증가"
+        },
+        {
+            "TextTid": 34020,
+            "KoreanText": "연계 공격"
+        },
+        {
+            "TextTid": 34021,
+            "KoreanText": "차징 공격"
         }
     ]
 }

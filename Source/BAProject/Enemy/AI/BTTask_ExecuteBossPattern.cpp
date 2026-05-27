@@ -1,12 +1,13 @@
 #include "Enemy/AI/BTTask_ExecuteBossPattern.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
-#include "Enemy/Boss.h"
 #include "Constants/BAProjectConstant.h"
+#include "Enemy/Boss.h"
 
 UBTTask_ExecuteBossPattern::UBTTask_ExecuteBossPattern()
 {
 	NodeName = TEXT("ExecuteBossPattern");
+	bCreateNodeInstance = true;
 }
 
 EBTNodeResult::Type UBTTask_ExecuteBossPattern::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -29,18 +30,62 @@ EBTNodeResult::Type UBTTask_ExecuteBossPattern::ExecuteTask(UBehaviorTreeCompone
 		return EBTNodeResult::Failed;
 	}
 
-	int32 PatternIndex = BBComp->GetValueAsInt(BBKey::SelectedPatternIndex);
+	const int32 PatternTid = BBComp->GetValueAsInt(BBKey::SelectedPatternTid);
+	UE_LOG(LogTemp, Warning, TEXT("[BTTask_ExecuteBossPattern] ExecuteTask Tid=%d"), PatternTid);
 
-	const auto& Patterns = Boss->GetBossPatterns();
-	if (Patterns.IsValidIndex(PatternIndex))
+	if (PatternTid == 0)
 	{
-		int32 SelectedTid = Patterns[PatternIndex].Tid;
-		float CoolTime = Patterns[PatternIndex].CoolTime;
-
-		Boss->ExecuteBossPattern(SelectedTid);
-		Boss->StartPatternCooldown(SelectedTid, CoolTime);
-		return EBTNodeResult::Succeeded;
+		UE_LOG(LogTemp, Warning, TEXT("[BTTask_ExecuteBossPattern] FAILED (PatternTid=0)"));
+		return EBTNodeResult::Failed;
 	}
 
-	return EBTNodeResult::Failed;
+	CachedOwnerComp = &OwnerComp;
+	CachedBoss = Boss;
+
+	// 멤버 함수로 바인딩해야 RemoveAll(this)가 실제로 동작한다.
+	// AddLambda로 붙인 델리게이트는 바인딩 오브젝트가 없어 RemoveAll로 제거되지 않으며,
+	// 패턴을 쓸 때마다 콜백이 누적되는 버그가 된다.
+	Boss->OnAttackAnimationFinished.RemoveAll(this);
+	Boss->OnAttackAnimationFinished.AddUObject(this, &UBTTask_ExecuteBossPattern::OnAttackFinishedCallback);
+
+	// 공격을 시작하지 못하면(몽타주 로드 실패 등) OnAttackAnimationFinished가
+	// 영원히 broadcast되지 않아 이 태스크가 InProgress로 갇히고 BT 전체가 멈춘다.
+	// 실패 시 델리게이트를 정리하고 즉시 Failed로 끝내 트리 흐름을 유지한다.
+	const bool bStarted = Boss->ExecuteBossPattern(PatternTid);
+	if (!bStarted)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[BTTask_ExecuteBossPattern] ExecuteBossPattern failed to start → Failed"));
+		CleanupDelegate();
+		return EBTNodeResult::Failed;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[BTTask_ExecuteBossPattern] ExecuteBossPattern returned, awaiting Notify"));
+	return EBTNodeResult::InProgress;
+}
+
+EBTNodeResult::Type UBTTask_ExecuteBossPattern::AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+{
+	// 피격 인터럽트 등으로 트리가 이 태스크를 중단시킬 때 델리게이트 누수를 막는다.
+	CleanupDelegate();
+	return EBTNodeResult::Aborted;
+}
+
+void UBTTask_ExecuteBossPattern::OnAttackFinishedCallback(EEnemyState NewState)
+{
+	UE_LOG(LogTemp, Warning, TEXT("[BTTask_ExecuteBossPattern] OnAttackFinishedCallback, state=%d"), (int32)NewState);
+
+	CleanupDelegate();
+
+	if (CachedOwnerComp.IsValid())
+	{
+		FinishLatentTask(*CachedOwnerComp, EBTNodeResult::Succeeded);
+	}
+}
+
+void UBTTask_ExecuteBossPattern::CleanupDelegate()
+{
+	if (CachedBoss.IsValid())
+	{
+		CachedBoss->OnAttackAnimationFinished.RemoveAll(this);
+	}
 }

@@ -4,6 +4,23 @@
 #include "UI/System/PopupBase.h"
 #include "SubSystemUI.h"
 
+namespace
+{
+	FKey PopupGenericUSBControllerButton(const int32 ButtonNumber)
+	{
+		return FKey(FName(*FString::Printf(TEXT("GenericUSBController_Button%d"), ButtonNumber)));
+	}
+
+	bool IsBackKey(const FKey& Key)
+	{
+		return Key == EKeys::Escape
+			|| Key == EKeys::Three
+			|| Key == EKeys::Virtual_Back
+			|| Key == EKeys::Gamepad_FaceButton_Right
+			|| Key == PopupGenericUSBControllerButton(3);
+	}
+}
+
 UPopupBase::UPopupBase(const FObjectInitializer& ObjectInitializer)
 	:Super(ObjectInitializer)
 {
@@ -23,8 +40,7 @@ void UPopupBase::ClosePopup()
 
 FReply UPopupBase::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
-	// "ESC" 또는 "3"번이 눌렸을 경우
-	if (InKeyEvent.GetKey() == EKeys::Escape || InKeyEvent.GetKey() == EKeys::Three)
+	if (IsBackKey(InKeyEvent.GetKey()))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Key Pressed: %s"), *InKeyEvent.GetKey().ToString());
 

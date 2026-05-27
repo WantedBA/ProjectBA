@@ -16,10 +16,43 @@ class BAPROJECT_API UStatusBar : public UUserWidget
 
 public:
 	UStatusBar(const FObjectInitializer& ObjectInitializer);
+
+	// 보간 없이 특정 수치로 게이지 조절하는 함수
+	void SetProgressImmediate(float Value);
 	
 protected:
 	UPROPERTY(meta = (BindWidget))
 	class UProgressBar* Bar; // StatusBar 연결용
+
+	UPROPERTY(meta = (BindWidget))
+	class UImage* BGImage;
+
+	UPROPERTY(meta = (BindWidget))
+	class UImage* FrameImage;
+
+	// 설계 머티리얼
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "BA|UI")
+	class UMaterialInterface* BarMaterial;
+
+	// 게이지 내부 PNG
+	UPROPERTY(EditAnywhere, Category = "BA|UI")
+	class UTexture2D* GaugeTexture;
+
+	// 배경 PNG
+	UPROPERTY(EditAnywhere, Category = "BA|UI")
+	class UTexture2D* BGTexture;
+
+	// 테두리 PNG
+	UPROPERTY(EditAnywhere, Category = "BA|UI")
+	class UTexture2D* FrameTexture;
+
+	// 게이지 위치 조절 패딩
+	UPROPERTY(EditAnywhere, Category = "BA|UI")
+	FMargin BarPadding;
+
+	// 실시간 수치 조절용 머티리얼 인스턴스
+	UPROPERTY()
+	class UMaterialInstanceDynamic* BarMID;
 
 	// Bar 업데이트 여부 체크
 	bool bIsFirstUpdeta = true;
@@ -37,10 +70,16 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "BA|UI|Settings")
 	float InterpSpeed = 5.0f;
 
+
 public:
 	// Bar 퍼센트 조절
 	void SetProgress(float Current, float Max);
 
 	// 매 프레임 수치 보간하기 위한 Tick
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+
+
+protected:
+	// 에디터 및 게임 시작 시 머티리얼 적용 함수
+	virtual void NativePreConstruct() override;
 };

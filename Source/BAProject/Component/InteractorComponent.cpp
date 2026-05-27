@@ -2,6 +2,8 @@
 
 #include "InteractorComponent.h"
 #include "UI/Interaction/InteractionWidget.h"
+#include "UI/System/SubSystemUI.h"
+#include "UI/NotifyLayer.h"
 #include "Components/SphereComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "Interactable/Interactable.h"
@@ -254,7 +256,7 @@ void UInteractorComponent::SetOutline(AActor* Object, bool bEnabled) const
 
 void UInteractorComponent::ShowWidgetTarget(AActor* Target)
 {
-	APlayerController* PC = GetOwnerController();
+	/*APlayerController* PC = GetOwnerController();
 	if (!PC || !WidgetClass) return;
 
 	if (!CurrentWidget)
@@ -269,15 +271,39 @@ void UInteractorComponent::ShowWidgetTarget(AActor* Target)
 	{
 		const FText Prompt = IInteractable::Execute_GetInteractionPrompt(Target);
 		CurrentWidget->SetPrompt(Prompt);
+	}*/
+
+	if (!Target)
+	{
+		return;
+	}
+
+	// 액터에서 문구 가져오기
+	const FText Prompt = IInteractable::Execute_GetInteractionPrompt(Target);
+
+	if (USubSystemUI* UISub = GetWorld()->GetGameInstance()->GetSubsystem<USubSystemUI>())
+	{
+		if (UNotifyLayer* Notify = UISub->GetNotifyLayer())
+		{
+			Notify->SetInteractionText(true, Prompt);
+		}
 	}
 }
 
 void UInteractorComponent::HideWidget()
 {
-	if (CurrentWidget)
+	/*if (CurrentWidget)
 	{
 		CurrentWidget->RemoveFromParent();
 		CurrentWidget = nullptr;
+	}*/
+
+	if (USubSystemUI* UISub = GetWorld()->GetGameInstance()->GetSubsystem<USubSystemUI>())
+	{
+		if (UNotifyLayer* Notify = UISub->GetNotifyLayer())
+		{
+			Notify->SetInteractionText(false);
+		}
 	}
 }
 
@@ -296,13 +322,7 @@ FVector UInteractorComponent::GetInteractionLocation(AActor* Object) const
 	// 인터페이스가 정의한 위치 우선
 	const FVector Loc = IInteractable::Execute_GetInteractionLocation(Object);
 	if (!Loc.IsNearlyZero()) return Loc;
-	// fallback: AActor 또는 컴포넌트 owner의 위치
-	if (AActor* A = Cast<AActor>(Object)) return A->GetActorLocation();
-	if (UActorComponent* C = Cast<UActorComponent>(Object))
-	{
-		if (AActor* O = C->GetOwner()) return O->GetActorLocation();
-	}
-	return FVector::ZeroVector;
+	return Object->GetActorLocation();
 }
 
 APlayerController* UInteractorComponent::GetOwnerController() const

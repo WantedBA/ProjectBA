@@ -1,5 +1,7 @@
 #include "Player/BAPlayerCharacter.h"
 
+#include "Component/ActionAnimationComponent.h"
+#include "Component/ActionComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 // 컨트롤러가 요청한 보행 속도를 저장한다. 실제 적용은 공통 Movement 업데이트에서 결정한다.
@@ -11,6 +13,21 @@ void ABAPlayerCharacter::SetMovementState(const EMovementState NewState)
 // 2D 이동 입력을 저장한다. 입력의 소비는 캐릭터 Tick에서 일괄 처리한다.
 void ABAPlayerCharacter::SetMoveInputVector(const FVector2D& NewMoveInput)
 {
+	if (BAPlayerState == EBAPlayerState::Respawning || BAPlayerState == EBAPlayerState::Dead)
+	{
+		MovementRuntime.MoveInputVector = FVector2D::ZeroVector;
+		SetHasMoveInput(false);
+		return;
+	}
+
+	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (!IsDamageReacting() && MovementComponent && MovementComponent->IsFalling())
+	{
+		MovementRuntime.MoveInputVector = FVector2D::ZeroVector;
+		SetHasMoveInput(false);
+		return;
+	}
+
 	MovementRuntime.MoveInputVector = NewMoveInput;
 	if (MovementRuntime.MoveInputVector.SizeSquared() > 1.f)
 	{
@@ -23,11 +40,18 @@ void ABAPlayerCharacter::SetMoveInputVector(const FVector2D& NewMoveInput)
 // 이동 입력 유무를 설정하고 입력이 끊긴 경우 원본 입력을 초기화한다.
 void ABAPlayerCharacter::SetHasMoveInput(const bool bNewHasMoveInput)
 {
-	MovementRuntime.bHasMoveInput = bNewHasMoveInput;
+	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	MovementRuntime.bHasMoveInput = bNewHasMoveInput
+		&& BAPlayerState != EBAPlayerState::Respawning
+		&& BAPlayerState != EBAPlayerState::Dead
+		&& (IsDamageReacting() || !MovementComponent || !MovementComponent->IsFalling());
 	if (!MovementRuntime.bHasMoveInput)
 	{
 		MovementRuntime.MoveInputVector = FVector2D::ZeroVector;
+		return;
 	}
+
+	RefreshKnockDownGetUpForMoveInput();
 }
 
 // Free/Strafe 제어 방식을 변경한다.
@@ -54,10 +78,10 @@ EMovementState ABAPlayerCharacter::GetMovementState() const
 	return MovementRuntime.ActiveGait;
 }
 
-// 컨트롤러 입력이 요청한 Walk/Run/Sprint를 반환한다.
+// AnimBP가 사용할 Walk/Run/Sprint를 반환한다.
 EMovementState ABAPlayerCharacter::GetDesiredMovementState() const
 {
-	return MovementRuntime.DesiredGait;
+	return GetMovementAllowedGait(MovementRuntime.DesiredGait);
 }
 
 // 현재 Free/Strafe 제어 방식을 반환한다.
@@ -78,6 +102,52 @@ EPlayerCombatMode ABAPlayerCharacter::GetCombatMode() const
 	return MovementRuntime.CombatMode;
 }
 
+// 가드 액션 중 이동 입력을 허용할지 반환한다.
+// 방어 판정은 GuardWindow에서만 열리지만, 이동 중 가드는 하체 locomotion을 유지한다.
+bool ABAPlayerCharacter::CanMoveWhileGuarding() const
+{
+	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (!ActionComponent
+		|| !IsAlive()
+		|| IsDamageReacting()
+		|| bLandingRecoveryActive
+		|| IsOnLadder()
+		|| (MovementComponent && MovementComponent->IsFalling()))
+	{
+		return false;
+	}
+
+	if (ActionComponent->GetActiveActionType() != EActionType::Guard)
+	{
+		return false;
+	}
+
+	// 방어 판정은 가드 윈도우가 열릴 때만 유효하다.
+	// 이동은 별도 정책이므로, 걷는 중 가드를 누른 경우 Start부터 Walk locomotion을 유지한다.
+	// 가드 성공 넉백처럼 입력이 아닌 속도는 상체 가드 이동으로 취급하지 않는다.
+	return MovementRuntime.bHasMoveInput
+		|| (!MovementRuntime.bSuppressVelocityFacingUntilMoveInput && GetGroundSpeed() > 5.f);
+}
+
+// AnimBP에서 GuardFullBody/GuardUpperBody 슬롯을 고르기 위한 포즈 분기 전용 값.
+// 이동 중 가드는 Loop 단일 몽타주도 하체 locomotion 위에 상체 가드만 얹혀야 하므로 가드 윈도우 여부와 분리한다.
+bool ABAPlayerCharacter::ShouldUseUpperBodyGuardPose() const
+{
+	if (!ActionComponent || !IsAlive() || IsDamageReacting() || bLandingRecoveryActive || IsOnLadder())
+	{
+		return false;
+	}
+
+	if (ActionComponent->GetActiveActionType() != EActionType::Guard)
+	{
+		return false;
+	}
+
+	// AnimBP 슬롯 선택도 이동 허용과 같은 기준을 쓴다.
+	// 걷는 중 가드를 누르면 Start/Loop/End 전부 하체 locomotion 위에 상체 가드만 얹혀야 한다.
+	return CanMoveWhileGuarding();
+}
+
 // 현재 이동 입력이 존재하는지 반환한다.
 bool ABAPlayerCharacter::HasMoveInput() const
 {
@@ -93,7 +163,10 @@ FVector2D ABAPlayerCharacter::GetMoveInputVector() const
 // 현재 이동 입력을 컨트롤 yaw 기준 월드 방향으로 변환한다.
 FVector ABAPlayerCharacter::GetMoveInputWorldDirection() const
 {
-	if (!MovementRuntime.bHasMoveInput)
+	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (!MovementRuntime.bHasMoveInput
+		|| IsActionMovementLocked()
+		|| (MovementComponent && MovementComponent->IsFalling()))
 	{
 		return FVector::ZeroVector;
 	}
@@ -175,14 +248,155 @@ void ABAPlayerCharacter::CompleteMovementPhaseAnimation(const EPlayerMovementPha
 	FinishCurrentMovementPhase();
 }
 
+void ABAPlayerCharacter::BindDodgeActionCallbacks()
+{
+	if (ActionComponent)
+	{
+		ActionComponent->OnActionStarted.AddUniqueDynamic(this, &ABAPlayerCharacter::HandleDodgeActionStarted);
+		ActionComponent->OnActionCompleted.AddUniqueDynamic(this, &ABAPlayerCharacter::HandleDodgeActionCompleted);
+		ActionComponent->ResolveBufferedActionDirection.BindUObject(
+			this,
+			&ABAPlayerCharacter::ResolveBufferedActionDirection);
+	}
+
+	if (ActionAnimationComponent)
+	{
+		ActionAnimationComponent->ResolveActionAnimationDirection.BindUObject(
+			this,
+			&ABAPlayerCharacter::ResolveActionAnimationDirection);
+		ActionAnimationComponent->ResolveActionOrientationDirection.BindUObject(
+			this,
+			&ABAPlayerCharacter::ResolveActionOrientationDirection);
+		ActionAnimationComponent->ResolveActionStartSection.BindUObject(
+			this,
+			&ABAPlayerCharacter::ResolveActionStartSection);
+		ActionAnimationComponent->OnActionMontageEnded.AddUniqueDynamic(this, &ABAPlayerCharacter::HandleDodgeActionMontageEnded);
+	}
+}
+
+void ABAPlayerCharacter::HandleDodgeActionStarted(
+	const int32 ActionTid,
+	const EActionType ActionType)
+{
+	if (IsDamageReacting())
+	{
+		if (ActionComponent)
+		{
+			ActionComponent->CancelCurrentAction();
+		}
+		return;
+	}
+
+	if (IsDodgeAction(ActionType))
+	{
+		++ConsecutiveDodgeActionCount;
+		ActiveDodgeChainActionTid = ActionTid;
+		SetBAPlayerState(EBAPlayerState::DodgeRolling);
+		if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
+		{
+			MovementComponent->StopMovementImmediately();
+		}
+		ClearMovementPhase();
+	}
+}
+
+void ABAPlayerCharacter::HandleDodgeActionCompleted(
+	const int32 ActionTid,
+	const EActionType ActionType)
+{
+	if (!IsTrackedDodgeAction(ActionTid, ActionType))
+	{
+		return;
+	}
+
+	ActiveDodgeChainActionTid = 0;
+	if (bCompletingDodgeForRecoveryEscape)
+	{
+		return;
+	}
+
+	if (BAPlayerState == EBAPlayerState::DodgeRolling)
+	{
+		SetBAPlayerState(EBAPlayerState::None);
+	}
+	ResetConsecutiveDodgeActions();
+
+	if (MovementRuntime.bHasMoveInput)
+	{
+		if (const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+			!MovementComponent || !MovementComponent->IsFalling())
+		{
+			const EMovementState AllowedGait = GetMovementAllowedGait(MovementRuntime.DesiredGait);
+			if (AllowedGait != MovementRuntime.ActiveGait)
+			{
+				SetActiveGaitAndSpeed(AllowedGait);
+			}
+
+			SnapInterpolatedMoveInputTo(MovementRuntime.MoveInputVector);
+			BeginMovementPhase(EPlayerMovementPhase::Loop);
+		}
+	}
+}
+
+void ABAPlayerCharacter::HandleDodgeActionMontageEnded(
+	const int32 ActionTid,
+	const EActionType ActionType,
+	UAnimMontage* /*Montage*/,
+	const bool bInterrupted)
+{
+	const bool bEndedDodgeAction = IsTrackedDodgeAction(ActionTid, ActionType);
+	if (!bEndedDodgeAction)
+	{
+		return;
+	}
+
+	if (!bInterrupted)
+	{
+		if (BAPlayerState == EBAPlayerState::DodgeRolling)
+		{
+			SetBAPlayerState(EBAPlayerState::None);
+		}
+		ResetConsecutiveDodgeActions();
+	}
+
+	if (!MovementRuntime.bHasMoveInput)
+	{
+		MovementRuntime.bSuppressVelocityFacingUntilMoveInput = true;
+		SnapInterpolatedMoveInputTo(FVector2D::ZeroVector);
+	}
+
+	ApplyPendingLockOnStrafeMode();
+}
+
+bool ABAPlayerCharacter::IsTrackedDodgeAction(const int32 ActionTid, const EActionType ActionType) const
+{
+	return ActionTid == ActiveDodgeChainActionTid || IsDodgeAction(ActionType);
+}
+
+bool ABAPlayerCharacter::IsDodgeAction(const EActionType ActionType) const
+{
+	return ActionType == EActionType::DodgeRoll
+		|| ActionType == EActionType::Backstep
+		|| (ActionComponent && ActionComponent->GetActiveActionCommand() == EActionCommand::Dodge);
+}
+
+bool ABAPlayerCharacter::ShouldUseDodgeChainStartSection(const EActionType ActionType) const
+{
+	return bUseChainStartForNextDodgeAction
+		&& IsDodgeAction(ActionType)
+		&& !DodgeChainStartSection.IsNone();
+}
+
 // Movement 전체를 갱신한다.
 void ABAPlayerCharacter::TickMovementRuntime(const float DeltaTime)
 {
 	UnlockSprintAfterRecovery();
+	UpdateFallLoopNotification(DeltaTime);
 	UpdateInterpolatedMoveInputDirection(DeltaTime);
 	UpdatePhaseFromInputAndGait(DeltaTime);
+	UpdateMaxWalkSpeed(DeltaTime);
 	SyncFreeStrafeFacingMode();
-	UpdateInterpolatedFacingRotation();
+	UpdateInterpolatedFacingRotation(DeltaTime);
 	ApplyBufferedMoveInput();
 	DrainSprintStaminaDuringLoop(DeltaTime);
 }
@@ -192,7 +406,38 @@ void ABAPlayerCharacter::UpdatePhaseFromInputAndGait(const float DeltaTime)
 {
 	MovementRuntime.PhaseElapsedTime += DeltaTime;
 
-	const EMovementState AllowedGait = GetStaminaAllowedGait(MovementRuntime.DesiredGait);
+	if (BAPlayerState == EBAPlayerState::Respawning || BAPlayerState == EBAPlayerState::Dead)
+	{
+		ClearMovementPhase();
+		return;
+	}
+
+	if (DamageReactionState == EPlayerDamageReactionState::KnockDown)
+	{
+		ClearMovementPhase();
+		return;
+	}
+
+	if (bLandingRecoveryActive)
+	{
+		ClearMovementPhase();
+		return;
+	}
+
+	const UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (MovementComponent && MovementComponent->IsFalling())
+	{
+		ClearMovementPhase();
+		return;
+	}
+
+	if (IsActionMovementLocked())
+	{
+		ClearMovementPhase();
+		return;
+	}
+
+	const EMovementState AllowedGait = GetMovementAllowedGait(MovementRuntime.DesiredGait);
 	if (AllowedGait != MovementRuntime.ActiveGait)
 	{
 		SetActiveGaitAndSpeed(AllowedGait);
@@ -296,25 +541,123 @@ void ABAPlayerCharacter::FinishCurrentMovementPhase()
 	}
 }
 
+void ABAPlayerCharacter::ClearMovementPhase()
+{
+	MovementRuntime.Phase = EPlayerMovementPhase::None;
+	MovementRuntime.PhaseElapsedTime = 0.f;
+	MovementRuntime.bWaitingForPhaseAnimation = false;
+}
+
 // 실제 적용 중인 Gait를 바꾸고 MovementComponent 속도를 갱신한다.
 void ABAPlayerCharacter::SetActiveGaitAndSpeed(const EMovementState NewGait)
 {
+	const EMovementState PreviousGait = MovementRuntime.ActiveGait;
 	MovementRuntime.ActiveGait = NewGait;
-	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
+	MovementRuntime.TargetMaxWalkSpeed = GetSpeedForGait(NewGait);
+
+	if (PreviousGait == NewGait)
 	{
-		MovementComponent->MaxWalkSpeed = GetSpeedForGait(NewGait);
+		return;
+	}
+
+	if (NewGait == EMovementState::Sprint)
+	{
+		PauseSprintStaminaRecovery();
+	}
+	else if (PreviousGait == EMovementState::Sprint)
+	{
+		ResumeSprintStaminaRecovery(true);
 	}
 }
 
-// Sprint 가능 여부를 반영해 실제 허용 Gait를 반환한다.
-EMovementState ABAPlayerCharacter::GetStaminaAllowedGait(const EMovementState RequestedGait) const
+// 실제 MaxWalkSpeed는 gait 변경을 바로 따라가지 않고 보간해 Run/Sprint 전환 충격을 줄인다.
+void ABAPlayerCharacter::UpdateMaxWalkSpeed(const float DeltaTime)
 {
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (!MovementComponent)
+	{
+		return;
+	}
+
+	const float TargetSpeed = GetSpeedForGait(MovementRuntime.ActiveGait);
+	MovementRuntime.TargetMaxWalkSpeed = TargetSpeed;
+
+	if (MovementRuntime.CurrentMaxWalkSpeed <= 0.f || DeltaTime <= 0.f)
+	{
+		MovementRuntime.CurrentMaxWalkSpeed = TargetSpeed;
+		MovementComponent->MaxWalkSpeed = MovementRuntime.CurrentMaxWalkSpeed;
+		return;
+	}
+
+	if (FMath::IsNearlyEqual(MovementRuntime.CurrentMaxWalkSpeed, TargetSpeed, 1.f))
+	{
+		MovementRuntime.CurrentMaxWalkSpeed = TargetSpeed;
+	}
+	else
+	{
+		const bool bSpeedingUp = TargetSpeed > MovementRuntime.CurrentMaxWalkSpeed;
+		const float InterpRate = bSpeedingUp
+			? SpeedSettings.SpeedUpInterpRate
+			: SpeedSettings.SlowDownInterpRate;
+		MovementRuntime.CurrentMaxWalkSpeed = InterpRate <= 0.f
+			? TargetSpeed
+			: FMath::FInterpTo(MovementRuntime.CurrentMaxWalkSpeed, TargetSpeed, DeltaTime, InterpRate);
+	}
+
+	MovementComponent->MaxWalkSpeed = MovementRuntime.CurrentMaxWalkSpeed;
+}
+
+// 가드/스태미너 정책을 반영해 실제 허용 Gait를 반환한다.
+EMovementState ABAPlayerCharacter::GetMovementAllowedGait(const EMovementState RequestedGait) const
+{
+	if (CanMoveWhileGuarding())
+	{
+		// 가드 중 이동은 허용하되 전투 템포를 위해 항상 Walk로 제한한다.
+		return EMovementState::Walk;
+	}
+
+	if (IsUseConsumableActionActive())
+	{
+		return EMovementState::Walk;
+	}
+
 	if (RequestedGait == EMovementState::Sprint && !IsSprintAllowedByStamina())
 	{
 		return EMovementState::Run;
 	}
 
+	if (ShouldUseAnalogWalkGait(RequestedGait))
+	{
+		return EMovementState::Walk;
+	}
+
 	return RequestedGait;
+}
+
+bool ABAPlayerCharacter::IsUseConsumableActionActive() const
+{
+	return ActionComponent && ActionComponent->GetActiveActionType() == EActionType::UseConsumable;
+}
+
+bool ABAPlayerCharacter::ShouldUseAnalogWalkGait(const EMovementState RequestedGait) const
+{
+	if (RequestedGait != EMovementState::Run || !MovementRuntime.bHasMoveInput)
+	{
+		return false;
+	}
+
+	const float InputSize = MovementRuntime.MoveInputVector.Size();
+	return InputSize > KINDA_SMALL_NUMBER && InputSize <= GetAnalogWalkInputThreshold();
+}
+
+float ABAPlayerCharacter::GetAnalogWalkInputThreshold() const
+{
+	return FMath::Clamp(AnalogWalkInputThreshold, 0.05f, 1.f);
+}
+
+float ABAPlayerCharacter::GetMoveInputScaleForActiveGait() const
+{
+	return MovementRuntime.bHasMoveInput ? 1.f : 0.f;
 }
 
 // Gait별 Phase 설정을 반환한다.

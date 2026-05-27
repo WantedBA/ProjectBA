@@ -11,7 +11,9 @@
 			"AdditionalDependencies": [
 				"UMG",
 				"Engine",
-				"AIModule"
+				"AIModule",
+				"Niagara",
+				"DeveloperSettings"
 			]
 		},
 		{
@@ -31,6 +33,14 @@
 		{
 			"Name": "VisualStudioCodeSourceCodeAccess",
 			"Enabled": false
+		},
+		{
+			"Name": "LockOnTarget",
+			"Enabled": true
+		},
+		{
+			"Name": "RawInput",
+			"Enabled": true
 		}
 	]
 }

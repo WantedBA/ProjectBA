@@ -34,9 +34,27 @@ bool UBTDecorator_CheckPatternRange::CalculateRawConditionValue(UBehaviorTreeCom
 		return false;
 	}
 
-	float TargetDist = BBComp->GetValueAsFloat(BBKey::TargetDistance);
-	float Distance = FVector::Dist(Boss->GetActorLocation(), Target->GetActorLocation());
+	// 블랙보드에서 실시간 거리와 선택된 패턴의 사거리를 가져옴
+	float CurrentDistance = BBComp->GetValueAsFloat(BBKey::TargetDistance);
+	float PatternRange = BBComp->GetValueAsFloat(BBKey::SelectedPatternIdealRange);
+	if (PatternRange <= 0.0f)
+	{
+		// 패턴 미선택 시 공용 AttackRange로 fallback
+		PatternRange = BBComp->GetValueAsFloat(BBKey::AttackRange);
+	}
 
-	// [수정] 현재 거리가 목표 사거리보다 '멀 때' 이 시퀀스(이동)를 실행함
-	return Distance > (TargetDist + AcceptanceRadius);
+	if (Condition == ERangeCondition::Greater)
+	{
+		// 추적 조건: 현재 거리가 사거리보다 멀 때
+		return CurrentDistance > (PatternRange + AcceptanceRadius);
+	}
+	else
+	{
+		// 공격 조건: ImmediateAttackRange 이하면 IdealRange 무관하게 통과
+		if (CurrentDistance <= ImmediateAttackRange)
+		{
+			return true;
+		}
+		return CurrentDistance <= (PatternRange + AcceptanceRadius);
+	}
 }

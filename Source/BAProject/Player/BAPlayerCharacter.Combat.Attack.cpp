@@ -1,0 +1,535 @@
+﻿#include "BAPlayerCharacter.h"
+#include "Animation/AnimInstance.h"
+#include "Component/ActionComponent.h"
+#include "Component/CombatComponent.h"
+#include "Component/PlayerWeaponVFX.h"
+#include "Component/StatComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Enemy/EnemyBase.h"
+#include "Tables/ActionRows.h"
+#include "Tables/BATableManager.h"
+#include "TimerManager.h"
+
+namespace
+{
+	const FName AttackStaminaRecoveryPauseSource(TEXT("AttackMontage"));
+}
+
+void ABAPlayerCharacter::BindAttackCallbacks()
+{
+	if (CombatComponent)
+	{
+		CombatComponent->OnDamageResolved.AddUObject(this, &ABAPlayerCharacter::HandleAttackDamageResolved);
+	}
+}
+
+void ABAPlayerCharacter::HandleAttackDamageResolved(
+	AActor* Victim,
+	const FHitResult& /*HitResult*/,
+	const float AppliedDamage)
+{
+	if (ShouldTriggerAttackHitStop(Victim, AppliedDamage))
+	{
+		StartAttackHitStop();
+	}
+}
+
+bool ABAPlayerCharacter::ShouldTriggerAttackHitStop(const AActor* Victim, const float AppliedDamage) const
+{
+	const AEnemyBase* EnemyVictim = Cast<AEnemyBase>(Victim);
+	return AttackHitStopDuration > 0.f
+		&& AppliedDamage > 0.f
+		&& EnemyVictim
+		&& !EnemyVictim->IsDead()
+		&& ActiveAttackMontage != nullptr;
+}
+
+void ABAPlayerCharacter::StartAttackHitStop()
+{
+	if (AttackHitStopDuration <= 0.f || !ActiveAttackMontage)
+	{
+		return;
+	}
+
+	if (HitStopPausedMontage && AttackHitStopPlaybackId == ActiveAttackPlaybackId)
+	{
+		FTimerDelegate ResumeDelegate;
+		ResumeDelegate.BindUObject(this, &ABAPlayerCharacter::FinishAttackHitStop, AttackHitStopPlaybackId);
+		GetWorldTimerManager().ClearTimer(AttackHitStopTimerHandle);
+		GetWorldTimerManager().SetTimer(AttackHitStopTimerHandle, ResumeDelegate, AttackHitStopDuration, false);
+		return;
+	}
+	ClearAttackHitStop(false);
+
+	USkeletalMeshComponent* MeshComponent = GetMesh();
+	UAnimInstance* AnimInstance = MeshComponent ? MeshComponent->GetAnimInstance() : nullptr;
+	if (!AnimInstance || !AnimInstance->Montage_IsPlaying(ActiveAttackMontage))
+	{
+		return;
+	}
+
+	HitStopPausedMontage = ActiveAttackMontage;
+	AttackHitStopPlaybackId = ActiveAttackPlaybackId;
+	AnimInstance->Montage_Pause(ActiveAttackMontage);
+
+	FTimerDelegate ResumeDelegate;
+	ResumeDelegate.BindUObject(this, &ABAPlayerCharacter::FinishAttackHitStop, AttackHitStopPlaybackId);
+	GetWorldTimerManager().SetTimer(AttackHitStopTimerHandle, ResumeDelegate, AttackHitStopDuration, false);
+}
+
+void ABAPlayerCharacter::FinishAttackHitStop(const int32 PlaybackId)
+{
+	if (PlaybackId != ActiveAttackPlaybackId || !HitStopPausedMontage)
+	{
+		ClearAttackHitStop(false);
+		return;
+	}
+
+	UAnimMontage* MontageToResume = HitStopPausedMontage;
+	HitStopPausedMontage = nullptr;
+	AttackHitStopPlaybackId = 0;
+	GetWorldTimerManager().ClearTimer(AttackHitStopTimerHandle);
+
+	if (USkeletalMeshComponent* MeshComponent = GetMesh())
+	{
+		if (UAnimInstance* AnimInstance = MeshComponent->GetAnimInstance())
+		{
+			AnimInstance->Montage_Resume(MontageToResume);
+		}
+	}
+}
+
+void ABAPlayerCharacter::ClearAttackHitStop(const bool bResumePausedMontage)
+{
+	GetWorldTimerManager().ClearTimer(AttackHitStopTimerHandle);
+
+	UAnimMontage* MontageToResume = HitStopPausedMontage;
+	HitStopPausedMontage = nullptr;
+	AttackHitStopPlaybackId = 0;
+
+	if (!bResumePausedMontage || !MontageToResume)
+	{
+		return;
+	}
+
+	if (USkeletalMeshComponent* MeshComponent = GetMesh())
+	{
+		if (UAnimInstance* AnimInstance = MeshComponent->GetAnimInstance())
+		{
+			AnimInstance->Montage_Resume(MontageToResume);
+		}
+	}
+}
+
+// 공격 입력 진입점
+void ABAPlayerCharacter::TryAttack(EActionCommand InActionCommand)
+{
+	UE_LOG(LogTemp, Log, TEXT("Player TryAttack Command: %hhd"), InActionCommand);
+
+	if (BAPlayerState == EBAPlayerState::Attacking && !IsActiveAttackMontagePlaying())
+	{
+		ClearAttackRuntimeState();
+		SetBAPlayerState(EBAPlayerState::None);
+	}
+
+	if (!ResolveLandingRecoveryBeforeAction(InActionCommand))
+	{
+		return;
+	}
+
+	if (!CanAcceptActionInput())
+	{
+		return;
+	}
+
+	switch (BAPlayerState)
+	{
+	// 공격 커맨드 무시
+	case EBAPlayerState::Dead:
+	case EBAPlayerState::HitReacting:
+	case EBAPlayerState::KnockedDown:
+	case EBAPlayerState::Respawning:
+		return;
+		break;
+	// 다음 공격 저장
+	case EBAPlayerState::Attacking:
+	case EBAPlayerState::DodgeRolling:
+		SetNextCombo(InActionCommand);
+		break;
+	// 공격 바로 실행
+	case EBAPlayerState::Guarding:
+	case EBAPlayerState::Moving:
+	case EBAPlayerState::None:
+	default:
+		if (InActionCommand == EActionCommand::LightAttack)
+		{
+			CancelGuardForActionInterrupt();
+			SetNextCombo(InActionCommand);
+			if (NextAttackMontage)
+			{
+				StartAttack(NextAttackMontage);
+			}
+		}
+		else if (InActionCommand == EActionCommand::HeavyAttack)
+		{
+			CancelGuardForActionInterrupt();
+			SetNextCombo(InActionCommand);
+			if (NextAttackMontage)
+			{
+				StartAttack(NextAttackMontage);
+			}
+		}
+	}
+}
+
+void ABAPlayerCharacter::ChargeAttackStart()
+{
+	bIsBeforeCharge = true;
+}
+
+void ABAPlayerCharacter::ChargeLoopStart(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
+{
+	// 루프를 돌 적당한 애니메이션이 없어서 그냥 일시정지로 구현함
+	// 몽타주에 설정된 AN_ChargeStart에서 호출됨
+	bIsBeforeCharge = false;
+	
+	if (bIsChargeInputCompleted)
+	{
+		// 이 함수가 호출되기 전에 이미 우클릭이 끝난 상태
+		bIsChargeInputCompleted = false;
+		return;
+	}
+	
+	UAnimInstance* AnimInstance = MeshComp->GetAnimInstance();
+	if (!AnimInstance)
+	{
+		return;
+	}
+	UAnimMontage* Montage = Cast<UAnimMontage>(Animation);
+	if (!Montage)
+	{
+		Montage = AnimInstance->GetCurrentActiveMontage();
+		UE_LOG(LogTemp, Warning, TEXT("[ABAPlayerCharacter::ChargeLoopStart] AnimNotify에서 넘겨준 몽타주가 비어 있습니다."))
+	}
+
+	if (Montage)
+	{
+		bIsCharging = true;
+		AnimInstance->Montage_Pause(Montage);
+		PausedMontage = Montage;
+		
+
+		
+		GetWorldTimerManager().ClearTimer(ChargeAttackTimerHandle);
+		GetWorldTimerManager().SetTimer(
+			ChargeAttackTimerHandle, this, &ABAPlayerCharacter::ChargeAttackCompleted, MaxChargeTime, false);
+	}
+}
+
+void ABAPlayerCharacter::ChargeAttackCompleted()
+{
+	if (!bIsCharging)
+	{
+		if (bIsBeforeCharge)
+		{
+			bIsChargeInputCompleted = true;
+		}
+		return;
+	}
+	
+	bIsCharging = false;
+	
+	if (!PausedMontage)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PausedMontage is nullptr when ChargeAttackCompleted is called"));
+		return;
+	}
+	
+	// 차징 시간
+	float FinalChargeTime = GetWorldTimerManager().GetTimerElapsed(ChargeAttackTimerHandle);
+	UE_LOG(LogTemp, Log, TEXT("ChargeAttackCompleted - FinalChargeTime: %f"), FinalChargeTime);
+	
+	// 차징 공격 대미지 설정
+	UBATableManager* TableManager = UBATableManager::Get(this);
+	const FComboTransitionRow* NowCombo = TableManager->FindComboTransition(NowComboTransitionTid);
+	CombatComponent->SetAttackData(
+		WeaponRadius,
+		StatComponent->GetAttack() * NowCombo->DamageCoefficient * (1.f + FinalChargeTime),
+		NAME_None,
+		NAME_None,
+		EBADamageReactionType::HitReact,
+		0.f,
+		0.f);
+	
+	GetMesh()->GetAnimInstance()->Montage_Resume(PausedMontage);
+	StopChargeEffect();
+}
+
+void ABAPlayerCharacter::StopChargeEffect()
+{
+	GetWorldTimerManager().ClearTimer(ChargeAttackTimerHandle);
+	
+	// 차징 중 중간에 끊기거나, 정상적으로 차징이 완료되어 후딜 실행 중일 때
+	// ChargeLoopStart 뒷부분에 차징 중 표시할 이펙트 작성하고, 여기서 중단하면 됩니다
+	PausedMontage = nullptr;
+}
+
+void ABAPlayerCharacter::OnAttackMontageEnded(
+	UAnimMontage* AnimMontage,
+	const bool bInterrupted,
+	const int32 PlaybackId)
+{
+	// 차징 공격 중간에 외부에서 끊긴 경우
+	if (bIsCharging)
+	{
+		StopChargeEffect();
+		bIsCharging = false;
+	}
+
+	if (PlaybackId != ActiveAttackPlaybackId || AnimMontage != ActiveAttackMontage)
+	{
+		return;
+	}
+
+	ClearAttackRuntimeState();
+	if (BAPlayerState == EBAPlayerState::Attacking)
+	{
+		SetBAPlayerState(EBAPlayerState::None);
+	}
+	
+	// 공격 몽타주가 중간에 끊긴 경우
+	if (bInterrupted && BAPlayerState != EBAPlayerState::Attacking)
+	{
+		NowComboTransitionTid = 0;
+	}
+
+	// Collision의 NotifyEnd가 호출되지 않았을 수 있음
+	if (PlayerWeaponVFX)
+	{
+		PlayerWeaponVFX->DeactivateTrailNiagara();
+	}
+}
+
+void ABAPlayerCharacter::StartAttack(UAnimMontage* InAnimMontage)
+{
+	ClearRecoveryEscapeWindow();
+
+	const UBATableManager* TableManager = UBATableManager::Get(this);
+	if (!TableManager || !InAnimMontage || NextComboTransitionTid == 0)
+	{
+		ClearAttackRuntimeState();
+		return;
+	}
+	
+	NowComboTransitionTid = NextComboTransitionTid;
+	NextComboTransitionTid = 0;
+	NextAttackMontage = nullptr;
+	const EActionType AttackActionType = NextAttackActionType;
+	NextAttackActionType = EActionType::None;
+	
+	const FComboTransitionRow* NowCombo = TableManager->FindComboTransition(NowComboTransitionTid);
+	if (!NowCombo)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to find combo transition row with tid: %d"), NowComboTransitionTid);
+		ClearAttackRuntimeState();
+		return;
+	}
+	
+	// 대미지 설정
+	CombatComponent->SetAttackData(
+		WeaponRadius,
+		StatComponent->GetAttack() * NowCombo->DamageCoefficient,
+		NAME_None,
+		NAME_None,
+		EBADamageReactionType::HitReact,
+		0.f,
+		0.f);
+	
+	// 재생 속도 : 테이블에 정의된 몽타주 재생 속도 * 공격 속도
+	const float MontagePlayRate = NowCombo->PlayRate * StatComponent->GetAttackSpeed();
+	UAnimInstance* AnimInstance = GetMesh() ? GetMesh()->GetAnimInstance() : nullptr;
+	if (!AnimInstance)
+	{
+		ClearAttackRuntimeState();
+		return;
+	}
+
+	const int32 PlaybackId = NextAttackPlaybackId++;
+	ActiveAttackPlaybackId = PlaybackId;
+	ActiveAttackMontage = InAnimMontage;
+	const float PlayedDuration = PlayAnimMontage(InAnimMontage, MontagePlayRate);
+	if (PlayedDuration <= 0.f)
+	{
+		ClearAttackRuntimeState();
+		if (BAPlayerState == EBAPlayerState::Attacking)
+		{
+			SetBAPlayerState(EBAPlayerState::None);
+		}
+		return;
+	}
+
+	SetBAPlayerState(EBAPlayerState::Attacking);
+
+	// 스태미나 소모
+	if (ActionComponent)
+	{
+		const bool bConsumedStamina = ActionComponent->ConsumeActionStartStaminaCostByType(
+			AttackActionType,
+			1.f,
+			false);
+		if (bConsumedStamina && StatComponent)
+		{
+			StatComponent->PauseStaminaRecovery(AttackStaminaRecoveryPauseSource);
+		}
+	}
+
+	FOnMontageEnded MontageEnded;
+	MontageEnded.BindUObject(this, &ABAPlayerCharacter::OnAttackMontageEnded, PlaybackId);
+	AnimInstance->Montage_SetEndDelegate(MontageEnded, InAnimMontage);
+}
+
+void ABAPlayerCharacter::SetNextCombo(EActionCommand InActionCommand)
+{
+	const UBATableManager* TableManager = UBATableManager::Get(this);
+	if (!TableManager)
+	{
+		return;
+	}
+
+	NextComboTransitionTid = 0;
+	NextAttackMontage = nullptr;
+	NextAttackActionType = EActionType::None;
+	
+	// 다음 콤보 Tid 찾기
+	// 스킬로 오버라이드된 콤보가 있는지 확인
+	const int64 OverrideKey = MakeComboOverrideKey(NowComboTransitionTid, InActionCommand);
+	if (const int32* OverrideTid = ComboTransitionOverrides.Find(OverrideKey))
+	{
+		NextComboTransitionTid = *OverrideTid;
+	}
+	else
+	{
+		// 현재 실행 중인 액션
+		const FComboTransitionRow* NowComboTransition = 
+			TableManager->FindComboTransition(NowComboTransitionTid);
+		
+		// 현재 액션과 입력 커맨드로 다음 액션 탐색
+		if (InActionCommand == EActionCommand::LightAttack)
+		{
+			NextComboTransitionTid = NowComboTransition->NextOnL;
+		}
+		else if (InActionCommand == EActionCommand::HeavyAttack)
+		{
+			NextComboTransitionTid = NowComboTransition->NextOnR;
+		}
+		
+		// 다음 콤보가 없는 경우
+		if (NextComboTransitionTid == 0)
+		{
+			NowComboTransitionTid = 0;
+			NowComboTransition = TableManager->FindComboTransition(NowComboTransitionTid);
+			if (InActionCommand == EActionCommand::LightAttack)
+			{
+				NextComboTransitionTid = NowComboTransition->NextOnL;
+			}
+			else if (InActionCommand == EActionCommand::HeavyAttack)
+			{
+				NextComboTransitionTid = NowComboTransition->NextOnR;
+			}
+			// SetNextCombo(InActionCommand);
+			// return;
+		}
+	}
+	
+	// 설정된 Tid에서 다음 몽타주 탐색
+	const FComboTransitionRow* NextComboTransition = 
+		TableManager->FindComboTransition(NextComboTransitionTid);
+	
+	if (!NextComboTransition)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ABAPlayerCharacter::SetNextCombo] Failed to find next combo animation data for tid: %d, now: %d"), NextComboTransitionTid, NowComboTransitionTid);
+		return;
+	}
+	
+	// 스태미나 소모값 확인을 위한 정보 저장
+	if (InActionCommand == EActionCommand::LightAttack)
+	{
+		NextAttackActionType = EActionType::LightAttack;
+	}
+	else if (InActionCommand == EActionCommand::HeavyAttack)
+	{
+		NextAttackActionType = EActionType::HeavyAttack;
+	}
+	
+	// TODO 비동기 로딩으로 변경
+	NextAttackMontage = NextComboTransition->Montage.LoadSynchronous();
+}
+
+void ABAPlayerCharacter::OnNextComboCheck()
+{
+	if (NextAttackMontage)
+	{
+		FaceMoveInputDirection();
+		StartAttack(NextAttackMontage);
+	}
+	else
+	{
+		return;
+	}
+}
+
+void ABAPlayerCharacter::OverrideComboTransition(int32 InNowComboTid, EActionCommand ActionCommand,
+	int32 NewNextComboTid)
+{
+	const int64 OverrideKey = MakeComboOverrideKey(InNowComboTid, ActionCommand);
+	
+	ComboTransitionOverrides.Add(OverrideKey, NewNextComboTid);
+}
+
+void ABAPlayerCharacter::ResetComboTransitionOverrides()
+{
+	ComboTransitionOverrides.Empty();
+}
+
+void ABAPlayerCharacter::ClearAttackRuntimeState(const bool bKeepQueuedAttack)
+{
+	ClearRecoveryEscapeWindow();
+	ClearAttackHitStop(true);
+	GetWorldTimerManager().ClearTimer(ChargeAttackTimerHandle);
+
+	bIsBeforeCharge = false;
+	bIsCharging = false;
+	bIsChargeInputCompleted = false;
+	PausedMontage = nullptr;
+
+	if (StatComponent)
+	{
+		StatComponent->ResumeStaminaRecovery(AttackStaminaRecoveryPauseSource, false);
+	}
+	if (!bKeepQueuedAttack)
+	{
+		NowComboTransitionTid = 0;
+		NextComboTransitionTid = 0;
+		NextAttackMontage = nullptr;
+		NextAttackActionType = EActionType::None;
+	}
+	ActiveAttackMontage = nullptr;
+	ActiveAttackPlaybackId = 0;
+}
+
+bool ABAPlayerCharacter::IsActiveAttackMontagePlaying() const
+{
+	if (HitStopPausedMontage && HitStopPausedMontage == ActiveAttackMontage)
+	{
+		return true;
+	}
+
+	const USkeletalMeshComponent* MeshComponent = GetMesh();
+	UAnimInstance* AnimInstance = MeshComponent ? MeshComponent->GetAnimInstance() : nullptr;
+	return AnimInstance && ActiveAttackMontage && AnimInstance->Montage_IsPlaying(ActiveAttackMontage);
+}
+
+int64 ABAPlayerCharacter::MakeComboOverrideKey(int32 NowComboTid, EActionCommand ActionCommand) const
+{
+	return (static_cast<int64>(NowComboTid) << 8) | static_cast<uint8>(ActionCommand);
+}

@@ -1,51 +1,64 @@
-/*
 // Fill out your copyright notice in the Description page of Project Settings.
 
+#include "SkillConnectionLine.h"
+#include "UI/SkillTree/SkillNodeWidget.h"
+#include "Rendering/DrawElements.h"
 
-#include "UI/SkillTree/SkillConnectionLine.h"
 
-#include "SkillNodeWidget.h"
-
-void USkillConnectionLine::SetSkillNodes(class USkillNodeWidget* InSourceNode, class USkillNodeWidget* InTargetNode)
+void USkillConnectionLine::SetSkillNodes(USkillNodeWidget* InSourceNode, USkillNodeWidget* InTargetNode)
 {
 	SourceNode = InSourceNode;
 	TargetNode = InTargetNode;
-	
-	
 }
 
-int32 USkillConnectionLine::NativePaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry,
-	const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId,
-	const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
+int32 USkillConnectionLine::NativePaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
 {
-	int32 CurrentLayer = Super::NativePaint(
-		Args, AllottedGeometry, MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
-	
-	// SourceNodeÏôÄ TargetNodeÍ∞Ä Ïú†Ìö®ÌïúÏßÄ ÌôïÏù∏
 	if (IsValid(SourceNode) && IsValid(TargetNode))
 	{
-		TArray<FVector2D> Points = MakePointsToDrawLine();
-		
-		FSlateDrawElement::MakeLines(
-			OutDrawElements, ++CurrentLayer, AllottedGeometry.ToPaintGeometry(), 
-			Points,
-			ESlateDrawEffect::None,
-			LineColor, LineThickness);		
+		// º± ªˆªÛ ∞·¡§
+		FLinearColor Color = FLinearColor(0.2f, 0.2f, 0.2f, 1.0f); // ¥Ÿ≈© ±◊∑π¿Ã
+
+		if (TargetNode->GetSkillNodeState() == ESkillNodeState::Activated)
+		{
+			Color = FLinearColor::White; // Ω∫≈≥ »πµÊ Ω√ »≠¿Ã∆Æ
+		}
+		else if (TargetNode->GetSkillNodeState() == ESkillNodeState::Available)
+		{
+			Color = FLinearColor(0.6f, 0.6f, 0.6f, 1.0f); // º±«‡ Ω∫≈≥ πËøÓ ∞ÊøÏ æ‡∞£ π‡∞‘ ¡∂¿˝
+		}
+
+		// ¡¬«• ∞ËªÍ π◊ ±◊∏Æ±‚
+		TArray<FVector2D> Points = MakePointsToDrawLine(AllottedGeometry);
+
+		if (Points.Num() >= 2 && !Points[0].Equals(Points[1], 0.1f))
+		{
+			FSlateDrawElement::MakeLines(
+				OutDrawElements,
+				LayerId,
+				AllottedGeometry.ToPaintGeometry(),
+				Points,
+				ESlateDrawEffect::None,
+				Color,
+				true,
+				LineThickness);
+		}
 	}
-	
-	return CurrentLayer;
+	return LayerId;
 }
 
-TArray<FVector2D> USkillConnectionLine::MakePointsToDrawLine() const
+TArray<FVector2D> USkillConnectionLine::MakePointsToDrawLine(const FGeometry& AllottedGeometry) const
 {
 	TArray<FVector2D> Points;
-	
-	// ÏãúÏûëÏ†ê
-	Points.Add(FVector2D::Zero());
-	
-	// TargetNodeÏùò ÏúÑÏπòÎ•º PointsÏóê Ï∂îÍ∞Ä
-	Points.Add();
-	
+
+	// ∞¢ ≥ÎµÂ¿« ∑Œƒ√ ¡¬«• ¡ﬂæ”∞™¿ª ±∏«ÿº≠ º± ¿’±‚
+	auto GetNodeCenter = [&](USkillNodeWidget* Node) -> FVector2D
+		{
+			FVector2D Pos = Node->GetPaintSpaceGeometry().GetAbsolutePosition();
+			return AllottedGeometry.GetAccumulatedRenderTransform().Inverse().TransformPoint(Pos) + (Node->GetDesiredSize() * 0.5f);
+		};
+
+	Points.Add(GetNodeCenter(SourceNode));
+	Points.Add(GetNodeCenter(TargetNode));
+
 	return Points;
 }
-*/

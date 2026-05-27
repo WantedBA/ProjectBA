@@ -20,7 +20,30 @@ namespace BBKey
 	const FName ReturnRange = TEXT("ReturnRange");
 	const FName IsReturning = TEXT("IsReturning");
 	const FName SelectedPatternIndex = TEXT("SelectedPatternIndex");
+	const FName SelectedPatternTid = TEXT("SelectedPatternTid");
+	const FName SelectedPatternIdealRange = TEXT("SelectedPatternIdealRange");
 	const FName TargetDistance = TEXT("TargetDistance");
 	const FName IsActionLocked = TEXT("IsActionLocked");
 	const FName TargetAngle = TEXT("TargetAngle");
+	const FName IsInterrupted = TEXT("IsInterrupted");
+	const FName EnemyState = TEXT("State");
+	const FName TacticalPos = TEXT("TacticalPos");
+	const FName StrafeDir = TEXT("StrafeDir");
+}
+
+namespace SocketName
+{
+	constexpr const TCHAR* WeaponSocketName = TEXT("Socket");
+	constexpr const TCHAR* RightHandTargetSocketName = TEXT("HandGrip_R");
+}
+
+namespace BossConfig
+{
+	constexpr float MinComboGapTime = 0.3f;
+}
+
+namespace CollisionChannel
+{
+	constexpr ECollisionChannel PlayerAttackTrace = ECC_GameTraceChannel1;
+	constexpr ECollisionChannel EnemyAttackTrace = ECC_GameTraceChannel2;
 }

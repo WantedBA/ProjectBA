@@ -82,10 +82,15 @@ void AEnemyAIController::InitializeAI(int32 InTid, APawn* InPawn)
 	}
 }
 
-void AEnemyAIController::StartAI()
+void AEnemyAIController::EngageTarget(AActor* target)
 {
-}
-
-void AEnemyAIController::StopAI()
-{
+	if (target == nullptr)
+	{
+		return;
+	}
+	
+	if (UBlackboardComponent* BB = GetBlackboardComponent())
+	{
+		BB->SetValueAsObject(BBKey::TargetActor, target);
+	}
 }

@@ -1,8 +1,9 @@
-﻿// Copyright TeamBA. All Rights Reserved.
+// Copyright TeamBA. All Rights Reserved.
 
 
 #include "World/InvisibleWallTrigger.h"
 #include "World/TriggerEventVolume.h"
+#include "Instance/QuestManageSubsystem.h"
 
 AInvisibleWallTrigger::AInvisibleWallTrigger()
 {
@@ -40,5 +41,38 @@ void AInvisibleWallTrigger::OpenWall()
 {
     SetWallActive(false);
     SetWallOpacity(0.f);
+}
+
+void AInvisibleWallTrigger::ReArm()
+{
+    bConsumed = false;
+
+    OpenWall();
+}
+
+void AInvisibleWallTrigger::OnQuestActivated_Implementation(int32 QuestTid)
+{
+    bConsumed = true;
+
+    SetWallActive(true);
+    SetWallOpacity(1.f);
+    OnWallClosed.Broadcast(this);
+}
+
+void AInvisibleWallTrigger::OnQuestDeactivated_Implementation(int32 QuestTid)
+{
+    UQuestManageSubsystem* QM = UQuestManageSubsystem::Get(this);
+    if (QM == nullptr)
+    {
+        return;
+    }
+
+    if (QM->IsQuestCompleted(QuestTid) == false)
+    {
+        ReArm();
+        return;
+    }
+
+    OpenWall();
 }
 

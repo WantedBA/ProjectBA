@@ -2,99 +2,120 @@
     "Skill": [
         {
             "SkillTid": 1,
+            "SkillNameTid": 34001,
             "TextTid": 33001,
             "bIsDefaultSkill": 1,
             "NeededSkillPoint": 0,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Normal-Attack-Icon-_1_.Img_Normal-Attack-Icon-_1_",
             "PositionX": 300,
-            "PositionY": 250
+            "PositionY": 250,
+            "VideoPathString": "/Game/Movies/LightAttack.LightAttack"
         },
         {
             "SkillTid": 2,
+            "SkillNameTid": 34002,
             "TextTid": 33002,
             "bIsDefaultSkill": 1,
             "NeededSkillPoint": 0,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Heavy-Attack-Icon-_2_.Img_Heavy-Attack-Icon-_2_",
             "PositionX": 600,
-            "PositionY": 250
+            "PositionY": 250,
+            "VideoPathString": "/Game/Movies/HeavyAttack.HeavyAttack"
         },
         {
             "SkillTid": 3,
+            "SkillNameTid": 34003,
             "TextTid": 33003,
             "bIsDefaultSkill": 1,
             "NeededSkillPoint": 0,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Dodge-Icon-_3_.Img_Dodge-Icon-_3_",
             "PositionX": 900,
-            "PositionY": 250
+            "PositionY": 250,
+            "VideoPathString": "/Game/Movies/Roll.Roll"
         },
         {
             "SkillTid": 4,
+            "SkillNameTid": 34004,
             "TextTid": 33004,
             "bIsDefaultSkill": 1,
             "NeededSkillPoint": 0,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Guard-Icon-_4_.Img_Guard-Icon-_4_",
             "PositionX": 1200,
-            "PositionY": 250
+            "PositionY": 250,
+            "VideoPathString": "/Game/Movies/Guard.Guard"
         },
         {
             "SkillTid": 5,
+            "SkillNameTid": 34005,
             "TextTid": 33005,
             "bIsDefaultSkill": 1,
             "NeededSkillPoint": 0,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Greater-Potion-_5_.Img_Greater-Potion-_5_",
             "PositionX": 1500,
-            "PositionY": 250
+            "PositionY": 250,
+            "VideoPathString": "/Game/Movies/Heal.Heal"
         },
         {
             "SkillTid": 6,
+            "SkillNameTid": 34006,
             "TextTid": 33006,
             "Prerequisites": 1,
             "ExclusiveSkills": "7,8",
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_fire-enchant-_6_.Img_fire-enchant-_6_",
             "PositionX": 180,
-            "PositionY": 500
+            "PositionY": 500,
+            "VideoPathString": "/Game/Movies/Fire.Fire"
         },
         {
             "SkillTid": 7,
+            "SkillNameTid": 34007,
             "TextTid": 33007,
             "Prerequisites": 1,
             "ExclusiveSkills": "6,8",
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_ice-enchant-_7_.Img_ice-enchant-_7_",
             "PositionX": 300,
-            "PositionY": 500
+            "PositionY": 500,
+            "VideoPathString": "/Game/Movies/Ice.Ice"
         },
         {
             "SkillTid": 8,
+            "SkillNameTid": 34008,
             "TextTid": 33008,
             "Prerequisites": 1,
             "ExclusiveSkills": "6,7",
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_No-enchant-_8_.Img_No-enchant-_8_",
             "PositionX": 420,
-            "PositionY": 500
+            "PositionY": 500,
+            "VideoPathString": "/Game/Movies/Electric.Electric"
         },
         {
             "SkillTid": 9,
+            "SkillNameTid": 34009,
             "TextTid": 33009,
             "Prerequisites": 6,
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Homing-Burst-_9_.Img_Homing-Burst-_9_",
             "PositionX": 180,
-            "PositionY": 750
+            "PositionY": 750,
+            "VideoPathString": "/Game/Movies/SkillTest.SkillTest"
         },
         {
             "SkillTid": 10,
+            "SkillNameTid": 34010,
             "TextTid": 33010,
             "Prerequisites": "2,7",
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_enhanced-heavy-attack-_10_.Img_enhanced-heavy-attack-_10_",
             "PositionX": 450,
-            "PositionY": 750
+            "PositionY": 750,
+            "VideoPathString": "/Game/Movies/HeavyAttackUpgrade.HeavyAttackUpgrade"
         },
         {
             "SkillTid": 11,
+            "SkillNameTid": 34011,
             "TextTid": 33011,
             "Prerequisites": 1,
             "NeededSkillPoint": 1,
@@ -104,33 +125,40 @@
         },
         {
             "SkillTid": 12,
+            "SkillNameTid": 34012,
             "TextTid": 33012,
             "Prerequisites": 11,
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Final-Strike_Icon-_12_.Img_Final-Strike_Icon-_12_",
             "PositionX": 120,
-            "PositionY": 600
+            "PositionY": 600,
+            "VideoPathString": "/Game/Movies/LastLightAttackUpgrade.LastLightAttackUpgrade"
         },
         {
             "SkillTid": 13,
+            "SkillNameTid": 34013,
             "TextTid": 33013,
             "Prerequisites": 3,
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Invincible-Dash-_13_.Img_Invincible-Dash-_13_",
             "PositionX": 700,
-            "PositionY": 500
+            "PositionY": 500,
+            "VideoPathString": "/Game/Movies/Dash.Dash"
         },
         {
             "SkillTid": 14,
+            "SkillNameTid": 34014,
             "TextTid": 33014,
             "Prerequisites": 13,
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Whirlwind-Strike-_14_.Img_Whirlwind-Strike-_14_",
             "PositionX": 700,
-            "PositionY": 750
+            "PositionY": 750,
+            "VideoPathString": "/Game/Movies/SkillTest.SkillTest"
         },
         {
             "SkillTid": 15,
+            "SkillNameTid": 34015,
             "TextTid": 33015,
             "Prerequisites": "3,4",
             "NeededSkillPoint": 1,
@@ -140,6 +168,7 @@
         },
         {
             "SkillTid": 16,
+            "SkillNameTid": 34016,
             "TextTid": 33016,
             "Prerequisites": 15,
             "NeededSkillPoint": 1,
@@ -149,6 +178,7 @@
         },
         {
             "SkillTid": 17,
+            "SkillNameTid": 34017,
             "TextTid": 33017,
             "Prerequisites": 4,
             "NeededSkillPoint": 1,
@@ -158,6 +188,7 @@
         },
         {
             "SkillTid": 18,
+            "SkillNameTid": 34018,
             "TextTid": 33018,
             "Prerequisites": 5,
             "NeededSkillPoint": 1,
@@ -167,6 +198,7 @@
         },
         {
             "SkillTid": 19,
+            "SkillNameTid": 34019,
             "TextTid": 33019,
             "Prerequisites": 5,
             "NeededSkillPoint": 1,
@@ -176,21 +208,136 @@
         },
         {
             "SkillTid": 20,
+            "SkillNameTid": 34020,
             "TextTid": 33020,
             "Prerequisites": "1,2",
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_normal-attack+-heavy-attack.Img_normal-attack+-heavy-attack",
             "PositionX": 450,
-            "PositionY": 350
+            "PositionY": 350,
+            "VideoPathString": "/Game/Movies/LRR.LRR"
         },
         {
             "SkillTid": 21,
+            "SkillNameTid": 34021,
             "TextTid": 33021,
             "Prerequisites": "8,20",
             "NeededSkillPoint": 1,
             "IconPathString": "/Game/UI/SkillTree/Skill_Icon/Img_Charged-Attack.Img_Charged-Attack",
-            "PositionX": 350,
-            "PositionY": 800
+            "PositionX": 650,
+            "PositionY": 600,
+            "VideoPathString": "/Game/Movies/ChargeAttack.ChargeAttack"
+        }
+    ],
+    "SkillModifier": [
+        {
+            "SkillTid": 6,
+            "ApplyType": "Element",
+            "Target": "WeaponVFX",
+            "Value": "/Game/Assets/WeaponVFX/Weapon/MeleeWeaponAura_VFX/VFX/V4/NS_StylizedWeapon_V4_05.NS_StylizedWeapon_V4_05",
+            "Value2": "/Game/Assets/WeaponVFX/Trail/SlashTrailElemental/Niagara/SlashTrail/NS_SlashTrail_Fire.NS_SlashTrail_Fire",
+            "Value3": 160,
+            "Value4": 0.8
+        },
+        {
+            "SkillTid": 7,
+            "ApplyType": "Element",
+            "Target": "WeaponVFX",
+            "Value": "/Game/Assets/WeaponVFX/Trail/SlashTrailElemental/Niagara/Sword/NS_Sword_Ice.NS_Sword_Ice",
+            "Value2": "/Game/Assets/WeaponVFX/Trail/SlashTrailElemental/Niagara/SlashTrail/NS_SlashTrail_Ice.NS_SlashTrail_Ice",
+            "Value3": 80,
+            "Value4": 0.8
+        },
+        {
+            "SkillTid": 8,
+            "ApplyType": "Element",
+            "Target": "WeaponVFX",
+            "Value": "/Game/Assets/WeaponVFX/Weapon/MeleeWeaponAura_VFX/VFX/V3/NS_StylizedWeapon_V3_09.NS_StylizedWeapon_V3_09",
+            "Value2": "/Game/Assets/WeaponVFX/Trail/SlashTrailElemental/Niagara/SlashTrail/NS_SlashTrail_Electric.NS_SlashTrail_Electric",
+            "Value3": 160,
+            "Value4": 0.8
+        },
+        {
+            "SkillTid": 9,
+            "ApplyType": "Action"
+        },
+        {
+            "SkillTid": 10,
+            "ApplyType": "Action",
+            "Target": "ComboOverride",
+            "Value": 0,
+            "Value2": "HeavyAttack",
+            "Value3": 72004
+        },
+        {
+            "SkillTid": 11,
+            "ApplyType": "Stat",
+            "Target": "AttackSpeed",
+            "Value": 1.1
+        },
+        {
+            "SkillTid": 12,
+            "ApplyType": "Action",
+            "Target": "ComboOverride",
+            "Value": 71003,
+            "Value2": "LightAttack",
+            "Value3": 71011
+        },
+        {
+            "SkillTid": 13,
+            "ApplyType": "Action",
+            "Target": "MovesetKey",
+            "Value": "Dash"
+        },
+        {
+            "SkillTid": 14,
+            "ApplyType": "Action"
+        },
+        {
+            "SkillTid": 15,
+            "ApplyType": "Stat",
+            "Target": "MaxStamina",
+            "Value": 1.2
+        },
+        {
+            "SkillTid": 16,
+            "ApplyType": "Stat",
+            "Target": "StaminaRecovery",
+            "Value": 1.2
+        },
+        {
+            "SkillTid": 17,
+            "ApplyType": "Stat",
+            "Target": "Guard",
+            "Value": 1.5
+        },
+        {
+            "SkillTid": 18,
+            "ApplyType": "Stat",
+            "Target": "HealCount",
+            "Value": 2
+        },
+        {
+            "SkillTid": 19,
+            "ApplyType": "Stat",
+            "Target": "HealAmount",
+            "Value": 25
+        },
+        {
+            "SkillTid": 20,
+            "ApplyType": "Action",
+            "Target": "ComboOverride",
+            "Value": 71001,
+            "Value2": "HeavyAttack",
+            "Value3": 72011
+        },
+        {
+            "SkillTid": 21,
+            "ApplyType": "Action",
+            "Target": "ComboOverride",
+            "Value": 0,
+            "Value2": "HeavyAttack",
+            "Value3": 73001
         }
     ]
 }

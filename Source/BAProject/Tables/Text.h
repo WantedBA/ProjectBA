@@ -26,6 +26,6 @@ struct BAPROJECT_API FTextRows : public FBARowBase
 
 	virtual void PostRead() override
 	{
-		bTid = this->bTid;
+		bTid = TextTid;
 	}
 };

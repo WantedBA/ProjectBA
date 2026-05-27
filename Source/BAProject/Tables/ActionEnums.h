@@ -31,7 +31,8 @@ UENUM(BlueprintType)
 enum class EActionStaminaCostType : uint8
 {
 	Instant, // 즉시 소비(일회성)
-	PerSecond // 1초당 퍼센티지로 소비(지속성)
+	PerSecond, // 1초당 퍼센티지로 소비(지속성)
+	OnDemand // 피격/방어 판정 등 특정 조건에서 명시적으로 소비
 };
 
 UENUM(BlueprintType)
@@ -68,9 +69,7 @@ enum class EActionRuntimeState : uint8
 	Attacking,
 	Dodging,
 	Guarding,
-	UsingItem,
-	HitReact,
-	Dead
+	UsingItem
 };
 
 UENUM(BlueprintType)
@@ -104,6 +103,7 @@ enum class EActionWindowType : uint8
 	Hit,
 	Guard,
 	Cancel,
+	InterruptLock,
 	MovementLock,
 	InputBuffer
 };

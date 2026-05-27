@@ -10,6 +10,7 @@
 #include "SkillTreeSubsystem.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSkillNodeStateChange, int32, SkillTid, ESkillNodeState, NewState);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSkillTreeChangeCompleted);
 
 /**
  * 
@@ -65,7 +66,7 @@ protected:
 // 저장된 데이터
 	// 배운 스킬 + 남은 스킬 포인트
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SkillTree)
-	int32 SkillPoint = 3;
+	int32 SkillPoint = 5;
 
 	// 배운 스킬 목록
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SkillTree)
@@ -75,5 +76,9 @@ public:
 // Delegate
 	UPROPERTY(BlueprintAssignable)
 	FOnSkillNodeStateChange OnSkillNodeStateChange;
+
+	// 스킬트리 창 닫힐 때 변경사항 저장 후 브로드캐스팅
+	UPROPERTY(BlueprintAssignable)
+	FOnSkillTreeChangeCompleted OnSkillTreeChangeCompleted;
 	
 };

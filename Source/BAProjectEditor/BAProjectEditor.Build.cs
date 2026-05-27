@@ -14,6 +14,11 @@ public class BAProjectEditor : ModuleRules
 			"CoreUObject",
 			"Engine",
 			"BAProject",
+			"AIModule",
+			"BehaviorTreeEditor",
+			"Blutility",
+			"Niagara",
+			"NiagaraEditor",
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]

@@ -6,6 +6,7 @@
 
 class AMapLadder;
 
+// 플레이어가 요청하거나 실제로 사용 중인 이동 속도 단계.
 UENUM(BlueprintType)
 enum class EMovementState : uint8
 {
@@ -14,6 +15,7 @@ enum class EMovementState : uint8
 	Sprint
 };
 
+// 캐릭터 회전 방식과 입력 해석 방식을 결정하는 이동 모드.
 UENUM(BlueprintType)
 enum class EPlayerLocomotionMode : uint8
 {
@@ -21,6 +23,7 @@ enum class EPlayerLocomotionMode : uint8
 	Strafe
 };
 
+// 이동 애니메이션 상태 머신에서 사용하는 시작/루프/종료/회전 페이즈.
 UENUM(BlueprintType)
 enum class EPlayerMovementPhase : uint8
 {
@@ -31,6 +34,7 @@ enum class EPlayerMovementPhase : uint8
 	Turn
 };
 
+// 플레이어 애니메이션에 전달되는 전투 태세.
 UENUM(BlueprintType)
 enum class EPlayerCombatMode : uint8
 {
@@ -39,6 +43,35 @@ enum class EPlayerCombatMode : uint8
 	Block
 };
 
+// 플레이어 피격/가드 반응 애니메이션이 점유 중인 피동 상태.
+UENUM(BlueprintType)
+enum class EPlayerDamageReactionState : uint8
+{
+	None,
+	HitReact,
+	LargeHitReact,
+	KnockDown,
+	GuardHit,
+	GuardBreak
+};
+
+// 공격/피격 후딜에서 어떤 입력 탈출을 허용할지 ANS별로 설정한다.
+USTRUCT(BlueprintType)
+struct FBAPlayerRecoveryEscapeWindowSettings
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery")
+	bool bAllowDodge = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery")
+	bool bAllowGuard = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Recovery")
+	bool bAllowMove = true;
+};
+
+// UserDataSubsystem 또는 디자이너 설정으로부터 채워지는 기본 이동 속도.
 USTRUCT(BlueprintType)
 struct FBAPlayerMovementSpeedSettings
 {
@@ -52,8 +85,15 @@ struct FBAPlayerMovementSpeedSettings
 
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float SprintSpeed = 700.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Movement", meta = (ClampMin = "0.0"))
+	float SpeedUpInterpRate = 8.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Movement", meta = (ClampMin = "0.0"))
+	float SlowDownInterpRate = 10.0f;
 };
 
+// Free/Strafe 모드별 CharacterMovement 파라미터와 입력 방향 보간 설정.
 USTRUCT(BlueprintType)
 struct FBAPlayerLocomotionSettings
 {
@@ -74,6 +114,9 @@ struct FBAPlayerLocomotionSettings
 	UPROPERTY(EditAnywhere, Category = "Movement|Locomotion")
 	float StrafeRotationRateYaw = 720.f;
 
+	UPROPERTY(EditAnywhere, Category = "Movement|Locomotion", meta = (ClampMin = "0.0", Units = "deg/s"))
+	float StrafeSprintFacingRotationRateYaw = 540.f;
+
 	UPROPERTY(EditAnywhere, Category = "Movement|Locomotion")
 	float StrafeMaxAcceleration = 2048.f;
 
@@ -93,6 +136,7 @@ struct FBAPlayerLocomotionSettings
 	float MoveInputDirectionVelocitySeedMinSpeed = 50.f;
 };
 
+// 특정 gait에서 Start/Stop/Turn 페이즈를 사용할지와 루트 모션 여부를 정의한다.
 USTRUCT(BlueprintType)
 struct FBAPlayerMovementPhaseSettings
 {
@@ -123,6 +167,7 @@ struct FBAPlayerMovementPhaseSettings
 	float TurnMinSpeed = 150.f;
 };
 
+// Walk/Run/Sprint 각 gait의 이동 페이즈 설정 묶음.
 USTRUCT(BlueprintType)
 struct FBAPlayerMovementGaitSettings
 {
@@ -138,6 +183,7 @@ struct FBAPlayerMovementGaitSettings
 	FBAPlayerMovementPhaseSettings Sprint;
 };
 
+// ActionData 테이블에서 읽어 온 질주 스태미너 비용 및 재시작 조건.
 USTRUCT(BlueprintType)
 struct FBAPlayerSprintCostSettings
 {
@@ -159,6 +205,7 @@ struct FBAPlayerSprintCostSettings
 	bool bHasActionData = false;
 };
 
+// 사다리 이동 속도와 이탈 위치 보정값.
 USTRUCT(BlueprintType)
 struct FBAPlayerLadderSettings
 {
@@ -177,6 +224,7 @@ struct FBAPlayerLadderSettings
 	float ExitClearance = 80.f; // 이탈 시 사다리 너머로 밀어낼 거리
 };
 
+// 플레이어 이동 상태 머신이 프레임 사이에 유지하는 런타임 값.
 struct FBAPlayerMovementRuntimeState
 {
 	EMovementState DesiredGait = EMovementState::Run;
@@ -191,16 +239,22 @@ struct FBAPlayerMovementRuntimeState
 	bool bHasMoveInput = false;
 	bool bHasInterpolatedMoveInput = false;
 	bool bWaitingForPhaseAnimation = false;
+	bool bSuppressVelocityFacingUntilMoveInput = false;
 	float InterpolatedMoveInputMemoryRemainingTime = 0.f;
 	float PhaseEntryLocalAngle = 0.f;
 	float PhaseElapsedTime = 0.f;
+	float CurrentMaxWalkSpeed = 0.f;
+	float TargetMaxWalkSpeed = 0.f;
 };
 
+// 질주 고갈 잠금과 스태미너 회복 일시정지 상태.
 struct FBAPlayerSprintRuntimeState
 {
 	bool bLockedAfterExhausted = false;
+	bool bStaminaRecoveryPaused = false;
 };
 
+// 현재 사다리 상호작용 상태.
 struct FBAPlayerLadderRuntimeState
 {
 	bool bIsOnLadder = false;

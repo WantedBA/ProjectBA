@@ -13,8 +13,7 @@ public:
 	AEnemyAIController();
 
 	void InitializeAI(int32 InTid, APawn* InPawn = nullptr);
-	void StartAI();
-	void StopAI();
+	void EngageTarget(AActor* target);
 
 private:
 	UPROPERTY()

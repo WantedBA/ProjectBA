@@ -4,6 +4,7 @@
 #include "UI/PlayerStatus.h"
 #include "StatusBar.h"
 #include "Instance/UserDataSubsystem.h"
+#include "BossHPBar.h"
 
 void UPlayerStatus::NativeConstruct()
 {

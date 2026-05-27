@@ -9,6 +9,7 @@
 
 class UStatComponent;
 
+// 액션 시작 시도 결과. 실패 원인은 UI/디버그/입력 버퍼 판단에 사용된다.
 UENUM(BlueprintType)
 enum class EActionStartResult : uint8
 {
@@ -18,11 +19,18 @@ enum class EActionStartResult : uint8
 	ActionDataNotFound,
 	AlreadyRunning,
 	NotEnoughStamina,
-	Cooldown
+	Cooldown,
+	Buffered
 };
 
+// 액션이 실제로 시작될 때 ActionTid와 ActionType을 알린다.
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionStarted, int32, ActionTid, EActionType, ActionType);
+
+// 현재 액션이 완료되거나 중단되어 런타임 상태가 정리될 때 알린다.
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionCompleted, int32, ActionTid, EActionType, ActionType);
+
+// 버퍼된 액션이 실제로 시작되기 직전, 현재 입력 기준으로 실행 방향을 다시 정한다.
+DECLARE_DELEGATE_RetVal_TwoParams(EActionDirection, FResolveBufferedActionDirection, int32, EActionDirection);
 
 /**
  * 공용 Action 실행 컴포넌트.
@@ -42,7 +50,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActionCompleted, int32, ActionTi
  *   4) CompleteCurrentAction   -> 애니메이션/노티파이/상위 로직에서 액션 종료를 통지.
  *
  * 애니메이션 재생은 ActionAnimationComponent 가 ActionAnimationData 를 읽어 처리한다.
- * 공격 판정, 무적 iframe 적용은 ActionWindowData 를 읽는 후속 단계에서 붙인다.
+ * 무적 iframe 등 애니메이션 시간축 판정은 ActionAnimationComponent 가 ActionWindowData 를 읽어 처리한다.
  */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class BAPROJECT_API UActionComponent : public UActorComponent
@@ -52,66 +60,155 @@ class BAPROJECT_API UActionComponent : public UActorComponent
 public:
 	UActionComponent();
 
+	// BeginAction 직후 브로드캐스트되는 액션 시작 이벤트.
 	UPROPERTY(BlueprintAssignable, Category = "Action|Event")
 	FOnActionStarted OnActionStarted;
 
+	// CompleteCurrentAction에서 브로드캐스트되는 액션 종료 이벤트.
 	UPROPERTY(BlueprintAssignable, Category = "Action|Event")
 	FOnActionCompleted OnActionCompleted;
 
+	FResolveBufferedActionDirection ResolveBufferedActionDirection;
+
+	// 현재 Moveset 문맥에서 Command와 Direction에 맞는 액션을 찾아 시작한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	bool TryStartAction(EActionCommand Command, EActionDirection Direction = EActionDirection::Any);
 
+	// 현재 Moveset 문맥에서 Command와 Direction에 맞는 액션 중 지정 타입만 골라 시작한다.
+	UFUNCTION(BlueprintCallable, Category = "Action")
+	bool TryStartActionOfType(EActionCommand Command, EActionDirection Direction, EActionType RequiredActionType);
+
+	// 현재 Moveset 문맥에서 Command와 Direction에 맞는 액션 중 지정 타입을 제외하고 시작한다.
+	UFUNCTION(BlueprintCallable, Category = "Action")
+	bool TryStartActionExcludingType(EActionCommand Command, EActionDirection Direction, EActionType ExcludedActionType);
+
+	// 후딜 탈출 윈도우에서 현재 액션 잠금/쿨다운을 무시하고 액션 시작을 시도한다.
+	bool TryStartActionForRecoveryEscape(EActionCommand Command, EActionDirection Direction = EActionDirection::Any);
+	bool TryStartActionOfTypeForRecoveryEscape(
+		EActionCommand Command,
+		EActionDirection Direction,
+		EActionType RequiredActionType);
+	bool TryStartActionExcludingTypeForRecoveryEscape(
+		EActionCommand Command,
+		EActionDirection Direction,
+		EActionType ExcludedActionType);
+
+	// Moveset 검색 없이 ActionTid를 직접 지정해 시작을 시도한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	bool TryStartActionByTid(int32 ActionTid);
 
+	// 현재 액션을 종료하고 버퍼된 액션이 있으면 이어서 실행을 시도한다.
 	UFUNCTION(BlueprintCallable, Category = "Action")
 	void CompleteCurrentAction();
 
+	// 지정 액션 타입의 Instant 스태미너 비용을 명시적으로 소비한다.
+	UFUNCTION(BlueprintCallable, Category = "Action|Stamina")
+	bool ConsumeActionStartStaminaCostByType(
+		EActionType ActionType,
+		float CostMultiplier = 1.f,
+		bool bRestartRecoveryDelay = true);
+
+	// 지정 액션 타입의 OnDemand 스태미너 비용을 명시적으로 소비한다.
+	UFUNCTION(BlueprintCallable, Category = "Action|Stamina")
+	bool ConsumeActionStaminaCostByType(EActionType ActionType, float CostMultiplier = 1.f);
+
+	// 현재 액션 데이터에 지정된 스태미너 회복 배율을 명시적으로 적용한다.
+	UFUNCTION(BlueprintCallable, Category = "Action|Stamina")
+	void ApplyActiveActionStaminaRecoveryRateMultiplier();
+
+	// 현재 액션이 적용한 스태미너 회복 배율을 명시적으로 제거한다.
+	UFUNCTION(BlueprintCallable, Category = "Action|Stamina")
+	void ClearActiveActionStaminaRecoveryRateMultiplier();
+
+	// 피격/사망처럼 외부 상태가 현재 액션을 강제로 끊을 때 사용한다.
+	UFUNCTION(BlueprintCallable, Category = "Action")
+	void CancelCurrentAction();
+
+	// 애니메이션 윈도우 등에서 현재 액션의 인터럽트 가능 여부를 제어한다.
+	UFUNCTION(BlueprintCallable, Category = "Action")
+	void SetActiveActionInterruptLocked(bool bNewInterruptLocked);
+
+	// 애니메이션 윈도우 등에서 입력 버퍼 수신 가능 여부를 제어한다.
+	UFUNCTION(BlueprintCallable, Category = "Action")
+	void SetActiveActionInputBufferOpen(bool bNewInputBufferOpen);
+
+	// 이동 입력이 바뀔 때 버퍼된 액션의 실행 방향을 최신 값으로 갱신한다.
+	UFUNCTION(BlueprintCallable, Category = "Action")
+	void UpdateBufferedActionDirection(EActionDirection Direction);
+
+	// 현재 액션 Tid가 유효한지 확인한다.
 	UFUNCTION(BlueprintPure, Category = "Action")
 	bool IsActionRunning() const { return ActiveActionTid != 0; }
 
+	// 현재 실행 중인 액션 Tid를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action")
 	int32 GetActiveActionTid() const { return ActiveActionTid; }
 
+	// 현재 실행 중인 액션의 분류를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action")
 	EActionType GetActiveActionType() const { return ActiveActionType; }
 
+	// 현재 실행 중인 액션이 어떤 입력 명령에서 선택되었는지 반환한다.
+	UFUNCTION(BlueprintPure, Category = "Action")
+	EActionCommand GetActiveActionCommand() const { return ActiveActionCommand; }
+
+	// 현재 액션이 사용하는 런타임 상태 플래그를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action")
 	EActionRuntimeState GetActionRuntimeState() const { return RuntimeState; }
 
+	// 현재 액션 데이터가 일반 이동을 잠그는지 반환한다.
+	UFUNCTION(BlueprintPure, Category = "Action")
+	bool IsMovementLockedByAction() const;
+
+	// 현재 액션이 루트 모션 이동을 사용하는지 반환한다.
+	UFUNCTION(BlueprintPure, Category = "Action")
+	bool IsActiveActionUsingRootMotion() const;
+
+	// 현재 액션이 선택된 방향을 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action")
 	EActionDirection GetActiveActionDirection() const { return ActiveActionDirection; }
 
+	// 가장 최근 액션 시작 시도 결과를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action")
 	EActionStartResult GetLastStartResult() const { return LastStartResult; }
 
+// Moveset 키 
 	UFUNCTION(BlueprintCallable, Category = "Action|Context")
-	void SetMovesetKey(FName NewMovesetKey);
+	void AddMovesetKey(FName NewMovesetKey) { MovesetKeys.Add(NewMovesetKey); }
 
+	UFUNCTION(BlueprintCallable, Category = "Action|Context")
+	void ResetMovesetKeys() { MovesetKeys = { FName(TEXT("Default")) }; }
+
+	UFUNCTION(BlueprintPure, Category = "Action|Context")
+	bool HasMovesetKey(FName InMovesetKey) const { return MovesetKeys.Contains(InMovesetKey); }
+	
+//
+	// 액션 선택에 사용할 전투 태세를 설정한다.
 	UFUNCTION(BlueprintCallable, Category = "Action|Context")
 	void SetCombatStance(ECombatStance NewCombatStance);
 
+	// 액션 선택에 사용할 가드 상태를 설정한다.
 	UFUNCTION(BlueprintCallable, Category = "Action|Context")
 	void SetGuardState(EGuardState NewGuardState);
 
+	// 액션 선택에 사용할 무기 타입을 설정한다.
 	UFUNCTION(BlueprintCallable, Category = "Action|Context")
 	void SetWeaponType(EActionWeaponType NewWeaponType);
 
-	UFUNCTION(BlueprintPure, Category = "Action|Context")
-	FName GetMovesetKey() const { return MovesetKey; }
-
+	// 현재 전투 태세를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action|Context")
 	ECombatStance GetCombatStance() const { return CombatStance; }
 
+	// 현재 가드 상태를 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action|Context")
 	EGuardState GetGuardState() const { return GuardState; }
 
+	// 현재 무기 타입을 반환한다.
 	UFUNCTION(BlueprintPure, Category = "Action|Context")
 	EActionWeaponType GetWeaponType() const { return WeaponType; }
 
+	// 현재 액션 Tid에 대응하는 ActionData 행을 반환한다.
 	const FActionDataRow* GetActiveActionData() const;
-	const FMovesetRow* FindBestMoveset(EActionCommand Command, EActionDirection Direction) const;
-	bool CanStartAction(const FActionDataRow& ActionData);
 
 protected:
 	virtual void BeginPlay() override;
@@ -119,15 +216,35 @@ protected:
 
 private:
 	bool TryStartActionByTid(int32 ActionTid, EActionDirection Direction);
-	void BeginAction(const FActionDataRow& ActionData, EActionDirection Direction);
+	bool TryStartActionByTid(int32 ActionTid, EActionDirection Direction, EActionCommand SourceCommand);
+	void BeginAction(const FActionDataRow& ActionData, EActionDirection Direction, EActionCommand SourceCommand);
 	void StartCooldown(const FActionDataRow& ActionData);
-	void ConsumeInstantCost(const FActionDataRow& ActionData) const;
+	void ApplyStaminaRecoveryRateMultiplier(const FActionDataRow& ActionData);
+	const FMovesetRow* FindBestMoveset(
+		EActionCommand Command,
+		EActionDirection Direction,
+		EActionType RequiredActionType = EActionType::None,
+		EActionType ExcludedActionType = EActionType::None) const;
+	bool CanStartAction(const FActionDataRow& ActionData, EActionDirection Direction, EActionCommand SourceCommand);
+	bool CanConsumeStamina(const FActionDataRow& ActionData, float StaminaCost) const;
+	bool ConsumeStamina(const FActionDataRow& ActionData, float StaminaCost, bool bPauseRecovery, bool bRestartRecoveryDelay);
+	const FActionDataRow* FindCostActionDataByType(EActionType ActionType) const;
+	const FActionDataRow* FindFirstActionDataByType(EActionType ActionType) const;
+	float GetStartStaminaCost(const FActionDataRow& ActionData, float CostMultiplier = 1.f) const;
+	float GetOnDemandStaminaCost(const FActionDataRow& ActionData, float CostMultiplier = 1.f) const;
+	bool TryStartResolvedActionForRecoveryEscape(
+		const FActionDataRow& ActionData,
+		EActionDirection Direction,
+		EActionCommand SourceCommand);
+	void BufferAction(int32 ActionTid, EActionDirection Direction, EActionCommand SourceCommand);
+	void ClearBufferedAction();
+	void TryStartBufferedAction();
 	void RefreshTickEnabled();
 	bool IsActionOnCooldown(int32 ActionTid) const;
 	EActionRuntimeState GetRuntimeStateForAction(const FActionDataRow& ActionData) const;
 
 	UPROPERTY(EditAnywhere, Category = "Action|Context")
-	FName MovesetKey = FName(TEXT("Default"));
+	TSet<FName> MovesetKeys = { FName(TEXT("Default")) };
 
 	UPROPERTY(EditAnywhere, Category = "Action|Context")
 	ECombatStance CombatStance = ECombatStance::Relaxed;
@@ -145,10 +262,34 @@ private:
 	EActionType ActiveActionType = EActionType::None;
 
 	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
+	EActionCommand ActiveActionCommand = EActionCommand::None;
+
+	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
 	EActionRuntimeState RuntimeState = EActionRuntimeState::None;
 
 	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
 	EActionDirection ActiveActionDirection = EActionDirection::Any;
+
+	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
+	bool bActiveActionInterruptLocked = false;
+
+	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
+	bool bActiveActionInputBufferOpen = false;
+
+	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
+	bool bActiveActionPausedStaminaRecovery = false;
+
+	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
+	bool bActiveActionModifiedStaminaRecoveryRate = false;
+
+	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
+	int32 BufferedActionTid = 0;
+
+	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
+	EActionDirection BufferedActionDirection = EActionDirection::Any;
+
+	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
+	EActionCommand BufferedActionCommand = EActionCommand::None;
 
 	UPROPERTY(VisibleAnywhere, Category = "Action|Runtime")
 	EActionStartResult LastStartResult = EActionStartResult::Success;
@@ -157,4 +298,5 @@ private:
 	TObjectPtr<UStatComponent> CachedStatComponent;
 
 	TMap<int32, float> CooldownRemainingByActionTid;
+	bool bConsumingBufferedAction = false;
 };

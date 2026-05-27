@@ -6,6 +6,8 @@
 #include "Tables/BAPropTable.h"
 #include "SkillRows.generated.h"
 
+class UFileMediaSource;
+
 /**
  * Item.xlsx 의 "Consume" 시트 한 행.
  * 필드 이름은 JSON 키와 정확히 일치해야 한다 (Item.json 참고).
@@ -20,6 +22,9 @@ struct BAPROJECT_API FSkillRow : public FBARowBase
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
 	int32 TextTid = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
+	int32 SkillNameTid = 0;
 
 	// 엑셀에서 읽어올 값
 	UPROPERTY(BlueprintReadOnly, Category = "Skill", meta = (HideInDetailPanel))
@@ -62,7 +67,15 @@ struct BAPROJECT_API FSkillRow : public FBARowBase
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
 	float PositionY = 0.0f;
-	
+
+	// VideoPathString 과 매칭될 변수
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
+	FString VideoPathString;
+
+	// 영상 에셋용 비동기 포인터
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
+	TSoftObjectPtr<UFileMediaSource> VideoSource;
+
 	virtual void PostRead() override
 	{
 		bTid = SkillTid;
@@ -71,6 +84,9 @@ struct BAPROJECT_API FSkillRow : public FBARowBase
 		PrerequisiteIds = ParseIntArray(Prerequisites);
 		IconTexture = ConvertToSoftObjectPtr(IconPathString);
 		ExclusiveSkillIds = ParseIntArray(ExclusiveSkills);
+
+		// 비디오 경로 문자열을 포인터로 변환
+		VideoSource = TSoftObjectPtr<UFileMediaSource>(FSoftObjectPath(VideoPathString));
 	}
 
 	// 문자열을 쉼표로 구분하여 int32 배열로 변환
@@ -93,5 +109,51 @@ struct BAPROJECT_API FSkillRow : public FBARowBase
 	static TSoftObjectPtr<UTexture2D> ConvertToSoftObjectPtr(const FString& IconPathString)
 	{
 		return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(IconPathString));
+	}
+};
+
+// 스킬 적용 방식 분류
+UENUM(BlueprintType)
+enum class ESkillApplyType : uint8
+{
+	Element, Action, Stat, Etc
+};
+
+// PlayerSkillComponent에서 스킬 적용을 위한 데이터
+USTRUCT(BlueprintType, meta = (BASheet = "SkillModifier"))
+struct BAPROJECT_API FSkillModifierRow : public FBARowBase
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Modifier")
+	int32 SkillTid = 0;
+	
+	// 스킬 적용 방식 분류
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Modifier")
+	ESkillApplyType ApplyType = ESkillApplyType::Etc;
+	
+	// 2차 분류
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Modifier")
+	FName Target;
+	
+	// 필요한 값
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Modifier")
+	FString Value;
+	
+	// 추가 값2
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Modifier")
+	FString Value2;
+	
+	// 추가 값3
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Modifier")
+	FString Value3;
+	
+	// 추가 값4
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill|Modifier")
+	FString Value4;
+	
+	virtual void PostRead() override
+	{
+		bTid = SkillTid;
 	}
 };

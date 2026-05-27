@@ -1,21 +1,58 @@
 #include "Player/BAPlayerCharacter.h"
 
 #include "Camera/CameraComponent.h"
+#if !UE_BUILD_SHIPPING
+#include "Enemy/EnemyBase.h"
+#include "Component/StatComponent.h"
+#include "EngineUtils.h"
+#endif
+#include "NiagaraComponent.h"
 #include "Component/ActionAnimationComponent.h"
 #include "Component/ActionComponent.h"
+#include "Component/CombatComponent.h"
 #include "Component/InteractorComponent.h"
+#include "Component/PlayerSkillComponent.h"
+#include "Component/PlayerWeaponVFX.h"
 #include "Component/StatComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/PrimitiveComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Constants/BAProjectConstant.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Instance/UserDataSubsystem.h"
 #include "Materials/MaterialInterface.h"
+#include "Player/Camera/CameraOcclusionFadeComponent.h"
 #include "Tables/BATableManager.h"
+#include "Kismet/GameplayStatics.h"
+#include "Map/MapInfoActor.h"
+#include "GameFramework/PlayerStart.h"
+#include "SaveGame/SaveGameManager.h"
 
 namespace
 {
 	// TODO: id 하드코딩
 	constexpr int32 SprintActionTid = 10020;
 	constexpr float DefaultSprintRestartStaminaPercent = 70.f;
+
+	void ConfigurePlayerCombatCollisionResponses(ABAPlayerCharacter& Player)
+	{
+		TArray<UPrimitiveComponent*> PrimitiveComponents;
+		Player.GetComponents<UPrimitiveComponent>(PrimitiveComponents);
+		for (UPrimitiveComponent* PrimitiveComponent : PrimitiveComponents)
+		{
+			if (PrimitiveComponent)
+			{
+				PrimitiveComponent->SetCollisionResponseToChannel(CollisionChannel::PlayerAttackTrace, ECR_Ignore);
+				PrimitiveComponent->SetCollisionResponseToChannel(CollisionChannel::EnemyAttackTrace, ECR_Ignore);
+			}
+		}
+
+		if (UCapsuleComponent* CapsuleComponent = Player.GetCapsuleComponent())
+		{
+			CapsuleComponent->SetCollisionResponseToChannel(CollisionChannel::EnemyAttackTrace, ECR_Block);
+		}
+	}
 }
 
 // 플레이어 캐릭터의 기본 메시, 애니메이션, 컴포넌트, 카메라, 이동 기본값을 구성한다.
@@ -33,6 +70,21 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	}
 	GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
 
+	// 무기 컴포넌트 생성 및 메시 부착
+	WeaponMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMeshComponent"));
+	WeaponMeshComponent->SetupAttachment(GetMesh(), FName(SocketName::RightHandTargetSocketName));
+	WeaponMeshComponent->SetCollisionProfileName(TEXT("NoCollision"));
+
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> GreatSwordMesh(TEXT("/Game/Assets/Weapon/Brass_Iron_StaticMesh.Brass_Iron_StaticMesh"));
+	if (GreatSwordMesh.Succeeded())
+	{
+		WeaponMeshComponent->SetStaticMesh(GreatSwordMesh.Object);
+	}
+	
+	PlayerWeaponVFX = CreateDefaultSubobject<UPlayerWeaponVFX>(TEXT("PlayerWeaponVFX"));
+	PlayerWeaponVFX->SetupAttachment(WeaponMeshComponent);
+	// PlayerWeaponVFX->SetRelativeRotation(FRotator(0.f, 0.f, 90.f));
+
 	// 스탯 컴포넌트 생성
 	StatComponent = CreateDefaultSubobject<UStatComponent>(TEXT("StatComponent"));
 	
@@ -44,6 +96,12 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 
 	// 공용 액션 애니메이션 재생 컴포넌트 생성
 	ActionAnimationComponent = CreateDefaultSubobject<UActionAnimationComponent>(TEXT("ActionAnimationComponent"));
+	
+	// 공격 컴포넌트 생성
+	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
+	
+	// 스킬 컴포넌트 생성 - 컴포넌트 중 마지막에
+	PlayerSkillComponent = CreateDefaultSubobject<UPlayerSkillComponent>(TEXT("PlayerSkillComponent"));
 
 	// C++ 동적 생성이라 BP 슬롯이 없으므로 외곽선용 PostProcess 머티리얼을 코드에서 주입
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> OutlinePPMat(
@@ -69,21 +127,25 @@ ABAPlayerCharacter::ABAPlayerCharacter()
 	SpringArm->bInheritRoll = false;
 	SpringArm->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
 	
-	// camera spring arm 충돌 활성화
-	SpringArm->bDoCollisionTest = true; 
-
 	// camera 설정
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
 	Camera->SetRelativeRotation(FRotator(-17.f, 0.f, 0.f));
 	Camera->bUsePawnControlRotation = false;
+
+	CameraOcclusionFadeComponent = CreateDefaultSubobject<UCameraOcclusionFadeComponent>(
+		TEXT("CameraOcclusionFadeComponent"));
 	
 	// 마우스 카메라 제어 Yaw축만 허용
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
-	GetCharacterMovement()->MaxWalkSpeed = SpeedSettings.RunSpeed;
+	MovementRuntime.CurrentMaxWalkSpeed = SpeedSettings.RunSpeed;
+	MovementRuntime.TargetMaxWalkSpeed = SpeedSettings.RunSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = MovementRuntime.CurrentMaxWalkSpeed;
+	ConfigurePlayerCombatCollisionResponses(*this);
+	InitializeCameraDefaults();
 }
 
 // 데이터 초기화와 스탯 변경 이벤트 바인딩을 수행한다.
@@ -91,17 +153,66 @@ void ABAPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (WeaponMeshComponent)
+	{
+		DefaultWeaponRelativeLocation = WeaponMeshComponent->GetRelativeLocation();
+		DefaultWeaponRelativeRotation = WeaponMeshComponent->GetRelativeRotation();
+	}
+
 	InitializeFromTable();
 	SyncFreeStrafeFacingMode();
 	SetActiveGaitAndSpeed(EMovementState::Run);
+	ResolveInitialGroundedMovementMode();
+	ConfigurePlayerCombatCollisionResponses(*this);
 
 	if (StatComponent)
 	{
-		StatComponent->OnHPChanged.AddDynamic(this, &ABAPlayerCharacter::OnHealthChanged);
-		StatComponent->OnStaminaChanged.AddDynamic(this, &ABAPlayerCharacter::OnStaminaChanged);
+		StatComponent->OnHPChanged.AddUniqueDynamic(this, &ABAPlayerCharacter::OnHealthChanged);
+		StatComponent->OnStaminaChanged.AddUniqueDynamic(this, &ABAPlayerCharacter::OnStaminaChanged);
 
 		OnHealthChanged(StatComponent->GetCurrentHP(), StatComponent->GetMaxHP());
 		OnStaminaChanged(StatComponent->GetCurrentStamina(), StatComponent->GetMaxStamina());
+	}
+
+	// PlayerCharacter BeginPlay의 델리게이트 콜백 바인딩 진입점을 단일화한다.
+	BindActionCallbacks();
+	BindLockOnTargetCallbacks();
+	ApplyCameraCollisionSettings();
+	ConfigureLockOnCameraDefaults();
+	
+
+	// 초기 리스폰 지점 설정 (Fallback)
+	if (USaveGameManager* SaveManager = GetGameInstance()->GetSubsystem<USaveGameManager>())
+	{
+		if (SaveManager->GetRespawnLocation().IsNearlyZero())
+		{
+			FVector DefaultLoc = GetActorLocation();
+			FRotator DefaultRot = GetActorRotation();
+
+			// 1순위: MapInfoActor에서 기본값 가져오기
+			if (AMapInfoActor* MapInfo = Cast<AMapInfoActor>(UGameplayStatics::GetActorOfClass(GetWorld(), AMapInfoActor::StaticClass())))
+			{
+				if (!MapInfo->DefaultSpawnLocation.IsZero())
+				{
+					DefaultLoc = MapInfo->DefaultSpawnLocation;
+					DefaultRot = MapInfo->DefaultSpawnRotation;
+				}
+			}
+			// 2순위: PlayerStart 액터 찾기
+			else if (AActor* PlayerStart = UGameplayStatics::GetActorOfClass(GetWorld(), APlayerStart::StaticClass()))
+			{
+				DefaultLoc = PlayerStart->GetActorLocation();
+				DefaultRot = PlayerStart->GetActorRotation();
+			}
+
+			SaveManager->SetRespawnPoint(DefaultLoc, DefaultRot);
+			UE_LOG(LogTemp, Log, TEXT("Initial Respawn Point Set to: %s"), *DefaultLoc.ToString());
+		}
+	}
+
+	if (PlayerSkillComponent)
+	{
+		PlayerSkillComponent->RefreshAllSkills();
 	}
 }
 
@@ -117,11 +228,41 @@ void ABAPlayerCharacter::Tick(float DeltaTime)
 	}
 	
 	TickMovementRuntime(DeltaTime);
+
+#if !UE_BUILD_SHIPPING
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (PC->IsInputKeyDown(EKeys::LeftControl) && PC->WasInputKeyJustPressed(EKeys::Zero))
+		{
+			AEnemyBase* NearestEnemy = nullptr;
+			float MinDistSq = FMath::Square(1500.f);
+
+			for (TActorIterator<AEnemyBase> It(GetWorld()); It; ++It)
+			{
+				if (It->IsDead()) continue;
+				float DistSq = FVector::DistSquared(GetActorLocation(), It->GetActorLocation());
+				if (DistSq < MinDistSq)
+				{
+					MinDistSq = DistSq;
+					NearestEnemy = *It;
+				}
+			}
+
+			if (NearestEnemy)
+			{
+				if (UStatComponent* SC = NearestEnemy->FindComponentByClass<UStatComponent>())
+				{
+					SC->ApplyDamage(SC->GetMaxHP() + SC->GetDefence() + 1.f);
+				}
+			}
+		}
+	}
+#endif
 }
 
-// 기본 공격 입력 진입점
-void ABAPlayerCharacter::Attack()
+void ABAPlayerCharacter::SetBAPlayerState(const EBAPlayerState NewState)
 {
+	BAPlayerState = NewState;
 }
 
 // UserDataSubsystem의 기본 스탯과 공용 Action 데이터를 플레이어 런타임 설정에 반영한다.
@@ -154,7 +295,7 @@ void ABAPlayerCharacter::InitializeFromTable()
 		SpeedSettings.SprintSpeed,
 		BaseStat.BaseAttack,
 		BaseStat.BaseAttackSpeed,
-		BaseStat.BaseDefence
+		BaseStat.BaseDefence, BaseStat.HealCount, BaseStat.HealAmount
 	);
 
 	const UBATableManager* TableManager = UBATableManager::Get(this);
@@ -177,5 +318,60 @@ void ABAPlayerCharacter::InitializeFromTable()
 		SprintCostSettings.bHasActionData = false;
 	}
 
-	GetCharacterMovement()->MaxWalkSpeed = SpeedSettings.RunSpeed;
+	MovementRuntime.CurrentMaxWalkSpeed = SpeedSettings.RunSpeed;
+	MovementRuntime.TargetMaxWalkSpeed = SpeedSettings.RunSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = MovementRuntime.CurrentMaxWalkSpeed;
+}
+
+// 공통 액션 콜백만 직접 등록하고, 액션별 예외 처리는 각 도메인 cpp에서 바인딩한다.
+void ABAPlayerCharacter::BindActionCallbacks()
+{
+	if (ActionComponent)
+	{
+		ActionComponent->OnActionStarted.AddUniqueDynamic(this, &ABAPlayerCharacter::HandleActionStarted);
+	}
+
+	BindGuardActionCallbacks();
+	BindDodgeActionCallbacks();
+	BindAttackCallbacks();
+}
+
+// 액션별 예외 처리는 가드/구르기 등 각 도메인 콜백에서 처리한다.
+// 이 공통 콜백은 액션이 이동을 잠그는 경우 Movement 런타임만 정리한다.
+void ABAPlayerCharacter::HandleActionStarted(const int32 /*ActionTid*/, const EActionType ActionType)
+{
+	if (!ActionComponent)
+	{
+		return;
+	}
+
+	if (!IsDodgeAction(ActionType))
+	{
+		ResetConsecutiveDodgeActions();
+	}
+
+	if (IsDamageReacting())
+	{
+		ActionComponent->CancelCurrentAction();
+		return;
+	}
+	if (bLandingRecoveryActive)
+	{
+		ActionComponent->CancelCurrentAction();
+		return;
+	}
+
+	if (!ActionComponent->IsMovementLockedByAction())
+	{
+		return;
+	}
+
+	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
+	{
+		MovementComponent->StopMovementImmediately();
+	}
+
+	MovementRuntime.Phase = EPlayerMovementPhase::None;
+	MovementRuntime.PhaseElapsedTime = 0.f;
+	MovementRuntime.bWaitingForPhaseAnimation = false;
 }

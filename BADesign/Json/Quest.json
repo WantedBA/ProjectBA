@@ -6,6 +6,20 @@
             "NameTextTid": 20001,
             "DescTextTid": 20002,
             "RewardTid": 501
+        },
+        {
+            "QuestTid": 1002,
+            "QuestType": 0,
+            "NameTextTid": 20001,
+            "DescTextTid": 20002,
+            "RewardTid": 0
+        },
+        {
+            "QuestTid": 2001,
+            "QuestType": 1,
+            "NameTextTid": 20003,
+            "DescTextTid": 20004,
+            "RewardTid": 502
         }
     ],
     "ZoneMonster": [
@@ -20,6 +34,12 @@
             "QuestTid": 1001,
             "MonsterTid": 10002,
             "SpawnCount": 3
+        },
+        {
+            "ZoneMonsterTid": 3,
+            "QuestTid": 1002,
+            "MonsterTid": 10003,
+            "SpawnCount": 2
         }
     ]
 }
