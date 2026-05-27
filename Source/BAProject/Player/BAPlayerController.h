@@ -62,10 +62,6 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> UseConsumableAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	TObjectPtr<UInputAction> HealAction;
-	
 	
 // 체크포인트 인풋
 	// 체크포인트에서 활성화할 IMC

@@ -156,11 +156,6 @@ void ABAPlayerController::SetupInputComponent()
 		);
 	}
 	
-	if (ensureMsgf(HealAction, TEXT("HealAction is not configured on %s"), *GetName()))
-	{
-		EnhancedInputComponent->BindAction(HealAction, ETriggerEvent::Triggered, this, &ABAPlayerController::Heal);
-	}
-	
 	// 체크포인트(스킬트리 열기)
 	if (ensureMsgf(SkillTreeToggleAction, TEXT("SkillTreeToggleAction is not configured on %s"), *GetName()))
 	{
@@ -562,13 +557,7 @@ void ABAPlayerController::OnUseConsumable()
 		return;
 	}
 
-	UActionComponent* ActionComponent = PC->GetActionComponent();
-	if (!ActionComponent)
-	{
-		return;
-	}
-
-	ActionComponent->TryStartAction(EActionCommand::UseConsumable);
+	PC->TryHeal();
 }
 
 void ABAPlayerController::OnInteract()
@@ -687,12 +676,4 @@ void ABAPlayerController::MapActionKeyIfMissing(const UInputAction* Action, cons
 	}
 
 	InputMappingContext->MapKey(Action, Key);
-}
-
-void ABAPlayerController::Heal()
-{
-	if (ABAPlayerCharacter* PC = Cast<ABAPlayerCharacter>(GetPawn()))
-	{
-		PC->TryHeal();
-	}
 }
