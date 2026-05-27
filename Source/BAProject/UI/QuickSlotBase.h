@@ -29,7 +29,7 @@ protected:
 
 	// 쿨타임 관리용 내부 변수
 	float MaxCooldown = 0.0f;
-	float CurrnetCooldown = 0.0f;
+	float CurrentCooldown = 0.0f;
 	bool bIsCooldownActive = false;
 
 	// 에디터 패널에서 슬롯별 아이콘 적용

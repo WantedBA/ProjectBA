@@ -117,10 +117,6 @@ void AMapResetPoint::HandleSkillTreeClosed(ULayerBase* ClosedWidget)
 
 bool AMapResetPoint::CanInteract_Implementation(AActor* Interactor) const
 {
-#if !UE_BUILD_SHIPPING
-	DrawDebugSphere(GetWorld(), GetActorLocation(), 100.f, 12, FColor::Yellow, false, 0.1f);
-#endif
-
 	if (bConditionUnlocked == false)
 	{
 		return false;

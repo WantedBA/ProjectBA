@@ -169,4 +169,9 @@ private:
 	float CurrentAlpha = 0.f;
 	int8 MotionDir = 0;
 	bool bUsed = false;
+	
+	UPROPERTY(EditAnywhere, Category = "Quest")
+	int32 LockQuestTid = 0;
+
+	bool bQuestUnlocked = false;
 };

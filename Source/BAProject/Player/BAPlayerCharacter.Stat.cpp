@@ -184,7 +184,7 @@ void ABAPlayerCharacter::TryHeal()
 	// PlayAnimMontage(HealMontage);
 }
 
-void ABAPlayerCharacter::OnHealAnimNotify()
+void ABAPlayerCharacter::OnHealAnimNotify_Implementation()
 {
 	StatComponent->Heal();
 }

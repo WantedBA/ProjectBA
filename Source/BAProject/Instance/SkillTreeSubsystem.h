@@ -66,7 +66,7 @@ protected:
 // 저장된 데이터
 	// 배운 스킬 + 남은 스킬 포인트
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SkillTree)
-	int32 SkillPoint = 3;
+	int32 SkillPoint = 5;
 
 	// 배운 스킬 목록
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=SkillTree)
