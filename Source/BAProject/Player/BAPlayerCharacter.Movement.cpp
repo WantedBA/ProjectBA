@@ -283,7 +283,7 @@ void ABAPlayerCharacter::HandleDodgeActionStarted(
 		return;
 	}
 
-	if (ActionType == EActionType::DodgeRoll || ActionType == EActionType::Backstep)
+	if (IsDodgeAction(ActionType))
 	{
 		++ConsecutiveDodgeActionCount;
 		SetBAPlayerState(EBAPlayerState::DodgeRolling);
@@ -296,7 +296,7 @@ void ABAPlayerCharacter::HandleDodgeActionMontageEnded(
 	UAnimMontage* /*Montage*/,
 	const bool bInterrupted)
 {
-	if ((ActionType == EActionType::DodgeRoll || ActionType == EActionType::Backstep)
+	if (IsDodgeAction(ActionType)
 		&& !bInterrupted
 		&& BAPlayerState == EBAPlayerState::DodgeRolling)
 	{
@@ -304,17 +304,24 @@ void ABAPlayerCharacter::HandleDodgeActionMontageEnded(
 		ResetConsecutiveDodgeActions();
 	}
 
-	if ((ActionType == EActionType::DodgeRoll || ActionType == EActionType::Backstep)
+	if (IsDodgeAction(ActionType)
 		&& !MovementRuntime.bHasMoveInput)
 	{
 		MovementRuntime.bSuppressVelocityFacingUntilMoveInput = true;
 		SnapInterpolatedMoveInputTo(FVector2D::ZeroVector);
 	}
 
-	if (ActionType == EActionType::DodgeRoll || ActionType == EActionType::Backstep)
+	if (IsDodgeAction(ActionType))
 	{
 		ApplyPendingLockOnStrafeMode();
 	}
+}
+
+bool ABAPlayerCharacter::IsDodgeAction(const EActionType ActionType) const
+{
+	return ActionType == EActionType::DodgeRoll
+		|| ActionType == EActionType::Backstep
+		|| (ActionComponent && ActionComponent->GetActiveActionCommand() == EActionCommand::Dodge);
 }
 
 // Movement 전체를 갱신한다.

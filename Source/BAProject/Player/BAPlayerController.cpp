@@ -532,7 +532,7 @@ bool ABAPlayerController::TryStartDodgeAction() const
 
 	return DodgeInput.IsNearlyZero()
 		? ActionComponent->TryStartAction(EActionCommand::Dodge, DodgeDirection)
-		: ActionComponent->TryStartActionOfType(EActionCommand::Dodge, DodgeDirection, EActionType::DodgeRoll);
+		: ActionComponent->TryStartActionExcludingType(EActionCommand::Dodge, DodgeDirection, EActionType::Backstep);
 }
 
 void ABAPlayerController::OnGuardStarted()

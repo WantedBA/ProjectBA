@@ -411,6 +411,7 @@ protected:
 
 	UFUNCTION()
 	void HandleDodgeActionMontageEnded(int32 ActionTid, EActionType ActionType, UAnimMontage* Montage, bool bInterrupted);
+	bool IsDodgeAction(EActionType ActionType) const;
 
 	// 피격 반응을 C++ 기본 처리 이후 블루프린트 연출로 확장한다.
 	UFUNCTION(BlueprintImplementableEvent, Category = "Combat|DamageReaction", meta = (DisplayName = "OnDamageReaction"))

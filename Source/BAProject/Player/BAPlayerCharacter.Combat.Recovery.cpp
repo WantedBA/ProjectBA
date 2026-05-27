@@ -93,10 +93,10 @@ bool ABAPlayerCharacter::TryStartRecoveryEscapeAction(
 
 		return Direction == EActionDirection::Any
 			? ActionComponent->TryStartActionForRecoveryEscape(EActionCommand::Dodge, Direction)
-			: ActionComponent->TryStartActionOfTypeForRecoveryEscape(
+			: ActionComponent->TryStartActionExcludingTypeForRecoveryEscape(
 				EActionCommand::Dodge,
 				Direction,
-				EActionType::DodgeRoll);
+				EActionType::Backstep);
 	}
 
 	if (Command == EActionCommand::Guard)
@@ -167,8 +167,8 @@ bool ABAPlayerCharacter::IsDodgeRecoveryEscapeState() const
 		return false;
 	}
 
-	const EActionType ActiveActionType = ActionComponent->GetActiveActionType();
-	return ActiveActionType == EActionType::DodgeRoll || ActiveActionType == EActionType::Backstep;
+	return ActionComponent->GetActiveActionCommand() == EActionCommand::Dodge
+		|| IsDodgeAction(ActionComponent->GetActiveActionType());
 }
 
 bool ABAPlayerCharacter::CanChainDodgeRecoveryEscape() const

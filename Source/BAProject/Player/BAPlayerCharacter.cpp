@@ -345,7 +345,7 @@ void ABAPlayerCharacter::HandleActionStarted(const int32 /*ActionTid*/, const EA
 		return;
 	}
 
-	if (ActionType != EActionType::DodgeRoll && ActionType != EActionType::Backstep)
+	if (!IsDodgeAction(ActionType))
 	{
 		ResetConsecutiveDodgeActions();
 	}
