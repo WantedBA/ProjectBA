@@ -39,5 +39,9 @@ public:
 	// 보스전이 시작될 때 이름과 초기 체력을 설정 및 연출
 	UFUNCTION(BlueprintCallable, Category = "BA|UI|Boss")
 	void InitializeBossBar(FText Name, float MaxHP);
+
+	// 보스체력바 끄고 데이터 초기화
+	UFUNCTION(BlueprintCallable, Category = "BA|UI|Boss")
+	void ResetBossBar();
 	
 };
