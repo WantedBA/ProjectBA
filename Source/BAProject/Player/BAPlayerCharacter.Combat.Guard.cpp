@@ -466,6 +466,7 @@ void ABAPlayerCharacter::HandlePerfectGuardSucceeded(const FHitResult& HitResult
 	ConsumePerfectGuardStaminaCost();
 	ShowGuardJudgementDebugMessage(TEXT("Perfect Guard"), FColor::Cyan);
 	PlayPerfectGuardCameraShake();
+	PlayPerfectGuardForceFeedback();
 	K2_OnPerfectGuardSucceeded(HitResult, DamageCauser);
 
 	if (ACharacterBase* DamageCauserCharacter = Cast<ACharacterBase>(DamageCauser))

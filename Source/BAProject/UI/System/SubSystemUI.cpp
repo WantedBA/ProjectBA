@@ -12,12 +12,35 @@
 #include "Blueprint/UserWidget.h"
 #include "Component/StatComponent.h"
 
+#include "Framework/Application/NavigationConfig.h"
+#include "Framework/Application/SlateApplication.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
+#include "InputCoreTypes.h"
 
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 
+namespace
+{
+	FKey UINavigationGenericUSBControllerButton(const int32 ButtonNumber)
+	{
+		return FKey(FName(*FString::Printf(TEXT("GenericUSBController_Button%d"), ButtonNumber)));
+	}
+
+	class FBAUINavigationConfig : public FTwinStickNavigationConfig
+	{
+	public:
+		FBAUINavigationConfig()
+		{
+			KeyActionRules.Emplace(EKeys::Gamepad_FaceButton_Bottom, EUINavigationAction::Accept); // Xbox A
+			KeyActionRules.Emplace(UINavigationGenericUSBControllerButton(2), EUINavigationAction::Accept); // DualSense Cross
+
+			KeyActionRules.Emplace(EKeys::Gamepad_FaceButton_Right, EUINavigationAction::Back); // Xbox B
+			KeyActionRules.Emplace(UINavigationGenericUSBControllerButton(3), EUINavigationAction::Back); // DualSense Circle
+		}
+	};
+}
 
 void USubSystemUI::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -25,6 +48,11 @@ void USubSystemUI::Initialize(FSubsystemCollectionBase& Collection)
 
 	// 월드 델리게이트에 함수 등록
 	FWorldDelegates::OnPostWorldInitialization.AddUObject(this, &USubSystemUI::HandleWorldInit);
+
+	if (FSlateApplication::IsInitialized())
+	{
+		FSlateApplication::Get().SetNavigationConfig(MakeShared<FBAUINavigationConfig>());
+	}
 }
 
 void USubSystemUI::PushUI(ULayerBase* InWidget)
@@ -66,6 +94,10 @@ void USubSystemUI::PushUI(ULayerBase* InWidget)
 	// 위젯이 키보드 입력을 받을 수 있도록 설정
 	if (InWidget->GetStackType() == EStackElemType::Popup)
 	{
+		if (APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr)
+		{
+			InWidget->SetUserFocus(PC);
+		}
 		InWidget->SetKeyboardFocus();
 	}
 	UE_LOG(LogTemp, Log, TEXT("UI Pushed! 현재 스택 개수: %d"), UIStack.Num());

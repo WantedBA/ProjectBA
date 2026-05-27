@@ -5,6 +5,7 @@
 #include "BAPlayerController.generated.h"
 
 struct FInputActionValue;
+struct FKey;
 class UInputAction;
 class UInputMappingContext;
 class USkillTreeWidget;
@@ -59,6 +60,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> GuardAction;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> UseConsumableAction;
+
 // 체크포인트 인풋
 	// 체크포인트에서 활성화할 IMC
 	UPROPERTY(EditDefaultsOnly, Category = "Input|Checkpoint")
@@ -75,7 +79,7 @@ private:
 
 	// 전투 중 바닥/천장 쪽으로 시야가 과하게 기울지 않도록 제한한다.
 	UPROPERTY(EditDefaultsOnly, Category = "Camera|View", meta = (Units = "deg"))
-	float ViewPitchMin = -30.f;
+	float ViewPitchMin = -60.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Camera|View", meta = (Units = "deg"))
 	float ViewPitchMax = 60.f;
@@ -87,7 +91,7 @@ private:
 	// 이 시간 이상 질주 입력을 유지해야 실제 질주 modifier가 켜진다.
 	UPROPERTY(EditDefaultsOnly, Category = "Input", meta = (ClampMin = "0.0"))
 	float SprintHoldRequiredTime = 0.5f;
-	
+
 	UPROPERTY(EditDefaultsOnly, Category="Input")
 	TObjectPtr<UInputAction> InteractAction;
 	
@@ -103,6 +107,9 @@ private:
 
 	// 카메라 yaw/pitch 입력을 컨트롤러 회전에 적용한다.
 	void Look(const FInputActionValue& Value);
+
+	// 카메라 yaw/pitch 입력을 락온 상태에 맞게 처리한다.
+	void ApplyLookInput(const FVector2D& LookInput);
 
 	// 기본 공격 입력을 캐릭터 공격 진입점으로 전달한다.
 	void LightAttack();
@@ -137,6 +144,9 @@ private:
 	void OnGuardStarted();
 	void OnGuardCompleted();
 
+	// 아이템 사용 입력을 UseConsumable 액션 명령으로 전달한다.
+	void OnUseConsumable();
+
 	// 사다리 상태면 이탈하고, 아니면 현재 상호작용 대상을 실행한다.
 	void OnInteract();
 
@@ -145,6 +155,12 @@ private:
 	
 	// 스킬트리 열기
 	void ToggleSkillTree();
+
+	// 기본 입력 컨텍스트에 런타임 게임패드 매핑을 보강한다.
+	void ConfigureGamepadInputMappings();
+
+	// 지정 액션에 키가 없을 때만 매핑을 추가한다.
+	void MapActionKeyIfMissing(const UInputAction* Action, const FKey& Key);
 
 	bool bWalkToggleEnabled = false;
 	bool bSprintInputHeld = false;
