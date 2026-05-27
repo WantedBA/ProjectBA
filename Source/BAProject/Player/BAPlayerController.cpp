@@ -304,8 +304,6 @@ void ABAPlayerController::ToggleWalk()
 
 void ABAPlayerController::OnSprintStarted()
 {
-	bSprintInputHandledByRecoveryEscape = false;
-
 	// 사다리 위에서는 탭=닷지 체계 무시 — Space 누르면 즉시 빨리오르기
 	if (ABAPlayerCharacter* LadderPC = Cast<ABAPlayerCharacter>(GetPawn());
 		LadderPC && LadderPC->IsOnLadder())
@@ -325,7 +323,7 @@ void ABAPlayerController::OnSprintStarted()
 				: PC->GetMoveInputVector();
 			const EActionDirection DodgeDirection = PC->GetActionDirectionFromMoveInput(DodgeInput);
 			PC->TryStartRecoveryEscapeAction(EActionCommand::Dodge, DodgeDirection);
-			bSprintInputHandledByRecoveryEscape = true;
+			++RecoveryEscapeSprintInputReleaseBlockCount;
 			bSprintInputHeld = false;
 			bSprintModifierHeld = false;
 			ApplyMovementStateByModifier();
@@ -375,9 +373,9 @@ void ABAPlayerController::OnSprintCompleted()
 		return;
 	}
 
-	if (bSprintInputHandledByRecoveryEscape)
+	if (RecoveryEscapeSprintInputReleaseBlockCount > 0)
 	{
-		bSprintInputHandledByRecoveryEscape = false;
+		--RecoveryEscapeSprintInputReleaseBlockCount;
 		bSprintInputHeld = false;
 		bSprintModifierHeld = false;
 		ApplyMovementStateByModifier();

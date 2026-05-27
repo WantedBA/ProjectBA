@@ -174,7 +174,7 @@ private:
 	bool bWalkToggleEnabled = false;
 	bool bSprintInputHeld = false;
 	bool bSprintModifierHeld = false;
-	bool bSprintInputHandledByRecoveryEscape = false;
+	int32 RecoveryEscapeSprintInputReleaseBlockCount = 0;
 	bool bHasMoveInput = false;
 	FVector2D LastMoveInputVector = FVector2D::ZeroVector;
 	double SprintDodgePressedTime = 0.0;
