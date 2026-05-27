@@ -7,8 +7,6 @@
 #include "UI/System/PopupBase.h"
 #include "SkillTreeWidget.generated.h"
 
-enum class EUINavigation : uint8;
-
 /**
  * 
  */
@@ -46,19 +44,19 @@ protected:
 	UFUNCTION(BlueprintCallable, Category=SkillTree)
 	void RefreshAllSkillNodeState();
 
-	bool TryNavigateSkillNode(EUINavigation Direction);
+	bool TryNavigateSkillNode(const FVector2D& DirectionVector);
 	bool SelectSkillNodeByGamepad(int32 SkillId);
 	bool ActivateGamepadSelectedSkillNode();
 	int32 ResolveInitialGamepadSkillNodeId() const;
 	int32 FindSkillNodeUnderMouse() const;
-	int32 FindBestSkillNodeInDirection(int32 SkillId, EUINavigation Direction) const;
-	int32 FindAdjacentSkillNodeInDirection(int32 SkillId, EUINavigation Direction) const;
+	int32 FindBestSkillNodeInDirection(int32 SkillId, const FVector2D& DirectionVector) const;
+	int32 FindAdjacentSkillNodeInDirection(int32 SkillId, const FVector2D& DirectionVector) const;
 	TArray<int32> GetConnectedSkillNodeIds(int32 SkillId) const;
 	FVector2D GetSkillNodeCenterAbsolute(int32 SkillId) const;
 	void MoveMouseToSkillNode(int32 SkillId);
 	void ClearGamepadSelectedSkillNode();
 	bool IsRightStickNavigationKey(const FKey& Key) const;
-	EUINavigation GetRightStickNavigationDirection() const;
+	FVector2D GetRightStickNavigationVector() const;
 	
 	
 // 데이터

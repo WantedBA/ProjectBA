@@ -39,21 +39,9 @@ namespace
 			|| Key == SkillTreeGenericUSBControllerButton(2);
 	}
 
-	FVector2D GetNavigationDirectionVector(const EUINavigation Direction)
+	FVector2D NormalizeNavigationVector(const FVector2D& DirectionVector)
 	{
-		switch (Direction)
-		{
-		case EUINavigation::Up:
-			return FVector2D(0.0f, -1.0f);
-		case EUINavigation::Down:
-			return FVector2D(0.0f, 1.0f);
-		case EUINavigation::Left:
-			return FVector2D(-1.0f, 0.0f);
-		case EUINavigation::Right:
-			return FVector2D(1.0f, 0.0f);
-		default:
-			return FVector2D::ZeroVector;
-		}
+		return DirectionVector.GetSafeNormal();
 	}
 }
 
@@ -107,7 +95,7 @@ FReply USkillTreeWidget::NativeOnAnalogValueChanged(
 	}
 
 	bRightStickNavigationReady = false;
-	return TryNavigateSkillNode(GetRightStickNavigationDirection())
+	return TryNavigateSkillNode(GetRightStickNavigationVector())
 		? FReply::Handled()
 		: FReply::Handled();
 }
@@ -230,7 +218,7 @@ void USkillTreeWidget::CreateSkillLines()
 	}
 }
 
-bool USkillTreeWidget::TryNavigateSkillNode(const EUINavigation Direction)
+bool USkillTreeWidget::TryNavigateSkillNode(const FVector2D& DirectionVector)
 {
 	const int32 CurrentSkillId = SkillNodeMap.Contains(GamepadSelectedSkillId)
 		? GamepadSelectedSkillId
@@ -240,7 +228,7 @@ bool USkillTreeWidget::TryNavigateSkillNode(const EUINavigation Direction)
 		return false;
 	}
 
-	const int32 TargetSkillId = FindBestSkillNodeInDirection(CurrentSkillId, Direction);
+	const int32 TargetSkillId = FindBestSkillNodeInDirection(CurrentSkillId, DirectionVector);
 	if (!SkillNodeMap.Contains(TargetSkillId))
 	{
 		return SelectSkillNodeByGamepad(CurrentSkillId);
@@ -377,10 +365,10 @@ int32 USkillTreeWidget::FindSkillNodeUnderMouse() const
 	return INDEX_NONE;
 }
 
-int32 USkillTreeWidget::FindBestSkillNodeInDirection(const int32 SkillId, const EUINavigation Direction) const
+int32 USkillTreeWidget::FindBestSkillNodeInDirection(const int32 SkillId, const FVector2D& DirectionVector) const
 {
-	const FVector2D DirectionVector = GetNavigationDirectionVector(Direction);
-	if (DirectionVector.IsNearlyZero())
+	const FVector2D NormalizedDirection = NormalizeNavigationVector(DirectionVector);
+	if (NormalizedDirection.IsNearlyZero())
 	{
 		return INDEX_NONE;
 	}
@@ -401,7 +389,7 @@ int32 USkillTreeWidget::FindBestSkillNodeInDirection(const int32 SkillId, const 
 			continue;
 		}
 
-		const float DirectionDot = FVector2D::DotProduct(Delta.GetSafeNormal(), DirectionVector);
+		const float DirectionDot = FVector2D::DotProduct(Delta.GetSafeNormal(), NormalizedDirection);
 		if (DirectionDot < SkillNavigationMinDirectionDot)
 		{
 			continue;
@@ -415,13 +403,13 @@ int32 USkillTreeWidget::FindBestSkillNodeInDirection(const int32 SkillId, const 
 		}
 	}
 
-	return BestSkillId != INDEX_NONE ? BestSkillId : FindAdjacentSkillNodeInDirection(SkillId, Direction);
+	return BestSkillId != INDEX_NONE ? BestSkillId : FindAdjacentSkillNodeInDirection(SkillId, DirectionVector);
 }
 
-int32 USkillTreeWidget::FindAdjacentSkillNodeInDirection(const int32 SkillId, const EUINavigation Direction) const
+int32 USkillTreeWidget::FindAdjacentSkillNodeInDirection(const int32 SkillId, const FVector2D& DirectionVector) const
 {
-	const FVector2D DirectionVector = GetNavigationDirectionVector(Direction);
-	if (DirectionVector.IsNearlyZero())
+	const FVector2D NormalizedDirection = NormalizeNavigationVector(DirectionVector);
+	if (NormalizedDirection.IsNearlyZero())
 	{
 		return INDEX_NONE;
 	}
@@ -446,7 +434,7 @@ int32 USkillTreeWidget::FindAdjacentSkillNodeInDirection(const int32 SkillId, co
 			continue;
 		}
 
-		const float DirectionDot = FVector2D::DotProduct(Delta.GetSafeNormal(), DirectionVector);
+		const float DirectionDot = FVector2D::DotProduct(Delta.GetSafeNormal(), NormalizedDirection);
 		if (DirectionDot < SkillNavigationMinDirectionDot)
 		{
 			continue;
@@ -552,14 +540,9 @@ bool USkillTreeWidget::IsRightStickNavigationKey(const FKey& Key) const
 	return Key == EKeys::Gamepad_RightX || Key == EKeys::Gamepad_RightY;
 }
 
-EUINavigation USkillTreeWidget::GetRightStickNavigationDirection() const
+FVector2D USkillTreeWidget::GetRightStickNavigationVector() const
 {
-	if (FMath::Abs(RightStickNavigationInput.X) > FMath::Abs(RightStickNavigationInput.Y))
-	{
-		return RightStickNavigationInput.X > 0.f ? EUINavigation::Right : EUINavigation::Left;
-	}
-
-	return RightStickNavigationInput.Y > 0.f ? EUINavigation::Up : EUINavigation::Down;
+	return FVector2D(RightStickNavigationInput.X, -RightStickNavigationInput.Y).GetSafeNormal();
 }
 
 void USkillTreeWidget::HandleSkillNodeStateChanged(int32 SkillId, ESkillNodeState NewState)

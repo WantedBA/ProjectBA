@@ -7,8 +7,6 @@
 #include "UI/System/PopupBase.h"
 #include "TitleMenu.generated.h"
 
-enum class EUINavigation : uint8;
-
 /**
  * 
  */
@@ -27,7 +25,7 @@ protected:
 
 private:
 	void FocusInitialTitleButton();
-	bool TryNavigateTitleButton(EUINavigation Direction);
+	bool TryNavigateTitleButton(const FVector2D& DirectionVector);
 	bool SelectTitleButton(class UButton* Button);
 	bool ActivateSelectedTitleButton();
 	void FinishGamepadTitleButtonClick();
@@ -35,11 +33,11 @@ private:
 
 	TArray<class UButton*> GetNavigableTitleButtons() const;
 	class UButton* ResolveCurrentTitleButton() const;
-	class UButton* FindBestTitleButtonInDirection(class UButton* SourceButton, EUINavigation Direction) const;
+	class UButton* FindBestTitleButtonInDirection(class UButton* SourceButton, const FVector2D& DirectionVector) const;
 	FVector2D GetTitleButtonCenterAbsolute(const class UButton* Button) const;
 	void MoveMouseToTitleButton(const class UButton* Button);
 	bool IsRightStickNavigationKey(const FKey& Key) const;
-	EUINavigation GetRightStickNavigationDirection() const;
+	FVector2D GetRightStickNavigationVector() const;
 
 	TWeakObjectPtr<class UButton> GamepadSelectedButton;
 	FVector2D RightStickNavigationInput = FVector2D::ZeroVector;

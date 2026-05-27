@@ -11,8 +11,8 @@
 
 namespace
 {
-	constexpr float TitleRightStickNavigationThreshold = 0.99f;
-	constexpr float TitleRightStickNavigationResetThreshold = 0.5f;
+	constexpr float TitleRightStickNavigationThreshold = 0.85f;
+	constexpr float TitleRightStickNavigationResetThreshold = 0.35f;
 	constexpr float TitleNavigationMinDirectionDot = 0.35f;
 	constexpr float TitleNavigationSmallDistance = 1.0f;
 	constexpr float TitleGamepadMouseMoveTolerance = 3.0f;
@@ -75,21 +75,9 @@ namespace
 		}
 	}
 
-	FVector2D GetTitleNavigationDirectionVector(const EUINavigation Direction)
+	FVector2D NormalizeNavigationVector(const FVector2D& DirectionVector)
 	{
-		switch (Direction)
-		{
-		case EUINavigation::Up:
-			return FVector2D(0.f, -1.f);
-		case EUINavigation::Down:
-			return FVector2D(0.f, 1.f);
-		case EUINavigation::Left:
-			return FVector2D(-1.f, 0.f);
-		case EUINavigation::Right:
-			return FVector2D(1.f, 0.f);
-		default:
-			return FVector2D::ZeroVector;
-		}
+		return DirectionVector.GetSafeNormal();
 	}
 }
 
@@ -150,7 +138,7 @@ FReply UTitleMenu::NativeOnAnalogValueChanged(
 	}
 
 	bRightStickNavigationReady = false;
-	TryNavigateTitleButton(GetRightStickNavigationDirection());
+	TryNavigateTitleButton(GetRightStickNavigationVector());
 	return FReply::Handled();
 }
 
@@ -193,14 +181,9 @@ void UTitleMenu::FocusInitialTitleButton()
 		SetUserFocus(OwningPlayer);
 	}
 	SetKeyboardFocus();
-
-	if (!GamepadSelectedButton.IsValid())
-	{
-		SelectTitleButton(ResolveCurrentTitleButton());
-	}
 }
 
-bool UTitleMenu::TryNavigateTitleButton(const EUINavigation Direction)
+bool UTitleMenu::TryNavigateTitleButton(const FVector2D& DirectionVector)
 {
 	UButton* CurrentButton = ResolveCurrentTitleButton();
 	if (!CurrentButton)
@@ -208,7 +191,7 @@ bool UTitleMenu::TryNavigateTitleButton(const EUINavigation Direction)
 		return false;
 	}
 
-	if (UButton* TargetButton = FindBestTitleButtonInDirection(CurrentButton, Direction))
+	if (UButton* TargetButton = FindBestTitleButtonInDirection(CurrentButton, DirectionVector))
 	{
 		return SelectTitleButton(TargetButton);
 	}
@@ -372,15 +355,15 @@ UButton* UTitleMenu::ResolveCurrentTitleButton() const
 	return Buttons.IsEmpty() ? nullptr : Buttons[0];
 }
 
-UButton* UTitleMenu::FindBestTitleButtonInDirection(UButton* SourceButton, const EUINavigation Direction) const
+UButton* UTitleMenu::FindBestTitleButtonInDirection(UButton* SourceButton, const FVector2D& DirectionVector) const
 {
 	if (!SourceButton)
 	{
 		return nullptr;
 	}
 
-	const FVector2D DirectionVector = GetTitleNavigationDirectionVector(Direction);
-	if (DirectionVector.IsNearlyZero())
+	const FVector2D NormalizedDirection = NormalizeNavigationVector(DirectionVector);
+	if (NormalizedDirection.IsNearlyZero())
 	{
 		return nullptr;
 	}
@@ -403,7 +386,7 @@ UButton* UTitleMenu::FindBestTitleButtonInDirection(UButton* SourceButton, const
 			continue;
 		}
 
-		const float DirectionDot = FVector2D::DotProduct(Delta.GetSafeNormal(), DirectionVector);
+		const float DirectionDot = FVector2D::DotProduct(Delta.GetSafeNormal(), NormalizedDirection);
 		if (DirectionDot < TitleNavigationMinDirectionDot)
 		{
 			continue;
@@ -451,12 +434,7 @@ bool UTitleMenu::IsRightStickNavigationKey(const FKey& Key) const
 	return Key == EKeys::Gamepad_RightX || Key == EKeys::Gamepad_RightY;
 }
 
-EUINavigation UTitleMenu::GetRightStickNavigationDirection() const
+FVector2D UTitleMenu::GetRightStickNavigationVector() const
 {
-	if (FMath::Abs(RightStickNavigationInput.X) > FMath::Abs(RightStickNavigationInput.Y))
-	{
-		return RightStickNavigationInput.X > 0.f ? EUINavigation::Right : EUINavigation::Left;
-	}
-
-	return RightStickNavigationInput.Y > 0.f ? EUINavigation::Up : EUINavigation::Down;
+	return FVector2D(RightStickNavigationInput.X, -RightStickNavigationInput.Y).GetSafeNormal();
 }
