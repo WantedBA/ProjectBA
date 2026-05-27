@@ -151,7 +151,7 @@ bool ABAPlayerCharacter::ShouldPlayGuardBreakReaction() const
 void ABAPlayerCharacter::CancelCurrentActionForDamageReaction()
 {
 	SetGuardWindowActive(false);
-	ClearAttackHitStop(true);
+	ClearAttackRuntimeState();
 
 	// 전력질주 중 피격 시 전력질주가 끊겨야 함
 	if (MovementRuntime.DesiredGait == EMovementState::Sprint)
