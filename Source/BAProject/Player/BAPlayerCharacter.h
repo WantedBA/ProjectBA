@@ -289,6 +289,10 @@ public:
 
 	/** 사망 시 드롭된 무기를 다시 손에 부착 */
 	void ResetWeaponAttachment();
+	
+	// 회복 시도. 회복 시도 가능한 상태인지 검사 후 몽타주 재생. 몽타주에서 회복 타이밍에 AnimNotify를 통해 OnHealAnimNotify 호출
+	void TryHeal();
+	void OnHealAnimNotify();
 
 protected:
 	// CharacterBase 훅
@@ -810,6 +814,10 @@ private:
 	// KnockDown 일반 기립/이동 탈출 기립 몽타주
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Recovery")
 	TObjectPtr<UAnimMontage> KnockDownGetUpMontage;
+	
+	// 회복 물약 몽타주
+	UPROPERTY(EditAnywhere, Category = "Action|Heal")
+	TObjectPtr<UAnimMontage> HealMontage;
 
 	// 누운 자세 고정 최소 리액션 몽타주 시간
 	UPROPERTY(EditAnywhere, Category = "Combat|DamageReaction|Recovery", meta = (ClampMin = "0.0"))

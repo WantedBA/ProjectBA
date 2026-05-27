@@ -319,11 +319,15 @@
         },
         {
             "SkillTid": 18,
-            "ApplyType": "Etc"
+            "ApplyType": "Stat",
+            "Target": "HealCount",
+            "Value": 2
         },
         {
             "SkillTid": 19,
-            "ApplyType": "Etc"
+            "ApplyType": "Stat",
+            "Target": "HealAmount",
+            "Value": 25
         },
         {
             "SkillTid": 20,

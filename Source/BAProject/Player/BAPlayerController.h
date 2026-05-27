@@ -62,7 +62,7 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> UseConsumableAction;
-
+	
 // 체크포인트 인풋
 	// 체크포인트에서 활성화할 IMC
 	UPROPERTY(EditDefaultsOnly, Category = "Input|Checkpoint")
@@ -155,6 +155,9 @@ private:
 	
 	// 스킬트리 열기
 	void ToggleSkillTree();
+	
+	// 회복
+	void Heal();
 
 	// 기본 입력 컨텍스트에 런타임 게임패드 매핑을 보강한다.
 	void ConfigureGamepadInputMappings();

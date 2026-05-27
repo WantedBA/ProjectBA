@@ -73,6 +73,18 @@
             "bLocksMovement": 1,
             "bUsesRootMotion": 1,
             "bCanBeInterrupted": 1
+        },
+        {
+            "Tid": 10031,
+            "Name": "Heal",
+            "Category": "UseItem",
+            "StaminaCost": 0,
+            "StaminaCostType": "Instant",
+            "StaminaRecoveryRateMultiplier": 1,
+            "MinRequiredStamina": 0,
+            "SprintRestartStaminaPercent": 0,
+            "ActionType": "UseConsumable",
+            "Cooldown": 1
         }
     ],
     "Moveset": [
@@ -125,6 +137,16 @@
             "Direction": "Any",
             "ActionTid": 10022,
             "Priority": 1
+        },
+        {
+            "Tid": 20031,
+            "MovesetKey": "Default",
+            "Command": "UseConsumable",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Direction": "Any",
+            "ActionTid": 10031,
+            "Priority": 0
         }
     ],
     "ActionAnimationData": [
@@ -355,6 +377,18 @@
             "PlayRate": 1,
             "BlendIn": 0.1,
             "BlendOut": 0.1
+        },
+        {
+            "Tid": 30071,
+            "ActionTid": 10031,
+            "Direction": "Any",
+            "CombatStance": "Relaxed",
+            "WeaponType": "Any",
+            "Montage": "/Game/Character/Player/Animation/Montages/Heal/AM_Player_DrinkPotion.AM_Player_DrinkPotion",
+            "PlayRate": 1,
+            "BlendIn": 0.1,
+            "BlendOut": 0.25,
+            "bUseRootMotion": 0
         }
     ],
     "ActionWindowData": [

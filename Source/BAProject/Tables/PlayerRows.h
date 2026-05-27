@@ -59,6 +59,12 @@ struct BAPROJECT_API FPlayerBaseStatRow : public FBARowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
 	float LadderExitClearance = 0.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	int32 HealCount = 0;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player|BaseStat")
+	float HealAmount = 0.f;
 
 	virtual void PostRead() override
 	{
