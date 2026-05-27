@@ -35,5 +35,6 @@ private:
 	void FocusFirstGamepadNavigableWidget();
 	bool HandleAcceptKey();
 	class UButton* FindFocusedButton() const;
+	void ActivateFocusedButton(class UButton* ButtonToClick) const;
 	
 };

@@ -25,6 +25,16 @@ public:
 		return SkillNodeState;
 	}
 
+	[[nodiscard]] int32 GetSkillId() const
+	{
+		return SkillId;
+	}
+
+	[[nodiscard]] class UButton* GetSkillNodeButton() const
+	{
+		return SkillNodeButton;
+	}
+
 	// Setter
 	UFUNCTION(BlueprintCallable)
 	void SetSkillNodeState(const ESkillNodeState InSkillNodeState);

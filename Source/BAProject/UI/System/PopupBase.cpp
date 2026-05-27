@@ -133,8 +133,20 @@ bool UPopupBase::HandleAcceptKey()
 		return false;
 	}
 
-	ButtonToClick->OnClicked.Broadcast();
+	ActivateFocusedButton(ButtonToClick);
 	return true;
+}
+
+void UPopupBase::ActivateFocusedButton(UButton* ButtonToClick) const
+{
+	if (!ButtonToClick)
+	{
+		return;
+	}
+
+	ButtonToClick->OnPressed.Broadcast();
+	ButtonToClick->OnReleased.Broadcast();
+	ButtonToClick->OnClicked.Broadcast();
 }
 
 UButton* UPopupBase::FindFocusedButton() const

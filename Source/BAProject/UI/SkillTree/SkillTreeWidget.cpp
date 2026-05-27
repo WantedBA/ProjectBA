@@ -7,11 +7,43 @@
 #include "Instance/SkillTreeSubsystem.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Components/Button.h"
 #include "UI/System/SubSystemUI.h"
 #include "UI/MainHUD.h"
 
 #include "Tables/BATableManager.h"
 #include "Tables/SkillRows.h"
+
+namespace
+{
+	constexpr float SkillNavigationMinDirectionDot = 0.35f;
+	constexpr float SkillNavigationSmallDistance = 1.0f;
+
+	constexpr EUINavigation SkillNavigationDirections[] =
+	{
+		EUINavigation::Up,
+		EUINavigation::Down,
+		EUINavigation::Left,
+		EUINavigation::Right,
+	};
+
+	FVector2D GetNavigationDirectionVector(const EUINavigation Direction)
+	{
+		switch (Direction)
+		{
+		case EUINavigation::Up:
+			return FVector2D(0.0f, -1.0f);
+		case EUINavigation::Down:
+			return FVector2D(0.0f, 1.0f);
+		case EUINavigation::Left:
+			return FVector2D(-1.0f, 0.0f);
+		case EUINavigation::Right:
+			return FVector2D(1.0f, 0.0f);
+		default:
+			return FVector2D::ZeroVector;
+		}
+	}
+}
 
 void USkillTreeWidget::NativeConstruct()
 {
@@ -20,6 +52,8 @@ void USkillTreeWidget::NativeConstruct()
 	// 화면에 생길 때 델리게이트 등록
 	GetGameInstance()->GetSubsystem<USkillTreeSubsystem>()->OnSkillNodeStateChange.AddUniqueDynamic(
 		this, &USkillTreeWidget::HandleSkillNodeStateChanged);
+
+	ConfigureSkillNodeNavigation();
 }
 
 void USkillTreeWidget::NativeDestruct()
@@ -125,6 +159,204 @@ void USkillTreeWidget::CreateSkillLines()
 			}
 		}
 	}
+
+	ConfigureSkillNodeNavigation();
+}
+
+void USkillTreeWidget::ConfigureSkillNodeNavigation()
+{
+	for (const TPair<int32, TObjectPtr<USkillNodeWidget>>& NodePair : SkillNodeMap)
+	{
+		USkillNodeWidget* SourceNode = NodePair.Value;
+		if (!SourceNode)
+		{
+			continue;
+		}
+
+		UButton* SourceButton = SourceNode->GetSkillNodeButton();
+		if (!SourceButton)
+		{
+			continue;
+		}
+
+		for (const EUINavigation Direction : SkillNavigationDirections)
+		{
+			const int32 TargetSkillId = FindBestSkillNodeInDirection(NodePair.Key, Direction);
+			if (TargetSkillId == INDEX_NONE)
+			{
+				SourceButton->SetNavigationRuleBase(Direction, EUINavigationRule::Stop);
+				continue;
+			}
+
+			TObjectPtr<USkillNodeWidget>* TargetNodePtr = SkillNodeMap.Find(TargetSkillId);
+			UButton* TargetButton = TargetNodePtr && TargetNodePtr->Get() ? TargetNodePtr->Get()->GetSkillNodeButton() : nullptr;
+			if (!TargetButton)
+			{
+				SourceButton->SetNavigationRuleBase(Direction, EUINavigationRule::Stop);
+				continue;
+			}
+
+			SourceButton->SetNavigationRuleExplicit(Direction, TargetButton);
+		}
+	}
+}
+
+TArray<int32> USkillTreeWidget::GetConnectedSkillNodeIds(const int32 SkillId) const
+{
+	TArray<int32> ConnectedIds;
+	const UBATableManager* TableManager = UBATableManager::Get(this);
+	if (!TableManager)
+	{
+		return ConnectedIds;
+	}
+
+	if (const FSkillRow* SkillRow = TableManager->FindSkill(SkillId))
+	{
+		for (const int32 ParentId : SkillRow->PrerequisiteIds)
+		{
+			if (SkillNodeMap.Contains(ParentId))
+			{
+				ConnectedIds.AddUnique(ParentId);
+			}
+		}
+
+		for (const int32 ChildId : SkillRow->ChildIds)
+		{
+			if (SkillNodeMap.Contains(ChildId))
+			{
+				ConnectedIds.AddUnique(ChildId);
+			}
+		}
+	}
+
+	// ChildIds가 아직 빌드되지 않은 경우에도 연결된 자식 노드를 찾는다.
+	for (const TPair<int32, FSkillRow*>& SkillPair : TableManager->GetSkillMap())
+	{
+		const FSkillRow* CandidateRow = SkillPair.Value;
+		if (!CandidateRow || SkillPair.Key == SkillId || !SkillNodeMap.Contains(SkillPair.Key))
+		{
+			continue;
+		}
+
+		if (CandidateRow->PrerequisiteIds.Contains(SkillId))
+		{
+			ConnectedIds.AddUnique(SkillPair.Key);
+		}
+	}
+
+	return ConnectedIds;
+}
+
+int32 USkillTreeWidget::FindBestSkillNodeInDirection(const int32 SkillId, const EUINavigation Direction) const
+{
+	const FVector2D DirectionVector = GetNavigationDirectionVector(Direction);
+	if (DirectionVector.IsNearlyZero())
+	{
+		return INDEX_NONE;
+	}
+
+	const FVector2D SourcePosition = GetSkillNodePosition(SkillId);
+	const TArray<int32> ConnectedIds = GetConnectedSkillNodeIds(SkillId);
+
+	int32 BestSkillId = INDEX_NONE;
+	float BestScore = TNumericLimits<float>::Max();
+
+	for (const int32 CandidateId : ConnectedIds)
+	{
+		const FVector2D CandidatePosition = GetSkillNodePosition(CandidateId);
+		const FVector2D Delta = CandidatePosition - SourcePosition;
+		const float DistanceSquared = Delta.SizeSquared();
+		if (DistanceSquared <= SkillNavigationSmallDistance)
+		{
+			continue;
+		}
+
+		const FVector2D CandidateDirection = Delta.GetSafeNormal();
+		const float DirectionDot = FVector2D::DotProduct(CandidateDirection, DirectionVector);
+		if (DirectionDot < SkillNavigationMinDirectionDot)
+		{
+			continue;
+		}
+
+		const float DirectionPenalty = 1.0f - DirectionDot;
+		const float Score = DistanceSquared * (1.0f + DirectionPenalty);
+		if (Score < BestScore)
+		{
+			BestScore = Score;
+			BestSkillId = CandidateId;
+		}
+	}
+
+	return BestSkillId != INDEX_NONE ? BestSkillId : FindAdjacentSkillNodeInDirection(SkillId, Direction);
+}
+
+int32 USkillTreeWidget::FindAdjacentSkillNodeInDirection(const int32 SkillId, const EUINavigation Direction) const
+{
+	const FVector2D DirectionVector = GetNavigationDirectionVector(Direction);
+	if (DirectionVector.IsNearlyZero())
+	{
+		return INDEX_NONE;
+	}
+
+	const FVector2D SourcePosition = GetSkillNodePosition(SkillId);
+
+	int32 BestSkillId = INDEX_NONE;
+	float BestScore = TNumericLimits<float>::Max();
+
+	for (const TPair<int32, TObjectPtr<USkillNodeWidget>>& NodePair : SkillNodeMap)
+	{
+		if (NodePair.Key == SkillId || !NodePair.Value)
+		{
+			continue;
+		}
+
+		const FVector2D CandidatePosition = GetSkillNodePosition(NodePair.Key);
+		const FVector2D Delta = CandidatePosition - SourcePosition;
+		const float DistanceSquared = Delta.SizeSquared();
+		if (DistanceSquared <= SkillNavigationSmallDistance)
+		{
+			continue;
+		}
+
+		const FVector2D CandidateDirection = Delta.GetSafeNormal();
+		const float DirectionDot = FVector2D::DotProduct(CandidateDirection, DirectionVector);
+		if (DirectionDot < SkillNavigationMinDirectionDot)
+		{
+			continue;
+		}
+
+		const float DirectionPenalty = 1.0f - DirectionDot;
+		const float Score = DistanceSquared * (1.0f + DirectionPenalty);
+		if (Score < BestScore)
+		{
+			BestScore = Score;
+			BestSkillId = NodePair.Key;
+		}
+	}
+
+	return BestSkillId;
+}
+
+FVector2D USkillTreeWidget::GetSkillNodePosition(const int32 SkillId) const
+{
+	if (const UBATableManager* TableManager = UBATableManager::Get(this))
+	{
+		if (const FSkillRow* SkillRow = TableManager->FindSkill(SkillId))
+		{
+			return FVector2D(SkillRow->PositionX, SkillRow->PositionY);
+		}
+	}
+
+	if (const TObjectPtr<USkillNodeWidget>* NodePtr = SkillNodeMap.Find(SkillId))
+	{
+		if (const USkillNodeWidget* Node = NodePtr->Get())
+		{
+			const FGeometry& Geometry = Node->GetCachedGeometry();
+			return Geometry.GetAbsolutePosition() + Geometry.GetLocalSize() * 0.5f;
+		}
+	}
+
+	return FVector2D::ZeroVector;
 }
 
 void USkillTreeWidget::HandleSkillNodeStateChanged(int32 SkillId, ESkillNodeState NewState)

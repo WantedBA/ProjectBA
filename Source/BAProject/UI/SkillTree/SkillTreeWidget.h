@@ -7,6 +7,8 @@
 #include "UI/System/PopupBase.h"
 #include "SkillTreeWidget.generated.h"
 
+enum class EUINavigation : uint8;
+
 /**
  * 
  */
@@ -40,6 +42,14 @@ protected:
 	// 스킬 노드 상태값 갱신
 	UFUNCTION(BlueprintCallable, Category=SkillTree)
 	void RefreshAllSkillNodeState();
+
+	UFUNCTION(BlueprintCallable, Category=SkillTree)
+	void ConfigureSkillNodeNavigation();
+
+	TArray<int32> GetConnectedSkillNodeIds(int32 SkillId) const;
+	int32 FindBestSkillNodeInDirection(int32 SkillId, EUINavigation Direction) const;
+	int32 FindAdjacentSkillNodeInDirection(int32 SkillId, EUINavigation Direction) const;
+	FVector2D GetSkillNodePosition(int32 SkillId) const;
 	
 	
 // 데이터

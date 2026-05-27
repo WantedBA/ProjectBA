@@ -135,7 +135,7 @@ void USkillNodeWidget::ApplySkillNodeButtonSelectionStyle(const bool bSelected)
 
 	FButtonStyle SelectedStyle = DefaultButtonStyle;
 	SelectedStyle.Normal = DefaultButtonStyle.Hovered;
-	SelectedStyle.NormalPadding = DefaultButtonStyle.PressedPadding;
+	SelectedStyle.NormalForeground = DefaultButtonStyle.HoveredForeground;
 	SkillNodeButton->SetStyle(SelectedStyle);
 }
 
