@@ -85,18 +85,26 @@ bool ABAPlayerCharacter::TryStartRecoveryEscapeAction(
 			return false;
 		}
 
+		const bool bStartFromDodgeChainSection = IsDodgeRecoveryEscapeState();
 		ExitCurrentRecoveryForEscape(false);
 		if (!ActionComponent)
 		{
+			bUseChainStartForNextDodgeAction = false;
 			return false;
 		}
 
-		return Direction == EActionDirection::Any
+		bUseChainStartForNextDodgeAction = bStartFromDodgeChainSection;
+		const bool bStarted = Direction == EActionDirection::Any
 			? ActionComponent->TryStartActionForRecoveryEscape(EActionCommand::Dodge, Direction)
 			: ActionComponent->TryStartActionExcludingTypeForRecoveryEscape(
 				EActionCommand::Dodge,
 				Direction,
 				EActionType::Backstep);
+		if (!bStarted)
+		{
+			bUseChainStartForNextDodgeAction = false;
+		}
+		return bStarted;
 	}
 
 	if (Command == EActionCommand::Guard)
@@ -395,5 +403,6 @@ void ABAPlayerCharacter::ExitDodgeRecoveryForEscape()
 void ABAPlayerCharacter::ResetConsecutiveDodgeActions()
 {
 	ConsecutiveDodgeActionCount = 0;
+	bUseChainStartForNextDodgeAction = false;
 	ClearQueuedRecoveryEscapeAction(EActionCommand::Dodge);
 }

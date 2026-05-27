@@ -70,6 +70,9 @@ DECLARE_DELEGATE_RetVal_TwoParams(EActionDirection, FResolveActionAnimationDirec
 // 액션 도메인이 애니메이션 재생 직전 소유자 회전 방향을 별도로 정할 때 사용한다.
 DECLARE_DELEGATE_RetVal_TwoParams(EActionDirection, FResolveActionOrientationDirection, int32, EActionDirection);
 
+// 액션 도메인이 런타임 문맥에 따라 시작 섹션을 바꿀 때 사용한다.
+DECLARE_DELEGATE_RetVal_ThreeParams(FName, FResolveActionStartSection, int32, EActionType, FName);
+
 /**
  * 공용 Action 애니메이션 재생 컴포넌트.
  *
@@ -111,6 +114,7 @@ public:
 
 	FResolveActionAnimationDirection ResolveActionAnimationDirection;
 	FResolveActionOrientationDirection ResolveActionOrientationDirection;
+	FResolveActionStartSection ResolveActionStartSection;
 
 	// ActionTid에 가장 적합한 ActionAnimationData를 찾아 몽타주를 재생한다.
 	UFUNCTION(BlueprintCallable, Category = "Action|Animation")
@@ -163,6 +167,7 @@ private:
 	UAnimInstance* ResolveAnimInstance() const;
 	EActionDirection ResolveAnimationDirection(int32 ActionTid, EActionDirection ActionDirection) const;
 	EActionDirection ResolveOrientationDirection(int32 ActionTid, EActionDirection ActionDirection) const;
+	FName ResolveStartSection(int32 ActionTid, EActionType ActionType, FName DefaultStartSection) const;
 	void OrientOwnerToActionDirection(EActionDirection Direction) const;
 	void ApplyRootMotionModeForAnimation(UAnimInstance& AnimInstance, const FActionAnimationDataRow& AnimationData);
 	void RestoreRootMotionMode();
