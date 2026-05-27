@@ -674,8 +674,11 @@ void ABAPlayerController::ConfigureGamepadInputMappings()
 	MapActionKeyIfMissing(InteractAction, EKeys::Gamepad_FaceButton_Bottom);
 	MapActionKeyIfMissing(InteractAction, PlayerControllerGenericUSBControllerButton(2)); // DualSense Cross
 
-	MapActionKeyIfMissing(UseConsumableAction, EKeys::Gamepad_FaceButton_Left);
-	MapActionKeyIfMissing(UseConsumableAction, PlayerControllerGenericUSBControllerButton(1)); // DualSense Square
+	UnmapActionKeyIfPresent(UseConsumableAction, EKeys::Gamepad_FaceButton_Left);
+	UnmapActionKeyIfPresent(UseConsumableAction, PlayerControllerGenericUSBControllerButton(1));
+	MapActionKeyIfMissing(UseConsumableAction, EKeys::One);
+	MapActionKeyIfMissing(UseConsumableAction, EKeys::Gamepad_FaceButton_Top);
+	MapActionKeyIfMissing(UseConsumableAction, PlayerControllerGenericUSBControllerButton(4)); // DualSense Triangle
 
 	MapActionKeyIfMissing(LockOnAction, EKeys::Gamepad_RightThumbstick);
 	MapActionKeyIfMissing(LockOnAction, PlayerControllerGenericUSBControllerButton(12)); // DualSense R3
