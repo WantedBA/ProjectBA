@@ -19,7 +19,6 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 
 			Enemy->OnAttackAnimationFinished.RemoveAll(this);
 			Enemy->OnAttackAnimationFinished.AddUObject(this,&UBTTask_Attack::OnAttackFinishedCallback);
-
 			Enemy->Attack();
 			return EBTNodeResult::InProgress;
 		}
@@ -38,7 +37,15 @@ EBTNodeResult::Type UBTTask_Attack::AbortTask(UBehaviorTreeComponent& OwnerComp,
 		UAnimInstance* AnimInstance = Enemy->GetMesh()->GetAnimInstance();
 		if (AnimInstance)
 		{
-			AnimInstance->Montage_Stop(0.2f, Enemy->GetEnemyAttackMontage());
+			UAnimMontage* CurrentMontage = Enemy->GetCurrentAttackMontage();
+			if (CurrentMontage)
+			{
+				AnimInstance->Montage_Stop(0.2f, CurrentMontage);
+			}
+			else
+			{
+				AnimInstance->Montage_Stop(0.2f);
+			}
 		}
 
 		// [중요] 현재 상태가 Attack일 때만 Idle로 복구한다.
@@ -48,6 +55,9 @@ EBTNodeResult::Type UBTTask_Attack::AbortTask(UBehaviorTreeComponent& OwnerComp,
 		{
 			Enemy->SetState(EEnemyState::Idle);
 		}
+
+		// 피격/리턴 등으로 트리가 끊길 때 콤보 순서 상태도 같이 초기화해줍니다.
+		Enemy->ResetAttackIndex();
 	}
 
 	return Super::AbortTask(OwnerComp, NodeMemory);

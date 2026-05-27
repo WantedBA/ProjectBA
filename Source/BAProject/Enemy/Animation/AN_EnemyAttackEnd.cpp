@@ -15,7 +15,7 @@ void UAN_EnemyAttackEnd::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceB
         return;
     }
 
-    AEnemyBase* Enemy = Cast<AEnemyBase>(MeshComp->GetOwner());
+    AEnemyBase* Enemy = Cast<AEnemyBase>(Owner);
     if (IsValid(Enemy))
     {
         if (Enemy->OnAttackAnimationFinished.IsBound())

@@ -17,6 +17,7 @@ public:
 	virtual EBTNodeResult::Type AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	void OnAttackFinishedCallback(EEnemyState NewState);
 
-private:
+protected:
+	UPROPERTY()
 	TObjectPtr<UBehaviorTreeComponent> CachedOwnerComp;
 };
