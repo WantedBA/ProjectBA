@@ -24,6 +24,8 @@ protected:
 	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 
 private:
+	void ApplyTitleInputMode();
+	void RestoreTitleInputMode();
 	void FocusInitialTitleButton();
 	bool TryNavigateTitleButton(const FVector2D& DirectionVector);
 	bool SelectTitleButton(class UButton* Button);

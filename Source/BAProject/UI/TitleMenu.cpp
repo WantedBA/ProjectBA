@@ -85,6 +85,8 @@ void UTitleMenu::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	ApplyTitleInputMode();
+
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimerForNextTick(
@@ -104,6 +106,7 @@ void UTitleMenu::NativeDestruct()
 	}
 
 	ClearGamepadSelectedTitleButton();
+	RestoreTitleInputMode();
 	Super::NativeDestruct();
 }
 
@@ -174,8 +177,47 @@ FReply UTitleMenu::NativeOnMouseMove(const FGeometry& InGeometry, const FPointer
 	return Super::NativeOnMouseMove(InGeometry, InMouseEvent);
 }
 
+void UTitleMenu::ApplyTitleInputMode()
+{
+	APlayerController* OwningPlayer = GetOwningPlayer();
+	if (!OwningPlayer)
+	{
+		return;
+	}
+
+	FInputModeUIOnly InputMode;
+	TSharedPtr<SWidget> SafeWidget = GetCachedWidget();
+	if (SafeWidget.IsValid())
+	{
+		InputMode.SetWidgetToFocus(SafeWidget);
+	}
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+
+	OwningPlayer->SetInputMode(InputMode);
+	OwningPlayer->bShowMouseCursor = true;
+	OwningPlayer->bEnableClickEvents = true;
+	OwningPlayer->bEnableMouseOverEvents = true;
+}
+
+void UTitleMenu::RestoreTitleInputMode()
+{
+	APlayerController* OwningPlayer = GetOwningPlayer();
+	if (!OwningPlayer)
+	{
+		return;
+	}
+
+	FInputModeGameOnly InputMode;
+	OwningPlayer->SetInputMode(InputMode);
+	OwningPlayer->bShowMouseCursor = false;
+	OwningPlayer->bEnableClickEvents = false;
+	OwningPlayer->bEnableMouseOverEvents = false;
+}
+
 void UTitleMenu::FocusInitialTitleButton()
 {
+	ApplyTitleInputMode();
+
 	if (APlayerController* OwningPlayer = GetOwningPlayer())
 	{
 		SetUserFocus(OwningPlayer);
