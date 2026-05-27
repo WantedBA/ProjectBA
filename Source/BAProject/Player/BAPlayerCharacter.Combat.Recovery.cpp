@@ -200,11 +200,7 @@ bool ABAPlayerCharacter::QueueRecoveryEscapeAction(
 		return false;
 	}
 
-	if (QueuedRecoveryEscapeCommand != EActionCommand::None)
-	{
-		return false;
-	}
-
+	// 단일 슬롯 큐처럼 새 입력이 기존 예약을 밀어내고, 윈도우가 열릴 때 가장 최근 입력만 실행한다.
 	QueuedRecoveryEscapeCommand = Command;
 	QueuedRecoveryEscapeDirection = Direction;
 	return true;
