@@ -63,6 +63,15 @@ void USubSystemUI::PushUI(ULayerBase* InWidget)
 		return;
 	}
 
+	if (InWidget->GetStackType() == EStackElemType::Popup)
+	{
+		InWidget->AddToViewport(100);
+	}
+	else
+	{
+		InWidget->AddToViewport(InWidget->GetSortOrder());
+	}
+
 	// Notify 저장
 	if (UNotifyLayer* Notify = Cast<UNotifyLayer>(InWidget))
 	{
@@ -176,51 +185,54 @@ void USubSystemUI::HandleWorldInit(UWorld* World, const UWorld::InitializationVa
 {
 	CleanupUI();
 
-	// 실제 플레이 시에만 실행
-	if (!World || World->IsGameWorld())
+	if (!World || !World->IsGameWorld())
 	{
-		// 프로젝트 세팅에 등록된 설정값 가져오기
-		const UUISettings* Settings = GetDefault<UUISettings>();
-
-		if (Settings && Settings->DefaultNotifyLayerClass)
-			{
-				// 위젯 생성
-				if (!CachedNotifyLayer || !CachedNotifyLayer->IsInViewport())
-					{
-						PushUIByClass(Settings->DefaultNotifyLayerClass, World);
-					}
-			}
-
-		// 페이드 인 연출
-		if (CachedNotifyLayer)
-			{
-				FTimerHandle TimerHandle;
-				World->GetTimerManager().SetTimer(TimerHandle, [this, World]()
-					{
-						if (CachedNotifyLayer)
-						{
-							CachedNotifyLayer->PlayFadeEffect(true);
-							CachedNotifyLayer->ShowSplashMessageByTid(10001);
-						}
-
-						if (APlayerController* PC = World->GetFirstPlayerController())
-						{
-							if (APawn* Pawn = PC->GetPawn())
-							{
-								if (UStatComponent* Stat = Pawn->FindComponentByClass<UStatComponent>())
-								{
-									// 플레이어 사망 시 델리게이트 연결
-									Stat->OnDead.RemoveDynamic(this, &USubSystemUI::HandlePlayerDeath);
-									Stat->OnDead.AddDynamic(this, &USubSystemUI::HandlePlayerDeath);
-
-									UE_LOG(LogTemp, Warning, TEXT(">>> Success: Bound to Player Death Signal!"));
-									RefreshInputMode();
-								}
-							}
-						}
-					}, 0.1f, false);
-			}
+		return;
 	}
+
+	// 기본 알림 레이어 생성
+	if (const UUISettings* Settings = GetDefault<UUISettings>())
+	{
+		if (Settings->DefaultNotifyLayerClass && (!CachedNotifyLayer || !CachedNotifyLayer->IsInViewport()))
+		{
+			PushUIByClass(Settings->DefaultNotifyLayerClass, World);
+		}
+	}
+
+	// 레벨 로드가 끝날 때까지 대기 후 한번에 처리
+	FTimerHandle PostInitTimer;
+	World->GetTimerManager().SetTimer(PostInitTimer, [this]()
+		{
+			UWorld* CurrentWorld = GetWorld();
+			if (!CurrentWorld)
+			{
+				return;
+			}
+
+			// 입력 모드 동기화
+			RefreshInputMode();
+
+			// 페이드 인 및 시작 메시지 연출
+			if (IsValid(CachedNotifyLayer) && CachedNotifyLayer->IsInViewport())
+			{
+				CachedNotifyLayer->PlayFadeEffect(true);
+				CachedNotifyLayer->ShowSplashMessageByTid(10001); // 임시 텍스트값
+			}
+
+			// 플레이어 사망 신호 연결
+			if (APlayerController* PC = CurrentWorld->GetFirstPlayerController())
+			{
+				if (APawn* Pawn = PC->GetPawn())
+				{
+					if (UStatComponent* Stat = Pawn->FindComponentByClass<UStatComponent>())
+					{
+						Stat->OnDead.RemoveDynamic(this, &USubSystemUI::HandlePlayerDeath);
+						Stat->OnDead.AddDynamic(this, &USubSystemUI::HandlePlayerDeath);
+						UE_LOG(LogTemp, Warning, TEXT(">>> Success: Bound to Player Death Signal!"));
+					}
+				}
+			}
+		}, 0.3f, false);
 }
 
 void USubSystemUI::CleanupUI()
@@ -242,31 +254,42 @@ void USubSystemUI::CleanupUI()
 void USubSystemUI::HandlePlayerDeath()
 {
 	const UUISettings* Settings = GetDefault<UUISettings>();
-
-	if (Settings && Settings->DeathWidgetClass)
+	if (!Settings || !Settings->DeathWidgetClass)
 	{
-		TSubclassOf<ULayerBase> TargetLayerClass = Settings->DeathWidgetClass;
-
-		// 팝업으로 사망 창 띄우기
-		if (TargetLayerClass)
-		{
-			PushUIByClass(TargetLayerClass);
-			UE_LOG(LogTemp, Warning, TEXT(">>> Player Died! Death Screen Pushed."));
-		}
-
+		return;
 	}
+
+	FTimerHandle FadeTimer;
+	GetWorld()->GetTimerManager().SetTimer(FadeTimer, [this]()
+		{
+			if (CachedNotifyLayer)
+			{
+				CachedNotifyLayer->PlayFadeEffect(false);
+			}
+		}, 2.0f, false);
+
+	FTimerHandle DeathUITimer;
+	GetWorld()->GetTimerManager().SetTimer(DeathUITimer, [this, Settings]()
+		{
+			PushUIByClass(Settings->DeathWidgetClass);
+			UE_LOG(LogTemp, Warning, TEXT(">>> SubSystemUI: Death UI Pushed after Cinematic Sequence."));
+		}, 3.5f, false);
 }
 
 void USubSystemUI::RefreshInputMode()
 {
-	// 현재 스택에 최상단 요소를 확인하여 팝업 유무 판별
+	APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+	if (!PC)
+	{
+		return;
+	}
+
 	bool bHasPopup = false;
 	ULayerBase* TopWidget = nullptr;
 
-
 	if (!UIStack.IsEmpty())
 	{
-		IStackElem* TopElem = UIStack.Peek(); // 가장 위 요소 확인
+		IStackElem* TopElem = UIStack.Peek();
 		if (TopElem && TopElem->GetStackType() == EStackElemType::Popup)
 		{
 			bHasPopup = true;
@@ -274,17 +297,13 @@ void USubSystemUI::RefreshInputMode()
 		}
 	}
 
-	// 글로벌 블러 위젯 관리 로직
+	// 1. 글로벌 블러 위젯 관리 (기존 기능 유지)
 	if (bHasPopup)
 	{
-		// 블러 위젯 클래스가 설정되어 있고, 아직 생성되지 않았다면 생성
 		if (!GlobalBlurWidget && BlurWidgetClass)
 		{
 			GlobalBlurWidget = CreateWidget<UUserWidget>(GetWorld(), BlurWidgetClass);
 		}
-
-		// 블러 위젯이 존재하고 현재 화면에 없다면 뷰포트에 추가
-		// Order = HUD(1), Popup(3)
 		if (GlobalBlurWidget && !GlobalBlurWidget->IsInViewport())
 		{
 			GlobalBlurWidget->AddToViewport(2);
@@ -292,37 +311,48 @@ void USubSystemUI::RefreshInputMode()
 	}
 	else
 	{
-		// 팝업이 한개도 없는 상태라면 화면에서 블러 위젯 제거
 		if (GlobalBlurWidget && GlobalBlurWidget->IsInViewport())
 		{
 			GlobalBlurWidget->RemoveFromParent();
 		}
 	}
 
-	// 입력 모드 및 마우스 커서 제어 로직
-	APlayerController* PC = GetWorld()->GetFirstPlayerController();
-	if (PC)
+	// 2. 입력 모드 및 포커스 정밀 진단
+	if (bHasPopup && TopWidget)
 	{
-		if (bHasPopup)
+
+		FInputModeUIOnly InputMode;
+		TSharedPtr<SWidget> SafeWidget = TopWidget->GetCachedWidget();
+
+		if (SafeWidget.IsValid())
 		{
-			FInputModeGameAndUI InputMode;
-			if (TopWidget)
-			{
-				InputMode.SetWidgetToFocus(TopWidget->GetCachedWidget());
-			}
-			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-
-			PC->SetInputMode(InputMode);
-			PC->bShowMouseCursor = true;
-
-			PC->bEnableClickEvents = true;
-			PC->bEnableMouseOverEvents = true;
+			InputMode.SetWidgetToFocus(SafeWidget);
 		}
-		else
+
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		PC->SetInputMode(InputMode);
+		PC->bShowMouseCursor = true;
+
+		// 클릭 이벤트 최종 확인
+		PC->bEnableClickEvents = true;
+		PC->bEnableMouseOverEvents = true;
+
+		// [강력 처방] 팝업이 뜨면 캐릭터 조작을 엔진 레벨에서 멈춥니다! ✨
+		if (PC->GetPawn())
 		{
-			FInputModeGameOnly GameMode;
-			PC->SetInputMode(GameMode);
-			PC->bShowMouseCursor = false;
+			PC->GetPawn()->DisableInput(PC);
+		}
+	}
+	else
+	{
+		FInputModeGameOnly GameMode;
+		PC->SetInputMode(GameMode);
+		PC->bShowMouseCursor = false;
+
+		// [강력 처방] 팝업이 닫히면 조작을 다시 허용합니다. ✨
+		if (PC->GetPawn())
+		{
+			PC->GetPawn()->EnableInput(PC);
 		}
 	}
 }
@@ -368,6 +398,4 @@ void USubSystemUI::ClearAllUI()
 		GlobalBlurWidget->RemoveFromParent();
 		GlobalBlurWidget = nullptr;
 	}
-
-	UE_LOG(LogTemp, Log, TEXT(">>> SubSystemUI: All UI Cleared for Level Transition."));
 }

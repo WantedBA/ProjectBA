@@ -106,6 +106,21 @@ public: /** Widget */
 	UPROPERTY(EditAnywhere, Category = "Widget", meta = (EditCondition = "bWantsDisplayWidget"))
 	FVector WidgetRelativeOffset;
 
+	//----------------------------------------------------------------------//
+	UPROPERTY(EditAnywhere, Category = "Widget")
+	bool bWantsDisplayHPWidget = true;
+
+	UPROPERTY(EditAnywhere, Category = "Widget", meta = (EditCondition = "bWantsDisplayHPWidget"))
+	TSoftClassPtr<UUserWidget> CustomHPWidgetClass;
+
+	UPROPERTY(EditAnywhere, Category = "Widget", meta = (EditCondition = "bWantsDisplayHPWidget"))
+	FName HPWidgetSocket = TEXT("head");
+
+	UPROPERTY(EditAnywhere, Category = "Widget", meta = (EditCondition = "bWantsDisplayHPWidget"))
+	FVector HPWidgetRelativeOffset = FVector::ZeroVector;
+	//----------------------------------------------------------------------//
+
+
 public: /** Callbacks */
 
 	/** Called if the Target has been successfully captured by LockOnTargetComponent. */
