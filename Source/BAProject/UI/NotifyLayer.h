@@ -29,6 +29,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "BA|UI|Notify")
 	void SetInteractionNotice(bool bShow, int32 Tid = 0);
 
+	// 애니메이션 종료 감지 함수
+	UFUNCTION()
+	void OnFadeInAnimationFinished();
+
 protected:
 	virtual void NativeConstruct() override;
 

@@ -135,6 +135,9 @@ void UCombatComponent::CheckHitStart(float InRadius, float InDamage, FName InSta
 		return;
 	}
 
+	// 새 히트 윈도우 시작 — 이전 윈도우의 타겟 기록을 초기화해 같은 패턴 내 다중 히트 윈도우가 각각 독립적으로 판정된다.
+	ResetTargetHitRecords();
+
 	bIsHitChecking = true;
 	CurrentRadius = InRadius;
 	

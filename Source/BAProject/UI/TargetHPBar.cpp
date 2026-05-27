@@ -9,6 +9,7 @@
 
 #include "Component/StatComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Components/Image.h"
 
 
 void UTargetHPBar::NativeConstruct()
@@ -86,6 +87,11 @@ void UTargetHPBar::OnTargetCaptured()
 			BindToTarget(LockOnComp->GetTargetActor());
 		}
 	}
+
+	if (UWidgetComponent* ParentComp = Cast<UWidgetComponent>(GetOuter()))
+	{
+		ParentComp->SetVisibility(true);
+	}
 }
 
 void UTargetHPBar::OnTargetReleased()
@@ -158,4 +164,9 @@ void UTargetHPBar::HideWidget()
 {
 	// 1초 경과 후 숨김
 	SetVisibility(ESlateVisibility::Collapsed);
+
+	if (UWidgetComponent* ParentComp = Cast<UWidgetComponent>(GetOuter()))
+	{
+		ParentComp->SetVisibility(false);
+	}
 }

@@ -20,13 +20,34 @@ void UTooltipWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 
 	if (GetVisibility() != ESlateVisibility::Hidden)
 	{
-		if (APlayerController* PC = GetOwningPlayer())
+		APlayerController* PC = GetOwningPlayer();
+		if (PC)
 		{
 			float MouseX, MouseY;
-			// 마우스 위치 가져오기 성공 시
 			if (PC->GetMousePosition(MouseX, MouseY))
 			{
-				FVector2D TargetPos = FVector2D(MouseX, MouseY) + FVector2D(20.f, 20.f);
+				FVector2D ViewportSize;
+				GEngine->GameViewport->GetViewportSize(ViewportSize);
+
+				// 툴팁 현재 크기 가져오기
+				FVector2D TooltipSize = GetDesiredSize();
+
+				// 기본 위치
+				FVector2D TargetPos = FVector2D(MouseX, MouseY) + FVector2D(30.f, 30.f);
+
+				// 가로 제한 (화면 오른쪽을 뚫고 나가면 툴팁을 왼쪽으로 옮김)
+				if (TargetPos.X + TooltipSize.X > ViewportSize.X)
+				{
+					TargetPos.X = MouseX - TooltipSize.X - 10.f;
+				}
+
+				// 세로 제한 (화면 아래쪽을 뚫고 나가면 툴팁을 위쪽으로 옮김)
+				if (TargetPos.Y + TooltipSize.Y > ViewportSize.Y)
+				{
+					TargetPos.Y = ViewportSize.Y - TooltipSize.Y - 10.f;
+				}
+
+				// 최종 위치 적용
 				SetPositionInViewport(TargetPos);
 			}
 		}
@@ -35,22 +56,15 @@ void UTooltipWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 
 void UTooltipWidget::RequestShowTooltip(int32 InTid)
 {
-	// 툴팁이 나타나기 전에 마우스 위치로 미리 이동
-	APlayerController* PC = GetOwningPlayer();
-	if (PC)
-	{
-		float MouseX, MouseY;
-		if (PC->GetMousePosition(MouseX, MouseY))
-		{
-			SetPositionInViewport(FVector2D(MouseX, MouseY) + FVector2D(20.f, 20.f));
-		}
-	}
-
 	// 새로운 요청 실행 시 기존에 돌고 있던 로딩 및 타이머를 즉시 취소
 	HideTooltip();
 
 	// 유예 시간 적용(빠르게 스쳐 지나가는 정도에서는 로딩 방지)
-	GetWorld()->GetTimerManager().SetTimer(HoverDelayTimerHandle, [this, InTid]() {ProcessLoadData(InTid); }, 0.15f, false);
+	GetWorld()->GetTimerManager().SetTimer(HoverDelayTimerHandle, [this, InTid]() 
+		{
+			ProcessLoadData(InTid); 
+			UE_LOG(LogTemp, Warning, TEXT("Tooltip: ProcessLoadData Finished. Waiting for Tick..."));
+		}, 0.15f, false);
 }
 
 void UTooltipWidget::HideTooltip()
@@ -97,6 +111,22 @@ void UTooltipWidget::ProcessLoadData(int32 InTid)
 	{
 		DescriptionText->SetText(FText::FromString(DescData->KoreanText));
 	}
+
+	APlayerController* PC = GetOwningPlayer();
+	if (!PC)
+	{
+		PC = GetWorld()->GetFirstPlayerController();
+	}
+
+	if (PC)
+	{
+		float MouseX, MouseY;
+		if (PC->GetMousePosition(MouseX, MouseY))
+		{
+			SetPositionInViewport(FVector2D(MouseX, MouseY) + FVector2D(30.f, 30.f));
+		}
+	}
+
 	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	
 	// 비동기 로딩 시스템에 전달하기 위해 로딩할 파일 목록 배열 생성
